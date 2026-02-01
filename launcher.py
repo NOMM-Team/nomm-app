@@ -320,6 +320,44 @@ class SteamScannerApp(Adw.Application):
         self.show_loading_and_scan()
 
     def on_game_clicked(self, gesture, n_press, x, y, game_data):
+        # 1. Get the base path from user_config
+        download_base = ""
+        try:
+            with open(self.user_config_path, 'r') as f:
+                config = yaml.safe_load(f) or {}
+                download_base = config.get("download_path", "")
+        except: pass
+
+        if download_base:
+            # 2. Define the game-specific path
+            game_download_path = os.path.join(download_base, game_data['name'])
+            
+            # Create the physical folder if it doesn't exist
+            if not os.path.exists(game_download_path):
+                os.makedirs(game_download_path, exist_ok=True)
+
+            # 3. Update the game-specific YAML config
+            config_dir = "./game_configs/"
+            slug = slugify(game_data['name'])
+            
+            for filename in os.listdir(config_dir):
+                if filename.lower().endswith((".yaml", ".yml")):
+                    conf_path = os.path.join(config_dir, filename)
+                    try:
+                        with open(conf_path, 'r') as f:
+                            data = yaml.safe_load(f) or {}
+                        
+                        # Match by name or app_id
+                        if slugify(data.get("name", "")) == slug or data.get("steamappid") == game_data.get("app_id"):
+                            data["downloads_path"] = game_download_path
+                            
+                            with open(conf_path, 'w') as f:
+                                yaml.dump(data, f, default_flow_style=False)
+                            break # Found and updated
+                    except Exception as e:
+                        print(f"Failed to update game config: {e}")
+
+        # 4. Launch Dashboard
         self.dashboard = GameDashboard(
             game_name=game_data['name'], 
             game_path=game_data['path'],
@@ -328,9 +366,10 @@ class SteamScannerApp(Adw.Application):
             app_id=game_data.get('app_id')
         )
         self.dashboard.launch()
+        
         if self.win:
             self.win.close()
-            self.win = None 
+            self.win = None
 
     def get_placeholder(self):
         b = Gtk.Box(orientation=1, valign=Gtk.Align.CENTER)
