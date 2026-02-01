@@ -1,8 +1,20 @@
-[h1] test
+# NOMM (Native Open Mod Manager)
 
-This may or may not eventually become a stupid simple native mod manager for linux.
+## The project
+
+This may or may not eventually become a stupid simple, super clean native mod manager for linux.
 The goal here is to keep the setup really simple for idiots like me who don't need multiple profiles and all that jazz.
-Just a few clicks, a clean interface, and you're done :)
+Just a few clicks, a clean, modern interface, and you're done :)
+
+> [!WARNING]
+> A big chunk of this project is made by vibe coding with Gemini.
+> I take no responsibility for any kind of impact this early in development app may have on your system.
+> 
+> If you hate AI, that makes two of us 🙂
+> 
+> _However_, I would never have been able to make something like this without it.
+
+## "Roadmap"
 
 Phase 1 Development Progress:
 - [x] Auto-detect Steam libraries
@@ -31,10 +43,15 @@ Phase 3 Development Progress:
 Bonus (nice to have)
 - [ ] Game profiles?
 
-> [!WARNING]
-> A big chunk of this project is made by vibe coding with Gemini.
-> I take no responsibility for any kind of impact this may have on your system.
-> 
-> Also if you hate AI, that makes two of us 🙂
-> 
-> _However_, I must say I would never have been able to make something like this without it.
+## "Building" / Executing
+
+The app is built with:
+- [Python](python.org) (3.14)
+- [GTK](https://www.gtk.org/)
+- [Libadwaita](https://gnome.pages.gitlab.gnome.org/libadwaita/)
+
+This means you should be able to run it directly on most linux distros without too many problems via the console by typing:
+`python3 ./main.py`
+Whilst in the path where the code is.
+
+
