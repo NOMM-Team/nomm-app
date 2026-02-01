@@ -79,14 +79,15 @@ class nommlauncher(Adw.Application):
         self.win.present()
 
     def show_setup_screen(self):
+        # UPDATED: Description text for mod downloads
         status_page = Adw.StatusPage(
             title="Welcome to NOMM",
-            description="Please select the folder where your game downloads are located.",
+            description="Please select the folder where mod downloads will be stored.",
             icon_name="folder-download-symbolic"
         )
         status_page.add_css_class("setup-page")
         
-        btn = Gtk.Button(label="Set Download Path")
+        btn = Gtk.Button(label="Set Mod Download Path")
         btn.set_halign(Gtk.Align.CENTER)
         btn.add_css_class("suggested-action")
         btn.set_margin_top(24)
@@ -99,7 +100,7 @@ class nommlauncher(Adw.Application):
         GLib.timeout_add(100, lambda: status_page.add_css_class("visible"))
 
     def on_select_folder_clicked(self, btn):
-        dialog = Gtk.FileDialog(title="Select Downloads Folder")
+        dialog = Gtk.FileDialog(title="Select Mod Downloads Folder")
         dialog.select_folder(self.win, None, self.on_folder_selected_callback)
 
     def on_folder_selected_callback(self, dialog, result):
@@ -117,7 +118,6 @@ class nommlauncher(Adw.Application):
     def show_loading_and_scan(self):
         box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=30, valign=Gtk.Align.CENTER)
         
-        # UPDATED: Spinner size increased to 128
         spinner = Gtk.Spinner()
         spinner.set_size_request(128, 128)
         spinner.set_margin_bottom(10)
