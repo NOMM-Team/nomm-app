@@ -30,6 +30,7 @@ Phase 1 Development Progress:
 - [ ] Prepare "special tools" section in game config file that lets the community define some essential custom tools that are needed for a game to work, so that the process is easier for people who just want to mod the game (i.e. SKSE, Darktide mod loader, that kind of stuff)
 - [ ] Let user launch the game directly from the interface
 - [ ] Make app differentiate between first time setup and re-launch (and also think about the consequences of this from a UX standpoint - shoudl launcher be relaunched on 2nd+ startup? If not, add a button to return to launcher from the main window)
+- [ ] Figure out how to create a flatpak for the app
 
 Phase 2 Development Progress:
 - [ ] Think about how to let user define load orders
