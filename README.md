@@ -28,10 +28,10 @@ Just a few clicks, a clean, modern interface, and you're done :)
 Phase 1 Development Progress:
 - [x] Auto-detect Steam libraries
 - [x] Auto-detect Steam library games
-- [x] Obtain cool images from Steam cache folder
+- [x] Obtain cool images for game tiles from Steam cache folder
 - [x] Display results in a super clean library-style window
 - [x] Let user choose a downloads folder location
-- [ ] Create a whole new window with a cool header from Steam cache folder
+- [x] Create a whole new window with a cool header from Steam cache folder
 - [ ] Associate app w/ nexusmods download links
 - [ ] Let user navigate downloaded mods and delete downloaded mods
 - [ ] Figure out how mod staging and symlinks and whatnot work because I have no idea
