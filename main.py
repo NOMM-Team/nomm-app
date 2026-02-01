@@ -82,7 +82,7 @@ class SteamScannerApp(Adw.Application):
         
         self.spinner = Adw.Spinner()
         self.spinner.set_size_request(80, 80)
-        self.status_label = Gtk.Label(label="Scanning for Steam Games...")
+        self.status_label = Gtk.Label(label="Initializing Library...")
         self.status_label.add_css_class("title-1")
         
         self.status_container.append(self.spinner)
@@ -94,34 +94,54 @@ class SteamScannerApp(Adw.Application):
 
     def run_background_workflow(self):
         config_dir = "./game_configs/"
+        user_config_path = "./user_config.yaml"
+        found_libs = set()
+
         if not os.path.exists(config_dir):
             GLib.idle_add(self.status_label.set_label, "Error: 'game_configs' missing")
             return
 
-        # 1. Collect all possible mount points
-        potential_mounts = {"/", os.path.expanduser("~")}
-        try:
-            with open('/proc/mounts', 'r') as f:
-                for line in f:
-                    parts = line.split()
-                    if len(parts) >= 3 and parts[2] in ['ext4', 'btrfs', 'vfat', 'exfat', 'ntfs3', 'xfs']:
-                        if parts[1].startswith(('/', '/run/media', '/mnt')):
-                            potential_mounts.add(parts[1])
-        except: pass
+        # 1. Check for cached paths first
+        if os.path.exists(user_config_path):
+            try:
+                with open(user_config_path, 'r') as ucf:
+                    cache = yaml.safe_load(ucf)
+                    if cache and "library_paths" in cache:
+                        found_libs = set(cache["library_paths"])
+                        print("Loaded paths from user_config.yaml")
+            except: pass
 
-        # 2. Find Steam Libraries and resolve to REAL paths to prevent duplicates
-        found_libs = set()
-        targets = ["SteamLibrary/steamapps/common", "steamapps/common"]
-        
-        for m in potential_mounts:
-            if not os.path.exists(m): continue
-            for root, dirs, _ in os.walk(m):
-                if any(root.endswith(t) for t in targets):
-                    # Canonicalize the path to resolve symlinks/duplicates
-                    real_lib_path = os.path.realpath(root)
-                    found_libs.add(real_lib_path)
-                    del dirs[:] # Optimization: don't search inside a found library
-                    break
+        # 2. If cache is empty, perform the deep system scan
+        if not found_libs:
+            GLib.idle_add(self.status_label.set_label, "Scanning drives for Steam libraries...")
+            potential_mounts = {"/", os.path.expanduser("~")}
+            try:
+                with open('/proc/mounts', 'r') as f:
+                    for line in f:
+                        parts = line.split()
+                        if len(parts) >= 3 and parts[2] in ['ext4', 'btrfs', 'vfat', 'exfat', 'ntfs3', 'xfs']:
+                            if parts[1].startswith(('/', '/run/media', '/mnt')):
+                                potential_mounts.add(parts[1])
+            except: pass
+
+            targets = ["SteamLibrary/steamapps/common", "steamapps/common"]
+            for m in potential_mounts:
+                if not os.path.exists(m): continue
+                for root, dirs, _ in os.walk(m):
+                    if any(root.endswith(t) for t in targets):
+                        # FIX: Sets use .add() instead of .append()
+                        real_lib_path = os.path.realpath(root)
+                        found_libs.add(real_lib_path)
+                        del dirs[:] 
+                        break
+
+            # Save the new findings
+            try:
+                config_data = {"library_paths": sorted(list(found_libs))}
+                with open(user_config_path, 'w') as ucf:
+                    yaml.dump(config_data, ucf, default_flow_style=False)
+            except Exception as e:
+                print(f"Failed to save user_config: {e}")
 
         # 3. Matching YAML configs
         self.matches = []
@@ -134,9 +154,9 @@ class SteamScannerApp(Adw.Application):
                         if not y_name: continue
                         
                         y_slug = slugify(y_name)
-                        # Use list(found_libs) to iterate through unique real paths
                         for lib in found_libs:
                             if not os.path.exists(lib): continue
+                            # Search only the top-level folders in the library
                             for folder in os.listdir(lib):
                                 if slugify(folder) == y_slug:
                                     self.matches.append({
