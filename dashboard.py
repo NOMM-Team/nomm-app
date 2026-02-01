@@ -2,7 +2,9 @@ import os
 import gi
 import yaml
 import shutil
-import webbrowser  # Added for Steam URI handling
+import zipfile
+import webbrowser
+from pathlib import Path
 from PIL import Image
 
 gi.require_version('Gtk', '4.0')
@@ -14,10 +16,9 @@ class GameDashboard(Adw.Window):
         super().__init__(application=application, **kwargs)
         self.app = application
         self.game_name = game_name
-        self.game_path = game_path
+        self.game_path = game_path  # This is the path to the game executable/folder
         self.app_id = app_id
         
-        # 1. Load Game Specific Config
         self.game_config = self.load_game_config()
         self.downloads_path = self.game_config.get("downloads_path")
         
@@ -25,14 +26,12 @@ class GameDashboard(Adw.Window):
         self.maximize()
         self.fullscreen()
         
-        # Calculate 15% of Window Height
         win_height = self.get_default_size()[1]
         if self.is_maximized():
             monitor = Gdk.Display.get_default().get_monitors().get_item(0)
             win_height = monitor.get_geometry().height
         banner_height = int(win_height * 0.15)
 
-        # Dynamic Color Extraction
         hero_path = self.find_hero_image(steam_base, app_id)
         if hero_path:
             dominant_hex = self.get_dominant_color(hero_path)
@@ -44,7 +43,6 @@ class GameDashboard(Adw.Window):
 
         banner_overlay = Gtk.Overlay()
         
-        # Banner with Top-Crop
         if hero_path:
             banner_mask = Gtk.ScrolledWindow(propagate_natural_height=False, vexpand=False)
             banner_mask.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.NEVER)
@@ -60,7 +58,6 @@ class GameDashboard(Adw.Window):
             except Exception as e:
                 print(f"Error loading hero: {e}")
 
-        # Tab Container
         tab_container = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, homogeneous=True)
         self.mods_tab_btn = Gtk.ToggleButton(label="MODS")
         self.dl_tab_btn = Gtk.ToggleButton(label="DOWNLOADS")
@@ -76,7 +73,6 @@ class GameDashboard(Adw.Window):
         banner_overlay.add_overlay(tab_container)
         main_layout.append(banner_overlay)
 
-        # View Stack
         self.view_stack = Gtk.Stack(transition_type=Gtk.StackTransitionType.SLIDE_LEFT_RIGHT, transition_duration=400, vexpand=True)
         self.mods_tab_btn.connect("toggled", self.on_tab_changed, "mods")
         self.dl_tab_btn.connect("toggled", self.on_tab_changed, "downloads")
@@ -85,9 +81,7 @@ class GameDashboard(Adw.Window):
         self.create_mods_page()
         self.create_downloads_page()
 
-        # Footer
         footer = Gtk.CenterBox(margin_start=40, margin_end=40, margin_top=20, margin_bottom=40)
-        
         back_btn = Gtk.Button(label="Change Game")
         back_btn.add_css_class("flat")
         back_btn.set_cursor_from_name("pointer")
@@ -123,11 +117,9 @@ class GameDashboard(Adw.Window):
         cache_dir = os.path.join(steam_base, "appcache", "librarycache")
         if not os.path.exists(cache_dir): return None
 
-        # 1. Standard locations in root
-        targets = [f"{app_id}_library_hero.jpg", "library_hero.jpg"]
-        for name in targets:
-            path = os.path.join(cache_dir, name)
-            if os.path.exists(path): return path
+        # 1. Standard location in root
+        path = os.path.join(cache_dir, "library_hero.jpg")
+        if os.path.exists(path): return path
 
         # 2. Check AppID subfolder and perform recursive walk for .jpg
         appid_dir = os.path.join(cache_dir, str(app_id))
@@ -162,9 +154,9 @@ class GameDashboard(Adw.Window):
         self.list_box.add_css_class("boxed-list")
 
         if self.downloads_path and os.path.exists(self.downloads_path):
-            files = os.listdir(self.downloads_path)
+            files = [f for f in os.listdir(self.downloads_path) if f.lower().endswith('.zip')]
             if not files:
-                self.list_box.append(Adw.ActionRow(title="No mod files found", subtitle="Drop files into the folder."))
+                self.list_box.append(Adw.ActionRow(title="No mod archives found", subtitle="Drop .zip files into the folder."))
             else:
                 for f in files:
                     row = Adw.ActionRow(title=f)
@@ -174,6 +166,7 @@ class GameDashboard(Adw.Window):
                     install_btn.add_css_class("suggested-action")
                     install_btn.set_valign(Gtk.Align.CENTER)
                     install_btn.set_cursor_from_name("pointer")
+                    install_btn.connect("clicked", self.on_install_clicked, f)
                     row.add_suffix(install_btn)
 
                     del_btn = Gtk.Button(icon_name="user-trash-symbolic")
@@ -189,6 +182,51 @@ class GameDashboard(Adw.Window):
         scrolled.set_child(self.list_box)
         box.append(scrolled)
         self.view_stack.add_named(box, "downloads")
+
+    def on_install_clicked(self, btn, filename):
+        zip_path = os.path.join(self.downloads_path, filename)
+        
+        # 1. Determine where "nomm" should live
+        game_path_obj = Path(self.game_path).resolve()
+        
+        # Check if game is on system drive (heuristic: if path starts with /home, /usr, /etc, /var, etc.)
+        # On Linux, usually anything not in /media or /mnt is considered "system" area for this logic
+        system_prefixes = ['/usr', '/var', '/etc', '/bin', '/lib', '/opt']
+        is_system_drive = any(str(game_path_obj).startswith(pref) for pref in system_prefixes) or str(game_path_obj).startswith(str(Path.home()))
+
+        if is_system_drive:
+            nomm_root = Path.home() / "nomm"
+        else:
+            # Get the mount point/root of the drive the game is on
+            # We move up the parents until we find the root or a mount point
+            curr = game_path_obj
+            while curr.parent != curr:
+                if os.path.ismount(curr):
+                    break
+                curr = curr.parent
+            nomm_root = curr / "nomm"
+
+        # 2 & 3 & 4. Create paths
+        game_mod_dir = nomm_root / self.game_name
+        
+        try:
+            game_mod_dir.mkdir(parents=True, exist_ok=True)
+            
+            # 5. Extract
+            with zipfile.ZipFile(zip_path, 'r') as zip_ref:
+                zip_ref.extractall(game_mod_dir)
+                
+            # Show success toast or dialog
+            print(f"Successfully installed to: {game_mod_dir}")
+            self.show_message("Installation Complete", f"Extracted {filename} to {game_mod_dir}")
+        except Exception as e:
+            self.show_message("Error", f"Failed to install mod: {str(e)}")
+
+    def show_message(self, heading, body):
+        dialog = Adw.MessageDialog(transient_for=self, heading=heading, body=body)
+        dialog.add_response("ok", "OK")
+        dialog.connect("response", lambda d, r: d.close())
+        dialog.present()
 
     def on_delete_file(self, btn, filename):
         dialog = Adw.MessageDialog(transient_for=self, heading="Delete File?", body=f"Delete {filename} permanently?")
@@ -238,9 +276,6 @@ class GameDashboard(Adw.Window):
     def on_launch_clicked(self, btn):
         if self.app_id:
             steam_url = f"steam://launch/{self.app_id}"
-            print(f"Executing: {steam_url}")
             webbrowser.open(steam_url)
-        else:
-            print("Error: App ID not found for this game.")
 
     def launch(self): self.present()
