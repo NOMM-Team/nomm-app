@@ -21,9 +21,9 @@ Phase 1 Development Progress:
 - [x] Auto-detect Steam library games
 - [x] Obtain cool images from Steam cache folder
 - [x] Display results in a super clean library-style window
-- [ ] Let user choose a downloads folder location
-- [ ] Associate app w/ nexusmods download links
+- [x] Let user choose a downloads folder location
 - [ ] Create a whole new window with a cool header from Steam cache folder
+- [ ] Associate app w/ nexusmods download links
 - [ ] Let user navigate downloaded mods and delete downloaded mods
 - [ ] Figure out how mod staging and symlinks and whatnot work because I have no idea
 - [ ] Let user enable/disable mods
