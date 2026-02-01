@@ -116,17 +116,34 @@ class GameDashboard(Adw.Window):
                             return data
         return {}
 
+    def find_hero_image(self, steam_base, app_id):
+        if not steam_base or not app_id: return None
+        cache_dir = os.path.join(steam_base, "appcache", "librarycache")
+        if not os.path.exists(cache_dir): return None
+
+        # 1. Standard locations in root
+        targets = [f"{app_id}_library_hero.jpg", "library_hero.jpg"]
+        for name in targets:
+            path = os.path.join(cache_dir, name)
+            if os.path.exists(path): return path
+
+        # 2. Check AppID subfolder and perform recursive walk for .jpg
+        appid_dir = os.path.join(cache_dir, str(app_id))
+        if os.path.exists(appid_dir):
+            for root, _, files in os.walk(appid_dir):
+                for f in files:
+                    if f.lower().endswith(".jpg") and "library_hero" in f.lower():
+                        return os.path.join(root, f)
+        return None
+
     def create_downloads_page(self):
         if self.view_stack.get_child_by_name("downloads"):
             self.view_stack.remove(self.view_stack.get_child_by_name("downloads"))
 
-        # Main container with breathing room
         box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10, margin_start=100, margin_end=100, margin_top=40)
         
-        # Utility bar for folder actions (Title removed)
         action_bar = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
         spacer = Gtk.Box(hexpand=True)
-        
         open_folder_btn = Gtk.Button(icon_name="folder-open-symbolic")
         open_folder_btn.set_tooltip_text("Open Downloads Folder")
         open_folder_btn.set_cursor_from_name("pointer")
@@ -163,7 +180,6 @@ class GameDashboard(Adw.Window):
                     del_btn.set_cursor_from_name("pointer")
                     del_btn.connect("clicked", self.on_delete_file, f)
                     row.add_suffix(del_btn)
-                    
                     self.list_box.append(row)
         else:
             self.list_box.append(Adw.ActionRow(title="Download path not configured"))
@@ -173,23 +189,17 @@ class GameDashboard(Adw.Window):
         self.view_stack.add_named(box, "downloads")
 
     def on_delete_file(self, btn, filename):
-        dialog = Adw.MessageDialog(
-            transient_for=self,
-            heading="Delete File?",
-            body=f"Are you sure you want to delete {filename} permanently?"
-        )
+        dialog = Adw.MessageDialog(transient_for=self, heading="Delete File?", body=f"Delete {filename} permanently?")
         dialog.add_response("cancel", "Cancel")
         dialog.add_response("delete", "Delete")
         dialog.set_response_appearance("delete", Adw.ResponseAppearance.DESTRUCTIVE)
         
         def on_response(diag, response):
             if response == "delete":
-                file_path = os.path.join(self.downloads_path, filename)
                 try:
-                    os.remove(file_path)
+                    os.remove(os.path.join(self.downloads_path, filename))
                     self.create_downloads_page()
-                except Exception as e:
-                    print(f"Error: {e}")
+                except Exception as e: print(f"Error: {e}")
             diag.close()
 
         dialog.connect("response", on_response)
@@ -209,23 +219,15 @@ class GameDashboard(Adw.Window):
         provider.load_from_data(css.encode())
         Gtk.StyleContext.add_provider_for_display(Gdk.Display.get_default(), provider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)
 
-    def find_hero_image(self, steam_base, app_id):
-        if not steam_base or not app_id: return None
-        cache_dir = os.path.join(steam_base, "appcache", "librarycache")
-        lookups = [os.path.join(cache_dir, f"{app_id}_library_hero.jpg"), os.path.join(cache_dir, str(app_id), "library_hero.jpg")]
-        for path in lookups:
-            if os.path.exists(path): return path
-        return None
-
-    def on_tab_changed(self, btn, name):
-        if btn.get_active(): self.view_stack.set_visible_child_name(name)
-
     def create_mods_page(self):
         box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=20, valign=Gtk.Align.CENTER)
         lbl = Gtk.Label(label="Installed Mods")
         lbl.add_css_class("title-1")
         box.append(lbl)
         self.view_stack.add_named(box, "mods")
+
+    def on_tab_changed(self, btn, name):
+        if btn.get_active(): self.view_stack.set_visible_child_name(name)
 
     def on_back_clicked(self, btn):
         self.app.do_activate() 
