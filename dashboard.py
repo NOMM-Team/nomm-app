@@ -1,6 +1,6 @@
 import os
 import gi
-from PIL import Image  # Requires: pip install pillow
+from PIL import Image
 
 gi.require_version('Gtk', '4.0')
 gi.require_version('Adw', '1')
@@ -15,7 +15,18 @@ class GameDashboard(Adw.Window):
         self.maximize()
         self.fullscreen()
         
-        # --- 1. Dynamic Color Extraction ---
+        # --- 1. Calculate 15% of Window Height ---
+        # We get the surface geometry once the window is realized/maximized
+        # Fallback to 900 (your launcher's default) if not yet calculated
+        win_height = self.get_default_size()[1] 
+        if self.is_maximized():
+            # Adjust for maximized/fullscreen state
+            monitor = Gdk.Display.get_default().get_monitors().get_item(0)
+            win_height = monitor.get_geometry().height
+            
+        banner_height = int(win_height * 0.15)
+
+        # --- 2. Dynamic Color Extraction ---
         hero_path = self.find_hero_image(steam_base, app_id)
         if hero_path:
             dominant_hex = self.get_dominant_color(hero_path)
@@ -28,12 +39,12 @@ class GameDashboard(Adw.Window):
 
         banner_overlay = Gtk.Overlay()
         
-        # --- 2. Banner with Top-Crop ---
+        # --- 3. Banner with Top-Crop (15% Window Height) ---
         if hero_path:
             banner_mask = Gtk.ScrolledWindow()
             banner_mask.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.NEVER)
             banner_mask.set_propagate_natural_height(False)
-            banner_mask.set_size_request(-1, 200)
+            banner_mask.set_size_request(-1, banner_height)
             banner_mask.set_vexpand(False)
             
             try:
@@ -52,10 +63,10 @@ class GameDashboard(Adw.Window):
             except Exception as e:
                 print(f"Error loading hero image: {e}")
                 placeholder = Gtk.Box()
-                placeholder.set_size_request(-1, 200)
+                placeholder.set_size_request(-1, banner_height)
                 banner_overlay.set_child(placeholder)
 
-        # --- 3. Tabs Overlay ---
+        # --- 4. Tabs Overlay ---
         tab_container = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, homogeneous=True)
         tab_container.set_valign(Gtk.Align.FILL)
         
@@ -75,7 +86,7 @@ class GameDashboard(Adw.Window):
         banner_overlay.add_overlay(tab_container)
         main_layout.append(banner_overlay)
 
-        # --- 4. Content Area ---
+        # --- 5. Content Area ---
         self.view_stack = Gtk.Stack()
         self.view_stack.set_transition_type(Gtk.StackTransitionType.SLIDE_LEFT_RIGHT)
         self.view_stack.set_transition_duration(400)
@@ -88,7 +99,7 @@ class GameDashboard(Adw.Window):
         self.create_mods_page()
         self.create_downloads_page()
 
-        # --- 5. Footer ---
+        # --- 6. Footer ---
         footer = Gtk.CenterBox()
         footer.set_margin_start(40)
         footer.set_margin_end(40)
@@ -112,17 +123,15 @@ class GameDashboard(Adw.Window):
         self.set_content(main_layout)
 
     def get_dominant_color(self, image_path):
-        """Reduces image to 1x1 to find the average color quickly."""
         try:
             with Image.open(image_path) as img:
                 img = img.convert("RGB").resize((1, 1), resample=Image.Resampling.LANCZOS)
                 r, g, b = img.getpixel((0, 0))
                 return f"#{r:02x}{g:02x}{b:02x}"
         except:
-            return "#3584e4" # Default Adwaita Blue
+            return "#3584e4"
 
     def apply_dynamic_accent(self, hex_color):
-        """Overrides the application's accent colors with the extracted hex."""
         css = f"""
         @define-color accent_bg_color {hex_color};
         @define-color accent_color {hex_color};
