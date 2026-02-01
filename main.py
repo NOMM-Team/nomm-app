@@ -9,12 +9,14 @@ gi.require_version('Gtk', '4.0')
 gi.require_version('Adw', '1')
 
 from gi.repository import Gtk, Adw, GLib, Gdk, Gio
+from dashboard import GameDashboard  # Ensure dashboard.py exists in the same folder
 
 CSS = """
 .game-card {
     border-radius: 12px;
     transition: all 300ms cubic-bezier(0.25, 1, 0.5, 1);
     box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+    cursor: pointer;
 }
 .game-card:hover {
     transform: scale(1.04);
@@ -33,12 +35,13 @@ CSS = """
 def slugify(text):
     return re.sub(r'[^a-z0-9]', '', text.lower())
 
-class nommlauncher(Adw.Application):
+class SteamScannerApp(Adw.Application):
     def __init__(self, **kwargs):
         super().__init__(application_id='com.fedora.nomm', **kwargs)
         self.matches = []
         self.steam_base = self.get_steam_base_dir()
         self.user_config_path = "./user_config.yaml"
+        self.win = None
 
     def get_steam_base_dir(self):
         paths = [
@@ -56,8 +59,10 @@ class nommlauncher(Adw.Application):
         if not os.path.exists(dest): os.makedirs(dest)
         for filename in os.listdir(src):
             if filename.lower().endswith((".yaml", ".yml")):
-                try: shutil.copy2(os.path.join(src, filename), os.path.join(dest, filename))
-                except: pass
+                try:
+                    shutil.copy2(os.path.join(src, filename), os.path.join(dest, filename))
+                except:
+                    pass
 
     def do_activate(self):
         self.sync_configs()
@@ -79,7 +84,6 @@ class nommlauncher(Adw.Application):
         self.win.present()
 
     def show_setup_screen(self):
-        # UPDATED: Description text for mod downloads
         status_page = Adw.StatusPage(
             title="Welcome to NOMM",
             description="Please select the folder where mod downloads will be stored.",
@@ -219,6 +223,11 @@ class nommlauncher(Adw.Application):
             frame.add_css_class("game-card")
             frame.set_tooltip_text(f"{g['name']}\n{g['path']}")
 
+            # CLICK GESTURE: Handle tile selection
+            gesture = Gtk.GestureClick()
+            gesture.connect("released", self.on_game_clicked, g)
+            frame.add_controller(gesture)
+
             img = None
             if g['img'] and os.path.exists(g['img']):
                 try:
@@ -233,6 +242,21 @@ class nommlauncher(Adw.Application):
         view.append(scroll)
         self.stack.add_named(view, "library")
         self.stack.set_visible_child_name("library")
+
+    def on_game_clicked(self, gesture, n_press, x, y, game_data):
+        print(f"Launching dashboard for: {game_data['name']}")
+        
+        # Instantiate and launch the full-screen dashboard
+        self.dashboard = GameDashboard(
+            game_name=game_data['name'], 
+            game_path=game_data['path'],
+            application=self
+        )
+        self.dashboard.launch()
+        
+        # Close the launcher window
+        if self.win:
+            self.win.close()
 
     def get_placeholder(self):
         b = Gtk.Box(orientation=1, valign=Gtk.Align.CENTER)
@@ -254,5 +278,5 @@ class nommlauncher(Adw.Application):
         return None
 
 if __name__ == "__main__":
-    app = nommlauncher()
+    app = SteamScannerApp()
     app.run(None)
