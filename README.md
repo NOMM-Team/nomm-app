@@ -35,13 +35,15 @@ Phase 2 Development Progress:
 - [ ] Think about how to let user define load orders
 - [ ] Let user define loaders
 - [ ] Add support for GOG libraries / games
-- [ ] 
+- [ ] ???
 
 Phase 3 Development Progress:
 - [ ] Manage conflicts (for sure this will be hard without an actual developer)
+- [ ] ???
 
 Bonus (nice to have)
 - [ ] Game profiles?
+- [ ] ???
 
 ## "Building" / Executing
 
