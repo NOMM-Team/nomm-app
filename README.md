@@ -33,6 +33,7 @@ Phase 1 Development Progress:
 - [ ] Figure out how to create a flatpak for the app
 
 Phase 2 Development Progress:
+- [ ] Add language-specific strings
 - [ ] Think about how to let user define load orders
 - [ ] Let user define load orders
 - [ ] Add support for GOG libraries / games
