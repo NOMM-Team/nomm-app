@@ -30,7 +30,6 @@ CSS = """
     opacity: 1;
 }
 
-/* Solid Refresh Button with Highlight Effect */
 .refresh-fab {
     box-shadow: 0 6px 16px rgba(0,0,0,0.5);
     background-color: @accent_bg_color;
@@ -48,6 +47,46 @@ CSS = """
 .refresh-fab image {
     -gtk-icon-size: 32px;
 }
+
+/* Dashboard Tab Styling */
+togglebutton {
+    font-size: 1.2rem;
+    font-weight: bold;
+    border-radius: 0;
+}
+
+.overlay-tab {
+    /* 1. Remove Rounded Corners */
+    border-radius: 0;
+    border: none;
+    
+    /* 2. Bigger Font */
+    font-size: 1.8rem;
+    font-weight: 800;
+    letter-spacing: 2px;
+
+    /* 3. Darker Unselected State */
+    background-color: rgba(0, 0, 0, 0.85); 
+    color: rgba(255, 255, 255, 0.6);
+    
+    transition: all 0.3s ease;
+}
+
+.overlay-tab:hover {
+    background-color: rgba(0, 0, 0, 0.7);
+    color: white;
+}
+
+/* 4. Selected (Checked) Tab State */
+.overlay-tab:checked {
+    /* Clearer background so the banner image is visible */
+    background-color: rgba(0, 0, 0, 0.1); 
+    color: white;
+    /* Bottom accent line to show focus */
+    border-bottom: 6px solid @accent_bg_color;
+    text-shadow: 0 2px 10px rgba(0,0,0,0.5);
+}
+
 """
 
 def slugify(text):
@@ -127,7 +166,6 @@ class SteamScannerApp(Adw.Application):
         status_page.set_child(btn)
         self.stack.add_named(status_page, "setup")
         self.stack.set_visible_child_name("setup")
-        
         GLib.timeout_add(100, lambda: status_page.add_css_class("visible"))
 
     def on_select_folder_clicked(self, btn):
@@ -143,35 +181,26 @@ class SteamScannerApp(Adw.Application):
                 with open(self.user_config_path, 'w') as f:
                     yaml.dump(config_data, f, default_flow_style=False)
                 self.show_loading_and_scan()
-        except GLib.Error as e:
-            print(f"Selection cancelled: {e.message}")
+        except Exception: pass
 
     def show_loading_and_scan(self):
         self.remove_stack_child("loading")
         box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=30, valign=Gtk.Align.CENTER)
-        
         spinner = Gtk.Spinner()
         spinner.set_size_request(128, 128)
-        spinner.set_margin_bottom(10)
         spinner.start()
-        
         label = Gtk.Label(label="NOMM: Mapping Libraries...")
         label.add_css_class("title-1")
-        
         box.append(spinner)
         box.append(label)
-        
         self.status_label = label
         self.stack.add_named(box, "loading")
         self.stack.set_visible_child_name("loading")
-        
         threading.Thread(target=self.run_background_workflow, daemon=True).start()
 
     def run_background_workflow(self):
         config_dir = "./game_configs/"
         found_libs = set()
-        current_config = {}
-
         try:
             with open(self.user_config_path, 'r') as f:
                 current_config = yaml.safe_load(f) or {}
@@ -179,7 +208,6 @@ class SteamScannerApp(Adw.Application):
         except: pass
 
         if not found_libs:
-            GLib.idle_add(self.status_label.set_label, "NOMM: Scanning Disks...")
             potential_mounts = {"/", os.path.expanduser("~")}
             try:
                 with open('/proc/mounts', 'r') as f:
@@ -199,20 +227,16 @@ class SteamScannerApp(Adw.Application):
                         break
 
             current_config["library_paths"] = sorted(list(found_libs))
-            try:
-                with open(self.user_config_path, 'w') as f:
-                    yaml.dump(current_config, f, default_flow_style=False)
-            except: pass
+            with open(self.user_config_path, 'w') as f:
+                yaml.dump(current_config, f)
 
         self.matches = []
         if os.path.exists(config_dir):
             for filename in os.listdir(config_dir):
                 if filename.lower().endswith((".yaml", ".yml")):
-                    fpath = os.path.join(config_dir, filename)
                     try:
-                        with open(fpath, 'r') as f:
+                        with open(os.path.join(config_dir, filename), 'r') as f:
                             data = yaml.safe_load(f)
-                        
                         y_name, app_id = data.get("name"), data.get("steamappid")
                         if not y_name: continue
                         
@@ -222,14 +246,11 @@ class SteamScannerApp(Adw.Application):
                             for folder in os.listdir(lib):
                                 if slugify(folder) == slug:
                                     inst_path = os.path.join(lib, folder)
-                                    data['user_path'] = inst_path
-                                    with open(fpath, 'w') as f:
-                                        yaml.dump(data, f, default_flow_style=False)
-                                    
                                     self.matches.append({
                                         "name": y_name,
                                         "img": self.find_steam_art(app_id),
-                                        "path": inst_path
+                                        "path": inst_path,
+                                        "app_id": app_id
                                     })
                                     break
                     except: pass
@@ -262,7 +283,7 @@ class SteamScannerApp(Adw.Application):
             if g['img'] and os.path.exists(g['img']):
                 try:
                     tex = Gdk.Texture.new_from_file(Gio.File.new_for_path(g['img']))
-                    img = Gtk.Picture(paintable=tex, can_shrink=False, content_fit=Gtk.ContentFit.COVER)
+                    img = Gtk.Picture(paintable=tex, content_fit=Gtk.ContentFit.COVER)
                 except: pass
 
             frame.set_child(img if img else self.get_placeholder())
@@ -271,20 +292,16 @@ class SteamScannerApp(Adw.Application):
         scroll.set_child(flow)
         overlay.set_child(scroll)
 
-        refresh_btn = Gtk.Button()
-        refresh_btn.set_icon_name("view-refresh-symbolic")
+        refresh_btn = Gtk.Button(icon_name="view-refresh-symbolic")
         refresh_btn.add_css_class("circular")
         refresh_btn.add_css_class("accent")      
         refresh_btn.add_css_class("refresh-fab")
         refresh_btn.set_cursor_from_name("pointer")
-        
         refresh_btn.set_size_request(64, 64)
         refresh_btn.set_valign(Gtk.Align.START)
         refresh_btn.set_halign(Gtk.Align.END)
         refresh_btn.set_margin_top(30)
         refresh_btn.set_margin_end(30)
-        
-        refresh_btn.set_tooltip_text("Rescan Libraries")
         refresh_btn.connect("clicked", self.on_refresh_clicked)
         
         overlay.add_overlay(refresh_btn)
@@ -306,7 +323,9 @@ class SteamScannerApp(Adw.Application):
         self.dashboard = GameDashboard(
             game_name=game_data['name'], 
             game_path=game_data['path'],
-            application=self
+            application=self,
+            steam_base=self.steam_base,
+            app_id=game_data.get('app_id')
         )
         self.dashboard.launch()
         if self.win:
