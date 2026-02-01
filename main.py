@@ -30,7 +30,8 @@ def slugify(text):
 
 class SteamScannerApp(Adw.Application):
     def __init__(self, **kwargs):
-        super().__init__(application_id='com.fedora.steam_scanner', **kwargs)
+        # Application ID can remain the same or change, but title is updated
+        super().__init__(application_id='com.fedora.nomm', **kwargs)
         self.matches = []
         self.steam_base = self.get_steam_base_dir()
 
@@ -46,7 +47,6 @@ class SteamScannerApp(Adw.Application):
 
     def sync_configs(self):
         """Copies files from ./default_game_configs to ./game_configs on startup."""
-        # CHANGED: Source is now relative to the script execution folder
         src = "./default_game_configs"
         dest = "./game_configs"
         
@@ -61,14 +61,10 @@ class SteamScannerApp(Adw.Application):
             if filename.lower().endswith((".yaml", ".yml")):
                 src_file = os.path.join(src, filename)
                 dest_file = os.path.join(dest, filename)
-                
                 try:
-                    # copy2 preserves timestamps and permissions
                     shutil.copy2(src_file, dest_file)
                 except Exception as e:
                     print(f"Failed to copy {filename}: {e}")
-        
-        print("Configuration sync complete.")
 
     def find_steam_art(self, app_id):
         if not self.steam_base or not app_id: return None
@@ -98,7 +94,8 @@ class SteamScannerApp(Adw.Application):
         style_manager.set_color_scheme(Adw.ColorScheme.PREFER_DARK)
 
         self.win = Adw.ApplicationWindow(application=self)
-        self.win.set_title("Steam Library Manager")
+        # UPDATED: Application Window Title
+        self.win.set_title("NOMM")
         self.win.set_default_size(1400, 900)
 
         self.main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
@@ -110,7 +107,7 @@ class SteamScannerApp(Adw.Application):
         
         self.spinner = Adw.Spinner()
         self.spinner.set_size_request(80, 80)
-        self.status_label = Gtk.Label(label="Initializing Library...")
+        self.status_label = Gtk.Label(label="NOMM: Initializing Library...")
         self.status_label.add_css_class("title-1")
         
         self.status_container.append(self.spinner)
@@ -134,7 +131,7 @@ class SteamScannerApp(Adw.Application):
             except: pass
 
         if not found_libs:
-            GLib.idle_add(self.status_label.set_label, "Scanning drives for Steam libraries...")
+            GLib.idle_add(self.status_label.set_label, "NOMM: Scanning drives...")
             potential_mounts = {"/", os.path.expanduser("~")}
             try:
                 with open('/proc/mounts', 'r') as f:
