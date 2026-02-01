@@ -2,3 +2,4 @@
 user_config.yaml
 # configs that contain user-specific information
 game_configs/
+__pycache__/
