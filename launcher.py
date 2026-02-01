@@ -9,26 +9,44 @@ gi.require_version('Gtk', '4.0')
 gi.require_version('Adw', '1')
 
 from gi.repository import Gtk, Adw, GLib, Gdk, Gio
-from dashboard import GameDashboard  # Ensure dashboard.py exists in the same folder
+from dashboard import GameDashboard 
 
 CSS = """
 .game-card {
     border-radius: 12px;
-    transition: all 300ms cubic-bezier(0.25, 1, 0.5, 1);
     box-shadow: 0 4px 10px rgba(0,0,0,0.3);
-    cursor: pointer;
 }
+
 .game-card:hover {
-    transform: scale(1.04);
     filter: brightness(1.1) contrast(1.05);
     box-shadow: 0 0 15px rgba(255, 255, 255, 0.1), 0 12px 30px rgba(0,0,0,0.6);
 }
+
 .setup-page {
     opacity: 0;
-    transition: opacity 800ms ease-in;
 }
+
 .setup-page.visible {
     opacity: 1;
+}
+
+/* Solid Refresh Button with Highlight Effect */
+.refresh-fab {
+    box-shadow: 0 6px 16px rgba(0,0,0,0.5);
+    background-color: @accent_bg_color;
+    color: @accent_fg_color;
+    border: none;
+    border-radius: 99px;
+    opacity: 1;
+}
+
+.refresh-fab:hover {
+    filter: brightness(1.2);
+    box-shadow: 0 0 20px @accent_bg_color;
+}
+
+.refresh-fab image {
+    -gtk-icon-size: 32px;
 }
 """
 
@@ -61,13 +79,16 @@ class SteamScannerApp(Adw.Application):
             if filename.lower().endswith((".yaml", ".yml")):
                 try:
                     shutil.copy2(os.path.join(src, filename), os.path.join(dest, filename))
-                except:
-                    pass
+                except: pass
 
     def do_activate(self):
         self.sync_configs()
         self.apply_styles()
         
+        if self.win:
+            self.win.present()
+            return
+
         self.win = Adw.ApplicationWindow(application=self)
         self.win.set_title("NOMM")
         self.win.set_default_size(1400, 900)
@@ -83,7 +104,13 @@ class SteamScannerApp(Adw.Application):
 
         self.win.present()
 
+    def remove_stack_child(self, name):
+        child = self.stack.get_child_by_name(name)
+        if child:
+            self.stack.remove(child)
+
     def show_setup_screen(self):
+        self.remove_stack_child("setup")
         status_page = Adw.StatusPage(
             title="Welcome to NOMM",
             description="Please select the folder where mod downloads will be stored.",
@@ -120,6 +147,7 @@ class SteamScannerApp(Adw.Application):
             print(f"Selection cancelled: {e.message}")
 
     def show_loading_and_scan(self):
+        self.remove_stack_child("loading")
         box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=30, valign=Gtk.Align.CENTER)
         
         spinner = Gtk.Spinner()
@@ -209,9 +237,11 @@ class SteamScannerApp(Adw.Application):
         GLib.idle_add(self.show_library_ui)
 
     def show_library_ui(self):
+        self.remove_stack_child("library")
         view = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
         view.append(Adw.HeaderBar())
 
+        overlay = Gtk.Overlay()
         scroll = Gtk.ScrolledWindow(vexpand=True)
         flow = Gtk.FlowBox(valign=Gtk.Align.START, selection_mode=0,
                            margin_top=40, margin_bottom=40, margin_start=40, margin_end=40,
@@ -221,9 +251,9 @@ class SteamScannerApp(Adw.Application):
             frame = Gtk.AspectFrame.new(0.5, 0.5, 0.666, False)
             frame.set_size_request(300, 450)
             frame.add_css_class("game-card")
+            frame.set_cursor_from_name("pointer")
             frame.set_tooltip_text(f"{g['name']}\n{g['path']}")
 
-            # CLICK GESTURE: Handle tile selection
             gesture = Gtk.GestureClick()
             gesture.connect("released", self.on_game_clicked, g)
             frame.add_controller(gesture)
@@ -239,24 +269,49 @@ class SteamScannerApp(Adw.Application):
             flow.append(frame)
 
         scroll.set_child(flow)
-        view.append(scroll)
+        overlay.set_child(scroll)
+
+        refresh_btn = Gtk.Button()
+        refresh_btn.set_icon_name("view-refresh-symbolic")
+        refresh_btn.add_css_class("circular")
+        refresh_btn.add_css_class("accent")      
+        refresh_btn.add_css_class("refresh-fab")
+        refresh_btn.set_cursor_from_name("pointer")
+        
+        refresh_btn.set_size_request(64, 64)
+        refresh_btn.set_valign(Gtk.Align.START)
+        refresh_btn.set_halign(Gtk.Align.END)
+        refresh_btn.set_margin_top(30)
+        refresh_btn.set_margin_end(30)
+        
+        refresh_btn.set_tooltip_text("Rescan Libraries")
+        refresh_btn.connect("clicked", self.on_refresh_clicked)
+        
+        overlay.add_overlay(refresh_btn)
+        view.append(overlay)
         self.stack.add_named(view, "library")
         self.stack.set_visible_child_name("library")
 
+    def on_refresh_clicked(self, btn):
+        try:
+            with open(self.user_config_path, 'r') as f:
+                config = yaml.safe_load(f)
+            config["library_paths"] = [] 
+            with open(self.user_config_path, 'w') as f:
+                yaml.dump(config, f)
+        except: pass
+        self.show_loading_and_scan()
+
     def on_game_clicked(self, gesture, n_press, x, y, game_data):
-        print(f"Launching dashboard for: {game_data['name']}")
-        
-        # Instantiate and launch the full-screen dashboard
         self.dashboard = GameDashboard(
             game_name=game_data['name'], 
             game_path=game_data['path'],
             application=self
         )
         self.dashboard.launch()
-        
-        # Close the launcher window
         if self.win:
             self.win.close()
+            self.win = None 
 
     def get_placeholder(self):
         b = Gtk.Box(orientation=1, valign=Gtk.Align.CENTER)
