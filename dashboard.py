@@ -2,6 +2,7 @@ import os
 import gi
 import yaml
 import shutil
+import webbrowser  # Added for Steam URI handling
 from PIL import Image
 
 gi.require_version('Gtk', '4.0')
@@ -14,6 +15,7 @@ class GameDashboard(Adw.Window):
         self.app = application
         self.game_name = game_name
         self.game_path = game_path
+        self.app_id = app_id
         
         # 1. Load Game Specific Config
         self.game_config = self.load_game_config()
@@ -132,7 +134,7 @@ class GameDashboard(Adw.Window):
         if os.path.exists(appid_dir):
             for root, _, files in os.walk(appid_dir):
                 for f in files:
-                    if f.lower().endswith(".jpg") and "library_hero" in f.lower():
+                    if f == "library_hero.jpg":
                         return os.path.join(root, f)
         return None
 
@@ -234,6 +236,11 @@ class GameDashboard(Adw.Window):
         self.close()
 
     def on_launch_clicked(self, btn):
-        print(f"Launching: {self.game_path}")
+        if self.app_id:
+            steam_url = f"steam://launch/{self.app_id}"
+            print(f"Executing: {steam_url}")
+            webbrowser.open(steam_url)
+        else:
+            print("Error: App ID not found for this game.")
 
     def launch(self): self.present()
