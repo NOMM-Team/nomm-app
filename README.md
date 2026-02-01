@@ -33,7 +33,7 @@ Phase 1 Development Progress:
 
 Phase 2 Development Progress:
 - [ ] Think about how to let user define load orders
-- [ ] Let user define loaders
+- [ ] Let user define load orders
 - [ ] Add support for GOG libraries / games
 - [ ] ???
 
