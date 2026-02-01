@@ -2,6 +2,7 @@ import os
 import yaml
 import threading
 import re
+import shutil
 import gi
 
 gi.require_version('Gtk', '4.0')
@@ -43,6 +44,32 @@ class SteamScannerApp(Adw.Application):
             if os.path.exists(p): return p
         return None
 
+    def sync_configs(self):
+        """Copies files from ./default_game_configs to ./game_configs on startup."""
+        # CHANGED: Source is now relative to the script execution folder
+        src = "./default_game_configs"
+        dest = "./game_configs"
+        
+        if not os.path.exists(src):
+            print(f"Local source {src} not found. Skipping sync.")
+            return
+
+        if not os.path.exists(dest):
+            os.makedirs(dest)
+
+        for filename in os.listdir(src):
+            if filename.lower().endswith((".yaml", ".yml")):
+                src_file = os.path.join(src, filename)
+                dest_file = os.path.join(dest, filename)
+                
+                try:
+                    # copy2 preserves timestamps and permissions
+                    shutil.copy2(src_file, dest_file)
+                except Exception as e:
+                    print(f"Failed to copy {filename}: {e}")
+        
+        print("Configuration sync complete.")
+
     def find_steam_art(self, app_id):
         if not self.steam_base or not app_id: return None
         app_cache_root = os.path.join(self.steam_base, "appcache/librarycache", str(app_id))
@@ -65,6 +92,7 @@ class SteamScannerApp(Adw.Application):
         )
 
     def do_activate(self):
+        self.sync_configs()
         self.apply_styles()
         style_manager = Adw.StyleManager.get_default()
         style_manager.set_color_scheme(Adw.ColorScheme.PREFER_DARK)
@@ -97,11 +125,6 @@ class SteamScannerApp(Adw.Application):
         user_config_path = "./user_config.yaml"
         found_libs = set()
 
-        if not os.path.exists(config_dir):
-            GLib.idle_add(self.status_label.set_label, "Error: 'game_configs' missing")
-            return
-
-        # 1. Check for cached paths
         if os.path.exists(user_config_path):
             try:
                 with open(user_config_path, 'r') as ucf:
@@ -110,7 +133,6 @@ class SteamScannerApp(Adw.Application):
                         found_libs = set(cache["library_paths"])
             except: pass
 
-        # 2. Deep scan if no cache found
         if not found_libs:
             GLib.idle_add(self.status_label.set_label, "Scanning drives for Steam libraries...")
             potential_mounts = {"/", os.path.expanduser("~")}
@@ -133,44 +155,41 @@ class SteamScannerApp(Adw.Application):
                         del dirs[:] 
                         break
 
-            # Save drive cache
             try:
                 config_data = {"library_paths": sorted(list(found_libs))}
                 with open(user_config_path, 'w') as ucf:
                     yaml.dump(config_data, ucf, default_flow_style=False)
             except: pass
 
-        # 3. Matching and Updating individual YAMLs
         self.matches = []
-        for filename in os.listdir(config_dir):
-            if filename.lower().endswith((".yaml", ".yml")):
-                file_path = os.path.join(config_dir, filename)
-                try:
-                    with open(file_path, 'r') as f:
-                        data = yaml.safe_load(f)
-                        y_name, app_id = data.get("name"), data.get("steamappid")
-                        if not y_name: continue
-                        
-                        y_slug = slugify(y_name)
-                        for lib in found_libs:
-                            if not os.path.exists(lib): continue
-                            for folder in os.listdir(lib):
-                                if slugify(folder) == y_slug:
-                                    full_path = os.path.join(lib, folder)
-                                    
-                                    # Update the YAML file with user_path
-                                    data['user_path'] = full_path
-                                    with open(file_path, 'w') as wf:
-                                        yaml.dump(data, wf, default_flow_style=False)
-                                    
-                                    self.matches.append({
-                                        "display_name": y_name,
-                                        "image": self.find_steam_art(app_id),
-                                        "path": full_path
-                                    })
-                                    break
-                except Exception as e:
-                    print(f"Error processing {filename}: {e}")
+        if os.path.exists(config_dir):
+            for filename in os.listdir(config_dir):
+                if filename.lower().endswith((".yaml", ".yml")):
+                    file_path = os.path.join(config_dir, filename)
+                    try:
+                        with open(file_path, 'r') as f:
+                            data = yaml.safe_load(f)
+                            y_name, app_id = data.get("name"), data.get("steamappid")
+                            if not y_name: continue
+                            
+                            y_slug = slugify(y_name)
+                            for lib in found_libs:
+                                if not os.path.exists(lib): continue
+                                for folder in os.listdir(lib):
+                                    if slugify(folder) == y_slug:
+                                        full_path = os.path.join(lib, folder)
+                                        data['user_path'] = full_path
+                                        with open(file_path, 'w') as wf:
+                                            yaml.dump(data, wf, default_flow_style=False)
+                                        
+                                        self.matches.append({
+                                            "display_name": y_name,
+                                            "image": self.find_steam_art(app_id),
+                                            "path": full_path
+                                        })
+                                        break
+                    except Exception as e:
+                        print(f"Error processing {filename}: {e}")
 
         GLib.idle_add(self.show_library_ui)
 
