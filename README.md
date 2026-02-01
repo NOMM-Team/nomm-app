@@ -14,6 +14,15 @@ Just a few clicks, a clean, modern interface, and you're done :)
 > 
 > _However_, I would never have been able to make something like this without it.
 
+### My Guiding Principles
+
+- No Ads
+- No Telemetry
+- No User Account Requirement
+- Clean & Modern UI/UX
+- Beginner-friendly
+- Fully open
+
 ## "Roadmap"
 
 Phase 1 Development Progress:
