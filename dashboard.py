@@ -21,6 +21,8 @@ class GameDashboard(Adw.Window):
         self.app_id = app_id
         self.current_filter = "all"
         
+        self.setup_custom_styles()
+
         self.game_config = self.load_game_config()
         self.downloads_path = self.game_config.get("downloads_path")
         
@@ -103,6 +105,28 @@ class GameDashboard(Adw.Window):
 
         main_layout.append(footer)
         self.set_content(main_layout)
+
+    def setup_custom_styles(self):
+        css = """
+        switch.green-switch:checked > slider {
+            background-color: white;
+        }
+        switch.green-switch:checked {
+            background-color: #26a269;
+            border-color: #1a774b;
+        }
+        switch.green-switch {
+            transition: all 200ms ease-in-out;
+            scale: 0.8; /* Makes the switch smaller */
+        }
+        """
+        provider = Gtk.CssProvider()
+        provider.load_from_data(css.encode())
+        Gtk.StyleContext.add_provider_for_display(
+            Gdk.Display.get_default(), 
+            provider, 
+            Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION
+        )
 
     def setup_folder_monitor(self):
         """Monitors the downloads folder for any file changes."""
@@ -403,11 +427,109 @@ class GameDashboard(Adw.Window):
         return {}
 
     def create_mods_page(self):
-        box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=20, valign=Gtk.Align.CENTER)
-        lbl = Gtk.Label(label="Installed Mods")
-        lbl.add_css_class("title-1")
-        box.append(lbl)
-        self.view_stack.add_named(box, "mods")
+        """Displays mods with small green toggles. Hides folder icon if empty."""
+        if self.view_stack.get_child_by_name("mods"):
+            self.view_stack.remove(self.view_stack.get_child_by_name("mods"))
+
+        container = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10, margin_start=100, margin_end=100, margin_top=40)
+        
+        # --- TOP BAR ---
+        action_bar = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
+        spacer = Gtk.Box(hexpand=True)
+        action_bar.append(spacer)
+
+        target_dir = self.get_target_path()
+        # Only get items if the directory actually exists
+        items = os.listdir(target_dir) if target_dir.exists() else []
+
+        # --- CONDITIONAL FOLDER ICON ---
+        if items:
+            open_target_btn = Gtk.Button(icon_name="folder-open-symbolic")
+            open_target_btn.add_css_class("flat")
+            open_target_btn.set_tooltip_text("Open Game's Nomm Folder")
+            open_target_btn.connect("clicked", lambda x: os.system(f'xdg-open "{target_dir}"'))
+            action_bar.append(open_target_btn)
+        
+        container.append(action_bar)
+
+        # --- LIST AREA ---
+        scrolled = Gtk.ScrolledWindow(vexpand=True)
+        self.mods_list_box = Gtk.ListBox()
+        self.mods_list_box.set_selection_mode(Gtk.SelectionMode.NONE)
+        self.mods_list_box.add_css_class("boxed-list")
+
+        if items:
+            # Sort by modification time (newest first)
+            items.sort(key=lambda x: os.path.getmtime(target_dir / x), reverse=True)
+
+            for item in items:
+                item_path = target_dir / item
+                row = Adw.ActionRow(title=item)
+                
+                # Small Green Toggle
+                enable_switch = Gtk.Switch()
+                enable_switch.set_active(True)
+                enable_switch.set_valign(Gtk.Align.CENTER)
+                enable_switch.add_css_class("green-switch")
+                enable_switch.set_margin_end(8)
+                row.add_prefix(enable_switch)
+
+                # Timestamp
+                mtime = os.path.getmtime(item_path)
+                timestamp = datetime.fromtimestamp(mtime).strftime('%Y-%m-%d %H:%M')
+                time_lbl = Gtk.Label(label=f"Installed: {timestamp}")
+                time_lbl.add_css_class("dim-label")
+                time_lbl.set_margin_end(20)
+                row.add_suffix(time_lbl)
+
+                # Uninstall Stack
+                uninstall_stack = Gtk.Stack(transition_type=Gtk.StackTransitionType.CROSSFADE, hhomogeneous=False, interpolate_size=True)
+                bin_btn = Gtk.Button(icon_name="user-trash-symbolic", valign=Gtk.Align.CENTER)
+                bin_btn.add_css_class("flat")
+                
+                confirm_btn = Gtk.Button(label="Confirm Uninstall?")
+                confirm_btn.add_css_class("destructive-action")
+                confirm_btn.set_valign(Gtk.Align.CENTER)
+                confirm_btn.connect("clicked", self.on_uninstall_item, item)
+
+                bin_btn.connect("clicked", lambda b, us=uninstall_stack: [
+                    us.set_visible_child_name("confirm"),
+                    GLib.timeout_add_seconds(3, lambda: us.set_visible_child_name("bin") or False)
+                ])
+
+                uninstall_stack.add_named(bin_btn, "bin")
+                uninstall_stack.add_named(confirm_btn, "confirm")
+                row.add_suffix(uninstall_stack)
+
+                self.mods_list_box.append(row)
+        else:
+            # Empty state
+            empty_lbl = Gtk.Label(label="No mods currently installed.")
+            empty_lbl.add_css_class("dim-label")
+            empty_lbl.set_margin_top(40)
+            # Use a CenterBox or similar to keep the empty message neat
+            empty_box = Gtk.CenterBox()
+            empty_box.set_center_widget(empty_lbl)
+            container.append(empty_box)
+
+        scrolled.set_child(self.mods_list_box)
+        container.append(scrolled)
+        self.view_stack.add_named(container, "mods")
+
+    def on_uninstall_item(self, btn, item_name):
+        """Deletes the specific file or folder from the game directory."""
+        target_path = self.get_target_path() / item_name
+        try:
+            if target_path.is_dir():
+                shutil.rmtree(target_path)
+            else:
+                target_path.unlink()
+            
+            # Refresh both pages because uninstallation changes the 'is_installed' status in Downloads
+            self.create_mods_page()
+            self.create_downloads_page()
+        except Exception as e:
+            self.show_message("Error", f"Could not uninstall {item_name}: {str(e)}")
 
     def on_tab_changed(self, btn, name):
         if btn.get_active(): self.view_stack.set_visible_child_name(name)
