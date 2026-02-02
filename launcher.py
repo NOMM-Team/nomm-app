@@ -234,9 +234,11 @@ class SteamScannerApp(Adw.Application):
         if os.path.exists(config_dir):
             for filename in os.listdir(config_dir):
                 if filename.lower().endswith((".yaml", ".yml")):
+                    conf_path = os.path.join(config_dir, filename)
                     try:
-                        with open(os.path.join(config_dir, filename), 'r') as f:
-                            data = yaml.safe_load(f)
+                        with open(conf_path, 'r') as f:
+                            data = yaml.safe_load(f) or {}
+                        
                         y_name, app_id = data.get("name"), data.get("steamappid")
                         if not y_name: continue
                         
@@ -246,6 +248,15 @@ class SteamScannerApp(Adw.Application):
                             for folder in os.listdir(lib):
                                 if slugify(folder) == slug:
                                     inst_path = os.path.join(lib, folder)
+                                    
+                                    # --- AUTO-REGISTER PATH DURING SCAN ---
+                                    # Update the data dictionary with the discovered path
+                                    data["game_path"] = inst_path
+                                    
+                                    # Save the updated config back to the YAML file
+                                    with open(conf_path, 'w') as f_out:
+                                        yaml.dump(data, f_out, default_flow_style=False)
+                                    
                                     self.matches.append({
                                         "name": y_name,
                                         "img": self.find_steam_art(app_id),
@@ -253,7 +264,8 @@ class SteamScannerApp(Adw.Application):
                                         "app_id": app_id
                                     })
                                     break
-                    except: pass
+                    except Exception as e:
+                        print(f"Error processing {filename} during scan: {e}")
 
         GLib.idle_add(self.show_library_ui)
 
