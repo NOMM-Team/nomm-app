@@ -1,2 +1,13 @@
 name: 'Warhammer 40,000: Darktide'
 steamappid: 1361210
+mods_path: /mods/
+
+essential-utilities:
+  darktide-mod-loader:
+    name: Darktide Mod Loader
+    creator: Talon-d
+    creator-link: https://github.com/talon-d
+    source: https://github.com/talon-d/darktideML-4linux/releases/download/latest
+    utility_path: /
+    enable_command: "sh handle_darktide_mods.sh --enable"
+    disable_command: "sh handle_darktide_mods.sh --disable"
