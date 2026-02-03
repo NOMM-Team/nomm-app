@@ -4,6 +4,7 @@ import yaml
 import shutil
 import zipfile
 import webbrowser
+import re
 from pathlib import Path
 from datetime import datetime
 from PIL import Image
@@ -23,6 +24,7 @@ class GameDashboard(Adw.Window):
         
         self.setup_custom_styles()
 
+        # Load config before anything else
         self.game_config = self.load_game_config()
         self.downloads_path = self.game_config.get("downloads_path")
         
@@ -78,6 +80,24 @@ class GameDashboard(Adw.Window):
         self.dl_tab_btn.set_group(self.mods_tab_btn)
         self.mods_tab_btn.set_active(True)
         banner_overlay.add_overlay(tab_container)
+
+        # --- INDICATORS (Bottom Right) ---
+        indicator_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
+        indicator_box.set_halign(Gtk.Align.END)
+        indicator_box.set_valign(Gtk.Align.END)
+        indicator_box.set_margin_bottom(12)
+        indicator_box.set_margin_end(20)
+
+        self.available_label = Gtk.Label(label="0")
+        self.available_label.add_css_class("badge-green")
+        
+        self.installed_label = Gtk.Label(label="0")
+        self.installed_label.add_css_class("badge-grey")
+
+        indicator_box.append(self.available_label)
+        indicator_box.append(self.installed_label)
+        banner_overlay.add_overlay(indicator_box)
+
         main_layout.append(banner_overlay)
 
         self.view_stack = Gtk.Stack(transition_type=Gtk.StackTransitionType.SLIDE_LEFT_RIGHT, transition_duration=400, vexpand=True)
@@ -85,6 +105,8 @@ class GameDashboard(Adw.Window):
         self.dl_tab_btn.connect("toggled", self.on_tab_changed, "downloads")
 
         main_layout.append(self.view_stack)
+        
+        # Initial draw
         self.create_mods_page()
         self.create_downloads_page()
 
@@ -105,10 +127,21 @@ class GameDashboard(Adw.Window):
         main_layout.append(footer)
         self.set_content(main_layout)
 
-    # --- PATH HELPERS ---
+    # --- CONFIG & PATHS ---
+
+    def load_game_config(self):
+        config_dir = "./game_configs/"
+        def slug(text): return re.sub(r'[^a-z0-9]', '', text.lower())
+        target = slug(self.game_name)
+        if os.path.exists(config_dir):
+            for filename in os.listdir(config_dir):
+                if filename.lower().endswith((".yaml", ".yml")):
+                    with open(os.path.join(config_dir, filename), 'r') as f:
+                        data = yaml.safe_load(f) or {}
+                        if slug(data.get("name", "")) == target: return data
+        return {}
 
     def get_staging_path(self):
-        """The 'nomm' staging folder (Source for symlinks)."""
         game_path_obj = Path(self.game_path).resolve()
         system_prefixes = ['/usr', '/var', '/etc', '/bin', '/lib', '/opt']
         is_system_drive = any(str(game_path_obj).startswith(pref) for pref in system_prefixes) or str(game_path_obj).startswith(str(Path.home()))
@@ -118,7 +151,7 @@ class GameDashboard(Adw.Window):
         else:
             curr = game_path_obj
             while curr.parent != curr:
-                if os.path.ismount(curr): break # Fixed: os.path.ismount
+                if os.path.ismount(curr): break
                 curr = curr.parent
             nomm_root = curr / "nomm"
         
@@ -127,7 +160,6 @@ class GameDashboard(Adw.Window):
         return path
 
     def get_game_destination_path(self):
-        """The actual folder inside the game directory (Target for symlinks)."""
         game_path = self.game_config.get("game_path")
         mods_subfolder = self.game_config.get("mods_path", "")
         if not game_path: return None
@@ -135,105 +167,68 @@ class GameDashboard(Adw.Window):
         dest.mkdir(parents=True, exist_ok=True)
         return dest
 
-    # --- MODS PAGE (SYMLINKS) ---
-
-    def on_switch_toggled(self, switch, state, item_name):
-        staging_item = self.get_staging_path() / item_name
-        dest_dir = self.get_game_destination_path()
-        
-        if not dest_dir:
-            self.show_message("Error", "Game destination path not found in config.")
-            switch.set_active(False)
-            return False
-
-        link_path = dest_dir / item_name
-
-        if state:
-            if not link_path.exists():
-                try:
-                    os.symlink(staging_item, link_path)
-                except Exception as e:
-                    self.show_message("Error", f"Link failed: {e}")
-                    switch.set_active(False)
-        else:
-            if link_path.is_symlink():
-                try:
-                    link_path.unlink()
-                except Exception as e:
-                    self.show_message("Error", f"Unlink failed: {e}")
-                    switch.set_active(True)
-        return False
+    # --- MODS PAGE ---
 
     def create_mods_page(self):
         if self.view_stack.get_child_by_name("mods"):
             self.view_stack.remove(self.view_stack.get_child_by_name("mods"))
 
         container = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10, margin_start=100, margin_end=100, margin_top=40)
-        
-        action_bar = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
-        spacer = Gtk.Box(hexpand=True)
-        action_bar.append(spacer)
-
         staging_dir = self.get_staging_path()
         dest_dir = self.get_game_destination_path()
         items = os.listdir(staging_dir) if staging_dir.exists() else []
 
-        if items:
-            open_btn = Gtk.Button(icon_name="folder-open-symbolic")
-            open_btn.add_css_class("flat")
-            open_btn.connect("clicked", lambda x: os.system(f'xdg-open "{staging_dir}"'))
-            action_bar.append(open_btn)
-        
-        container.append(action_bar)
-
         scrolled = Gtk.ScrolledWindow(vexpand=True)
         self.mods_list_box = Gtk.ListBox()
-        self.mods_list_box.set_selection_mode(Gtk.SelectionMode.NONE)
         self.mods_list_box.add_css_class("boxed-list")
+        self.mods_list_box.set_selection_mode(Gtk.SelectionMode.NONE)
 
         if items:
             items.sort(key=lambda x: os.path.getmtime(staging_dir / x), reverse=True)
             for item in items:
                 row = Adw.ActionRow(title=item)
-                
                 is_enabled = (dest_dir / item).is_symlink() if dest_dir else False
                 
-                enable_switch = Gtk.Switch(active=is_enabled, valign=Gtk.Align.CENTER)
-                enable_switch.add_css_class("green-switch")
-                enable_switch.set_margin_end(8)
-                enable_switch.connect("state-set", self.on_switch_toggled, item)
-                row.add_prefix(enable_switch)
+                sw = Gtk.Switch(active=is_enabled, valign=Gtk.Align.CENTER)
+                sw.add_css_class("green-switch")
+                sw.connect("state-set", self.on_switch_toggled, item)
+                row.add_prefix(sw)
 
                 mtime = os.path.getmtime(staging_dir / item)
                 ts = datetime.fromtimestamp(mtime).strftime('%Y-%m-%d %H:%M')
-                ts_lbl = Gtk.Label(label=f"Installed: {ts}")
-                ts_lbl.add_css_class("dim-label")
-                ts_lbl.set_margin_end(20)
-                row.add_suffix(ts_lbl)
+                row.add_suffix(Gtk.Label(label=f"Installed: {ts}", margin_end=20))
 
                 stack = Gtk.Stack(transition_type=Gtk.StackTransitionType.CROSSFADE, hhomogeneous=False, interpolate_size=True)
-                bin_btn = Gtk.Button(icon_name="user-trash-symbolic", valign=Gtk.Align.CENTER)
-                bin_btn.add_css_class("flat")
-                conf_btn = Gtk.Button(label="Confirm Uninstall?")
-                conf_btn.add_css_class("destructive-action")
-                conf_btn.set_valign(Gtk.Align.CENTER)
-                conf_btn.connect("clicked", self.on_uninstall_item, item)
+                b_btn = Gtk.Button(icon_name="user-trash-symbolic", valign=Gtk.Align.CENTER)
+                b_btn.add_css_class("flat")
+                c_btn = Gtk.Button(label="Confirm Uninstall?", valign=Gtk.Align.CENTER)
+                c_btn.add_css_class("destructive-action")
+                c_btn.connect("clicked", self.on_uninstall_item, item)
                 
-                bin_btn.connect("clicked", lambda b, s=stack: [s.set_visible_child_name("c"), GLib.timeout_add_seconds(3, lambda: s.set_visible_child_name("b") or False)])
-                stack.add_named(bin_btn, "b")
-                stack.add_named(conf_btn, "c")
+                b_btn.connect("clicked", lambda b, s=stack: [s.set_visible_child_name("c"), GLib.timeout_add_seconds(3, lambda: s.set_visible_child_name("b") or False)])
+                stack.add_named(b_btn, "b"); stack.add_named(c_btn, "c")
                 row.add_suffix(stack)
                 self.mods_list_box.append(row)
-        else:
-            empty_box = Gtk.CenterBox(margin_top=40)
-            lbl = Gtk.Label(label="No mods currently installed.")
-            lbl.add_css_class("dim-label")
-            empty_box.set_center_widget(lbl)
-            container.append(empty_box)
 
         scrolled.set_child(self.mods_list_box)
         container.append(scrolled)
         self.view_stack.add_named(container, "mods")
+
+    def on_switch_toggled(self, switch, state, item_name):
+        staging_item = self.get_staging_path() / item_name
+        dest_dir = self.get_game_destination_path()
+        if not dest_dir: return False
+        link_path = dest_dir / item_name
+
+        if state:
+            if not link_path.exists():
+                try: os.symlink(staging_item, link_path)
+                except: switch.set_active(False)
+        else:
+            if link_path.is_symlink():
+                try: link_path.unlink()
+                except: switch.set_active(True)
+        return False
 
     # --- DOWNLOADS PAGE ---
 
@@ -250,25 +245,20 @@ class GameDashboard(Adw.Window):
         self.all_filter_btn = Gtk.ToggleButton(label="All", active=True)
         self.all_filter_btn.connect("toggled", self.on_filter_toggled, "all")
         filter_group.append(self.all_filter_btn)
-
         for n, l in [("uninstalled", "Uninstalled"), ("installed", "Installed")]:
             b = Gtk.ToggleButton(label=l, group=self.all_filter_btn)
             b.connect("toggled", self.on_filter_toggled, n)
             filter_group.append(b)
-        
-        spacer = Gtk.Box(hexpand=True)
-        open_btn = Gtk.Button(icon_name="folder-open-symbolic")
-        open_btn.add_css_class("flat")
-        open_btn.connect("clicked", lambda x: os.system(f'xdg-open "{self.downloads_path}"'))
-        
-        action_bar.append(filter_group); action_bar.append(spacer); action_bar.append(open_btn)
+        action_bar.append(filter_group)
         container.append(action_bar)
 
         scrolled = Gtk.ScrolledWindow(vexpand=True)
         self.list_box = Gtk.ListBox()
         self.list_box.add_css_class("boxed-list")
-        self.list_box.set_selection_mode(Gtk.SelectionMode.NONE)
         self.list_box.set_filter_func(self.filter_list_rows)
+
+        avail_count = 0
+        inst_count = 0
 
         if self.downloads_path and os.path.exists(self.downloads_path):
             files = [f for f in os.listdir(self.downloads_path) if f.lower().endswith('.zip')]
@@ -276,142 +266,106 @@ class GameDashboard(Adw.Window):
 
             for f in files:
                 installed = self.is_mod_installed(f)
+                if installed: inst_count += 1
+                else: avail_count += 1
+
                 row = Adw.ActionRow(title=f)
                 row.is_installed = installed
                 
-                p_box = Gtk.Box(spacing=6)
-                img = Gtk.Image.new_from_icon_name("package-x-generic-symbolic")
-                p_box.append(img)
-                if installed:
-                    chk = Gtk.Image.new_from_icon_name("emblem-ok-symbolic")
-                    chk.add_css_class("success")
-                    p_box.append(chk)
-                row.add_prefix(p_box)
+                dl_ts = self.get_download_timestamp(f)
+                inst_ts = self.get_install_timestamp_from_zip(f) if installed else "—"
+                row.add_suffix(Gtk.Label(label=f"Downloaded: {dl_ts}", margin_end=20))
+                row.add_suffix(Gtk.Label(label=f"Installed: {inst_ts}", margin_end=20))
                 
-                dl_time = self.get_download_timestamp(f)
-                inst_time = self.get_install_timestamp_from_zip(f) if installed else "—"
-                
-                row.add_suffix(Gtk.Label(label=f"Downloaded: {dl_time}", css_classes=["dim-label"], margin_end=20))
-                row.add_suffix(Gtk.Label(label=f"Installed: {inst_time}", css_classes=["dim-label"], margin_end=20))
-                
+                # Install Stack
                 i_stack = Gtk.Stack(transition_type=Gtk.StackTransitionType.CROSSFADE, hhomogeneous=False, interpolate_size=True)
                 main_i_btn = Gtk.Button(label="Reinstall" if installed else "Install", valign=Gtk.Align.CENTER)
                 if not installed: main_i_btn.add_css_class("suggested-action")
                 conf_i_btn = Gtk.Button(label="Are you sure?", valign=Gtk.Align.CENTER)
                 conf_i_btn.add_css_class("suggested-action")
                 conf_i_btn.connect("clicked", self.on_install_clicked, f)
-
-                def handle_i(btn, s, inst, fname):
-                    if not inst: self.on_install_clicked(None, fname)
-                    else:
-                        s.set_visible_child_name("c")
-                        GLib.timeout_add_seconds(3, lambda: s.set_visible_child_name("m") or False)
-
-                main_i_btn.connect("clicked", handle_i, i_stack, installed, f)
+                main_i_btn.connect("clicked", lambda b, s=i_stack: [s.set_visible_child_name("c"), GLib.timeout_add_seconds(3, lambda: s.set_visible_child_name("m") or False)])
                 i_stack.add_named(main_i_btn, "m"); i_stack.add_named(conf_i_btn, "c")
                 row.add_suffix(i_stack)
 
+                # Delete Stack
                 d_stack = Gtk.Stack(transition_type=Gtk.StackTransitionType.CROSSFADE, hhomogeneous=False, interpolate_size=True)
                 b_btn = Gtk.Button(icon_name="user-trash-symbolic", valign=Gtk.Align.CENTER)
                 b_btn.add_css_class("flat")
                 c_btn = Gtk.Button(label="Are you sure?", valign=Gtk.Align.CENTER)
                 c_btn.add_css_class("destructive-action")
                 c_btn.connect("clicked", self.execute_inline_delete, f)
-                
                 b_btn.connect("clicked", lambda b, s=d_stack: [s.set_visible_child_name("c"), GLib.timeout_add_seconds(3, lambda: s.set_visible_child_name("b") or False)])
                 d_stack.add_named(b_btn, "b"); d_stack.add_named(c_btn, "c")
                 row.add_suffix(d_stack)
 
                 self.list_box.append(row)
-        
+
+        self.available_label.set_text(str(avail_count))
+        self.installed_label.set_text(str(inst_count))
+
         scrolled.set_child(self.list_box)
         container.append(scrolled)
         self.view_stack.add_named(container, "downloads")
 
-    # --- SHARED SYSTEM ---
+    # --- HELPERS ---
 
     def setup_custom_styles(self):
         css = """
-        switch.green-switch:checked > slider { background-color: white; }
-        switch.green-switch:checked { background-color: #26a269; border-color: #1a774b; }
-        switch.green-switch { transition: all 200ms ease-in-out; scale: 0.8; }
+        .badge-green { background-color: #26a269; color: white; border-radius: 6px; padding: 2px 10px; font-weight: bold; }
+        .badge-grey { background-color: #333333; color: white; border-radius: 6px; padding: 2px 10px; font-weight: bold; }
+        switch.green-switch:checked { background-color: #26a269; }
+        label.dim-label { opacity: 0.6; }
         """
         provider = Gtk.CssProvider()
         provider.load_from_data(css.encode())
         Gtk.StyleContext.add_provider_for_display(Gdk.Display.get_default(), provider, 800)
 
-    def setup_folder_monitor(self):
-        f = Gio.File.new_for_path(self.downloads_path)
-        self.monitor = f.monitor_directory(Gio.FileMonitorFlags.NONE, None)
-        self.monitor.connect("changed", self.on_folder_changed)
-
-    def on_folder_changed(self, m, f, of, et):
-        if et in [Gio.FileMonitorEvent.CREATED, Gio.FileMonitorEvent.DELETED, Gio.FileMonitorEvent.MOVED]:
-            self.create_downloads_page()
-
-    def load_game_config(self):
-        config_dir = "./game_configs/"
-        import re
-        def slug(text): return re.sub(r'[^a-z0-9]', '', text.lower())
-        target = slug(self.game_name)
-        if os.path.exists(config_dir):
-            for filename in os.listdir(config_dir):
-                if filename.lower().endswith((".yaml", ".yml")):
-                    with open(os.path.join(config_dir, filename), 'r') as f:
-                        data = yaml.safe_load(f) or {}
-                        if slug(data.get("name", "")) == target: return data
-        return {}
-
-    def get_install_timestamp_from_zip(self, zip_filename):
-        staging_dir = self.get_staging_path()
-        zip_path = os.path.join(self.downloads_path, zip_filename)
-        try:
-            with zipfile.ZipFile(zip_path, 'r') as z:
-                files = [x for x in z.namelist() if not x.endswith('/')]
-                if files:
-                    target_file = staging_dir / files[0]
-                    if target_file.exists():
-                        mtime = target_file.stat().st_mtime
-                        return datetime.fromtimestamp(mtime).strftime('%Y-%m-%d %H:%M')
-        except: pass
-        return "—"
-
     def is_mod_installed(self, zip_filename):
-        staging_dir = self.get_staging_path()
-        zip_path = os.path.join(self.downloads_path, zip_filename)
+        staging = self.get_staging_path()
         try:
-            with zipfile.ZipFile(zip_path, 'r') as z:
-                for f in [x for x in z.namelist() if not x.endswith('/')]:
-                    if not (staging_dir / f).exists(): return False
-            return True
+            with zipfile.ZipFile(os.path.join(self.downloads_path, zip_filename), 'r') as z:
+                return all((staging / x).exists() for x in z.namelist() if not x.endswith('/'))
         except: return False
 
     def on_install_clicked(self, btn, filename):
-        zip_path = os.path.join(self.downloads_path, filename)
-        staging_dir = self.get_staging_path()
         try:
-            with zipfile.ZipFile(zip_path, 'r') as z:
-                z.extractall(staging_dir)
+            with zipfile.ZipFile(os.path.join(self.downloads_path, filename), 'r') as z:
+                z.extractall(self.get_staging_path())
             self.create_downloads_page(); self.create_mods_page()
         except Exception as e: self.show_message("Error", str(e))
 
     def on_uninstall_item(self, btn, item_name):
-        staging_path = self.get_staging_path() / item_name
-        dest_dir = self.get_game_destination_path()
         try:
-            if dest_dir:
-                link_path = dest_dir / item_name
-                if link_path.is_symlink(): link_path.unlink()
-            if staging_path.is_dir(): shutil.rmtree(staging_path)
-            else: staging_path.unlink()
+            dest = self.get_game_destination_path()
+            if dest and (dest / item_name).is_symlink(): (dest / item_name).unlink()
+            path = self.get_staging_path() / item_name
+            if path.is_dir(): shutil.rmtree(path)
+            else: path.unlink()
             self.create_mods_page(); self.create_downloads_page()
         except Exception as e: self.show_message("Error", str(e))
 
     def execute_inline_delete(self, btn, f):
         try:
-            p = os.path.join(self.downloads_path, f)
-            if os.path.exists(p): os.remove(p); self.create_downloads_page()
-        except Exception as e: self.show_message("Error", str(e))
+            os.remove(os.path.join(self.downloads_path, f))
+            self.create_downloads_page()
+        except: pass
+
+    def get_download_timestamp(self, f):
+        return datetime.fromtimestamp(os.path.getmtime(os.path.join(self.downloads_path, f))).strftime('%Y-%m-%d %H:%M')
+
+    def get_install_timestamp_from_zip(self, zip_filename):
+        try:
+            with zipfile.ZipFile(os.path.join(self.downloads_path, zip_filename), 'r') as z:
+                files = [x for x in z.namelist() if not x.endswith('/')]
+                if files: return datetime.fromtimestamp((self.get_staging_path() / files[0]).stat().st_mtime).strftime('%Y-%m-%d %H:%M')
+        except: pass
+        return "—"
+
+    def setup_folder_monitor(self):
+        f = Gio.File.new_for_path(self.downloads_path)
+        self.monitor = f.monitor_directory(Gio.FileMonitorFlags.NONE, None)
+        self.monitor.connect("changed", lambda m, f, of, et: self.create_downloads_page() if et in [Gio.FileMonitorEvent.CREATED, Gio.FileMonitorEvent.DELETED] else None)
 
     def on_filter_toggled(self, btn, f_name):
         if btn.get_active():
@@ -422,22 +376,20 @@ class GameDashboard(Adw.Window):
         if self.current_filter == "all": return True
         return row.is_installed if self.current_filter == "installed" else not row.is_installed
 
-    def get_download_timestamp(self, f):
-        try: return datetime.fromtimestamp(os.path.getmtime(os.path.join(self.downloads_path, f))).strftime('%Y-%m-%d %H:%M')
-        except: return "—"
-
     def find_hero_image(self, steam_base, app_id):
         if not steam_base or not app_id: return None
-        cache = os.path.join(steam_base, "appcache", "librarycache")
+        cache_dir = os.path.join(steam_base, "appcache", "librarycache")
+        if not os.path.exists(cache_dir): return None
+
         targets = [f"{app_id}_library_hero.jpg", "library_hero.jpg"]
         for name in targets:
-            path = os.path.join(cache, name)
+            path = os.path.join(cache_dir, name)
             if os.path.exists(path): return path
-        appid_dir = os.path.join(cache, str(app_id))
+
+        appid_dir = os.path.join(cache_dir, str(app_id))
         if os.path.exists(appid_dir):
             for root, _, files in os.walk(appid_dir):
-                for f in files:
-                    if f == "library_hero.jpg": return os.path.join(root, f)
+                if "library_hero.jpg" in files: return os.path.join(root, "library_hero.jpg")
         return None
 
     def get_dominant_color(self, path):
