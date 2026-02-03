@@ -2,7 +2,7 @@ name: 'Warhammer 40,000: Darktide'
 steamappid: 1361210
 mods_path: mods/
 
-load_order: mods/mod_load_order.txt
+load_order_path: mods/mod_load_order.txt
 
 essential-utilities:
   darktide-mod-loader:
