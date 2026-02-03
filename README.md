@@ -7,8 +7,7 @@ The goal here is to keep the setup really simple for idiots like me who don't ne
 Just a few clicks, a clean, modern interface, and you're done :)
 
 > [!WARNING]
-> A big chunk of this project is made by vibe coding with Gemini.
-> I take no responsibility for any kind of impact this early in development app may have on your system.
+> A big chunk of this project is made with the help of Gemini.
 > 
 > If you hate AI, that makes two of us 🙂
 > 
