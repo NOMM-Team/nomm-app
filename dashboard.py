@@ -395,7 +395,6 @@ class GameDashboard(Adw.Window):
 
         container = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10, margin_start=100, margin_end=100, margin_top=40)
         
-        # Accessing the dictionary from YAML
         utilities_cfg = self.game_config.get("essential-utilities", {})
         
         if not utilities_cfg or not isinstance(utilities_cfg, dict):
@@ -404,11 +403,9 @@ class GameDashboard(Adw.Window):
             list_box = Gtk.ListBox(css_classes=["boxed-list"])
             list_box.set_selection_mode(Gtk.SelectionMode.NONE)
 
-            # Iterating through dictionary (id, data)
             for util_id, util in utilities_cfg.items():
                 row = Adw.ActionRow(title=util.get("name", util_id))
                 
-                # Creator Link (Greyed out)
                 creator = util.get("creator", "Unknown")
                 link = util.get("creator-link", "#")
                 c_btn = Gtk.Button(label=creator, css_classes=["flat", "dim-label"])
@@ -416,26 +413,20 @@ class GameDashboard(Adw.Window):
                 c_btn.connect("clicked", lambda b, l=link: webbrowser.open(l))
                 row.add_prefix(c_btn)
 
-                # Path Logic
                 source = util.get("source", "")
                 filename = source.split("/")[-1] if "/" in source else f"{util_id}.zip"
                 util_dir = Path(self.downloads_path) / "utilities"
                 local_path = util_dir / filename
 
                 stack = Gtk.Stack(transition_type=Gtk.StackTransitionType.CROSSFADE)
-                
-                # Download Button
                 dl_btn = Gtk.Button(label="Download", css_classes=["suggested-action"], valign=Gtk.Align.CENTER)
                 dl_btn.connect("clicked", self.on_utility_download_clicked, util, stack)
                 
-                # Install Button
                 inst_btn = Gtk.Button(label="Install", css_classes=["suggested-action"], valign=Gtk.Align.CENTER)
                 inst_btn.connect("clicked", self.on_utility_install_clicked, util)
                 
                 stack.add_named(dl_btn, "download")
                 stack.add_named(inst_btn, "install")
-                
-                # Show Install if file exists, else Download
                 stack.set_visible_child_name("install" if local_path.exists() else "download")
                 
                 row.add_suffix(stack)
@@ -445,7 +436,33 @@ class GameDashboard(Adw.Window):
             scrolled.set_child(list_box)
             container.append(scrolled)
 
+        # --- Load Order Button ---
+        load_order_path = self.game_config.get("load_order_path")
+        if load_order_path:
+            # Create a wrapper for the button to center it
+            btn_container = Gtk.CenterBox(margin_top=20, margin_bottom=20)
+            
+            load_order_btn = Gtk.Button(label="Edit Load Order", css_classes=["pill"])
+            load_order_btn.set_size_request(200, 40)
+            load_order_btn.connect("clicked", self.on_open_load_order)
+            
+            btn_container.set_center_widget(load_order_btn)
+            container.append(btn_container)
+
         self.view_stack.add_named(container, "tools")
+
+    def on_open_load_order(self, btn):
+        load_order_rel = self.game_config.get("load_order_path")
+        if not load_order_rel:
+            return
+
+        full_path = Path(self.game_path) / load_order_rel
+        
+        if full_path.exists():
+            # file:// protocol usually triggers the default text editor for text files
+            webbrowser.open(f"file://{full_path.resolve()}")
+        else:
+            self.show_message("Error", f"Load order file not found at:\n{full_path}")
 
     def on_utility_download_clicked(self, btn, util, stack):
         source_url = util.get("source")
