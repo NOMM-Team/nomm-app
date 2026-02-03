@@ -406,6 +406,7 @@ class GameDashboard(Adw.Window):
             for util_id, util in utilities_cfg.items():
                 row = Adw.ActionRow(title=util.get("name", util_id))
                 
+                # Creator Link
                 creator = util.get("creator", "Unknown")
                 link = util.get("creator-link", "#")
                 c_btn = Gtk.Button(label=creator, css_classes=["flat", "dim-label"])
@@ -413,21 +414,49 @@ class GameDashboard(Adw.Window):
                 c_btn.connect("clicked", lambda b, l=link: webbrowser.open(l))
                 row.add_prefix(c_btn)
 
+                # Path Logic
                 source = util.get("source", "")
                 filename = source.split("/")[-1] if "/" in source else f"{util_id}.zip"
                 util_dir = Path(self.downloads_path) / "utilities"
-                local_path = util_dir / filename
+                local_zip_path = util_dir / filename
+                target_dir = Path(self.game_path) / util.get("utility_path", "")
+
+                # 1. Check if files are actually installed in the game directory
+                is_installed = False
+                if local_zip_path.exists():
+                    try:
+                        with zipfile.ZipFile(local_zip_path, 'r') as z:
+                            # Verify every file in the zip exists at the destination
+                            is_installed = all(
+                                (target_dir / name).exists() 
+                                for name in z.namelist() 
+                                if not name.endswith('/')
+                            )
+                    except:
+                        is_installed = False
 
                 stack = Gtk.Stack(transition_type=Gtk.StackTransitionType.CROSSFADE)
+                
+                # Download Button (Shown if zip is missing)
                 dl_btn = Gtk.Button(label="Download", css_classes=["suggested-action"], valign=Gtk.Align.CENTER)
                 dl_btn.connect("clicked", self.on_utility_download_clicked, util, stack)
                 
-                inst_btn = Gtk.Button(label="Install", css_classes=["suggested-action"], valign=Gtk.Align.CENTER)
+                # Install/Reinstall Button (Shown if zip exists)
+                # If installed: "Reinstall" (Flat/Grey). If not: "Install" (Colored).
+                inst_btn = Gtk.Button(
+                    label="Reinstall" if is_installed else "Install", 
+                    valign=Gtk.Align.CENTER
+                )
+                if not is_installed:
+                    inst_btn.add_css_class("suggested-action")
+                
                 inst_btn.connect("clicked", self.on_utility_install_clicked, util)
                 
                 stack.add_named(dl_btn, "download")
                 stack.add_named(inst_btn, "install")
-                stack.set_visible_child_name("install" if local_path.exists() else "download")
+                
+                # Logic: If zip exists locally, show the install/reinstall button
+                stack.set_visible_child_name("install" if local_zip_path.exists() else "download")
                 
                 row.add_suffix(stack)
                 list_box.append(row)
@@ -436,16 +465,14 @@ class GameDashboard(Adw.Window):
             scrolled.set_child(list_box)
             container.append(scrolled)
 
-        # --- Load Order Button ---
-        load_order_path = self.game_config.get("load_order_path")
-        if load_order_path:
-            # Create a wrapper for the button to center it
+        # --- Load Order Button at bottom ---
+        load_order_rel = self.game_config.get("load_order_path")
+        if load_order_rel:
             btn_container = Gtk.CenterBox(margin_top=20, margin_bottom=20)
-            
             load_order_btn = Gtk.Button(label="Edit Load Order", css_classes=["pill"])
             load_order_btn.set_size_request(200, 40)
+            load_order_btn.set_cursor_from_name("pointer")
             load_order_btn.connect("clicked", self.on_open_load_order)
-            
             btn_container.set_center_widget(load_order_btn)
             container.append(btn_container)
 
