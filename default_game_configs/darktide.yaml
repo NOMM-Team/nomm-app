@@ -11,5 +11,5 @@ essential-utilities:
     creator-link: https://github.com/talon-d
     source: "https://github.com/talon-d/darktideML-4linux/releases/download/1.5/darktideML-4linux1-5.zip"
     utility_path: ""
-    enable_command: "sh handle_darktide_mods.sh --enable"
+    enable_command: "chmod +x tools/dtkit-patch; sh handle_darktide_mods.sh --enable"
     disable_command: "sh handle_darktide_mods.sh --disable"
