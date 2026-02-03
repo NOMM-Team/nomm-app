@@ -320,7 +320,7 @@ class GameDashboard(Adw.Window):
         container = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10, margin_start=100, margin_end=100, margin_top=40)
         action_bar = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
         
-        # Your existing filter group
+        # Filter group
         filter_group = Gtk.Box(css_classes=["linked"])
         self.all_filter_btn = Gtk.ToggleButton(label="All", active=True)
         self.all_filter_btn.connect("toggled", self.on_filter_toggled, "all")
@@ -332,7 +332,7 @@ class GameDashboard(Adw.Window):
         
         action_bar.append(filter_group)
 
-        # ADDED: Folder button pushed to the far right
+        # Folder button pushed to the far right
         folder_btn = Gtk.Button(icon_name="folder-open-symbolic", css_classes=["flat"])
         folder_btn.set_halign(Gtk.Align.END)
         folder_btn.set_hexpand(True)
@@ -355,18 +355,26 @@ class GameDashboard(Adw.Window):
                 installed = self.is_mod_installed(f)
                 row = Adw.ActionRow(title=f)
                 row.is_installed = installed
-                row.add_suffix(Gtk.Label(label=f"Downloaded: {self.get_download_timestamp(f)}", margin_end=20))
-                row.add_suffix(Gtk.Label(label=f"Installed: {self.get_install_timestamp_from_zip(f) if installed else '—'}", margin_end=20))
                 
-                i_stack = Gtk.Stack(transition_type=Gtk.StackTransitionType.CROSSFADE, hhomogeneous=False, interpolate_size=True)
-                main_i_btn = Gtk.Button(label="Reinstall" if installed else "Install", valign=Gtk.Align.CENTER)
-                if not installed: main_i_btn.add_css_class("suggested-action")
-                conf_i_btn = Gtk.Button(label="Are you sure?", valign=Gtk.Align.CENTER, css_classes=["suggested-action"])
-                conf_i_btn.connect("clicked", self.on_install_clicked, f)
-                main_i_btn.connect("clicked", lambda b, s=i_stack: [s.set_visible_child_name("c"), GLib.timeout_add_seconds(3, lambda: s.set_visible_child_name("m") or False)])
-                i_stack.add_named(main_i_btn, "m"); i_stack.add_named(conf_i_btn, "c")
-                row.add_suffix(i_stack)
+                # Timestamps with dim-label (Grey)
+                dl_ts = Gtk.Label(label=f"Downloaded: {self.get_download_timestamp(f)}", margin_end=20)
+                dl_ts.add_css_class("dim-label")
+                row.add_suffix(dl_ts)
 
+                inst_ts_text = self.get_install_timestamp_from_zip(f) if installed else "—"
+                inst_ts = Gtk.Label(label=f"Installed: {inst_ts_text}", margin_end=20)
+                inst_ts.add_css_class("dim-label")
+                row.add_suffix(inst_ts)
+                
+                # Direct Install Button (No Confirmation)
+                install_btn = Gtk.Button(label="Reinstall" if installed else "Install", valign=Gtk.Align.CENTER)
+                if not installed:
+                    install_btn.add_css_class("suggested-action")
+                install_btn.set_cursor_from_name("pointer")
+                install_btn.connect("clicked", self.on_install_clicked, f)
+                row.add_suffix(install_btn)
+
+                # Delete Stack (Confirmation still active)
                 d_stack = Gtk.Stack(transition_type=Gtk.StackTransitionType.CROSSFADE, hhomogeneous=False, interpolate_size=True)
                 b_btn = Gtk.Button(icon_name="user-trash-symbolic", valign=Gtk.Align.CENTER, css_classes=["flat"])
                 c_btn = Gtk.Button(label="Are you sure?", valign=Gtk.Align.CENTER, css_classes=["destructive-action"])
@@ -374,6 +382,7 @@ class GameDashboard(Adw.Window):
                 b_btn.connect("clicked", lambda b, s=d_stack: [s.set_visible_child_name("c"), GLib.timeout_add_seconds(3, lambda: s.set_visible_child_name("b") or False)])
                 d_stack.add_named(b_btn, "b"); d_stack.add_named(c_btn, "c")
                 row.add_suffix(d_stack)
+                
                 self.list_box.append(row)
 
         scrolled.set_child(self.list_box)
