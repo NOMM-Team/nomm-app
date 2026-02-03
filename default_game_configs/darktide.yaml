@@ -8,6 +8,6 @@ essential-utilities:
     creator: Talon-d
     creator-link: https://github.com/talon-d
     source: https://github.com/talon-d/darktideML-4linux/releases/download/latest
-    utility_path: /
+    utility_path: ""
     enable_command: "sh handle_darktide_mods.sh --enable"
     disable_command: "sh handle_darktide_mods.sh --disable"
