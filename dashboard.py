@@ -226,38 +226,89 @@ class GameDashboard(Adw.Window):
             if self.current_filter == "uninstalled": return not row.is_installed
         return True
 
+    def on_mod_search_changed(self, entry):
+        if hasattr(self, 'mods_list_box'):
+            self.mods_list_box.invalidate_filter()
+
+    def filter_mods_rows(self, row):
+        search_text = self.mod_search_entry.get_text().lower()
+        if not search_text:
+            return True
+        # Check if the text is in the mod name we stored on the row
+        return search_text in getattr(row, 'mod_name', '')
+
     def create_mods_page(self):
         if self.view_stack.get_child_by_name("mods"): 
             self.view_stack.remove(self.view_stack.get_child_by_name("mods"))
             
         container = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10, margin_start=100, margin_end=100, margin_top=40)
         
-        # Action Bar at the top of the view
-        action_bar = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
+        # Action Bar: Search on left, Folder on right
+        action_bar = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
+        
+        self.mod_search_entry = Gtk.SearchEntry(placeholder_text="Search mods...")
+        self.mod_search_entry.set_size_request(300, -1) 
+        self.mod_search_entry.connect("search-changed", self.on_mod_search_changed)
+        action_bar.append(self.mod_search_entry)
+
         folder_btn = Gtk.Button(icon_name="folder-open-symbolic", css_classes=["flat"])
         folder_btn.set_halign(Gtk.Align.END)
         folder_btn.set_hexpand(True)
         folder_btn.set_cursor_from_name("pointer")
         folder_btn.set_tooltip_text("Open Staging Folder")
         folder_btn.connect("clicked", lambda x: webbrowser.open(f"file://{self.get_staging_path()}"))
-        
         action_bar.append(folder_btn)
+
         container.append(action_bar)
 
-        lb = Gtk.ListBox(css_classes=["boxed-list"])
+        self.mods_list_box = Gtk.ListBox(css_classes=["boxed-list"])
+        self.mods_list_box.set_filter_func(self.filter_mods_rows)
+        
         s = self.get_staging_path()
         d = self.get_game_destination_path()
         items = os.listdir(s) if s.exists() else []
         
         for i in sorted(items, key=lambda x: os.path.getmtime(s/x), reverse=True):
             r = Adw.ActionRow(title=i)
+            r.mod_name = i.lower() 
+            
+            # Switch for enabling/disabling
             sw = Gtk.Switch(active=(d/i).is_symlink() if d else False, valign=Gtk.Align.CENTER, css_classes=["green-switch"])
             sw.connect("state-set", self.on_switch_toggled, i)
             r.add_prefix(sw)
-            lb.append(r)
+
+            # Suffix Box: Timestamp + Trash Bin
+            suffix_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=15)
+            
+            # Installation Timestamp
+            mtime = os.path.getmtime(s/i)
+            ts_label = Gtk.Label(label=datetime.fromtimestamp(mtime).strftime('%Y-%m-%d %H:%M'), css_classes=["dim-label"])
+            suffix_box.append(ts_label)
+
+            # Uninstall/Delete Trash Bin with confirmation stack
+            u_stack = Gtk.Stack(transition_type=Gtk.StackTransitionType.CROSSFADE, hhomogeneous=False, interpolate_size=True)
+            
+            bin_btn = Gtk.Button(icon_name="user-trash-symbolic", valign=Gtk.Align.CENTER, css_classes=["flat"])
+            bin_btn.set_cursor_from_name("pointer")
+            
+            conf_del_btn = Gtk.Button(label="Are you sure?", valign=Gtk.Align.CENTER, css_classes=["destructive-action"])
+            # Linked to your existing helper
+            conf_del_btn.connect("clicked", self.on_uninstall_item, i) 
+            
+            bin_btn.connect("clicked", lambda b, s=u_stack: [
+                s.set_visible_child_name("c"), 
+                GLib.timeout_add_seconds(3, lambda: s.set_visible_child_name("b") or False)
+            ])
+            
+            u_stack.add_named(bin_btn, "b")
+            u_stack.add_named(conf_del_btn, "c")
+            suffix_box.append(u_stack)
+
+            r.add_suffix(suffix_box)
+            self.mods_list_box.append(r)
         
         sc = Gtk.ScrolledWindow(vexpand=True)
-        sc.set_child(lb)
+        sc.set_child(self.mods_list_box)
         container.append(sc)
         self.view_stack.add_named(container, "mods")
 
