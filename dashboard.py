@@ -67,18 +67,18 @@ class GameDashboard(Adw.Window):
                 print(f"Error loading hero: {e}")
 
         # --- TAB BUTTONS WITH INTEGRATED BADGES ---
-        tab_container = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, homogeneous=True)
+        tab_container = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, homogeneous=False)
+        main_tabs_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, homogeneous=True, hexpand=True)
 
-        # 1. MODS TAB OVERLAY (Anchors badges to the MODS button area)
+        # 1. MODS TAB OVERLAY
         mods_tab_overlay = Gtk.Overlay()
-        self.mods_tab_btn = Gtk.ToggleButton(label="MODS", hexpand=True, css_classes=["overlay-tab"])
+        self.mods_tab_btn = Gtk.ToggleButton(label="MODS", css_classes=["overlay-tab"])
         self.mods_tab_btn.set_cursor_from_name("pointer")
         
         mods_badge_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=4)
         mods_badge_box.set_halign(Gtk.Align.END)
         mods_badge_box.set_valign(Gtk.Align.END)
-        mods_badge_box.set_margin_bottom(8)
-        mods_badge_box.set_margin_end(8)
+        mods_badge_box.set_margin_bottom(8); mods_badge_box.set_margin_end(8)
         
         self.mods_inactive_label = Gtk.Label(label="0", css_classes=["badge-green"])
         self.mods_active_label = Gtk.Label(label="0", css_classes=["badge-grey"])
@@ -87,17 +87,17 @@ class GameDashboard(Adw.Window):
         
         mods_tab_overlay.set_child(self.mods_tab_btn)
         mods_tab_overlay.add_overlay(mods_badge_box)
+        main_tabs_box.append(mods_tab_overlay)
 
-        # 2. DOWNLOADS TAB OVERLAY (Anchors badges to the DOWNLOADS button area)
+        # 2. DOWNLOADS TAB OVERLAY
         dl_tab_overlay = Gtk.Overlay()
-        self.dl_tab_btn = Gtk.ToggleButton(label="DOWNLOADS", hexpand=True, css_classes=["overlay-tab"])
+        self.dl_tab_btn = Gtk.ToggleButton(label="DOWNLOADS", css_classes=["overlay-tab"])
         self.dl_tab_btn.set_cursor_from_name("pointer")
         
         dl_badge_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=4)
         dl_badge_box.set_halign(Gtk.Align.END)
         dl_badge_box.set_valign(Gtk.Align.END)
-        dl_badge_box.set_margin_bottom(8)
-        dl_badge_box.set_margin_end(8)
+        dl_badge_box.set_margin_bottom(8); dl_badge_box.set_margin_end(8)
         
         self.dl_avail_label = Gtk.Label(label="0", css_classes=["badge-green"])
         self.dl_inst_label = Gtk.Label(label="0", css_classes=["badge-grey"])
@@ -106,25 +106,43 @@ class GameDashboard(Adw.Window):
         
         dl_tab_overlay.set_child(self.dl_tab_btn)
         dl_tab_overlay.add_overlay(dl_badge_box)
+        main_tabs_box.append(dl_tab_overlay)
 
-        # Add both button-overlays to the container
-        tab_container.append(mods_tab_overlay)
-        tab_container.append(dl_tab_overlay)
+        tab_container.append(main_tabs_box)
 
+        # 3. TOOLS TAB (Square wrench tab with large icon)
+        self.tools_tab_btn = Gtk.ToggleButton(css_classes=["overlay-tab"])
+        # Creating a dedicated Image widget to control icon size (48px)
+        wrench_icon = Gtk.Image.new_from_icon_name("emblem-system-symbolic")
+        wrench_icon.set_pixel_size(48) 
+        self.tools_tab_btn.set_child(wrench_icon)
+        
+        self.tools_tab_btn.set_size_request(banner_height, banner_height)
+        self.tools_tab_btn.set_cursor_from_name("pointer")
+        tab_container.append(self.tools_tab_btn)
+
+        # Grouping toggles
         self.dl_tab_btn.set_group(self.mods_tab_btn)
+        self.tools_tab_btn.set_group(self.mods_tab_btn)
         self.mods_tab_btn.set_active(True)
+        
         banner_overlay.add_overlay(tab_container)
-
         main_layout.append(banner_overlay)
 
         self.view_stack = Gtk.Stack(transition_type=Gtk.StackTransitionType.SLIDE_LEFT_RIGHT, transition_duration=400, vexpand=True)
+        
         self.mods_tab_btn.connect("toggled", self.on_tab_changed, "mods")
         self.dl_tab_btn.connect("toggled", self.on_tab_changed, "downloads")
+        self.tools_tab_btn.connect("toggled", self.on_tab_changed, "tools")
 
         main_layout.append(self.view_stack)
         
         self.create_mods_page()
         self.create_downloads_page()
+        
+        self.tools_page = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        self.view_stack.add_named(self.tools_page, "tools")
+        
         self.update_indicators()
 
         footer = Gtk.CenterBox(margin_start=40, margin_end=40, margin_top=20, margin_bottom=40)
