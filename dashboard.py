@@ -110,18 +110,16 @@ class GameDashboard(Adw.Window):
 
         tab_container.append(main_tabs_box)
 
-        # 3. TOOLS TAB (Square wrench tab with large icon)
+        # 3. TOOLS TAB
         self.tools_tab_btn = Gtk.ToggleButton(css_classes=["overlay-tab"])
-        # Creating a dedicated Image widget to control icon size (48px)
         wrench_icon = Gtk.Image.new_from_icon_name("emblem-system-symbolic")
         wrench_icon.set_pixel_size(48) 
         self.tools_tab_btn.set_child(wrench_icon)
-        
         self.tools_tab_btn.set_size_request(banner_height, banner_height)
         self.tools_tab_btn.set_cursor_from_name("pointer")
         tab_container.append(self.tools_tab_btn)
 
-        # Grouping toggles
+        # Grouping
         self.dl_tab_btn.set_group(self.mods_tab_btn)
         self.tools_tab_btn.set_group(self.mods_tab_btn)
         self.mods_tab_btn.set_active(True)
@@ -130,18 +128,15 @@ class GameDashboard(Adw.Window):
         main_layout.append(banner_overlay)
 
         self.view_stack = Gtk.Stack(transition_type=Gtk.StackTransitionType.SLIDE_LEFT_RIGHT, transition_duration=400, vexpand=True)
-        
         self.mods_tab_btn.connect("toggled", self.on_tab_changed, "mods")
         self.dl_tab_btn.connect("toggled", self.on_tab_changed, "downloads")
         self.tools_tab_btn.connect("toggled", self.on_tab_changed, "tools")
-
         main_layout.append(self.view_stack)
         
+        # Initializing the three views
         self.create_mods_page()
         self.create_downloads_page()
-        
-        self.tools_page = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
-        self.view_stack.add_named(self.tools_page, "tools")
+        self.create_tools_page()  # Fixed: Calling the method to populate the tab
         
         self.update_indicators()
 
@@ -232,41 +227,38 @@ class GameDashboard(Adw.Window):
         return True
 
     def create_mods_page(self):
-        if self.view_stack.get_child_by_name("mods"):
+        if self.view_stack.get_child_by_name("mods"): 
             self.view_stack.remove(self.view_stack.get_child_by_name("mods"))
-
+            
         container = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10, margin_start=100, margin_end=100, margin_top=40)
-        staging_dir = self.get_staging_path()
-        dest_dir = self.get_game_destination_path()
-        items = os.listdir(staging_dir) if staging_dir.exists() else []
+        
+        # Action Bar at the top of the view
+        action_bar = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
+        folder_btn = Gtk.Button(icon_name="folder-open-symbolic", css_classes=["flat"])
+        folder_btn.set_halign(Gtk.Align.END)
+        folder_btn.set_hexpand(True)
+        folder_btn.set_cursor_from_name("pointer")
+        folder_btn.set_tooltip_text("Open Staging Folder")
+        folder_btn.connect("clicked", lambda x: webbrowser.open(f"file://{self.get_staging_path()}"))
+        
+        action_bar.append(folder_btn)
+        container.append(action_bar)
 
-        scrolled = Gtk.ScrolledWindow(vexpand=True)
-        self.mods_list_box = Gtk.ListBox(css_classes=["boxed-list"])
-        self.mods_list_box.set_selection_mode(Gtk.SelectionMode.NONE)
-
-        if items:
-            items.sort(key=lambda x: os.path.getmtime(staging_dir / x), reverse=True)
-            for item in items:
-                row = Adw.ActionRow(title=item)
-                is_enabled = (dest_dir / item).is_symlink() if dest_dir else False
-                sw = Gtk.Switch(active=is_enabled, valign=Gtk.Align.CENTER, css_classes=["green-switch"])
-                sw.connect("state-set", self.on_switch_toggled, item)
-                row.add_prefix(sw)
-
-                ts = datetime.fromtimestamp(os.path.getmtime(staging_dir / item)).strftime('%Y-%m-%d %H:%M')
-                row.add_suffix(Gtk.Label(label=f"Installed: {ts}", margin_end=20))
-
-                stack = Gtk.Stack(transition_type=Gtk.StackTransitionType.CROSSFADE, hhomogeneous=False, interpolate_size=True)
-                b_btn = Gtk.Button(icon_name="user-trash-symbolic", valign=Gtk.Align.CENTER, css_classes=["flat"])
-                c_btn = Gtk.Button(label="Confirm Uninstall?", valign=Gtk.Align.CENTER, css_classes=["destructive-action"])
-                c_btn.connect("clicked", self.on_uninstall_item, item)
-                b_btn.connect("clicked", lambda b, s=stack: [s.set_visible_child_name("c"), GLib.timeout_add_seconds(3, lambda: s.set_visible_child_name("b") or False)])
-                stack.add_named(b_btn, "b"); stack.add_named(c_btn, "c")
-                row.add_suffix(stack)
-                self.mods_list_box.append(row)
-
-        scrolled.set_child(self.mods_list_box)
-        container.append(scrolled)
+        lb = Gtk.ListBox(css_classes=["boxed-list"])
+        s = self.get_staging_path()
+        d = self.get_game_destination_path()
+        items = os.listdir(s) if s.exists() else []
+        
+        for i in sorted(items, key=lambda x: os.path.getmtime(s/x), reverse=True):
+            r = Adw.ActionRow(title=i)
+            sw = Gtk.Switch(active=(d/i).is_symlink() if d else False, valign=Gtk.Align.CENTER, css_classes=["green-switch"])
+            sw.connect("state-set", self.on_switch_toggled, i)
+            r.add_prefix(sw)
+            lb.append(r)
+        
+        sc = Gtk.ScrolledWindow(vexpand=True)
+        sc.set_child(lb)
+        container.append(sc)
         self.view_stack.add_named(container, "mods")
 
     def create_downloads_page(self):
@@ -276,6 +268,8 @@ class GameDashboard(Adw.Window):
 
         container = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10, margin_start=100, margin_end=100, margin_top=40)
         action_bar = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
+        
+        # Your existing filter group
         filter_group = Gtk.Box(css_classes=["linked"])
         self.all_filter_btn = Gtk.ToggleButton(label="All", active=True)
         self.all_filter_btn.connect("toggled", self.on_filter_toggled, "all")
@@ -284,7 +278,18 @@ class GameDashboard(Adw.Window):
             b = Gtk.ToggleButton(label=l, group=self.all_filter_btn)
             b.connect("toggled", self.on_filter_toggled, n)
             filter_group.append(b)
+        
         action_bar.append(filter_group)
+
+        # ADDED: Folder button pushed to the far right
+        folder_btn = Gtk.Button(icon_name="folder-open-symbolic", css_classes=["flat"])
+        folder_btn.set_halign(Gtk.Align.END)
+        folder_btn.set_hexpand(True)
+        folder_btn.set_cursor_from_name("pointer")
+        folder_btn.set_tooltip_text("Open Downloads Folder")
+        folder_btn.connect("clicked", lambda x: webbrowser.open(f"file://{self.downloads_path}"))
+        action_bar.append(folder_btn)
+
         container.append(action_bar)
 
         scrolled = Gtk.ScrolledWindow(vexpand=True)
@@ -323,6 +328,132 @@ class GameDashboard(Adw.Window):
         scrolled.set_child(self.list_box)
         container.append(scrolled)
         self.view_stack.add_named(container, "downloads")
+
+    def create_tools_page(self):
+        if self.view_stack.get_child_by_name("tools"):
+            self.view_stack.remove(self.view_stack.get_child_by_name("tools"))
+
+        container = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10, margin_start=100, margin_end=100, margin_top=40)
+        
+        # Accessing the dictionary from YAML
+        utilities_cfg = self.game_config.get("essential-utilities", {})
+        
+        if not utilities_cfg or not isinstance(utilities_cfg, dict):
+            container.append(Gtk.Label(label="No utilities defined.", css_classes=["dim-label"]))
+        else:
+            list_box = Gtk.ListBox(css_classes=["boxed-list"])
+            list_box.set_selection_mode(Gtk.SelectionMode.NONE)
+
+            # Iterating through dictionary (id, data)
+            for util_id, util in utilities_cfg.items():
+                row = Adw.ActionRow(title=util.get("name", util_id))
+                
+                # Creator Link (Greyed out)
+                creator = util.get("creator", "Unknown")
+                link = util.get("creator-link", "#")
+                c_btn = Gtk.Button(label=creator, css_classes=["flat", "dim-label"])
+                c_btn.set_cursor_from_name("pointer")
+                c_btn.connect("clicked", lambda b, l=link: webbrowser.open(l))
+                row.add_prefix(c_btn)
+
+                # Path Logic
+                source = util.get("source", "")
+                filename = source.split("/")[-1] if "/" in source else f"{util_id}.zip"
+                util_dir = Path(self.downloads_path) / "utilities"
+                local_path = util_dir / filename
+
+                stack = Gtk.Stack(transition_type=Gtk.StackTransitionType.CROSSFADE)
+                
+                # Download Button
+                dl_btn = Gtk.Button(label="Download", css_classes=["suggested-action"], valign=Gtk.Align.CENTER)
+                dl_btn.connect("clicked", self.on_utility_download_clicked, util, stack)
+                
+                # Install Button
+                inst_btn = Gtk.Button(label="Install", css_classes=["suggested-action"], valign=Gtk.Align.CENTER)
+                inst_btn.connect("clicked", self.on_utility_install_clicked, util)
+                
+                stack.add_named(dl_btn, "download")
+                stack.add_named(inst_btn, "install")
+                
+                # Show Install if file exists, else Download
+                stack.set_visible_child_name("install" if local_path.exists() else "download")
+                
+                row.add_suffix(stack)
+                list_box.append(row)
+            
+            scrolled = Gtk.ScrolledWindow(vexpand=True)
+            scrolled.set_child(list_box)
+            container.append(scrolled)
+
+        self.view_stack.add_named(container, "tools")
+
+    def on_utility_download_clicked(self, btn, util, stack):
+        source_url = util.get("source")
+        if not source_url: return
+
+        util_dir = Path(self.downloads_path) / "utilities"
+        util_dir.mkdir(parents=True, exist_ok=True)
+        
+        filename = source_url.split("/")[-1]
+        target_file = util_dir / filename
+
+        # Simple background downloader
+        def download_thread():
+            try:
+                import urllib.request
+                urllib.request.urlretrieve(source_url, target_file)
+                GLib.idle_add(lambda: stack.set_visible_child_name("install"))
+            except Exception as e:
+                GLib.idle_add(self.show_message, "Download Failed", str(e))
+
+        import threading
+        threading.Thread(target=download_thread, daemon=True).start()
+
+    def on_utility_install_clicked(self, btn, util):
+        msg = "Warning: This process may be destructive to existing game files. Please ensure you have backed up your game directory before proceeding."
+        
+        dialog = Adw.MessageDialog(
+            transient_for=self,
+            heading="Confirm Installation",
+            body=msg
+        )
+        dialog.add_response("cancel", "Cancel")
+        dialog.add_response("install", "Install Anyway")
+        dialog.set_response_appearance("install", Adw.ResponseAppearance.DESTRUCTIVE)
+        
+        def on_response(d, response_id):
+            if response_id == "install":
+                self.execute_utility_install(util)
+            d.close()
+
+        dialog.connect("response", on_response)
+        dialog.present()
+
+    def execute_utility_install(self, util):
+        try:
+            source_url = util.get("source")
+            filename = source_url.split("/")[-1]
+            zip_path = Path(self.downloads_path) / "utilities" / filename
+            
+            game_root = Path(self.game_path)
+            install_subpath = util.get("utility_path", "")
+            target_dir = game_root / install_subpath
+            target_dir.mkdir(parents=True, exist_ok=True)
+
+            # Extract content
+            with zipfile.ZipFile(zip_path, 'r') as z:
+                z.extractall(target_dir)
+
+            # Run enable command if provided
+            cmd = util.get("enable_command")
+            if cmd:
+                import subprocess
+                subprocess.run(cmd, shell=True, cwd=game_root)
+
+            self.show_message("Success", f"{util.get('name')} has been installed.")
+        except Exception as e:
+            self.show_message("Installation Error", str(e))
+
 
     def setup_custom_styles(self):
         css = """
