@@ -7,7 +7,7 @@ essential-utilities:
     name: Darktide Mod Loader
     creator: Talon-d
     creator-link: https://github.com/talon-d
-    source: https://github.com/talon-d/darktideML-4linux/releases/download/latest
+    source: "https://github.com/talon-d/darktideML-4linux/releases/download/latest/darktideML-4linux1-5.zip"
     utility_path: ""
     enable_command: "sh handle_darktide_mods.sh --enable"
     disable_command: "sh handle_darktide_mods.sh --disable"
