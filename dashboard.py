@@ -155,8 +155,26 @@ class GameDashboard(Adw.Window):
         main_layout.append(footer)
         self.set_content(main_layout)
 
+    def execute_inline_delete_with_meta(self, btn, f):
+        """Deletes the mod zip and its associated .nomm.yaml file if it exists."""
+        try:
+            # Delete ZIP
+            zip_path = os.path.join(self.downloads_path, f)
+            if os.path.exists(zip_path):
+                os.remove(zip_path)
+            
+            # Delete Metadata
+            meta_path = zip_path + ".nomm.yaml"
+            if os.path.exists(meta_path):
+                os.remove(meta_path)
+                
+            self.create_downloads_page()
+            self.update_indicators()
+        except Exception as e:
+            self.show_message("Error", f"Could not delete file: {e}")
+
     def load_game_config(self):
-        config_dir = "./game_configs/"
+        config_dir = os.path.expanduser("~/nomm/game_configs")
         def slug(text): return re.sub(r'[^a-z0-9]', '', text.lower())
         target = slug(self.game_name)
         if os.path.exists(config_dir):
@@ -332,7 +350,6 @@ class GameDashboard(Adw.Window):
         
         action_bar.append(filter_group)
 
-        # Folder button pushed to the far right
         folder_btn = Gtk.Button(icon_name="folder-open-symbolic", css_classes=["flat"])
         folder_btn.set_halign(Gtk.Align.END)
         folder_btn.set_hexpand(True)
@@ -353,10 +370,30 @@ class GameDashboard(Adw.Window):
 
             for f in files:
                 installed = self.is_mod_installed(f)
-                row = Adw.ActionRow(title=f)
+                
+                # --- METADATA LOGIC ---
+                display_title = f
+                meta_path = os.path.join(self.downloads_path, f + ".nomm.yaml")
+                
+                if os.path.exists(meta_path):
+                    try:
+                        with open(meta_path, 'r') as meta_f:
+                            meta_data = yaml.safe_load(meta_f)
+                            m_name = meta_data.get("name")
+                            m_ver = meta_data.get("version")
+                            if m_name:
+                                display_title = f"{m_name} (v{m_ver})" if m_ver else m_name
+                    except Exception as e:
+                        print(f"Error reading metadata for {f}: {e}")
+
+                row = Adw.ActionRow(title=display_title)
+                # Store the original filename in the subtitle so the user can still see it
+                if display_title != f:
+                    row.set_subtitle(f)
+                
                 row.is_installed = installed
                 
-                # Timestamps with dim-label (Grey)
+                # Timestamps
                 dl_ts = Gtk.Label(label=f"Downloaded: {self.get_download_timestamp(f)}", margin_end=20)
                 dl_ts.add_css_class("dim-label")
                 row.add_suffix(dl_ts)
@@ -366,7 +403,7 @@ class GameDashboard(Adw.Window):
                 inst_ts.add_css_class("dim-label")
                 row.add_suffix(inst_ts)
                 
-                # Direct Install Button (No Confirmation)
+                # Install Button
                 install_btn = Gtk.Button(label="Reinstall" if installed else "Install", valign=Gtk.Align.CENTER)
                 if not installed:
                     install_btn.add_css_class("suggested-action")
@@ -374,11 +411,11 @@ class GameDashboard(Adw.Window):
                 install_btn.connect("clicked", self.on_install_clicked, f)
                 row.add_suffix(install_btn)
 
-                # Delete Stack (Confirmation still active)
+                # Delete Stack
                 d_stack = Gtk.Stack(transition_type=Gtk.StackTransitionType.CROSSFADE, hhomogeneous=False, interpolate_size=True)
                 b_btn = Gtk.Button(icon_name="user-trash-symbolic", valign=Gtk.Align.CENTER, css_classes=["flat"])
                 c_btn = Gtk.Button(label="Are you sure?", valign=Gtk.Align.CENTER, css_classes=["destructive-action"])
-                c_btn.connect("clicked", self.execute_inline_delete, f)
+                c_btn.connect("clicked", self.execute_inline_delete_with_meta, f) # Updated helper
                 b_btn.connect("clicked", lambda b, s=d_stack: [s.set_visible_child_name("c"), GLib.timeout_add_seconds(3, lambda: s.set_visible_child_name("b") or False)])
                 d_stack.add_named(b_btn, "b"); d_stack.add_named(c_btn, "c")
                 row.add_suffix(d_stack)
