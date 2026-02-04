@@ -4,12 +4,15 @@ import threading
 import re
 import shutil
 import gi
+import sys
+import subprocess
 
 gi.require_version('Gtk', '4.0')
 gi.require_version('Adw', '1')
 
 from gi.repository import Gtk, Adw, GLib, Gdk, Gio
-from dashboard import GameDashboard 
+from dashboard import GameDashboard
+from nxm_handler import download_nexus_mod
 
 CSS = """
 .game-card {
@@ -92,12 +95,14 @@ togglebutton {
 def slugify(text):
     return re.sub(r'[^a-z0-9]', '', text.lower())
 
-class SteamScannerApp(Adw.Application):
+class Nomm(Adw.Application):
     def __init__(self, **kwargs):
-        super().__init__(application_id='com.fedora.nomm', **kwargs)
+        # 1. Update Application ID to match your protocol registration
+        super().__init__(application_id='com.user.nomm', **kwargs)
         self.matches = []
         self.steam_base = self.get_steam_base_dir()
-        self.user_config_path = "./user_config.yaml"
+        self.user_config_path = os.path.expanduser("~/nomm/user_config.yaml")
+        self.game_config_path = os.path.expanduser("~/nomm/game_configs")
         self.win = None
 
     def get_steam_base_dir(self):
@@ -111,7 +116,8 @@ class SteamScannerApp(Adw.Application):
         return None
 
     def sync_configs(self):
-        src, dest = "./default_game_configs", "./game_configs"
+
+        src, dest = "./default_game_configs", self.game_config_path
         if not os.path.exists(src): return
         if not os.path.exists(dest): os.makedirs(dest)
         for filename in os.listdir(src):
@@ -149,6 +155,7 @@ class SteamScannerApp(Adw.Application):
             self.stack.remove(child)
 
     def show_setup_screen(self):
+        """Step 1: Folder Selection"""
         self.remove_stack_child("setup")
         status_page = Adw.StatusPage(
             title="Welcome to NOMM",
@@ -177,11 +184,81 @@ class SteamScannerApp(Adw.Application):
             selected_file = dialog.select_folder_finish(result)
             if selected_file:
                 path = selected_file.get_path()
-                config_data = {"download_path": path, "library_paths": []}
-                with open(self.user_config_path, 'w') as f:
-                    yaml.dump(config_data, f, default_flow_style=False)
-                self.show_loading_and_scan()
+                # Save path, then move to Protocol screen
+                self.temp_config = {"download_path": path, "library_paths": []}
+                self.show_protocol_choice_screen()
         except Exception: pass
+
+    def show_protocol_choice_screen(self):
+        """Step 2: NXM Protocol Choice"""
+        self.remove_stack_child("protocol")
+        box = Adw.StatusPage(
+            title="Handle Nexus Links?",
+            description="Would you like NOMM to handle 'nxm://' links from Nexus Mods?",
+            icon_name="network-transmit-receive-symbolic"
+        )
+        
+        btn_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12, halign=Gtk.Align.CENTER)
+        btn_box.set_margin_top(24)
+
+        yes_btn = Gtk.Button(label="Yes, Register Nomm", css_classes=["suggested-action"])
+        yes_btn.connect("clicked", self.on_protocol_choice, True)
+        
+        no_btn = Gtk.Button(label="No, Maybe Later")
+        no_btn.connect("clicked", self.on_protocol_choice, False)
+
+        btn_box.append(yes_btn)
+        btn_box.append(no_btn)
+        box.set_child(btn_box)
+
+        self.stack.add_named(box, "protocol")
+        self.stack.set_visible_child_name("protocol")
+
+    def on_protocol_choice(self, btn, choice):
+        if choice:
+            self.register_nomm_nxm_protocol()
+            self.show_api_key_screen()
+        else:
+            # Skip API key and just finish
+            self.finalize_setup("")
+
+    def show_api_key_screen(self):
+        """Step 3: Nexus API Key Entry"""
+        self.remove_stack_child("api_key")
+        status_page = Adw.StatusPage(
+            title="Nexus API Key",
+            description="Enter your API Key from Nexus Mods (Personal Settings > API)",
+            icon_name="dialog-password-symbolic"
+        )
+
+        entry_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12, halign=Gtk.Align.CENTER)
+        entry_box.set_margin_top(24)
+        
+        self.api_entry = Gtk.Entry(placeholder_text="Enter API Key...")
+        # Corrected: width 400, height -1 (use default height)
+        self.api_entry.set_size_request(400, -1) 
+        self.api_entry.set_visibility(False) # Masks the key like a password
+        
+        cont_btn = Gtk.Button(label="Continue & Scan", css_classes=["suggested-action"])
+        cont_btn.connect("clicked", lambda b: self.finalize_setup(self.api_entry.get_text()))
+
+        entry_box.append(self.api_entry)
+        entry_box.append(cont_btn)
+        status_page.set_child(entry_box)
+
+        self.stack.add_named(status_page, "api_key")
+        self.stack.set_visible_child_name("api_key")
+
+    def finalize_setup(self, api_key):
+        """Step 4: Save and Start Scan"""
+        self.temp_config["nexus_api_key"] = api_key
+        
+        # Create the ~/nomm/ directory if it doesn't exist yet
+        os.makedirs(os.path.dirname(self.user_config_path), exist_ok=True)
+        
+        with open(self.user_config_path, 'w') as f:
+            yaml.dump(self.temp_config, f, default_flow_style=False)
+        self.show_loading_and_scan()
 
     def show_loading_and_scan(self):
         self.remove_stack_child("loading")
@@ -199,7 +276,7 @@ class SteamScannerApp(Adw.Application):
         threading.Thread(target=self.run_background_workflow, daemon=True).start()
 
     def run_background_workflow(self):
-        config_dir = "./game_configs/"
+        config_dir = self.game_config_path
         found_libs = set()
         try:
             with open(self.user_config_path, 'r') as f:
@@ -349,7 +426,7 @@ class SteamScannerApp(Adw.Application):
                 os.makedirs(game_download_path, exist_ok=True)
 
             # 3. Update the game-specific YAML config
-            config_dir = "./game_configs/"
+            config_dir = self.game_config_path
             slug = slugify(game_data['name'])
             
             for filename in os.listdir(config_dir):
@@ -402,6 +479,49 @@ class SteamScannerApp(Adw.Application):
                 if t in files: return os.path.join(root, t)
         return None
 
+    def register_nomm_nxm_protocol(self):
+        """Internalized protocol registration helper"""
+        app_path = os.path.abspath(sys.argv[0])
+        desktop_file_content = f"""[Desktop Entry]
+Name=Nomm
+Exec=python3 {app_path} %u
+Type=Application
+Terminal=false
+Icon=com.user.nomm
+MimeType=x-scheme-handler/nxm;
+"""
+        desktop_dir = os.path.expanduser("~/.local/share/applications")
+        desktop_path = os.path.join(desktop_dir, "nomm.desktop")
+        os.makedirs(desktop_dir, exist_ok=True)
+
+        try:
+            with open(desktop_path, "w") as f:
+                f.write(desktop_file_content)
+            
+            subprocess.run(["update-desktop-database", desktop_dir], check=True)
+            subprocess.run(["xdg-settings", "set", "default-url-scheme-handler", "nxm", "nomm.desktop"], check=True)
+            print("Protocol registered successfully!")
+        except Exception as e:
+            print(f"Failed to register protocol: {e}")
+
+def create_success_file():
+    # 'os.path.expanduser' handles the "~" correctly for any user
+    home_path = os.path.expanduser("~/success.txt")
+    
+    try:
+        with open(home_path, "w") as f:
+            f.write("Operation completed successfully!")
+        print(f"File created at: {home_path}")
+    except Exception as e:
+        print(f"Failed to create file: {e}")
+
 if __name__ == "__main__":
-    app = SteamScannerApp()
-    app.run(None)
+    if len(sys.argv) > 1 and sys.argv[1].startswith("nxm://"):
+        nxm_link = sys.argv[1]
+        print(f"nomm is processing: {nxm_link}")
+        create_success_file()
+        download_nexus_mod(nxm_link)
+    else:
+        app = Nomm()
+        app.run(None)
+    

@@ -24,7 +24,7 @@ Just a few clicks, a clean, modern interface, and you're done :)
 
 ### How does it work?
 
-The principle behind this project is that games are defined by easy to setup config yamls.
+The principle behind this project is that games are defined by easy to setup config yaml files.
 This means that anyone can create a simple yaml for their game and submit it to the project with little to no coding knowledge and the tool will automate the rest.
 
 For instance:
@@ -76,13 +76,13 @@ Phase 1 Development Progress:
 - [x] Display results in a super clean library-style window
 - [x] Let user choose a downloads folder location
 - [x] Create a whole new window with a cool header from Steam cache folder
-- [ ] Associate app w/ nexusmods download links
+- [x] Associate app w/ nexusmods download links
 - [x] Let user navigate downloaded mods and delete downloaded mods
 - [x] Figure out how mod staging and symlinks and whatnot work because I have no idea
 - [x] Let user enable/disable mods
 - [x] Prepare "essential utilities" section in game config file that lets the community define some essential custom tools that are needed for a game to work, so that the process is easier for people who just want to mod the game (i.e. SKSE, Darktide mod loader, that kind of stuff)
 - [x] Let user launch the game directly from the interface
-- [ ] Add a button to return to launcher from the main window
+- [x] Add a button to return to launcher from the main window
 
 Phase 2 Development Progress:
 - [ ] Let user skip launcher and go straight to game
