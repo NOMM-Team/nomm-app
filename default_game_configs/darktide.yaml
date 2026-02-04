@@ -4,6 +4,8 @@ mods_path: mods/
 
 load_order_path: mods/mod_load_order.txt
 
+nexus_game_id: "warhammer40kdarktide"
+
 essential-utilities:
   darktide-mod-loader:
     name: Darktide Mod Loader
