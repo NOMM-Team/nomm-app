@@ -58,12 +58,11 @@ def download_nexus_mod(nxm_link):
             'Application-Version': '1.0.0'
         }
         params = {
-            'key': nxm_query.get("key"), 
+            'key': nxm_query.get("key"),
             'expires': nxm_query.get("expires")
         }
         
         download_api_url = f"https://api.nexusmods.com/v1/games/{nexus_game_id}/mods/{mod_id}/files/{file_id}/download_link.json"
-        info_api_url = f"https://api.nexusmods.com/v1/games/{nexus_game_id}/mods/{mod_id}/files/{file_id}.json"
 
         response = requests.get(download_api_url, headers=headers, params=params)
         response.raise_for_status()
