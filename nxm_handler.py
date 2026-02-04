@@ -55,7 +55,7 @@ def download_nexus_mod(nxm_link):
         headers = {
             'apikey': api_key,
             'Application-Name': 'Nomm',
-            'Application-Version': '1.0.0'
+            'Application-Version': '0.5.0'
         }
         params = {
             'key': nxm_query.get("key"),
