@@ -62,9 +62,10 @@ def download_nexus_mod(nxm_link):
             'expires': nxm_query.get("expires")
         }
         
-        api_url = f"https://api.nexusmods.com/v1/games/{nexus_game_id}/mods/{mod_id}/files/{file_id}/download_link.json"
+        download_api_url = f"https://api.nexusmods.com/v1/games/{nexus_game_id}/mods/{mod_id}/files/{file_id}/download_link.json"
+        info_api_url = f"https://api.nexusmods.com/v1/games/{nexus_game_id}/mods/{mod_id}/files/{file_id}.json"
 
-        response = requests.get(api_url, headers=headers, params=params)
+        response = requests.get(download_api_url, headers=headers, params=params)
         response.raise_for_status()
         
         download_data = response.json()
@@ -93,10 +94,34 @@ def download_nexus_mod(nxm_link):
             for chunk in mod_data.iter_content(chunk_size=8192):
                 f.write(chunk)
 
-        # 7. Create success indicator
-        success_path = os.path.expanduser("~/success.txt")
-        with open(success_path, "w") as f:
-            f.write(f"Successfully downloaded: {file_name}\nTo: {full_file_path}")
+        # 7. Obtain mod file info and save metadata
+        try:
+            info_api_url = f"https://api.nexusmods.com/v1/games/{nexus_game_id}/mods/{mod_id}/files/{file_id}.json"
+            info_response = requests.get(info_api_url, headers=headers)
+            info_response.raise_for_status()
+            file_info_data = info_response.json()
+
+            # Extract name and version
+            mod_metadata = {
+                "name": file_info_data.get("name", "Unknown Mod"),
+                "version": file_info_data.get("version", "1.0"),
+                "mod_id": mod_id,
+                "file_id": file_id,
+                "nexus_game_id": nexus_game_id
+            }
+
+            # Define metadata file path: filename.zip.nomm.yaml
+            metadata_filename = f"{file_name}.nomm.yaml"
+            metadata_path = final_download_dir / metadata_filename
+
+            with open(metadata_path, "w") as f:
+                yaml.dump(mod_metadata, f, default_flow_style=False)
+            
+            print(f"Metadata saved to {metadata_filename}")
+
+        except Exception as e:
+            print(f"Warning: Could not retrieve mod metadata: {e}")
+            # We don't return False here because the actual mod download succeeded
 
         print(f"Done! Saved to {full_file_path}")
         return True
