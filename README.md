@@ -7,10 +7,9 @@ The goal here is to keep the setup really simple for idiots like me who don't ne
 Just a few clicks, a clean, modern interface, and you're done :)
 
 > [!WARNING]
-> A big chunk of this project is made with the help of Gemini.
+> This project is made with the help of Gemini.
 > 
 > If you hate AI, that makes two of us 🙂
-> 
 > _However_, I would never have been able to make something like this without it.
 
 ### My Guiding Principles
@@ -24,7 +23,7 @@ Just a few clicks, a clean, modern interface, and you're done :)
 
 ### How does it work?
 
-The principle behind this project is that games are defined by easy to setup config yaml files.
+One of the main ideas behind this project is that games are defined by easy to setup config yaml files.
 This means that anyone can create a simple yaml for their game and submit it to the project with little to no coding knowledge and the tool will automate the rest.
 
 For instance:
