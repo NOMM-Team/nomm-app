@@ -7,6 +7,7 @@ The goal here is to keep the setup really simple for idiots like me who don't ne
 Just a few clicks, a clean, modern interface, and you're done :)
 
 [![Watch the video](https://i.imgur.com/1iGS3zd.png)](https://www.youtube.com/watch?v=3UWBQxQY9kk)
+^ Click on the image above for a quick preview of current features ^
 
 > [!WARNING]
 > This project is made with the help of Gemini.
