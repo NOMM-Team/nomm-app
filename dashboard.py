@@ -305,6 +305,7 @@ class GameDashboard(Adw.Window):
                             display_name = data.get("name", i)
                             version_text = data.get("version", "—")
                             changelog = data.get("changelog", "")
+                            mod_link = data.get("mod_link", "")
                         break 
                     except: pass
 
@@ -328,6 +329,23 @@ class GameDashboard(Adw.Window):
             
             v_label = Gtk.Label(label=version_text)
             version_badge.append(v_label)
+
+            # --- Mod Link Badge
+            if mod_link:
+                mod_link_badge = Gtk.Button()
+                mod_link_badge.add_css_class("flat") # Keeps it from looking like a chunky button
+                mod_link_badge.add_css_class("version-badge")
+                mod_link_badge.set_valign(Gtk.Align.CENTER)
+                mod_link_badge.set_margin_end(15)
+                mod_link_badge.set_cursor_from_name("pointer")
+                
+                # Create the External Link Icon
+                link_icon = Gtk.Image.new_from_icon_name("external-link-symbolic")
+                link_icon.set_pixel_size(14) # Matches your changelog icon size
+                
+                mod_link_badge.set_child(link_icon)
+                mod_link_badge.connect("clicked", lambda b, l=mod_link: webbrowser.open(l))
+                row.add_suffix(mod_link_badge)
 
             if changelog:
                 version_badge.set_tooltip_text(changelog)

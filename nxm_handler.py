@@ -107,7 +107,8 @@ def download_nexus_mod(nxm_link):
                 "changelog": file_info_data.get("changelog_html", ""),
                 "mod_id": mod_id,
                 "file_id": file_id,
-                "nexus_game_id": nexus_game_id
+                "nexus_game_id": nexus_game_id, 
+                "mod_link": f"https://www.nexusmods.com/{nexus_game_id}/mods/{mod_id}"
             }
 
             # Define metadata file path: filename.zip.nomm.yaml
