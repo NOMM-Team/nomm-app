@@ -6,6 +6,8 @@ This may or may not eventually become a stupid simple, super clean native mod ma
 The goal here is to keep the setup really simple for idiots like me who don't need multiple profiles and all that jazz.
 Just a few clicks, a clean, modern interface, and you're done :)
 
+[![Watch the video](https://i.imgur.com/1iGS3zd.png)](https://www.youtube.com/watch?v=3UWBQxQY9kk)
+
 > [!WARNING]
 > This project is made with the help of Gemini.
 > 
