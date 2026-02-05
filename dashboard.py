@@ -217,17 +217,26 @@ class GameDashboard(Adw.Window):
         staging_dir = self.get_staging_path()
         dest_dir = self.get_game_destination_path()
         m_items = os.listdir(staging_dir) if staging_dir.exists() else []
+        
         for item in m_items:
+            # --- ADD THIS FILTER ---
+            # Ignore hidden files (starts with .) and metadata (ends with .nomm.yaml)
+            if item.startswith('.') or item.lower().endswith('.nomm.yaml'):
+                continue
+            # -----------------------
+
             if dest_dir and (dest_dir / item).is_symlink():
                 m_active += 1
             else:
                 m_inactive += 1
+        
         self.mods_inactive_label.set_text(str(m_inactive))
         self.mods_active_label.set_text(str(m_active))
 
         # 2. Update Downloads Stats
         d_avail, d_inst = 0, 0
         if self.downloads_path and os.path.exists(self.downloads_path):
+            # This part is already correct because it filters for '.zip'
             zips = [f for f in os.listdir(self.downloads_path) if f.lower().endswith('.zip')]
             for f in zips:
                 if self.is_mod_installed(f):
@@ -261,22 +270,18 @@ class GameDashboard(Adw.Window):
             
         container = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10, margin_start=100, margin_end=100, margin_top=40)
         
-        # Action Bar: Search on left, Folder on right
+        # Action Bar (Search & Folder)
         action_bar = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
-        
         self.mod_search_entry = Gtk.SearchEntry(placeholder_text="Search mods...")
         self.mod_search_entry.set_size_request(300, -1) 
         self.mod_search_entry.connect("search-changed", self.on_mod_search_changed)
         action_bar.append(self.mod_search_entry)
 
         folder_btn = Gtk.Button(icon_name="folder-open-symbolic", css_classes=["flat"])
-        folder_btn.set_halign(Gtk.Align.END)
-        folder_btn.set_hexpand(True)
+        folder_btn.set_halign(Gtk.Align.END); folder_btn.set_hexpand(True)
         folder_btn.set_cursor_from_name("pointer")
-        folder_btn.set_tooltip_text("Open Staging Folder")
         folder_btn.connect("clicked", lambda x: webbrowser.open(f"file://{self.get_staging_path()}"))
         action_bar.append(folder_btn)
-
         container.append(action_bar)
 
         self.mods_list_box = Gtk.ListBox(css_classes=["boxed-list"])
@@ -287,43 +292,70 @@ class GameDashboard(Adw.Window):
         items = os.listdir(s) if s.exists() else []
         
         for i in sorted(items, key=lambda x: os.path.getmtime(s/x), reverse=True):
-            r = Adw.ActionRow(title=i)
-            r.mod_name = i.lower() 
-            
-            # Switch for enabling/disabling
+            if i.lower().endswith(".nomm.yaml"):
+                continue
+
+            # --- METADATA SEARCH ---
+            display_name, version_text, changelog = i, "—", ""
+            for meta_file in os.listdir(s):
+                if meta_file.endswith(".nomm.yaml") and i in meta_file:
+                    try:
+                        with open(s / meta_file, 'r') as f:
+                            data = yaml.safe_load(f)
+                            display_name = data.get("name", i)
+                            version_text = data.get("version", "—")
+                            changelog = data.get("changelog", "")
+                        break 
+                    except: pass
+
+            # Use standard title/subtitle to keep the row height and layout stable
+            row = Adw.ActionRow(title=display_name)
+            if display_name != i:
+                row.set_subtitle(i)
+            row.mod_name = i.lower() 
+
+            # Prefix: Switch
             sw = Gtk.Switch(active=(d/i).is_symlink() if d else False, valign=Gtk.Align.CENTER, css_classes=["green-switch"])
             sw.connect("state-set", self.on_switch_toggled, i)
-            r.add_prefix(sw)
+            row.add_prefix(sw)
 
-            # Suffix Box: Timestamp + Trash Bin
-            suffix_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=15)
+            # --- VERSION BADGE (Left-most Suffix) ---
+            # Adding this first keeps it closest to the title
+            version_badge = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
+            version_badge.add_css_class("version-badge")
+            version_badge.set_valign(Gtk.Align.CENTER)
+            version_badge.set_margin_end(15) 
             
-            # Installation Timestamp
+            v_label = Gtk.Label(label=version_text)
+            version_badge.append(v_label)
+
+            if changelog:
+                version_badge.set_tooltip_text(changelog)
+                q_icon = Gtk.Image.new_from_icon_name("help-about-symbolic")
+                q_icon.set_pixel_size(14)
+                version_badge.append(q_icon)
+            
+            row.add_suffix(version_badge)
+
+            # --- OTHER SUFFIXES (Timestamp & Trash) ---
             mtime = os.path.getmtime(s/i)
-            ts_label = Gtk.Label(label=datetime.fromtimestamp(mtime).strftime('%Y-%m-%d %H:%M'), css_classes=["dim-label"])
-            suffix_box.append(ts_label)
+            ts_label = Gtk.Label(label=datetime.fromtimestamp(mtime).strftime('%Y-%m-%d %H:%M'), css_classes=["dim-label"], margin_end=10)
+            row.add_suffix(ts_label)
 
-            # Uninstall/Delete Trash Bin with confirmation stack
+            # Trash Bin Stack (Restored your specific logic)
             u_stack = Gtk.Stack(transition_type=Gtk.StackTransitionType.CROSSFADE, hhomogeneous=False, interpolate_size=True)
-            
             bin_btn = Gtk.Button(icon_name="user-trash-symbolic", valign=Gtk.Align.CENTER, css_classes=["flat"])
-            bin_btn.set_cursor_from_name("pointer")
-            
             conf_del_btn = Gtk.Button(label="Are you sure?", valign=Gtk.Align.CENTER, css_classes=["destructive-action"])
-            # Linked to your existing helper
             conf_del_btn.connect("clicked", self.on_uninstall_item, i) 
             
             bin_btn.connect("clicked", lambda b, s=u_stack: [
                 s.set_visible_child_name("c"), 
                 GLib.timeout_add_seconds(3, lambda: s.set_visible_child_name("b") or False)
             ])
-            
-            u_stack.add_named(bin_btn, "b")
-            u_stack.add_named(conf_del_btn, "c")
-            suffix_box.append(u_stack)
+            u_stack.add_named(bin_btn, "b"); u_stack.add_named(conf_del_btn, "c")
+            row.add_suffix(u_stack)
 
-            r.add_suffix(suffix_box)
-            self.mods_list_box.append(r)
+            self.mods_list_box.append(row)
         
         sc = Gtk.ScrolledWindow(vexpand=True)
         sc.set_child(self.mods_list_box)
@@ -358,14 +390,17 @@ class GameDashboard(Adw.Window):
         self.list_box = Gtk.ListBox(css_classes=["boxed-list"])
         self.list_box.set_filter_func(self.filter_list_rows)
 
+        staging_path = self.get_staging_path()
+
         if self.downloads_path and os.path.exists(self.downloads_path):
             files = [f for f in os.listdir(self.downloads_path) if f.lower().endswith('.zip')]
             files.sort(key=lambda f: os.path.getmtime(os.path.join(self.downloads_path, f)), reverse=True)
 
             for f in files:
                 installed = self.is_mod_installed(f)
+                zip_full_path = os.path.join(self.downloads_path, f)
                 
-                # Metadata extraction
+                # Metadata extraction (as before)
                 display_name, version_text, changelog = f, "—", ""
                 meta_path = os.path.join(self.downloads_path, f + ".nomm.yaml")
                 if os.path.exists(meta_path):
@@ -377,41 +412,62 @@ class GameDashboard(Adw.Window):
                             changelog = data.get("changelog", "")
                     except: pass
 
-                # REVERT to standard ActionRow properties to fix height and suffix layout
                 row = Adw.ActionRow(title=display_name)
                 row.is_installed = installed
-                if display_name != f:
-                    row.set_subtitle(f)
+                if display_name != f: row.set_subtitle(f)
 
-                # --- VERSION BADGE (Aligned Left-most in the Suffix area) ---
+                # --- VERSION BADGE ---
                 version_badge = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
                 version_badge.add_css_class("version-badge")
                 version_badge.set_valign(Gtk.Align.CENTER)
-                version_badge.set_margin_end(20) # Push other suffixes away
+                version_badge.set_margin_end(20) 
                 
                 v_label = Gtk.Label(label=version_text)
                 version_badge.append(v_label)
-
                 if changelog:
                     version_badge.set_tooltip_text(changelog)
                     q_icon = Gtk.Image.new_from_icon_name("help-about-symbolic")
                     q_icon.set_pixel_size(14)
                     version_badge.append(q_icon)
                 
-                # Adding the badge FIRST makes it the leftmost suffix (closest to the name)
                 row.add_suffix(version_badge)
 
-                # --- OTHER SUFFIXES ---
-                dl_ts = Gtk.Label(label=self.get_download_timestamp(f), css_classes=["dim-label"], margin_end=15)
-                row.add_suffix(dl_ts)
+                # --- TIMESTAMPS BOX ---
+                ts_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=2, valign=Gtk.Align.CENTER, margin_end=15)
+                
+                # Download Timestamp
+                dl_ts_text = f"Downloaded: {self.get_download_timestamp(f)}"
+                dl_ts = Gtk.Label(label=dl_ts_text, xalign=1, css_classes=["dim-label", "caption"])
+                ts_box.append(dl_ts)
 
+                # Installation Timestamp (Found by checking zip root folder in staging)
+                if installed:
+                    inst_ts_val = None
+                    try:
+                        with zipfile.ZipFile(zip_full_path, 'r') as z:
+                            # Get the root folder/file from the zip
+                            first_item = z.namelist()[0].split('/')[0]
+                            target_item = staging_path / first_item
+                            
+                            if target_item.exists():
+                                mtime = os.path.getmtime(target_item)
+                                inst_ts_val = datetime.fromtimestamp(mtime).strftime('%Y-%m-%d %H:%M')
+                    except: pass
+
+                    if inst_ts_val:
+                        inst_ts = Gtk.Label(label=f"Installed: {inst_ts_val}", xalign=1, css_classes=["dim-label", "caption"])
+                        ts_box.append(inst_ts)
+                
+                row.add_suffix(ts_box)
+
+                # --- BUTTONS ---
                 install_btn = Gtk.Button(label="Reinstall" if installed else "Install", valign=Gtk.Align.CENTER)
                 if not installed: install_btn.add_css_class("suggested-action")
                 install_btn.set_cursor_from_name("pointer")
                 install_btn.connect("clicked", self.on_install_clicked, f)
                 row.add_suffix(install_btn)
 
-                # TRASH BIN (Restored exact logic and spacing)
+                # TRASH BIN
                 d_stack = Gtk.Stack(transition_type=Gtk.StackTransitionType.CROSSFADE, hhomogeneous=False, interpolate_size=True)
                 b_btn = Gtk.Button(icon_name="user-trash-symbolic", valign=Gtk.Align.CENTER, css_classes=["flat"])
                 b_btn.set_cursor_from_name("pointer")
@@ -422,8 +478,7 @@ class GameDashboard(Adw.Window):
                     s.set_visible_child_name("c"), 
                     GLib.timeout_add_seconds(3, lambda: s.set_visible_child_name("b") or False)
                 ])
-                d_stack.add_named(b_btn, "b")
-                d_stack.add_named(c_btn, "c")
+                d_stack.add_named(b_btn, "b"); d_stack.add_named(c_btn, "c")
                 row.add_suffix(d_stack)
                 
                 self.list_box.append(row)
@@ -639,17 +694,24 @@ class GameDashboard(Adw.Window):
             staging_path = self.get_staging_path()
             zip_full_path = os.path.join(self.downloads_path, filename)
             
-            # 1. Extract the mod contents
+            # 1. Peek inside the ZIP to find the top-level folder name
+            extracted_root = None
             with zipfile.ZipFile(zip_full_path, 'r') as z:
+                # 2. Extract the mod contents
                 z.extractall(staging_path)
-            
-            # 2. Handle metadata (.nomm.yaml)
-            # The metadata file is named 'Filename.zip.nomm.yaml'
+                
+                # Get the first part of the first path in the zip (the folder name)
+                first_item = z.namelist()[0]
+                extracted_root = first_item.split('/')[0]
+
+            # 3. Handle metadata (.nomm.yaml)
             meta_filename = filename + ".nomm.yaml"
             meta_source = os.path.join(self.downloads_path, meta_filename)
             
-            if os.path.exists(meta_source):
-                meta_dest = os.path.join(staging_path, meta_filename)
+            if os.path.exists(meta_source) and extracted_root:
+                # Rename to .folder_name.nomm.yaml
+                new_meta_name = f".{extracted_root}.nomm.yaml"
+                meta_dest = os.path.join(staging_path, new_meta_name)
                 shutil.copy2(meta_source, meta_dest)
             
             # Refresh UI
@@ -658,7 +720,7 @@ class GameDashboard(Adw.Window):
             self.update_indicators()
             
         except Exception as e: 
-            self.show_message("Error", str(e))
+            self.show_message("Error", f"Installation failed: {e}")
 
     def on_uninstall_item(self, btn, item_name):
         try:
