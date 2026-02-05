@@ -636,20 +636,58 @@ class GameDashboard(Adw.Window):
 
     def on_install_clicked(self, btn, filename):
         try:
-            with zipfile.ZipFile(os.path.join(self.downloads_path, filename), 'r') as z:
-                z.extractall(self.get_staging_path())
-            self.create_downloads_page(); self.create_mods_page(); self.update_indicators()
-        except Exception as e: self.show_message("Error", str(e))
+            staging_path = self.get_staging_path()
+            zip_full_path = os.path.join(self.downloads_path, filename)
+            
+            # 1. Extract the mod contents
+            with zipfile.ZipFile(zip_full_path, 'r') as z:
+                z.extractall(staging_path)
+            
+            # 2. Handle metadata (.nomm.yaml)
+            # The metadata file is named 'Filename.zip.nomm.yaml'
+            meta_filename = filename + ".nomm.yaml"
+            meta_source = os.path.join(self.downloads_path, meta_filename)
+            
+            if os.path.exists(meta_source):
+                meta_dest = os.path.join(staging_path, meta_filename)
+                shutil.copy2(meta_source, meta_dest)
+            
+            # Refresh UI
+            self.create_downloads_page()
+            self.create_mods_page()
+            self.update_indicators()
+            
+        except Exception as e: 
+            self.show_message("Error", str(e))
 
     def on_uninstall_item(self, btn, item_name):
         try:
             dest = self.get_game_destination_path()
-            if dest and (dest / item_name).is_symlink(): (dest / item_name).unlink()
-            path = self.get_staging_path() / item_name
-            if path.is_dir(): shutil.rmtree(path)
-            else: path.unlink()
-            self.create_mods_page(); self.create_downloads_page(); self.update_indicators()
-        except Exception as e: self.show_message("Error", str(e))
+            staging_path = self.get_staging_path()
+            
+            # Remove symlink from game folder
+            if dest and (dest / item_name).is_symlink(): 
+                (dest / item_name).unlink()
+            
+            # Remove the actual files from staging
+            path = staging_path / item_name
+            if path.exists():
+                if path.is_dir(): shutil.rmtree(path)
+                else: path.unlink()
+            
+            # --- NEW: Cleanup corresponding metadata if it exists ---
+            # We look for any .nomm.yaml files that might be associated with this item
+            # (Note: This assumes the item_name matches the base of the zip)
+            for meta_file in staging_path.glob("*.nomm.yaml"):
+                # If you want to be precise, you'd need to track which zip created which files
+                # For now, this is a placeholder check
+                pass
+
+            self.create_mods_page()
+            self.create_downloads_page()
+            self.update_indicators()
+        except Exception as e: 
+            self.show_message("Error", str(e))
 
     def execute_inline_delete(self, btn, f):
         try:
