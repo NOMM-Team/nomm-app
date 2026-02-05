@@ -449,56 +449,62 @@ class GameDashboard(Adw.Window):
             for util_id, util in utilities_cfg.items():
                 row = Adw.ActionRow(title=util.get("name", util_id))
                 
-                # Creator Link
+                # --- CREATOR BADGE (Prefix) ---
                 creator = util.get("creator", "Unknown")
                 link = util.get("creator-link", "#")
-                c_btn = Gtk.Button(label=creator, css_classes=["flat", "dim-label"])
-                c_btn.set_cursor_from_name("pointer")
-                c_btn.connect("clicked", lambda b, l=link: webbrowser.open(l))
-                row.add_prefix(c_btn)
+                
+                creator_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
+                creator_box.set_valign(Gtk.Align.CENTER)
+                creator_box.set_margin_end(12)
+                
+                creator_btn = Gtk.Button(label=creator)
+                creator_btn.add_css_class("flat")
+                creator_btn.add_css_class("version-badge") 
+                creator_btn.set_cursor_from_name("pointer")
+                creator_btn.connect("clicked", lambda b, l=link: webbrowser.open(l))
+                
+                creator_box.append(creator_btn)
+                row.add_prefix(creator_box)
 
-                # Path Logic
+                # --- VERSION BADGE (New Suffix) ---
+                # Pulls version from the yaml; defaults to "—" if missing
+                util_version = util.get("version", "—")
+                
+                version_badge = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
+                version_badge.set_valign(Gtk.Align.CENTER)
+                version_badge.set_margin_end(15) # Space before the Install/Download button
+                
+                v_label = Gtk.Label(label=util_version)
+                v_label.add_css_class("version-badge") # Applying pill style to label
+                
+                version_badge.append(v_label)
+                row.add_suffix(version_badge)
+
+                # --- Path & Installation Logic ---
                 source = util.get("source", "")
                 filename = source.split("/")[-1] if "/" in source else f"{util_id}.zip"
                 util_dir = Path(self.downloads_path) / "utilities"
                 local_zip_path = util_dir / filename
                 target_dir = Path(self.game_path) / util.get("utility_path", "")
 
-                # 1. Check if files are actually installed in the game directory
                 is_installed = False
                 if local_zip_path.exists():
                     try:
                         with zipfile.ZipFile(local_zip_path, 'r') as z:
-                            # Verify every file in the zip exists at the destination
-                            is_installed = all(
-                                (target_dir / name).exists() 
-                                for name in z.namelist() 
-                                if not name.endswith('/')
-                            )
-                    except:
-                        is_installed = False
+                            is_installed = all((target_dir / name).exists() for name in z.namelist() if not name.endswith('/'))
+                    except: is_installed = False
 
                 stack = Gtk.Stack(transition_type=Gtk.StackTransitionType.CROSSFADE)
                 
-                # Download Button (Shown if zip is missing)
                 dl_btn = Gtk.Button(label="Download", css_classes=["suggested-action"], valign=Gtk.Align.CENTER)
                 dl_btn.connect("clicked", self.on_utility_download_clicked, util, stack)
                 
-                # Install/Reinstall Button (Shown if zip exists)
-                # If installed: "Reinstall" (Flat/Grey). If not: "Install" (Colored).
-                inst_btn = Gtk.Button(
-                    label="Reinstall" if is_installed else "Install", 
-                    valign=Gtk.Align.CENTER
-                )
-                if not is_installed:
-                    inst_btn.add_css_class("suggested-action")
-                
+                inst_btn = Gtk.Button(label="Reinstall" if is_installed else "Install", valign=Gtk.Align.CENTER)
+                if not is_installed: inst_btn.add_css_class("suggested-action")
                 inst_btn.connect("clicked", self.on_utility_install_clicked, util)
                 
                 stack.add_named(dl_btn, "download")
                 stack.add_named(inst_btn, "install")
-                
-                # Logic: If zip exists locally, show the install/reinstall button
                 stack.set_visible_child_name("install" if local_zip_path.exists() else "download")
                 
                 row.add_suffix(stack)
@@ -508,7 +514,7 @@ class GameDashboard(Adw.Window):
             scrolled.set_child(list_box)
             container.append(scrolled)
 
-        # --- Load Order Button at bottom ---
+        # --- Load Order Button ---
         load_order_rel = self.game_config.get("load_order_path")
         if load_order_rel:
             btn_container = Gtk.CenterBox(margin_top=20, margin_bottom=20)
