@@ -111,7 +111,7 @@ The app is built with:
 - [Libadwaita](https://gnome.pages.gitlab.gnome.org/libadwaita/)
 
 This means you should be able to run it directly on most linux distros without too many problems via the console by typing:
-`python3 ./main.py`
+`python3 ./launcher.py`
 Whilst in the path where the code is.
 
 
