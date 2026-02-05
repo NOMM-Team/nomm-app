@@ -9,6 +9,7 @@ nexus_game_id: "warhammer40kdarktide"
 essential-utilities:
   darktide-mod-loader:
     name: Darktide Mod Loader
+    version: 1.5
     creator: Talon-d
     creator-link: https://github.com/talon-d
     source: "https://github.com/talon-d/darktideML-4linux/releases/download/1.5/darktideML-4linux1-5.zip"
