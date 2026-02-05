@@ -104,6 +104,7 @@ def download_nexus_mod(nxm_link):
             mod_metadata = {
                 "name": file_info_data.get("name", "Unknown Mod"),
                 "version": file_info_data.get("version", "1.0"),
+                "changelog": file_info_data.get("changelog_html", ""),
                 "mod_id": mod_id,
                 "file_id": file_id,
                 "nexus_game_id": nexus_game_id
@@ -128,3 +129,5 @@ def download_nexus_mod(nxm_link):
     except Exception as e:
         print(f"An error occurred: {e}")
         return False
+
+download_nexus_mod("nxm://warhammer40kdarktide/mods/298/files/4054?key=aR8f2hLcNAEPDxwOeAZotQ&expires=1770447757&user_id=8648514")

@@ -90,6 +90,18 @@ togglebutton {
     text-shadow: 0 2px 10px rgba(0,0,0,0.5);
 }
 
+.version-badge { 
+    background-color: rgba(255, 255, 255, 0.1); 
+    border-radius: 99px; 
+    padding: 4px 12px; 
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+        
+.version-badge:hover {
+    background-color: rgba(255, 255, 255, 0.2);
+    border: 1px solid @accent_bg_color;
+}
+
 """
 
 def slugify(text):

@@ -336,9 +336,9 @@ class GameDashboard(Adw.Window):
             self.view_stack.remove(self.view_stack.get_child_by_name("downloads"))
 
         container = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10, margin_start=100, margin_end=100, margin_top=40)
-        action_bar = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
         
-        # Filter group
+        # ... (Action Bar code remains the same)
+        action_bar = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
         filter_group = Gtk.Box(css_classes=["linked"])
         self.all_filter_btn = Gtk.ToggleButton(label="All", active=True)
         self.all_filter_btn.connect("toggled", self.on_filter_toggled, "all")
@@ -347,17 +347,11 @@ class GameDashboard(Adw.Window):
             b = Gtk.ToggleButton(label=l, group=self.all_filter_btn)
             b.connect("toggled", self.on_filter_toggled, n)
             filter_group.append(b)
-        
         action_bar.append(filter_group)
-
         folder_btn = Gtk.Button(icon_name="folder-open-symbolic", css_classes=["flat"])
-        folder_btn.set_halign(Gtk.Align.END)
-        folder_btn.set_hexpand(True)
-        folder_btn.set_cursor_from_name("pointer")
-        folder_btn.set_tooltip_text("Open Downloads Folder")
+        folder_btn.set_halign(Gtk.Align.END); folder_btn.set_hexpand(True)
         folder_btn.connect("clicked", lambda x: webbrowser.open(f"file://{self.downloads_path}"))
         action_bar.append(folder_btn)
-
         container.append(action_bar)
 
         scrolled = Gtk.ScrolledWindow(vexpand=True)
@@ -371,53 +365,65 @@ class GameDashboard(Adw.Window):
             for f in files:
                 installed = self.is_mod_installed(f)
                 
-                # --- METADATA LOGIC ---
-                display_title = f
+                # Metadata extraction
+                display_name, version_text, changelog = f, "—", ""
                 meta_path = os.path.join(self.downloads_path, f + ".nomm.yaml")
-                
                 if os.path.exists(meta_path):
                     try:
                         with open(meta_path, 'r') as meta_f:
-                            meta_data = yaml.safe_load(meta_f)
-                            m_name = meta_data.get("name")
-                            m_ver = meta_data.get("version")
-                            if m_name:
-                                display_title = f"{m_name} (v{m_ver})" if m_ver else m_name
-                    except Exception as e:
-                        print(f"Error reading metadata for {f}: {e}")
+                            data = yaml.safe_load(meta_f)
+                            display_name = data.get("name", f)
+                            version_text = data.get("version", "—")
+                            changelog = data.get("changelog", "")
+                    except: pass
 
-                row = Adw.ActionRow(title=display_title)
-                # Store the original filename in the subtitle so the user can still see it
-                if display_title != f:
-                    row.set_subtitle(f)
-                
+                # REVERT to standard ActionRow properties to fix height and suffix layout
+                row = Adw.ActionRow(title=display_name)
                 row.is_installed = installed
+                if display_name != f:
+                    row.set_subtitle(f)
+
+                # --- VERSION BADGE (Aligned Left-most in the Suffix area) ---
+                version_badge = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
+                version_badge.add_css_class("version-badge")
+                version_badge.set_valign(Gtk.Align.CENTER)
+                version_badge.set_margin_end(20) # Push other suffixes away
                 
-                # Timestamps
-                dl_ts = Gtk.Label(label=f"Downloaded: {self.get_download_timestamp(f)}", margin_end=20)
-                dl_ts.add_css_class("dim-label")
+                v_label = Gtk.Label(label=version_text)
+                version_badge.append(v_label)
+
+                if changelog:
+                    version_badge.set_tooltip_text(changelog)
+                    q_icon = Gtk.Image.new_from_icon_name("help-about-symbolic")
+                    q_icon.set_pixel_size(14)
+                    version_badge.append(q_icon)
+                
+                # Adding the badge FIRST makes it the leftmost suffix (closest to the name)
+                row.add_suffix(version_badge)
+
+                # --- OTHER SUFFIXES ---
+                dl_ts = Gtk.Label(label=self.get_download_timestamp(f), css_classes=["dim-label"], margin_end=15)
                 row.add_suffix(dl_ts)
 
-                inst_ts_text = self.get_install_timestamp_from_zip(f) if installed else "—"
-                inst_ts = Gtk.Label(label=f"Installed: {inst_ts_text}", margin_end=20)
-                inst_ts.add_css_class("dim-label")
-                row.add_suffix(inst_ts)
-                
-                # Install Button
                 install_btn = Gtk.Button(label="Reinstall" if installed else "Install", valign=Gtk.Align.CENTER)
-                if not installed:
-                    install_btn.add_css_class("suggested-action")
+                if not installed: install_btn.add_css_class("suggested-action")
                 install_btn.set_cursor_from_name("pointer")
                 install_btn.connect("clicked", self.on_install_clicked, f)
                 row.add_suffix(install_btn)
 
-                # Delete Stack
+                # TRASH BIN (Restored exact logic and spacing)
                 d_stack = Gtk.Stack(transition_type=Gtk.StackTransitionType.CROSSFADE, hhomogeneous=False, interpolate_size=True)
                 b_btn = Gtk.Button(icon_name="user-trash-symbolic", valign=Gtk.Align.CENTER, css_classes=["flat"])
+                b_btn.set_cursor_from_name("pointer")
                 c_btn = Gtk.Button(label="Are you sure?", valign=Gtk.Align.CENTER, css_classes=["destructive-action"])
-                c_btn.connect("clicked", self.execute_inline_delete_with_meta, f) # Updated helper
-                b_btn.connect("clicked", lambda b, s=d_stack: [s.set_visible_child_name("c"), GLib.timeout_add_seconds(3, lambda: s.set_visible_child_name("b") or False)])
-                d_stack.add_named(b_btn, "b"); d_stack.add_named(c_btn, "c")
+                c_btn.connect("clicked", self.execute_inline_delete_with_meta, f)
+                
+                b_btn.connect("clicked", lambda b, s=d_stack: [
+                    s.set_visible_child_name("c"), 
+                    GLib.timeout_add_seconds(3, lambda: s.set_visible_child_name("b") or False)
+                ])
+                d_stack.add_named(b_btn, "b")
+                d_stack.add_named(c_btn, "c")
                 row.add_suffix(d_stack)
                 
                 self.list_box.append(row)
