@@ -87,6 +87,7 @@ Phase 1 Development Progress:
 - [x] Add a button to return to launcher from the main window
 
 Phase 2 Development Progress:
+- [ ] Handle simple FOMOD
 - [ ] Let user skip launcher and go straight to game
 - [ ] Figure out how to create a flatpak for the app
 - [ ] Add language-specific strings

@@ -5,9 +5,11 @@ import shutil
 import zipfile
 import webbrowser
 import re
+
 from pathlib import Path
 from datetime import datetime
 from PIL import Image
+import fomod_handler
 
 gi.require_version('Gtk', '4.0')
 gi.require_version('Adw', '1')
@@ -296,7 +298,7 @@ class GameDashboard(Adw.Window):
                 continue
 
             # --- METADATA SEARCH ---
-            display_name, version_text, changelog = i, "—", ""
+            display_name, version_text, changelog , mod_link = i, "—", "", ""
             for meta_file in os.listdir(s):
                 if meta_file.endswith(".nomm.yaml") and i in meta_file:
                     try:
@@ -712,33 +714,84 @@ class GameDashboard(Adw.Window):
             staging_path = self.get_staging_path()
             zip_full_path = os.path.join(self.downloads_path, filename)
             
-            # 1. Peek inside the ZIP to find the top-level folder name
-            extracted_root = None
             with zipfile.ZipFile(zip_full_path, 'r') as z:
-                # 2. Extract the mod contents
-                z.extractall(staging_path)
-                
-                # Get the first part of the first path in the zip (the folder name)
-                first_item = z.namelist()[0]
-                extracted_root = first_item.split('/')[0]
+                # 1. Case-insensitive check for fomod/ModuleConfig.xml
+                all_files = z.namelist()
+                fomod_xml_path = next((f for f in all_files if f.lower().endswith("fomod/moduleconfig.xml")), None)
 
-            # 3. Handle metadata (.nomm.yaml)
-            meta_filename = filename + ".nomm.yaml"
-            meta_source = os.path.join(self.downloads_path, meta_filename)
-            
-            if os.path.exists(meta_source) and extracted_root:
-                # Rename to .folder_name.nomm.yaml
-                new_meta_name = f".{extracted_root}.nomm.yaml"
-                meta_dest = os.path.join(staging_path, new_meta_name)
-                shutil.copy2(meta_source, meta_dest)
-            
-            # Refresh UI
-            self.create_downloads_page()
-            self.create_mods_page()
-            self.update_indicators()
-            
-        except Exception as e: 
+                if fomod_xml_path:
+                    xml_data = z.read(fomod_xml_path)
+                    # Proceed with your FOMOD logic...
+                    module_name, options = fomod_handler.parse_fomod_xml(xml_data)
+                    
+                    if options:
+                        dialog = fomod_handler.FomodSelectionDialog(self, module_name, options)
+                        # We pass the filename to the response handler so it knows which ZIP to finish extracting
+                        dialog.connect("response", self.on_fomod_dialog_response, zip_full_path, filename)
+                        dialog.present()
+                        return
+
+                # 2. Standard Installation (If not FOMOD or parsing failed)
+                z.extractall(staging_path)
+                # Use the first folder in zip as the root name for metadata
+                extracted_root = z.namelist()[0].split('/')[0]
+                self.post_install_actions(filename, extracted_root)
+
+        except Exception as e:
             self.show_message("Error", f"Installation failed: {e}")
+
+    def on_fomod_dialog_response(self, dialog, response, zip_path, filename):
+        if response == Gtk.ResponseType.OK:
+            source_folder_name = dialog.get_selected_source()
+            if source_folder_name:
+                staging_path = self.get_staging_path()
+                
+                with zipfile.ZipFile(zip_path, 'r') as z:
+                    all_files = z.namelist()
+                    
+                    # 1. Find where the source_folder actually lives in the ZIP
+                    # We look for a directory entry that ends with our source_folder name
+                    actual_prefix = None
+                    for f in all_files:
+                        if f.endswith(f"{source_folder_name}/"):
+                            actual_prefix = f
+                            break
+                    
+                    # Fallback: if no directory entry, look for files contained within it
+                    if not actual_prefix:
+                        for f in all_files:
+                            if f"/{source_folder_name}/" in f or f.startswith(f"{source_folder_name}/"):
+                                actual_prefix = f.split(source_folder_name)[0] + source_folder_name + "/"
+                                break
+
+                    if actual_prefix:
+                        for member in all_files:
+                            if member.startswith(actual_prefix) and not member.endswith('/'):
+                                # 2. Flatten the path: 
+                                # Remove the prefix so it extracts directly into staging
+                                arcname = os.path.relpath(member, actual_prefix)
+                                target_path = os.path.join(staging_path, source_folder_name, arcname)
+                                
+                                os.makedirs(os.path.dirname(target_path), exist_ok=True)
+                                with z.open(member) as source_file, open(target_path, "wb") as target_file:
+                                    shutil.copyfileobj(source_file, target_file)
+                        
+                        self.post_install_actions(filename, source_folder_name)
+                    else:
+                        print(f"Could not find {source_folder_name} inside the ZIP.")
+
+        dialog.destroy()
+
+    def post_install_actions(self, filename, extracted_root):
+        """Standardized cleanup for all installation types"""
+        meta_source = os.path.join(self.downloads_path, filename + ".nomm.yaml")
+        if os.path.exists(meta_source):
+            meta_dest = os.path.join(self.get_staging_path(), f".{extracted_root}.nomm.yaml")
+            shutil.copy2(meta_source, meta_dest)
+
+        self.create_downloads_page()
+        self.create_mods_page()
+        self.update_indicators()
 
     def on_uninstall_item(self, btn, item_name):
         try:
