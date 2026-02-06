@@ -96,7 +96,7 @@ Phase 2 Development Progress:
 - [ ] ???
 
 Phase 3 Development Progress:
-- [ ] Manage conflicts (for sure this will be hard without an actual developer)
+- [ ] Manage conflicts (for sure this will be hard without an actually good developer)
 - [ ] ???
 
 Bonus (nice to have)
