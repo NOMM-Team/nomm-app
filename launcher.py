@@ -420,6 +420,7 @@ class Nomm(Adw.Application):
         # Homogeneous ensures the FlowBox treats every slot as a 200px block
         flow = Gtk.FlowBox(
             valign=Gtk.Align.START, 
+            halign=Gtk.Align.START, # FIX 1: Keeps the grid columns from stretching
             selection_mode=Gtk.SelectionMode.NONE,
             margin_top=40, margin_bottom=40, margin_start=40, margin_end=40,
             column_spacing=30, row_spacing=30,
@@ -427,9 +428,11 @@ class Nomm(Adw.Application):
         )
 
         for game in self.matches:
-            # 1. THE CARD (The Container)
+            # 1. THE CARD
             card = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
             card.set_size_request(200, 300)
+            card.set_halign(Gtk.Align.START) # FIX 2: Prevents card from expanding horizontally
+            card.set_hexpand(False)          # FIX 3: Explicitly refuse extra horizontal space
             card.add_css_class("game-card")
             card.set_overflow(Gtk.Overflow.HIDDEN)
             card.set_tooltip_text(f"{game['name']}\n{game['path']}")
