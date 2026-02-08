@@ -287,7 +287,7 @@ class Nomm(Adw.Application):
         self.stack.set_visible_child_name("loading")
         threading.Thread(target=self.run_background_workflow, daemon=True).start()
 
-    def game_title_matcher(self, game_path: str, game_config_path: str, game_config_data: dict, folder_name: str, game_title: str, platform="unknown", app_id=None):
+    def game_title_matcher(self, game_path: str, game_config_path: str, game_config_data: dict, folder_name: str, game_title: str, platform: str, app_id=None):
         '''Tries to match supported game titles with folder names identified and if it does it adds them to the match list'''
         slugged_game_title = slugify(game_title)
         slugged_folder_name = slugify(folder_name)
@@ -352,7 +352,7 @@ class Nomm(Adw.Application):
                         with open(conf_path, 'r') as f:
                             data = yaml.safe_load(f) or {}
                         
-                        game_title, app_id = data.get("name"), data.get("steamappid")
+                        game_title, steam_app_id, gog_store_id = data.get("name"), data.get("steamappid"), str(data.get("gogstoreid", None))
                         if not game_title: continue
                         
                         # Steam library searching:
@@ -361,39 +361,50 @@ class Nomm(Adw.Application):
                             if not os.path.exists(lib): continue
                             for folder in os.listdir(lib):
                                 game_path = os.path.join(lib, folder)
-                                if self.game_title_matcher(game_path, conf_path, data, folder, game_title, platform="steam", app_id=app_id):
+                                if self.game_title_matcher(game_path, conf_path, data, folder, game_title, platform="steam", app_id=steam_app_id):
                                     break
                         
                         # (Heroic) Epic library searching
-                        self.check_heroic_epic_games(conf_path, data, game_title)
-
+                        self.check_heroic_games(conf_path, data, game_title, "heroic-epic")
+                        # (Heroic) GOG library searching
+                        self.check_heroic_games(conf_path, data, gog_store_id, "heroic-gog")
                     
                     except Exception as e:
                         print(f"Error processing {filename} during scan: {e}")
 
         GLib.idle_add(self.show_library_ui)
 
-    def check_heroic_epic_games(self, game_config_path: str, game_config_data: dict, game_title: str):
-        json_path = os.path.expanduser("~/.var/app/com.heroicgameslauncher.hgl/config/heroic/legendaryConfig/legendary/installed.json")
-        
-        if not os.path.exists(json_path):
-            print("Heroic installed.json not found.")
-            return None
+    def check_heroic_games(self, game_config_path: str, game_config_data: dict, game_title: str, platform: str):
+        if platform == "heroic-epic":
+            json_path = os.path.expanduser("~/.var/app/com.heroicgameslauncher.hgl/config/heroic/legendaryConfig/legendary/installed.json")
+        elif platform == "heroic-gog":
+            json_path = os.path.expanduser("~/.var/app/com.heroicgameslauncher.hgl/config/heroic/gog_store/installed.json")
 
+        if not os.path.exists(json_path):
+            print(f"No {platform} installed.json found.")
+            return None
         try:
             with open(json_path, 'r') as f:
                 installed_games = json.load(f)
-                
-            # installed_games is a dict where keys are IDs and values are game info
-            for app_id, game_info in installed_games.items():
-                epic_game_title = game_info.get("title", "")
-                game_path = game_info.get("install_path", "")
-                
-                if self.game_title_matcher(game_path, game_config_path, game_config_data, epic_game_title, game_title, platform="heroic-epic", app_id=app_id):
-                    return
-                    
         except Exception as e:
-            print(f"Error reading Heroic config: {e}")
+            print(f"Error when trying to access {platform} json file: {e}")
+            return None
+
+        # for Epic Games, installed_games is a dict where keys are IDs and values are game info
+        if platform == "heroic-epic": 
+            for app_id, game_info in installed_games.items():
+                # Heroic GOG games have no title in the json - I use the app id instead which is stored in appName
+                heroic_game_title = game_info.get("title", "")
+                game_path = game_info.get("install_path", "")
+                if self.game_title_matcher(game_path, game_config_path, game_config_data, heroic_game_title, game_title, platform=platform, app_id=app_id):
+                    return
+
+        elif platform == "heroic-gog":
+            for game_info in installed_games["installed"]:
+                heroic_game_title = game_info.get("appName", "")
+                game_path = game_info.get("install_path", "")
+                if self.game_title_matcher(game_path, game_config_path, game_config_data, heroic_game_title, game_title, platform=platform, app_id=game_title):
+                    return
         
         return None
 
@@ -448,12 +459,14 @@ class Nomm(Adw.Application):
             platform = game['platform']
             
             # Use relative paths or absolute paths to your assets
-            script_dir = os.path.dirname(os.path.abspath(__file__))
+            assets_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "assets")
 
             if platform == "steam":
-                icon_path = os.path.join(script_dir, "assets", "steam_icon.svg")
+                icon_path = os.path.join(assets_dir, "steam_logo.svg")
             elif platform == "heroic-epic":
-                icon_path = os.path.join(script_dir, "assets", "epic_icon.svg")
+                icon_path = os.path.join(assets_dir, "epic_logo.svg")
+            elif platform == "heroic-gog":
+                icon_path = os.path.join(assets_dir, "epic_logo.svg")
 
             if os.path.exists(icon_path):
                 try:
