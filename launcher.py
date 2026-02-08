@@ -305,7 +305,8 @@ class Nomm(Adw.Application):
                 "name": game_title,
                 "img": self.find_game_art(app_id, platform),
                 "path": game_path,
-                "app_id": app_id
+                "app_id": app_id,
+                "platform": platform
             })
             return True
         return False
@@ -419,32 +420,65 @@ class Nomm(Adw.Application):
             card = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
             card.set_size_request(200, 300)
             card.add_css_class("game-card")
+            card.set_overflow(Gtk.Overflow.HIDDEN)
+            card.set_tooltip_text(f"{game['name']}\n{game['path']}")
 
             gesture = Gtk.GestureClick()
             gesture.connect("released", self.on_game_clicked, game)
             card.add_controller(gesture)
 
-            # 2. Force the image size at the data level
+            # 2. THE IMAGE OVERLAY (To superimpose the badge)
+            image_overlay = Gtk.Overlay()
+            
+            # --- Image Loading Logic ---
             img_widget = None
             if game['img'] and os.path.exists(game['img']):
                 try:
-                    # Physically scale the pixels to 200x300
                     pb = GdkPixbuf.Pixbuf.new_from_file_at_scale(game['img'], 200, 300, False)
-                    
-                    # Modern GTK4 path: Pixbuf -> Texture -> Picture
                     texture = Gdk.Texture.new_for_pixbuf(pb)
                     img_widget = Gtk.Picture.new_for_paintable(texture)
-                    
-                    img_widget.set_content_fit(Gtk.ContentFit.COVER)
                     img_widget.set_can_shrink(True)
                 except Exception as e:
-                    print(f"Scaling error for {game['name']}: {e}")
+                    print(f"Scaling error: {e}")
 
-            if img_widget:
-                card.append(img_widget)
-            else:
-                card.append(self.get_placeholder_game_poster())
+            poster = img_widget if img_widget else self.get_placeholder_game_poster()
+            image_overlay.set_child(poster)
 
+            # 3. THE PLATFORM BADGE
+            platform = game['platform']
+            
+            # Use relative paths or absolute paths to your assets
+            script_dir = os.path.dirname(os.path.abspath(__file__))
+
+            if platform == "steam":
+                icon_path = os.path.join(script_dir, "assets", "steam_icon.svg")
+            elif platform == "heroic-epic":
+                icon_path = os.path.join(script_dir, "assets", "epic_icon.svg")
+
+            if os.path.exists(icon_path):
+                try:
+                    badge_pb = GdkPixbuf.Pixbuf.new_from_file_at_scale(
+                        icon_path, 32, 32, True # True = Preserve aspect ratio
+                    )
+                    
+                    # Modern Texture conversion
+                    badge_tex = Gdk.Texture.new_for_pixbuf(badge_pb)
+                    badge_img = Gtk.Picture.new_for_paintable(badge_tex)
+                    
+                    # Styling & Placement
+                    badge_img.set_halign(Gtk.Align.END)
+                    badge_img.set_valign(Gtk.Align.END)
+                    badge_img.set_margin_end(10)
+                    badge_img.set_margin_bottom(10)
+                    badge_img.add_css_class("platform-badge")
+                    
+                    # Add to the image overlay we created earlier
+                    image_overlay.add_overlay(badge_img)
+                except Exception as e:
+                    print(f"Error rendering SVG badge: {e}")
+
+            # 4. Final Assembly
+            card.append(image_overlay)
             flow.append(card)
 
         scroll.set_child(flow)
