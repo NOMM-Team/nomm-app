@@ -6,6 +6,7 @@ import shutil
 import gi
 import sys
 import subprocess
+import json
 
 gi.require_version('Gtk', '4.0')
 gi.require_version('Adw', '1')
@@ -287,6 +288,29 @@ class Nomm(Adw.Application):
         self.stack.set_visible_child_name("loading")
         threading.Thread(target=self.run_background_workflow, daemon=True).start()
 
+    def game_title_matcher(self, game_path: str, game_config_path: str, game_config_data: dict, folder_name: str, game_title: str, platform="unknown", app_id=None):
+        '''Tries to match supported game titles with folder names identified and if it does it adds them to the match list'''
+        slugged_game_title = slugify(game_title)
+        slugged_folder_name = slugify(folder_name)
+        if slugged_folder_name == slugged_game_title:
+            
+            # --- AUTO-REGISTER PATH DURING SCAN ---
+            # Update the data dictionary with the discovered path
+            game_config_data["game_path"] = game_path
+            
+            # Save the updated config back to the YAML file
+            with open(game_config_path, 'w') as f_out:
+                yaml.dump(game_config_data, f_out, default_flow_style=False)
+            
+            self.matches.append({
+                "name": game_title,
+                "img": self.find_game_art(app_id, platform),
+                "path": game_path,
+                "app_id": app_id
+            })
+            return True
+        return False
+
     def run_background_workflow(self):
         config_dir = self.game_config_path
         found_libs = set()
@@ -328,35 +352,51 @@ class Nomm(Adw.Application):
                         with open(conf_path, 'r') as f:
                             data = yaml.safe_load(f) or {}
                         
-                        y_name, app_id = data.get("name"), data.get("steamappid")
-                        if not y_name: continue
+                        game_title, app_id = data.get("name"), data.get("steamappid")
+                        if not game_title: continue
                         
-                        slug = slugify(y_name)
+                        # Steam library searching:
+
                         for lib in found_libs:
                             if not os.path.exists(lib): continue
                             for folder in os.listdir(lib):
-                                if slugify(folder) == slug:
-                                    inst_path = os.path.join(lib, folder)
-                                    
-                                    # --- AUTO-REGISTER PATH DURING SCAN ---
-                                    # Update the data dictionary with the discovered path
-                                    data["game_path"] = inst_path
-                                    
-                                    # Save the updated config back to the YAML file
-                                    with open(conf_path, 'w') as f_out:
-                                        yaml.dump(data, f_out, default_flow_style=False)
-                                    
-                                    self.matches.append({
-                                        "name": y_name,
-                                        "img": self.find_steam_art(app_id),
-                                        "path": inst_path,
-                                        "app_id": app_id
-                                    })
+                                game_path = os.path.join(lib, folder)
+                                if self.game_title_matcher(game_path, conf_path, data, folder, game_title, platform="steam", app_id=app_id):
                                     break
+                        
+                        # (Heroic) Epic library searching
+                        self.check_heroic_epic_games(conf_path, data, game_title)
+
+                    
                     except Exception as e:
                         print(f"Error processing {filename} during scan: {e}")
 
         GLib.idle_add(self.show_library_ui)
+
+    def check_heroic_epic_games(self, game_config_path: str, game_config_data: dict, game_title: str):
+        json_path = os.path.expanduser("~/.var/app/com.heroicgameslauncher.hgl/config/heroic/legendaryConfig/legendary/installed.json")
+        
+        if not os.path.exists(json_path):
+            print("Heroic installed.json not found.")
+            return None
+
+        try:
+            with open(json_path, 'r') as f:
+                installed_games = json.load(f)
+                
+            # installed_games is a dict where keys are IDs and values are game info
+            for app_id, game_info in installed_games.items():
+                epic_game_title = game_info.get("title", "")
+                game_path = game_info.get("install_path", "")
+                
+                if self.game_title_matcher(game_path, game_config_path, game_config_data, epic_game_title, game_title, platform="heroic-epic", app_id=app_id):
+                    return
+                    
+        except Exception as e:
+            print(f"Error reading Heroic config: {e}")
+        
+        return None
+
 
     def show_library_ui(self):
         self.remove_stack_child("library")
@@ -472,9 +512,11 @@ class Nomm(Adw.Application):
             self.win.close()
             self.win = None
 
-    def get_placeholder(self):
+    def get_placeholder_game_poster(self):
         b = Gtk.Box(orientation=1, valign=Gtk.Align.CENTER)
-        b.append(Gtk.Image.new_from_icon_name("input-gaming-symbolic", pixel_size=128))
+        img = Gtk.Image.new_from_icon_name("input-gaming-symbolic")
+        img.set_pixel_size(128)
+        b.append(img)
         return b
 
     def apply_styles(self):
@@ -482,13 +524,18 @@ class Nomm(Adw.Application):
         provider.load_from_data(CSS.encode())
         Gtk.StyleContext.add_provider_for_display(Gdk.Display.get_default(), provider, 800)
 
-    def find_steam_art(self, app_id):
-        if not self.steam_base or not app_id: return None
-        path = os.path.join(self.steam_base, "appcache/librarycache", str(app_id))
-        if not os.path.exists(path): return None
-        for root, _, files in os.walk(path):
-            for t in ["library_capsule.jpg", "library_600x900.jpg"]:
-                if t in files: return os.path.join(root, t)
+    def find_game_art(self, app_id, platform):
+        if not app_id: return None
+        if platform == "steam":
+            path = os.path.join(self.steam_base, "appcache/librarycache", str(app_id))
+            if not os.path.exists(path): return None
+            for root, _, files in os.walk(path):
+                for t in ["library_capsule.jpg", "library_600x900.jpg"]:
+                    if t in files: return os.path.join(root, t)
+        elif platform == "heroic-epic":
+            base_path = os.path.expanduser("~/.var/app/com.heroicgameslauncher.hgl/config/heroic/icons")
+            icon_path = os.path.join(base_path, str(app_id)+".jpg")
+            return icon_path
         return None
 
     def register_nomm_nxm_protocol(self):
