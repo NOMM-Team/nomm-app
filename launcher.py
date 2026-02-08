@@ -10,8 +10,7 @@ import json
 
 gi.require_version('Gtk', '4.0')
 gi.require_version('Adw', '1')
-
-from gi.repository import Gtk, Adw, GLib, Gdk, Gio
+from gi.repository import Gtk, Adw, GLib, Gdk, Gio, GdkPixbuf
 from dashboard import GameDashboard
 from nxm_handler import download_nexus_mod
 
@@ -405,47 +404,68 @@ class Nomm(Adw.Application):
 
         overlay = Gtk.Overlay()
         scroll = Gtk.ScrolledWindow(vexpand=True)
-        flow = Gtk.FlowBox(valign=Gtk.Align.START, selection_mode=0,
-                           margin_top=40, margin_bottom=40, margin_start=40, margin_end=40,
-                           column_spacing=30, row_spacing=30)
+        
+        # Homogeneous ensures the FlowBox treats every slot as a 200px block
+        flow = Gtk.FlowBox(
+            valign=Gtk.Align.START, 
+            selection_mode=Gtk.SelectionMode.NONE,
+            margin_top=40, margin_bottom=40, margin_start=40, margin_end=40,
+            column_spacing=30, row_spacing=30,
+            homogeneous=True
+        )
 
-        for g in self.matches:
-            frame = Gtk.AspectFrame.new(0.5, 0.5, 0.666, False)
-            frame.set_size_request(300, 450)
-            frame.add_css_class("game-card")
-            frame.set_cursor_from_name("pointer")
-            frame.set_tooltip_text(f"{g['name']}\n{g['path']}")
+        for game in self.matches:
+            # 1. THE CARD (The Container)
+            card = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+            card.set_size_request(200, 300)
+            card.add_css_class("game-card")
 
             gesture = Gtk.GestureClick()
-            gesture.connect("released", self.on_game_clicked, g)
-            frame.add_controller(gesture)
+            gesture.connect("released", self.on_game_clicked, game)
+            card.add_controller(gesture)
 
-            img = None
-            if g['img'] and os.path.exists(g['img']):
+            # 2. Force the image size at the data level
+            img_widget = None
+            if game['img'] and os.path.exists(game['img']):
                 try:
-                    tex = Gdk.Texture.new_from_file(Gio.File.new_for_path(g['img']))
-                    img = Gtk.Picture(paintable=tex, content_fit=Gtk.ContentFit.COVER)
-                except: pass
+                    # Physically scale the pixels to 200x300
+                    pb = GdkPixbuf.Pixbuf.new_from_file_at_scale(game['img'], 200, 300, False)
+                    
+                    # Modern GTK4 path: Pixbuf -> Texture -> Picture
+                    # This avoids the DeprecationWarning and uses the GPU
+                    texture = Gdk.Texture.new_for_pixbuf(pb)
+                    img_widget = Gtk.Picture.new_for_paintable(texture)
+                    
+                    # We still tell it COVER just in case of slight rounding errors
+                    img_widget.set_content_fit(Gtk.ContentFit.COVER)
+                    img_widget.set_can_shrink(True)
+                except Exception as e:
+                    print(f"Scaling error for {game['name']}: {e}")
 
-            frame.set_child(img if img else self.get_placeholder())
-            flow.append(frame)
+            # 3. ATTACHMENT (Avoids the 'already has a parent' error)
+            if img_widget:
+                card.append(img_widget)
+            else:
+                # IMPORTANT: get_placeholder_game_poster must return a NEW widget 
+                # every time it is called to avoid the 'parent == NULL' crash.
+                card.append(self.get_placeholder_game_poster())
+
+            flow.append(card)
 
         scroll.set_child(flow)
         overlay.set_child(scroll)
-
+        
+        # ... (rest of your FAB logic) ...
         refresh_btn = Gtk.Button(icon_name="view-refresh-symbolic")
-        refresh_btn.add_css_class("circular")
-        refresh_btn.add_css_class("accent")      
-        refresh_btn.add_css_class("refresh-fab")
-        refresh_btn.set_cursor_from_name("pointer")
-        refresh_btn.set_size_request(64, 64)
-        refresh_btn.set_valign(Gtk.Align.START)
+        for cls in ["circular", "accent", "refresh-fab"]:
+            refresh_btn.add_css_class(cls)
+        refresh_btn.set_valign(Gtk.Align.END)
         refresh_btn.set_halign(Gtk.Align.END)
-        refresh_btn.set_margin_top(30)
+        refresh_btn.set_margin_bottom(30)
         refresh_btn.set_margin_end(30)
         refresh_btn.connect("clicked", self.on_refresh_clicked)
-        
         overlay.add_overlay(refresh_btn)
+
         view.append(overlay)
         self.stack.add_named(view, "library")
         self.stack.set_visible_child_name("library")
