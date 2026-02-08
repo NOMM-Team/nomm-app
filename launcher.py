@@ -432,40 +432,37 @@ class Nomm(Adw.Application):
                     pb = GdkPixbuf.Pixbuf.new_from_file_at_scale(game['img'], 200, 300, False)
                     
                     # Modern GTK4 path: Pixbuf -> Texture -> Picture
-                    # This avoids the DeprecationWarning and uses the GPU
                     texture = Gdk.Texture.new_for_pixbuf(pb)
                     img_widget = Gtk.Picture.new_for_paintable(texture)
                     
-                    # We still tell it COVER just in case of slight rounding errors
                     img_widget.set_content_fit(Gtk.ContentFit.COVER)
                     img_widget.set_can_shrink(True)
                 except Exception as e:
                     print(f"Scaling error for {game['name']}: {e}")
 
-            # 3. ATTACHMENT (Avoids the 'already has a parent' error)
             if img_widget:
                 card.append(img_widget)
             else:
-                # IMPORTANT: get_placeholder_game_poster must return a NEW widget 
-                # every time it is called to avoid the 'parent == NULL' crash.
                 card.append(self.get_placeholder_game_poster())
 
             flow.append(card)
 
         scroll.set_child(flow)
         overlay.set_child(scroll)
-        
-        # ... (rest of your FAB logic) ...
+
         refresh_btn = Gtk.Button(icon_name="view-refresh-symbolic")
-        for cls in ["circular", "accent", "refresh-fab"]:
-            refresh_btn.add_css_class(cls)
-        refresh_btn.set_valign(Gtk.Align.END)
+        refresh_btn.add_css_class("circular")
+        refresh_btn.add_css_class("accent")      
+        refresh_btn.add_css_class("refresh-fab")
+        refresh_btn.set_cursor_from_name("pointer")
+        refresh_btn.set_size_request(64, 64)
+        refresh_btn.set_valign(Gtk.Align.START)
         refresh_btn.set_halign(Gtk.Align.END)
-        refresh_btn.set_margin_bottom(30)
+        refresh_btn.set_margin_top(30)
         refresh_btn.set_margin_end(30)
         refresh_btn.connect("clicked", self.on_refresh_clicked)
+        
         overlay.add_overlay(refresh_btn)
-
         view.append(overlay)
         self.stack.add_named(view, "library")
         self.stack.set_visible_child_name("library")
