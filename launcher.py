@@ -550,7 +550,7 @@ class Nomm(Adw.Application):
             elif platform == "heroic-epic":
                 icon_path = os.path.join(assets_dir, "epic_logo.svg")
             elif platform == "heroic-gog":
-                icon_path = os.path.join(assets_dir, "gog_logo.svg")
+                icon_path = os.path.join(assets_dir, "gog_logo.png")
 
             if os.path.exists(icon_path):
                 try:
