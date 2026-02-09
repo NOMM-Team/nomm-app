@@ -607,9 +607,8 @@ class Nomm(Adw.Application):
                 for t in ["library_capsule.jpg", "library_600x900.jpg"]:
                     if t in files: return os.path.join(root, t)
         elif platform == "heroic-epic":
-            base_path = os.path.expanduser("~/.var/app/com.heroicgameslauncher.hgl/config/heroic/icons")
-            icon_path = os.path.join(base_path, str(app_id)+".jpg")
-            return icon_path
+            paths = download_heroic_assets(app_id, platform)
+            return paths["art_square"]
         elif platform == "heroic-gog":
             paths = download_heroic_assets(app_id, platform)
             return paths["art_square"]

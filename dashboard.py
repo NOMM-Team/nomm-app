@@ -47,9 +47,10 @@ class GameDashboard(Adw.Window):
         # Either get images from nomm cache (for gog and epic) or steam cache (for steam. duh.)
         if self.platform == "steam":
             hero_path = self.find_hero_image(steam_base, app_id)
-        elif self.platform == "heroic-gog":
+        elif self.platform == "heroic-gog" or self.platform == "heroic-epic":
             image_paths = download_heroic_assets(app_id, self.platform)
             hero_path = image_paths["art_hero"]
+
         if hero_path:
             dominant_hex = self.get_dominant_color(hero_path)
             self.apply_dynamic_accent(dominant_hex)
