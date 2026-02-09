@@ -13,6 +13,7 @@ gi.require_version('Gtk', '4.0')
 gi.require_version('Adw', '1')
 from gi.repository import Gtk, Adw, GLib, Gdk, Gio, GdkPixbuf
 from dashboard import GameDashboard
+from utils import download_heroic_assets
 from nxm_handler import download_nexus_mod
 
 CSS = """
@@ -295,13 +296,18 @@ class Nomm(Adw.Application):
         if slugged_folder_name == slugged_game_title:
             
             # --- AUTO-REGISTER PATH DURING SCAN ---
-            # Update the data dictionary with the discovered path
+            # Update the data dictionary with the discovered platform & path
+            game_config_data["platform"] = platform
             game_config_data["game_path"] = game_path
             
             # Save the updated config back to the YAML file
             with open(game_config_path, 'w') as f_out:
                 yaml.dump(game_config_data, f_out, default_flow_style=False)
             
+            # add a special case if game is gog to avoid using app ID as game title
+            if platform == "heroic-gog":
+                game_title = game_config_data["name"]
+
             self.matches.append({
                 "name": game_title,
                 "img": self.find_game_art(app_id, platform),
@@ -374,86 +380,6 @@ class Nomm(Adw.Application):
                         print(f"Error processing {filename} during scan: {e}")
 
         GLib.idle_add(self.show_library_ui)
-
-
-    def download_heroic_assets(self, appName: str, platform: str):
-        # 1. Define Paths
-        json_path = os.path.expanduser("~/.var/app/com.heroicgameslauncher.hgl/config/heroic/store/download-manager.json")
-        cache_base = os.path.expanduser(f"~/nomm/image-cache/{platform}/{appName}")
-        
-        # 2. CACHE CHECK: If the directory exists, check for existing files
-        if os.path.exists(cache_base):
-            existing_files = {}
-            # We look for any file starting with our keys (to handle different extensions)
-            for entry in os.listdir(cache_base):
-                if entry.startswith("art_square"):
-                    existing_files["art_square"] = os.path.join(cache_base, entry)
-                elif entry.startswith("art_hero"):
-                    existing_files["art_hero"] = os.path.join(cache_base, entry)
-            
-            # If we found at least the square art, we consider it cached
-            if "art_square" in existing_files:
-                print(f"Using cached assets for {appName}")
-                return existing_files
-
-        # 3. If not cached, proceed to JSON parsing
-        if not os.path.exists(json_path):
-            print(f"Heroic config not found at {json_path}")
-            return None
-
-        try:
-            with open(json_path, 'r') as f:
-                data = json.load(f)
-            
-            finished_apps = data.get("finished", [])
-            target_info = None
-
-            for entry in finished_apps:
-                params = entry.get("params", {})
-                game_info = params.get("gameInfo", {})
-                
-                # Match by internal appName (e.g., 'Curry') or title (e.g., 'ABZÛ')
-                if params.get("appName") == appName or game_info.get("title") == appName:
-                    target_info = game_info
-                    break
-            
-            if not target_info:
-                return None
-
-            # 4. Extraction Logic
-            urls = {
-                "art_square": target_info.get("art_square"),
-                "art_hero": target_info.get("art_background") or target_info.get("art_cover")
-            }
-
-            os.makedirs(cache_base, exist_ok=True)
-            downloaded_paths = {}
-
-            for key, url in urls.items():
-                if not url:
-                    continue
-                    
-                ext = os.path.splitext(url)[1] if "." in url.split("/")[-1] else ".jpg"
-                # Ensure extensions like .jpg?foo=bar are cleaned
-                if "?" in ext: ext = ext.split("?")[0]
-                
-                local_path = os.path.join(cache_base, f"{key}{ext}")
-
-                try:
-                    r = requests.get(url, timeout=15)
-                    if r.status_code == 200:
-                        with open(local_path, 'wb') as f:
-                            f.write(r.content)
-                        downloaded_paths[key] = local_path
-                        print(f"Downloaded: {local_path}")
-                except Exception as e:
-                    print(f"Error downloading {key}: {e}")
-
-            return downloaded_paths
-
-        except Exception as e:
-            print(f"Failed to process Heroic JSON: {e}")
-            return None
 
     def check_heroic_games(self, game_config_path: str, game_config_data: dict, game_title: str, platform: str):
         if platform == "heroic-epic":
@@ -685,7 +611,7 @@ class Nomm(Adw.Application):
             icon_path = os.path.join(base_path, str(app_id)+".jpg")
             return icon_path
         elif platform == "heroic-gog":
-            paths = self.download_heroic_assets(app_id, platform)
+            paths = download_heroic_assets(app_id, platform)
             return paths["art_square"]
         return None
 

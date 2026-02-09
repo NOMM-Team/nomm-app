@@ -14,6 +14,7 @@ import fomod_handler
 gi.require_version('Gtk', '4.0')
 gi.require_version('Adw', '1')
 from gi.repository import Gtk, Adw, Gdk, Gio, GLib
+from utils import download_heroic_assets
 
 class GameDashboard(Adw.Window):
     def __init__(self, game_name, game_path, application, steam_base=None, app_id=None, **kwargs):
@@ -22,12 +23,13 @@ class GameDashboard(Adw.Window):
         self.game_name = game_name
         self.game_path = game_path
         self.app_id = app_id
-        self.current_filter = "all"
-        self.active_tab = "mods"
-        
+        self.current_filter = "all" # default filter is all
+        self.active_tab = "mods" # default tab is mods
+
         self.setup_custom_styles()
         self.game_config = self.load_game_config()
         self.downloads_path = self.game_config.get("downloads_path")
+        self.platform = self.game_config.get("platform")
         
         if self.downloads_path and os.path.exists(self.downloads_path):
             self.setup_folder_monitor()
@@ -42,7 +44,12 @@ class GameDashboard(Adw.Window):
             win_height = monitor.get_geometry().height
         banner_height = int(win_height * 0.15)
 
-        hero_path = self.find_hero_image(steam_base, app_id)
+        # Either get images from nomm cache (for gog and epic) or steam cache (for steam. duh.)
+        if self.platform == "steam":
+            hero_path = self.find_hero_image(steam_base, app_id)
+        elif self.platform == "heroic-gog":
+            image_paths = download_heroic_assets(app_id, self.platform)
+            hero_path = image_paths["art_hero"]
         if hero_path:
             dominant_hex = self.get_dominant_color(hero_path)
             self.apply_dynamic_accent(dominant_hex)
