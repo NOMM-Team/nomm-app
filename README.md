@@ -10,7 +10,7 @@ Just a few clicks, a clean, modern interface, and you're done :)
 ^ Click on the image above for a quick preview of current features ^
 
 > [!WARNING]
-> This project is made with the help of Gemini.
+> This project is partially made with the help of Gemini.
 > 
 > If you hate AI, that makes two of us 🙂
 > _However_, I would never have been able to make something like this without it.
@@ -87,13 +87,14 @@ Phase 1 Development Progress:
 - [x] Add a button to return to launcher from the main window
 
 Phase 2 Development Progress:
-- [ ] Handle simple FOMOD
+- [x] Handle simple FOMOD
 - [ ] Let user skip launcher and go straight to game
 - [ ] Figure out how to create a flatpak for the app
 - [ ] Add language-specific strings
 - [ ] Think about how to let user define load orders
 - [ ] Let user define load orders
-- [ ] Add support for GOG libraries / games
+- [x] Add support for GOG libraries / games (through Heroic)
+- [x] Add support for Epic libraries / games (through Heroic)
 - [ ] ???
 
 Phase 3 Development Progress:
