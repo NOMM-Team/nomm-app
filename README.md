@@ -24,50 +24,36 @@ Just a few clicks, a clean, modern interface, and you're done :)
 - Beginner-friendly
 - Fully open
 
-### How does it work?
+## How can I add support for a game?
 
-One of the main ideas behind this project is that games are defined by easy to setup config yaml files.
+One of the main ideas behind this project is that games are defined by easy to create config `.yaml` files.
 This means that anyone can create a simple yaml for their game and submit it to the project with little to no coding knowledge and the tool will automate the rest.
 
-For instance:
+This yaml file will need to be placed in `[python file locations]/default_game_configs`
+For instance, if you want to add support for Stadew Valley, you would create a `[python file locations]/default_game_configs/stardew_valley.yaml` file.
+
+In that yaml you will need to define some basic information for it to be recognised:
 
 ```yaml
-name: 'Warhammer 40,000: Darktide'
-steamappid: 1361210
-mods_path: mods/
-
-load_order_path: mods/mod_load_order.txt
-
-essential-utilities:
-  darktide-mod-loader:
-    name: Darktide Mod Loader
-    creator: Talon-d
-    creator-link: https://github.com/talon-d
-    source: "https://github.com/talon-d/darktideML-4linux/releases/download/1.5/darktideML-4linux1-5.zip"
-    utility_path: ""
-    enable_command: "sh handle_darktide_mods.sh --enable"
-    disable_command: "sh handle_darktide_mods.sh --disable"
+name: 'Warhammer 40,000: Darktide' # the name of the game, with any symbols, spaces and whatnot kept intact
+steamappid: 0000000 # the steam app id, you can find this on: https://steamdb.info/
+mods_path: mods/ # the path where the mods need to be installed when they are enabled
+gogstoreid: 1207666893 # the gog store id, you can find this on: https://gogapidocs.readthedocs.io/en/latest/gameslist.html
 ```
 
-Let's go through these line by line.
+You can additionally define some extra stuff for added features:
+```yaml
+load_order_path: mods/mod_load_order.txt # for games with a text-editable load order, you can specify a path and a button will appear in the app to edit it directly.
 
-##### Compulsory
-
-- `name` : the name of the game
-- `steamappid` : the steam ID of the game
-- `mods_path` : the path where mods should be deployed for this game
-
-##### Optional
-
-- `load_order_path` : The path where a load order file would be, so that the tool can add a button to edit it directly
-- `essential-utilities` : This section is used to define some special tools that are essential to mod the game.
-    - `name` : the name of the tool
-    - `creator` : the name of the creator
-    - `creator-link` : a link tot he creator's github
-    - `source` : a link to the actual file that needs to be downloaded
-    - `utility_path` : where the utility files need to be extracted to (here it is in the root of the game directory)
-    - `enable_command` : a command that will be run after extracting the files to the directory
-
+essential-utilities: # this lets you define things such as mod loaders or essential utilities
+  darktide-mod-loader: # you can have multiple ones, each one needs its own key
+    name: Darktide Mod Loader # the name of the tool
+    creator: Talon-d # the creator of the tool
+    creator-link: https://github.com/talon-d # a link to the creator's page, portal, social, whatever
+    source: "https://github.com/talon-d/darktideML-4linux/releases/download/1.5/darktideML-4linux1-5.zip" #the actual thing we'll need to download
+    utility_path: "" # where the utility needs to be extracted to
+    enable_command: "sh handle_darktide_mods.sh --enable" # any command that needs to be run (from the root of the game folder) to enable the mod loader
+```
 
 ## "Roadmap"
 
