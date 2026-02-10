@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 import os
 import yaml
 import threading
@@ -112,7 +114,7 @@ def slugify(text):
 class Nomm(Adw.Application):
     def __init__(self, **kwargs):
         # 1. Update Application ID to match your protocol registration
-        super().__init__(application_id='com.user.nomm', **kwargs)
+        super().__init__(application_id='com.nomm.Nomm', **kwargs)
         self.matches = []
         self.steam_base = self.get_steam_base_dir()
         self.user_config_path = os.path.expanduser("~/nomm/user_config.yaml")
@@ -622,7 +624,7 @@ Name=Nomm
 Exec=python3 {app_path} %u
 Type=Application
 Terminal=false
-Icon=com.user.nomm
+Icon=com.nomm.Nomm
 MimeType=x-scheme-handler/nxm;
 """
         desktop_dir = os.path.expanduser("~/.local/share/applications")

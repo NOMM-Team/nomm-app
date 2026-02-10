@@ -8,7 +8,6 @@ import re
 
 from pathlib import Path
 from datetime import datetime
-from PIL import Image
 import fomod_handler
 
 gi.require_version('Gtk', '4.0')
@@ -50,10 +49,6 @@ class GameDashboard(Adw.Window):
         elif self.platform == "heroic-gog" or self.platform == "heroic-epic":
             image_paths = download_heroic_assets(app_id, self.platform)
             hero_path = image_paths["art_hero"]
-
-        if hero_path:
-            dominant_hex = self.get_dominant_color(hero_path)
-            self.apply_dynamic_accent(dominant_hex)
 
         main_layout = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
         header = Adw.HeaderBar()
@@ -876,14 +871,6 @@ class GameDashboard(Adw.Window):
             for root, _, files in os.walk(appid_dir):
                 if "library_hero.jpg" in files: return os.path.join(root, "library_hero.jpg")
         return None
-
-    def get_dominant_color(self, path):
-        try:
-            with Image.open(path) as img:
-                img = img.convert("RGB").resize((1, 1))
-                r, g, b = img.getpixel((0, 0))
-                return f"#{r:02x}{g:02x}{b:02x}"
-        except: return "#3584e4"
 
     def apply_dynamic_accent(self, hex):
         css = f"@define-color accent_bg_color {hex}; @define-color accent_color {hex};"
