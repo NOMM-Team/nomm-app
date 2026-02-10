@@ -40,6 +40,8 @@ steamappid: 0000000 # the steam app id, you can find this on: https://steamdb.in
 mods_path: mods/ # the path where the mods need to be installed when they are enabled
 gogstoreid: 1207666893 # the gog store id, you can find this on: https://gogapidocs.readthedocs.io/en/latest/gameslist.html
 ```
+> [!NOTE]
+> Obviously you should only add `gogstoreid` if the game is actually on the GOG store.
 
 You can additionally define some extra stuff for added features:
 ```yaml
