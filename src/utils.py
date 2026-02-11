@@ -1,6 +1,10 @@
 import os
 import json
 import requests
+import threading
+import gi
+gi.require_version('Gtk', '4.0')
+from gi.repository import Gtk, GLib
 
 def download_heroic_assets(appName: str, platform: str):
     # 1. Define Paths
@@ -80,3 +84,70 @@ def download_heroic_assets(appName: str, platform: str):
     except Exception as e:
         print(f"Failed to process Heroic JSON: {e}")
         return None
+
+def download_with_progress(url, dest_folder):
+    filename = url.split('/')[-1].split('?')[0] or "download"
+    dest_path = os.path.join(dest_folder, filename)
+    os.makedirs(dest_folder, exist_ok=True)
+
+    # State tracking
+    status = {"success": False, "finished": False}
+    event = threading.Event()
+
+    def create_ui():
+        win = Gtk.Window(title="Downloader", modal=True)
+        win.set_default_size(400, 150)
+        
+        box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12, margin_top=20, margin_bottom=20, margin_start=20, margin_end=20)
+        win.set_child(box)
+
+        lbl_name = Gtk.Label(label=f"<b>File:</b> {filename}", use_markup=True, xalign=0)
+        lbl_dest = Gtk.Label(label=f"<b>To:</b> {dest_folder}", use_markup=True, xalign=0)
+        lbl_dest.add_css_class("caption") # Small dim text
+        
+        progress_bar = Gtk.ProgressBar(show_text=True)
+        
+        box.append(lbl_name)
+        box.append(lbl_dest)
+        box.append(progress_bar)
+        
+        win.present()
+        return win, progress_bar
+
+    # Initialize UI on main thread
+    window, pbar = create_ui()
+
+    def run_download():
+        try:
+            response = requests.get(url, stream=True, timeout=15)
+            total_size = int(response.headers.get('content-length', 0))
+            
+            downloaded = 0
+            with open(dest_path, 'wb') as f:
+                for data in response.iter_content(chunk_size=4096):
+                    f.write(data)
+                    downloaded += len(data)
+                    if total_size > 0:
+                        percent = downloaded / total_size
+                        # Update UI Progress
+                        GLib.idle_add(pbar.set_fraction, percent)
+            
+            status["success"] = True
+        except Exception as e:
+            print(f"Download error: {e}")
+            status["success"] = False
+        finally:
+            status["finished"] = True
+            GLib.idle_add(window.destroy) # Close window when done
+            event.set() # Wake up the calling thread
+
+    # Start download thread
+    thread = threading.Thread(target=run_download)
+    thread.start()
+
+    # We use a nested main loop to make this method "block" 
+    # until the download finishes without freezing the UI.
+    while not status["finished"]:
+        GLib.MainContext.default().iteration(True)
+
+    return status["success"]

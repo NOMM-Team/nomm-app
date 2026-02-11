@@ -3,6 +3,7 @@ import yaml
 import requests
 from urllib.parse import urlsplit, urlunsplit
 from pathlib import Path
+from utils import download_with_progress
 
 def download_nexus_mod(nxm_link):
     """
@@ -86,12 +87,13 @@ def download_nexus_mod(nxm_link):
 
         # 6. Download the actual mod file
         print(f"Downloading {file_name} to {game_folder_name}...")
-        mod_data = requests.get(file_url, stream=True)
-        mod_data.raise_for_status()
         
-        with open(full_file_path, "wb") as f:
-            for chunk in mod_data.iter_content(chunk_size=8192):
-                f.write(chunk)
+        #mod_data = requests.get(file_url, stream=True)
+        #mod_data.raise_for_status()
+        download_with_progress(file_url, final_download_dir)
+        #with open(full_file_path, "wb") as f:
+        #    for chunk in mod_data.iter_content(chunk_size=8192):
+        #        f.write(chunk)
 
         # 7. Obtain mod file info and save metadata
         try:
