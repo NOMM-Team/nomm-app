@@ -471,7 +471,7 @@ class Nomm(Adw.Application):
             platform = game['platform']
             
             # Use relative paths or absolute paths to your assets
-            assets_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "assets")
+            assets_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "assets")
 
             if platform == "steam":
                 icon_path = os.path.join(assets_dir, "steam_logo.svg")
