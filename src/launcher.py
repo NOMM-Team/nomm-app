@@ -168,7 +168,7 @@ class Nomm(Adw.Application):
         self.win.set_content(self.stack)
 
         if not os.path.exists(self.user_config_path):
-            self.show_setup_screen()
+            self.show_welcome_screen()
         else:
             self.show_loading_and_scan()
 
@@ -179,12 +179,45 @@ class Nomm(Adw.Application):
         if child:
             self.stack.remove(child)
 
-    def show_setup_screen(self):
-        """Step 1: Folder Selection"""
+    def show_welcome_screen(self):
+        """Step 0: Intro page & "Let's go" button"""
         self.remove_stack_child("setup")
         status_page = Adw.StatusPage(
-            title="Welcome to NOMM",
-            description="Please select the folder where mod downloads will be stored.",
+            title="Welcome to the Native Open Mod Manager (NOMM) app!",
+            description="This app is still in early development, so expect some bugs and missing features.\nI hope you can still enjoy what the app currently offers and please don't forget that you can report any bugs or request features on the Github!",
+        )
+        status_page.add_css_class("setup-page")
+        
+        assets_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "assets")
+        logo_path = os.path.join(assets_dir, "nomm.png")
+        if os.path.exists(logo_path):
+            try:
+                # Create a Pixbuf, then a Texture (which implements Gdk.Paintable)
+                pixbuf = GdkPixbuf.Pixbuf.new_from_file(logo_path)
+                texture = Gdk.Texture.new_for_pixbuf(pixbuf)
+                status_page.set_paintable(texture)
+            except Exception as e:
+                print(f"Error loading setup logo: {e}")
+                status_page.set_icon_name("folder-download-symbolic") # Fallback
+
+        btn = Gtk.Button(label="Let's go!")
+        btn.set_halign(Gtk.Align.CENTER)
+        btn.add_css_class("suggested-action")
+        btn.set_margin_top(24)
+        btn.connect("clicked", self.show_downloads_folder_select_screen)
+        
+        status_page.set_child(btn)
+        self.stack.add_named(status_page, "setup")
+        self.stack.set_visible_child_name("setup")
+        GLib.timeout_add(100, lambda: status_page.add_css_class("visible"))
+
+
+    def show_downloads_folder_select_screen(self, btn=None):
+        """Step 1: Downloads Folder Selection"""
+        self.remove_stack_child("setup")
+        status_page = Adw.StatusPage(
+            title="Select your mods download folder",
+            description="Please select the folder where mod downloads will be stored.\nMod downloads will be categorised by game name.\nI recommend you create a nomm directory at the end of your target path.",
             icon_name="folder-download-symbolic"
         )
         status_page.add_css_class("setup-page")
@@ -193,29 +226,64 @@ class Nomm(Adw.Application):
         btn.set_halign(Gtk.Align.CENTER)
         btn.add_css_class("suggested-action")
         btn.set_margin_top(24)
-        btn.connect("clicked", self.on_select_folder_clicked)
+        btn.connect("clicked", self.on_select_downloads_folder_clicked)
         
         status_page.set_child(btn)
         self.stack.add_named(status_page, "setup")
         self.stack.set_visible_child_name("setup")
         GLib.timeout_add(100, lambda: status_page.add_css_class("visible"))
 
-    def on_select_folder_clicked(self, btn):
+    def on_select_downloads_folder_clicked(self, btn):
         dialog = Gtk.FileDialog(title="Select Mod Downloads Folder")
-        dialog.select_folder(self.win, None, self.on_folder_selected_callback)
+        dialog.select_folder(self.win, None, self.on_downloads_folder_selected_callback)
 
-    def on_folder_selected_callback(self, dialog, result):
+    def on_downloads_folder_selected_callback(self, dialog, result):
         try:
             selected_file = dialog.select_folder_finish(result)
             if selected_file:
                 path = selected_file.get_path()
                 # Save path, then move to Protocol screen
                 self.temp_config = {"download_path": path, "library_paths": []}
+                self.show_staging_select_screen()
+        except Exception: pass
+
+    def show_staging_select_screen(self):
+        """Step 2: Staging Folder Selection"""
+        self.remove_stack_child("setup")
+        status_page = Adw.StatusPage(
+            title="Select your staging folder",
+            description="Please select the folder where mods will be temporarily stored after installing them (but before deployment).",
+            icon_name="folder-git-symbolic"
+        )
+        status_page.add_css_class("setup-page")
+        
+        btn = Gtk.Button(label="Set Mod Staging Path")
+        btn.set_halign(Gtk.Align.CENTER)
+        btn.add_css_class("suggested-action")
+        btn.set_margin_top(24)
+        btn.connect("clicked", self.on_select_staging_folder_clicked)
+        
+        status_page.set_child(btn)
+        self.stack.add_named(status_page, "setup")
+        self.stack.set_visible_child_name("setup")
+        GLib.timeout_add(100, lambda: status_page.add_css_class("visible"))
+
+    def on_select_staging_folder_clicked(self, btn):
+        dialog = Gtk.FileDialog(title="Select Mod Downloads Folder")
+        dialog.select_folder(self.win, None, self.on_staging_folder_selected_callback)
+
+    def on_staging_folder_selected_callback(self, dialog, result):
+        try:
+            selected_file = dialog.select_folder_finish(result)
+            if selected_file:
+                path = selected_file.get_path()
+                # Save path, then move to Protocol screen
+                self.temp_config["staging_path"] = path
                 self.show_protocol_choice_screen()
         except Exception: pass
 
     def show_protocol_choice_screen(self):
-        """Step 2: NXM Protocol Choice"""
+        """Step 3: NXM Protocol Choice"""
         self.remove_stack_child("protocol")
         box = Adw.StatusPage(
             title="Handle Nexus Links?",
@@ -248,11 +316,11 @@ class Nomm(Adw.Application):
             self.finalize_setup("")
 
     def show_api_key_screen(self):
-        """Step 3: Nexus API Key Entry"""
+        """Step 4: Nexus API Key Entry"""
         self.remove_stack_child("api_key")
         status_page = Adw.StatusPage(
             title="Nexus API Key",
-            description="Enter your API Key from Nexus Mods (Personal Settings > API)",
+            description="Enter your API Key from Nexus Mods (Site Preferences > API Keys)",
             icon_name="dialog-password-symbolic"
         )
 
@@ -260,7 +328,6 @@ class Nomm(Adw.Application):
         entry_box.set_margin_top(24)
         
         self.api_entry = Gtk.Entry(placeholder_text="Enter API Key...")
-        # Corrected: width 400, height -1 (use default height)
         self.api_entry.set_size_request(400, -1) 
         self.api_entry.set_visibility(False) # Masks the key like a password
         
@@ -275,7 +342,7 @@ class Nomm(Adw.Application):
         self.stack.set_visible_child_name("api_key")
 
     def finalize_setup(self, api_key):
-        """Step 4: Save and Start Scan"""
+        """Step 5: Save and Start Scan"""
         self.temp_config["nexus_api_key"] = api_key
         
         # Create the ~/nomm/ directory if it doesn't exist yet
@@ -763,12 +830,13 @@ class Nomm(Adw.Application):
     def register_nomm_nxm_protocol(self):
         """Internalized protocol registration helper"""
         app_path = os.path.abspath(sys.argv[0])
+        icon_path = os.path.join(os.path.dirname(os.path.dirname(app_path)), "assets", "nomm.png")
         desktop_file_content = f"""[Desktop Entry]
 Name=Nomm
 Exec=python3 {app_path} %u
 Type=Application
 Terminal=false
-Icon=com.nomm.Nomm
+Icon={icon_path}
 MimeType=x-scheme-handler/nxm;
 """
         desktop_dir = os.path.expanduser("~/.local/share/applications")
