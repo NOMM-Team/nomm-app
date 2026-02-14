@@ -16,18 +16,21 @@ from gi.repository import Gtk, Adw, Gdk, Gio, GLib
 from utils import download_heroic_assets
 
 class GameDashboard(Adw.Window):
-    def __init__(self, game_name, game_path, application, steam_base=None, app_id=None, **kwargs):
+    def __init__(self, game_name, game_path, application, steam_base=None, app_id=None, user_config_path=None, **kwargs):
         super().__init__(application=application, **kwargs)
         self.app = application
         self.game_name = game_name
         self.game_path = game_path
         self.app_id = app_id
+        self.user_config_path = user_config_path
         self.current_filter = "all" # default filter is all
         self.active_tab = "mods" # default tab is mods
 
         self.setup_custom_styles()
         self.game_config = self.load_game_config()
+        self.user_config = self.load_user_config()
         self.downloads_path = self.game_config.get("downloads_path")
+        self.staging_path = Path(os.path.join(Path(self.user_config.get("staging_path")), game_name))
         self.platform = self.game_config.get("platform")
         
         if self.downloads_path and os.path.exists(self.downloads_path):
@@ -178,6 +181,17 @@ class GameDashboard(Adw.Window):
         except Exception as e:
             self.show_message("Error", f"Could not delete file: {e}")
 
+    def load_user_config(self):
+        # TODO: Homogenise this config load with one in launcher.py and probably load_game_config
+        if os.path.exists(self.user_config_path):
+            try:
+                with open(self.user_config_path, 'r') as f:
+                    return yaml.safe_load(f) or {}
+            except Exception as e:
+                print(f"Error loading config: {e}")
+                return {}
+        return {}
+
     def load_game_config(self):
         config_dir = os.path.expanduser("~/nomm/game_configs")
         def slug(text): return re.sub(r'[^a-z0-9]', '', text.lower())
@@ -191,22 +205,7 @@ class GameDashboard(Adw.Window):
         return {}
 
     def get_staging_path(self):
-        game_path_obj = Path(self.game_path).resolve()
-        system_prefixes = ['/usr', '/var', '/etc', '/bin', '/lib', '/opt']
-        is_system_drive = any(str(game_path_obj).startswith(pref) for pref in system_prefixes) or str(game_path_obj).startswith(str(Path.home()))
-
-        if is_system_drive:
-            nomm_root = Path.home() / "nomm"
-        else:
-            curr = game_path_obj
-            while curr.parent != curr:
-                if os.path.ismount(curr): break
-                curr = curr.parent
-            nomm_root = curr / "nomm"
-        
-        path = nomm_root / self.game_name
-        path.mkdir(parents=True, exist_ok=True)
-        return path
+        return self.staging_path
 
     def get_game_destination_path(self):
         game_path = self.game_config.get("game_path")

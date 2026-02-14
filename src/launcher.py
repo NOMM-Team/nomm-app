@@ -799,7 +799,8 @@ class Nomm(Adw.Application):
             game_path=game_data['path'],
             application=self,
             steam_base=self.steam_base,
-            app_id=game_data.get('app_id')
+            app_id=game_data.get('app_id'),
+            user_config_path=self.user_config_path
         )
         self.dashboard.launch()
         
