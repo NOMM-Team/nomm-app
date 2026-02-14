@@ -161,7 +161,7 @@ class Nomm(Adw.Application):
 
         self.win = Adw.ApplicationWindow(application=self)
         self.win.set_title("NOMM")
-        self.win.set_default_size(1400, 900)
+        self.win.set_default_size(1230, 900)
 
         self.stack = Gtk.Stack()
         self.stack.set_transition_type(Gtk.StackTransitionType.CROSSFADE)
