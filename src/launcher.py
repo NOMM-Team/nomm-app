@@ -632,18 +632,21 @@ class Nomm(Adw.Application):
         with open(self.user_config_path, 'w') as f:
             yaml.dump(config, f, default_flow_style=False)
 
-    def on_settings_folder_selected(self, dialog, result, path_row):
-        try:
-            folder = dialog.select_folder_finish(result)
-            if folder:
-                new_path = folder.get_path()
-                # 1. Update the config file
-                self.update_config('download_path', new_path)
-                # 2. Update the UI subtitle immediately
-                path_row.set_subtitle(new_path)
-                print(f"Updated download path to: {new_path}")
-        except Exception as e:
-            print(f"Folder selection cancelled or failed: {e}")
+    def pick_folder(self, parent_win, row, config_key):
+        """Opens a folder dialog and updates the specific config key and UI row."""
+        dialog = Gtk.FileDialog(title=f"Select {row.get_title()}")
+        
+        def callback(dialog, result):
+            try:
+                folder = dialog.select_folder_finish(result)
+                if folder:
+                    new_path = folder.get_path()
+                    self.update_config(config_key, new_path)
+                    row.set_subtitle(new_path)
+            except Exception as e:
+                print(f"Folder selection failed: {e}")
+
+        dialog.select_folder(parent_win, None, callback)
 
     def on_settings_clicked(self, button):
         settings_win = Adw.Window(title="Settings", transient_for=self.win, modal=True)
@@ -656,22 +659,27 @@ class Nomm(Adw.Application):
         storage_group = Adw.PreferencesGroup(title="Storage", description="Configure where NOMM manages your files.")
         content.append(storage_group)
 
-        # Current Download Path Row
+        # 1. Downloads Path Row
         path_row = Adw.ActionRow(title="Mod Downloads Path")
         current_path = self.load_config().get('download_path', 'Not set')
         path_row.set_subtitle(current_path)
 
-        folder_btn = Gtk.Button(icon_name="folder-open-symbolic")
-        folder_btn.set_valign(Gtk.Align.CENTER)
-        folder_btn.add_css_class("flat")
+        folder_btn = Gtk.Button(icon_name="folder-open-symbolic", valign=Gtk.Align.CENTER, css_classes=["flat"])
+        folder_btn.connect("clicked", lambda b: self.pick_folder(settings_win, path_row, "download_path"))
         
-        def on_change_path_clicked(btn):
-            dialog = Gtk.FileDialog(title="Select New Downloads Folder")
-            dialog.select_folder(settings_win, None, self.on_settings_folder_selected, path_row)
-        
-        folder_btn.connect("clicked", on_change_path_clicked)
         path_row.add_suffix(folder_btn)
         storage_group.add(path_row)
+
+        # 2. NEW: Staging Path Row
+        staging_row = Adw.ActionRow(title="Mod Staging Path")
+        current_staging = self.load_config().get('staging_path', 'Not set')
+        staging_row.set_subtitle(current_staging)
+
+        staging_btn = Gtk.Button(icon_name="folder-open-symbolic", valign=Gtk.Align.CENTER, css_classes=["flat"])
+        staging_btn.connect("clicked", lambda b: self.pick_folder(settings_win, staging_row, "staging_path"))
+        
+        staging_row.add_suffix(staging_btn)
+        storage_group.add(staging_row)
 
         # --- NEXUS SECTION ---
         nexus_group = Adw.PreferencesGroup(title="Nexus Mods Integration")
