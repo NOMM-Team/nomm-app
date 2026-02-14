@@ -19,6 +19,15 @@ from utils import download_heroic_assets
 from nxm_handler import download_nexus_mod
 
 CSS = """
+
+.success {
+    color: #2ec27e; /* GNOME Green */
+}
+
+.error {
+    color: #e01b24; /* GNOME Red */
+}
+
 .game-card {
     border-radius: 12px;
     box-shadow: 0 4px 10px rgba(0,0,0,0.3);
@@ -422,7 +431,7 @@ class Nomm(Adw.Application):
         self.remove_stack_child("library")
         view = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
         view.append(Adw.HeaderBar())
-
+        
         overlay = Gtk.Overlay()
         scroll = Gtk.ScrolledWindow(vexpand=True)
         
@@ -470,7 +479,6 @@ class Nomm(Adw.Application):
             # 3. THE PLATFORM BADGE
             platform = game['platform']
             
-            # Use relative paths or absolute paths to your assets
             assets_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "assets")
 
             if platform == "steam":
@@ -497,7 +505,7 @@ class Nomm(Adw.Application):
                     badge_img.set_margin_bottom(10)
                     badge_img.add_css_class("platform-badge")
                     
-                    # Add to the image overlay we created earlier
+                    # Add to the image overlay created earlier
                     image_overlay.add_overlay(badge_img)
                 except Exception as e:
                     print(f"Error rendering SVG badge: {e}")
@@ -520,11 +528,147 @@ class Nomm(Adw.Application):
         refresh_btn.set_margin_top(30)
         refresh_btn.set_margin_end(30)
         refresh_btn.connect("clicked", self.on_refresh_clicked)
-        
+
+        settings_btn = Gtk.Button(icon_name="settings-configure-symbolic")
+        settings_btn.add_css_class("circular")
+        settings_btn.add_css_class("accent")      
+        settings_btn.add_css_class("refresh-fab")
+        settings_btn.set_cursor_from_name("pointer")
+        settings_btn.set_size_request(64, 64)
+        settings_btn.set_valign(Gtk.Align.START)
+        settings_btn.set_halign(Gtk.Align.END)
+        settings_btn.set_margin_top(30)
+        settings_btn.set_margin_end(120)
+        settings_btn.connect("clicked", self.on_settings_clicked)
+
+        overlay.add_overlay(settings_btn)
         overlay.add_overlay(refresh_btn)
         view.append(overlay)
         self.stack.add_named(view, "library")
         self.stack.set_visible_child_name("library")
+
+    def load_config(self):
+        if os.path.exists(self.user_config_path):
+            try:
+                with open(self.user_config_path, 'r') as f:
+                    return yaml.safe_load(f) or {}
+            except Exception as e:
+                print(f"Error loading config: {e}")
+                return {}
+        return {}
+
+    def update_config(self, key, value):
+        config = self.load_config()
+        config[key] = value
+        # Ensure directory exists before writing
+        os.makedirs(os.path.dirname(self.user_config_path), exist_ok=True)
+        with open(self.user_config_path, 'w') as f:
+            yaml.dump(config, f, default_flow_style=False)
+
+    def on_settings_folder_selected(self, dialog, result, path_row):
+        try:
+            folder = dialog.select_folder_finish(result)
+            if folder:
+                new_path = folder.get_path()
+                # 1. Update the config file
+                self.update_config('download_path', new_path)
+                # 2. Update the UI subtitle immediately
+                path_row.set_subtitle(new_path)
+                print(f"Updated download path to: {new_path}")
+        except Exception as e:
+            print(f"Folder selection cancelled or failed: {e}")
+
+    def on_settings_clicked(self, button):
+        settings_win = Adw.Window(title="Settings", transient_for=self.win, modal=True)
+        settings_win.set_default_size(500, -1)
+
+        content = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=20, margin_top=24, margin_bottom=24, margin_start=24, margin_end=24)
+        settings_win.set_content(content)
+
+        # --- STORAGE SECTION ---
+        storage_group = Adw.PreferencesGroup(title="Storage", description="Configure where NOMM manages your files.")
+        content.append(storage_group)
+
+        # Current Download Path Row
+        path_row = Adw.ActionRow(title="Mod Downloads Path")
+        current_path = self.load_config().get('download_path', 'Not set')
+        path_row.set_subtitle(current_path)
+
+        folder_btn = Gtk.Button(icon_name="folder-open-symbolic")
+        folder_btn.set_valign(Gtk.Align.CENTER)
+        folder_btn.add_css_class("flat")
+        
+        def on_change_path_clicked(btn):
+            dialog = Gtk.FileDialog(title="Select New Downloads Folder")
+            dialog.select_folder(settings_win, None, self.on_settings_folder_selected, path_row)
+        
+        folder_btn.connect("clicked", on_change_path_clicked)
+        path_row.add_suffix(folder_btn)
+        storage_group.add(path_row)
+
+        # --- NEXUS SECTION ---
+        nexus_group = Adw.PreferencesGroup(title="Nexus Mods Integration")
+        content.append(nexus_group)
+
+        api_entry = Gtk.PasswordEntry(hexpand=True, valign=Gtk.Align.CENTER)
+        api_entry.set_property("placeholder-text", "Paste API Key...")
+        api_entry.set_text(self.load_config().get('nexus_api_key', ''))
+
+        check_btn = Gtk.Button(icon_name="view-refresh-symbolic", valign=Gtk.Align.CENTER, css_classes=["flat"])
+        spinner = Gtk.Spinner(valign=Gtk.Align.CENTER)
+
+        api_row = Adw.ActionRow(title="Nexus API Key")
+        api_row.add_suffix(api_entry)
+        api_row.add_suffix(spinner)
+        api_row.add_suffix(check_btn)
+        nexus_group.add(api_row)
+
+        # 3. Validation Logic
+        def on_validate_clicked(btn):
+            key = api_entry.get_text()
+            if not key: return
+
+            btn.set_sensitive(False)
+            spinner.start()
+            
+            # Reset button colors
+            check_btn.remove_css_class("success")
+            check_btn.remove_css_class("error")
+
+            def check_api():
+                try:
+                    response = requests.get(
+                        "https://api.nexusmods.com/v1/users/validate.json",
+                        headers={"apikey": key},
+                        timeout=10
+                    )
+                    is_valid = response.status_code == 200
+                except:
+                    is_valid = False
+
+                def update_ui():
+                    spinner.stop()
+                    btn.set_sensitive(True)
+                    if is_valid:
+                        check_btn.add_css_class("success")
+                        check_btn.set_icon_name("emblem-ok-symbolic")
+                    else:
+                        check_btn.add_css_class("error")
+                        check_btn.set_icon_name("dialog-error-symbolic")
+                    return False
+
+                GLib.idle_add(update_ui)
+
+            threading.Thread(target=check_api, daemon=True).start()
+
+        check_btn.connect("clicked", on_validate_clicked)
+
+        # Save & Close
+        save_btn = Gtk.Button(label="Close", css_classes=["suggested-action"], margin_top=12)
+        save_btn.connect("clicked", lambda b: (self.update_config('nexus_api_key', api_entry.get_text()), settings_win.destroy()))
+        content.append(save_btn)
+
+        settings_win.present()
 
     def on_refresh_clicked(self, btn):
         try:
