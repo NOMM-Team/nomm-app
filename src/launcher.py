@@ -766,6 +766,8 @@ class Nomm(Adw.Application):
         # Add the brand buttons
         community_box.append(create_social_button("github_logo.svg", "https://github.com/allexio/nomm"))
         community_box.append(create_social_button("discord_logo.svg", "https://discord.gg/WFRePSjEQY"))
+        community_box.append(create_social_button("matrix_logo.svg", "https://matrix.to/#/#nomm:matrix.org"))
+        community_box.append(create_social_button("youtube_logo.svg", "https://www.youtube.com/channel/UCNHRyvBXItOkBZN0rWqZVrA"))
 
         content.append(community_box)
 
