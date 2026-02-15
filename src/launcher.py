@@ -738,7 +738,40 @@ class Nomm(Adw.Application):
 
         check_btn.connect("clicked", on_validate_clicked)
 
-        # Save & Close
+        # --- COMMUNITY SECTION ---
+        community_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=20, halign=Gtk.Align.CENTER)
+        community_box.set_margin_top(10)
+
+        assets_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "assets")
+
+        def create_social_button(icon_filename, url):
+            btn_content = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
+            
+            # Load custom icon
+            icon_path = os.path.join(assets_dir, icon_filename)
+            if os.path.exists(icon_path):
+                # We use Picture for better scaling of brand assets
+                img = Gtk.Picture.new_for_filename(icon_path)
+                img.set_size_request(24, 24)
+                btn_content.append(img)
+            else:
+                # Fallback to a generic icon if file is missing
+                btn_content.append(Gtk.Image(icon_name="action-unavailable-symbolic"))
+            
+            button = Gtk.Button(child=btn_content)
+            button.add_css_class("flat")
+            button.connect("clicked", lambda b: Gtk.FileLauncher.new(Gio.File.new_for_uri(url)).launch(settings_win, None, None))
+            return button
+
+        # Add the brand buttons
+        community_box.append(create_social_button("github_logo.svg", "https://github.com/allexio/nomm"))
+        community_box.append(create_social_button("discord_logo.svg", "https://discord.gg/WFRePSjEQY"))
+
+        content.append(community_box)
+
+        # Separator and Close
+        content.append(Gtk.Separator(margin_top=10))
+        
         save_btn = Gtk.Button(label="Close", css_classes=["suggested-action"], margin_top=12)
         save_btn.connect("clicked", lambda b: (self.update_config('nexus_api_key', api_entry.get_text()), settings_win.destroy()))
         content.append(save_btn)
@@ -749,7 +782,7 @@ class Nomm(Adw.Application):
         try:
             with open(self.user_config_path, 'r') as f:
                 config = yaml.safe_load(f)
-            config["library_paths"] = [] 
+            config["library_paths"] = []
             with open(self.user_config_path, 'w') as f:
                 yaml.dump(config, f)
         except: pass
