@@ -561,7 +561,8 @@ class Nomm(Adw.Application):
                         icon_path, 32, 32, True # True = Preserve aspect ratio
                     )
                     
-                    # Modern Texture conversion
+                    # Using this for now as it's the only method I found to actually force the pictures to stay in their boxes
+                    # TODO: find a non-deprecated way to do the same thing
                     badge_tex = Gdk.Texture.new_for_pixbuf(badge_pb)
                     badge_img = Gtk.Picture.new_for_paintable(badge_tex)
                     
@@ -635,7 +636,9 @@ class Nomm(Adw.Application):
     def pick_folder(self, parent_win, row, config_key):
         """Opens a folder dialog and updates the specific config key and UI row."""
         dialog = Gtk.FileDialog(title=f"Select {row.get_title()}")
-        
+
+        #TODO: Ask user if they want to move all data from old folder to new one
+
         def callback(dialog, result):
             try:
                 folder = dialog.select_folder_finish(result)
@@ -670,7 +673,7 @@ class Nomm(Adw.Application):
         path_row.add_suffix(folder_btn)
         storage_group.add(path_row)
 
-        # 2. NEW: Staging Path Row
+        # 2. Staging Path Row
         staging_row = Adw.ActionRow(title="Mod Staging Path")
         current_staging = self.load_config().get('staging_path', 'Not set')
         staging_row.set_subtitle(current_staging)

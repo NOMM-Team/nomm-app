@@ -171,7 +171,7 @@ class GameDashboard(Adw.Window):
             if os.path.exists(zip_path):
                 os.remove(zip_path)
             
-            # Delete Metadata
+            # Delete Metadata (if it exists)
             metadata_file_path = os.path.join(self.downloads_path, ".downloads.nomm.yaml")
             if os.path.exists(metadata_file_path):
                 with open(metadata_file_path, 'r') as f:
