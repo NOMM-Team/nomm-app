@@ -29,8 +29,8 @@ Just a few clicks, a clean, modern interface, and you're done :)
 One of the main ideas behind this project is that games are defined by easy to create config `.yaml` files.
 This means that anyone can create a simple yaml for their game and submit it to the project with little to no coding knowledge and the tool will automate the rest.
 
-This yaml file will need to be placed in `[python file locations]/default_game_configs`
-For instance, if you want to add support for Stadew Valley, you would create a `[python file locations]/default_game_configs/stardew_valley.yaml` file.
+This yaml file will need to be placed in `[nomm root folder]/default_game_configs`
+For instance, if you would want to add support for Stadew Valley, you would create a `[nomm root folder]/default_game_configs/stardew_valley.yaml` file.
 
 In that yaml you will need to define some basic information for it to be recognised:
 
