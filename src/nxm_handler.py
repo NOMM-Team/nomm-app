@@ -37,7 +37,7 @@ def download_nexus_mod(nxm_link):
         file_id = nxm_path[4]
 
         # 3. Determine Game-Specific Subfolder
-        game_folder_name = nexus_game_id # Fallback to the raw ID
+        game_folder_name = ""
         
         if os.path.exists(game_configs_dir):
             for filename in os.listdir(game_configs_dir):
@@ -51,6 +51,9 @@ def download_nexus_mod(nxm_link):
                                 break
                     except:
                         continue
+        if game_folder_name == "":
+            print(f"game {nexus_game_id} could not be found in game_configs!")
+            return
 
         # 4. Get the Download URI from Nexus API
         headers = {
@@ -109,16 +112,25 @@ def download_nexus_mod(nxm_link):
                 "changelog": file_info_data.get("changelog_html", ""),
                 "mod_id": mod_id,
                 "file_id": file_id,
-                "nexus_game_id": nexus_game_id, 
-                "mod_link": f"https://www.nexusmods.com/{nexus_game_id}/mods/{mod_id}"
+                "mod_link": f"https://www.nexusmods.com/{nexus_game_id}/mods/{mod_id}"  
             }
 
-            # Define metadata file path: filename.zip.nomm.yaml
-            metadata_filename = f"{file_name}.nomm.yaml"
-            metadata_path = final_download_dir / metadata_filename
-
-            with open(metadata_path, "w") as f:
-                yaml.dump(mod_metadata, f, default_flow_style=False)
+            # Define unique metadata file path .downloads.nomm.yaml:
+            downloads_metadata_filename = f".downloads.nomm.yaml"
+            downloads_metadata_path = final_download_dir / downloads_metadata_filename
+            downloads_metadata = {}
+            if os.path.exists(downloads_metadata_path):
+                with open(downloads_metadata_path, "r") as f:
+                    downloads_metadata = yaml.safe_load(f)
+            else:
+                # initialise file with important game info
+                downloads_metadata["info"] = {}
+                downloads_metadata["info"]["game"] = game_folder_name
+                downloads_metadata["info"]["nexus_game_id"] = nexus_game_id
+                downloads_metadata["mods"] = {}
+            downloads_metadata["mods"][file_name] = mod_metadata
+            with open(downloads_metadata_path, "w") as f:
+                yaml.safe_dump(downloads_metadata, f, default_flow_style=False)
             
             print(f"Metadata saved to {metadata_filename}")
 

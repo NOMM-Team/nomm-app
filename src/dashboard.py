@@ -163,18 +163,23 @@ class GameDashboard(Adw.Window):
         main_layout.append(footer)
         self.set_content(main_layout)
 
-    def execute_inline_delete_with_meta(self, btn, f):
-        """Deletes the mod zip and its associated .nomm.yaml file if it exists."""
+    def execute_inline_delete_with_meta(self, btn, file_name):
+        """Deletes the mod zip and associated data in downloads.nomm.yaml file if it exists."""
         try:
             # Delete ZIP
-            zip_path = os.path.join(self.downloads_path, f)
+            zip_path = os.path.join(self.downloads_path, file_name)
             if os.path.exists(zip_path):
                 os.remove(zip_path)
             
             # Delete Metadata
-            meta_path = zip_path + ".nomm.yaml"
-            if os.path.exists(meta_path):
-                os.remove(meta_path)
+            metadata_file_path = os.path.join(self.downloads_path, ".downloads.nomm.yaml")
+            if os.path.exists(metadata_file_path):
+                with open(metadata_file_path, 'r') as f:
+                    metadata = yaml.safe_load(f)
+                if metadata["mods"][file_name]:
+                    del metadata["mods"][file_name]
+                    with open(metadata_file_path, 'w') as f:
+                        yaml.safe_dump(metadata, f)
                 
             self.create_downloads_page()
             self.update_indicators()
@@ -391,7 +396,6 @@ class GameDashboard(Adw.Window):
 
         container = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10, margin_start=100, margin_end=100, margin_top=40)
         
-        # ... (Action Bar code remains the same)
         action_bar = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
         filter_group = Gtk.Box(css_classes=["linked"])
         self.all_filter_btn = Gtk.ToggleButton(label="All", active=True)
@@ -422,16 +426,16 @@ class GameDashboard(Adw.Window):
                 installed = self.is_mod_installed(f)
                 zip_full_path = os.path.join(self.downloads_path, f)
                 
-                # Metadata extraction (as before)
+                # New Metadata extraction
                 display_name, version_text, changelog = f, "—", ""
-                meta_path = os.path.join(self.downloads_path, f + ".nomm.yaml")
+                meta_path = os.path.join(self.downloads_path, ".downloads.nomm.yaml")
                 if os.path.exists(meta_path):
                     try:
                         with open(meta_path, 'r') as meta_f:
-                            data = yaml.safe_load(meta_f)
-                            display_name = data.get("name", f)
-                            version_text = data.get("version", "—")
-                            changelog = data.get("changelog", "")
+                            metadata = yaml.safe_load(meta_f)
+                            display_name = metadata["mods"][f].get("name", f)
+                            version_text = metadata["mods"][f].get("version", "—")
+                            changelog = metadata["mods"][f].get("changelog", "")
                     except: pass
 
                 row = Adw.ActionRow(title=display_name)
