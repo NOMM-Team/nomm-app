@@ -4,7 +4,8 @@ import requests
 import threading
 import gi
 gi.require_version('Gtk', '4.0')
-from gi.repository import Gtk, GLib
+gi.require_version('Notify', '0.7')
+from gi.repository import Gtk, GLib, Gio, Notify, GdkPixbuf
 
 def download_heroic_assets(appName: str, platform: str):
     # 1. Define Paths
@@ -151,3 +152,39 @@ def download_with_progress(url, dest_folder):
         GLib.MainContext.default().iteration(True)
 
     return status["success"]
+
+
+
+
+
+def send_download_notification(status, file_name="", game_name=None, icon_path=None):
+    # ... (Initialization and Title/Body logic remains the same) ...
+    Notify.init("NOMM")
+    
+    if status == "success":
+        title = "Download Successful"
+        full_body = f"File {file_name} successfully downloaded for {game_name}"
+    else:
+        title = "Download Failed"
+        full_body = f"File {file_name} failed to download for {game_name}"
+
+    notification = Notify.Notification.new(title, full_body)
+
+    # 4. Handle the Icon
+    if icon_path and os.path.exists(icon_path):
+        try:
+            pixbuf = GdkPixbuf.Pixbuf.new_from_file_at_scale(icon_path, 64, 64, True)
+            notification.set_icon_from_pixbuf(pixbuf)
+        except Exception as e:
+            print(f"Error loading notification pixbuf: {e}")
+            # FIX: Wrap string in GLib.Variant
+            notification.set_hint("desktop-entry", GLib.Variant.new_string("nomm"))
+    else:
+        # FIX: Wrap string in GLib.Variant
+        # Use "nomm" to match your actual .desktop filename
+        notification.set_hint("desktop-entry", GLib.Variant.new_string("nomm"))
+
+    try:
+        notification.show()
+    except Exception as e:
+        print(f"libnotify failed: {e}")

@@ -3,7 +3,7 @@ import yaml
 import requests
 from urllib.parse import urlsplit, urlunsplit
 from pathlib import Path
-from utils import download_with_progress
+from utils import download_with_progress, send_download_notification
 
 def download_nexus_mod(nxm_link):
     """
@@ -132,8 +132,7 @@ def download_nexus_mod(nxm_link):
             with open(downloads_metadata_path, "w") as f:
                 yaml.safe_dump(downloads_metadata, f, default_flow_style=False)
             
-            print(f"Metadata saved to {metadata_filename}")
-
+            send_download_notification("success", file_name=file_name, game_name=game_folder_name, icon_path=None)
         except Exception as e:
             print(f"Warning: Could not retrieve mod metadata: {e}")
             # We don't return False here because the actual mod download succeeded
