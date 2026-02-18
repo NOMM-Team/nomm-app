@@ -24,7 +24,7 @@ Just a few clicks, a clean, modern interface, and you're done :)
 - Beginner-friendly
 - Fully open
 
-## How can I add support for a game?
+## How can you add support for a game?
 
 One of the main ideas behind this project is that games are defined by easy to create config `.yaml` files.
 This means that anyone can create a simple yaml for their game and submit it to the project with little to no coding knowledge and the tool will automate the rest.
