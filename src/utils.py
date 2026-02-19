@@ -164,9 +164,11 @@ def send_download_notification(status, file_name="", game_name=None, icon_path=N
     if status == "success":
         title = "Download Successful"
         full_body = f"File {file_name} successfully downloaded for {game_name}"
-    else:
+    elif status == "failure-game-not-found":
         title = "Download Failed"
-        full_body = f"File {file_name} failed to download for {game_name}"
+        full_body = f"Game {game_name} could not be found in game_configs, are you sure it is defined?"
+    else:
+        return
 
     notification = Notify.Notification.new(title, full_body)
 

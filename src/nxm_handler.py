@@ -53,6 +53,7 @@ def download_nexus_mod(nxm_link):
                         continue
         if game_folder_name == "":
             print(f"game {nexus_game_id} could not be found in game_configs!")
+            send_download_notification("failure-game-not-found", file_name=None, game_name=nexus_game_id, icon_path=None)
             return
 
         # 4. Get the Download URI from Nexus API
