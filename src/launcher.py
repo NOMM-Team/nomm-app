@@ -127,7 +127,8 @@ class Nomm(Adw.Application):
         self.matches = []
         self.steam_base = self.get_steam_base_dir()
         self.user_config_path = os.path.expanduser("~/nomm/user_config.yaml")
-        self.game_config_path = os.path.expanduser("~/nomm/game_configs")
+        self.default_game_config_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "default_game_configs")
+        self.game_config_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "game_configs")
         self.win = None
 
     def get_steam_base_dir(self):
@@ -142,7 +143,7 @@ class Nomm(Adw.Application):
 
     def sync_configs(self):
 
-        src, dest = "./default_game_configs", self.game_config_path
+        src, dest = self.default_game_config_path, self.game_config_path
         if not os.path.exists(src): return
         if not os.path.exists(dest): os.makedirs(dest)
         for filename in os.listdir(src):

@@ -10,7 +10,7 @@ def download_nexus_mod(nxm_link):
     Downloads a mod into a game-specific subfolder found by matching nexus_game_id.
     """
     user_config_path = os.path.expanduser("~/nomm/user_config.yaml")
-    game_configs_dir = os.path.expanduser("~/nomm/game_configs")
+    game_configs_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "game_configs")
     
     # 1. Load User Config
     try:

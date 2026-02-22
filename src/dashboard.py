@@ -198,7 +198,8 @@ class GameDashboard(Adw.Window):
         return {}
 
     def load_game_config(self):
-        config_dir = os.path.expanduser("~/nomm/game_configs")
+        #TODO: merge this method and move to utils
+        config_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "game_configs")
         def slug(text): return re.sub(r'[^a-z0-9]', '', text.lower())
         target = slug(self.game_name)
         if os.path.exists(config_dir):
