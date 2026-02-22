@@ -795,7 +795,7 @@ class GameDashboard(Adw.Window):
 
         dialog.destroy()
 
-    def post_install_actions(self, filename, extracted_roots):
+    def post_install_actions(self, filename: str, extracted_roots: list):
         """Standardized cleanup for all installation types (FOMOD / Standard)"""
         metadata_source = os.path.join(self.downloads_path, ".downloads.nomm.yaml") # get downloads metadata (need this data to update the data below)
         metadata_dest = os.path.join(self.get_staging_path(), ".staging.nomm.yaml") # get current staging metadata (will update this data with data from above)
@@ -817,9 +817,14 @@ class GameDashboard(Adw.Window):
                 if not current_staging_metadata["info"]: # add basic info if it's not already there
                     current_staging_metadata["info"] = current_download_metadata["info"]
                 
-                # now add all of the specific mod information
-                mod_name = current_download_metadata["mods"][filename]["name"]
-                current_staging_metadata["mods"][mod_name] = current_download_metadata["mods"][filename]
+                # if the mod was downloaded with metadata, add all of the specific mod information
+                if filename in current_download_metadata["mods"]:
+                    mod_name = current_download_metadata["mods"][filename]["name"]
+                    current_staging_metadata["mods"][mod_name] = current_download_metadata["mods"][filename]
+                else: # if the mod was manually downloaded, add basic info only
+                    mod_name = filename.replace(".zip", "")
+                    current_staging_metadata["mods"][mod_name] = {} 
+                # regardless, add the list of installed files
                 current_staging_metadata["mods"][mod_name]["mod_files"] = extracted_roots
             
             # write the updated staging metadata file
