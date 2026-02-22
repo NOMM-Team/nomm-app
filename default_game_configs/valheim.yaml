@@ -1,2 +1,16 @@
 name: Valheim
 steamappid: 892970
+mods_path: "BepInEx/plugins/"
+
+nexus_game_id: "valheim"
+
+essential-utilities:
+  valheim-plus:
+    name: ValheimPlus
+    version: 0.9.9.11
+    creator: valheimPlus
+    creator-link: https://github.com/valheimPlus
+    source: "https://github.com/valheimPlus/ValheimPlus/releases/download/0.9.9.11/UnixServer.zip"
+    utility_path: ""
+    info: "add './start_game_bepinex.sh %command%' to launch options"
+    enable_command: "chmod u+x start_game_bepinex.sh"
