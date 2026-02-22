@@ -740,9 +740,12 @@ class GameDashboard(Adw.Window):
 
                 # 2. Standard Installation (If not FOMOD or parsing failed)
                 z.extractall(staging_path)
-                # Use the first folder in zip as the root name for metadata
-                extracted_root = z.namelist()[0].split('/')[0]
-                self.post_install_actions(filename, extracted_root)
+            
+                extracted_roots = []
+                for root in z.namelist():
+                    extracted_roots.append(root.split('/')[0])
+
+                self.post_install_actions(filename, extracted_roots)
 
         except Exception as e:
             self.show_message("Error", f"Installation failed: {e}")
@@ -783,18 +786,45 @@ class GameDashboard(Adw.Window):
                                 with z.open(member) as source_file, open(target_path, "wb") as target_file:
                                     shutil.copyfileobj(source_file, target_file)
                         
+                        #temporary fix to not break fomod support
+                        #TODO: handle FOMODs better
+                        source_folder_name = [source_folder_name]
                         self.post_install_actions(filename, source_folder_name)
                     else:
                         print(f"Could not find {source_folder_name} inside the ZIP.")
 
         dialog.destroy()
 
-    def post_install_actions(self, filename, extracted_root):
-        """Standardized cleanup for all installation types"""
-        meta_source = os.path.join(self.downloads_path, filename + ".nomm.yaml")
-        if os.path.exists(meta_source):
-            meta_dest = os.path.join(self.get_staging_path(), f".{extracted_root}.nomm.yaml")
-            shutil.copy2(meta_source, meta_dest)
+    def post_install_actions(self, filename, extracted_roots):
+        """Standardized cleanup for all installation types (FOMOD / Standard)"""
+        metadata_source = os.path.join(self.downloads_path, ".downloads.nomm.yaml") # get downloads metadata (need this data to update the data below)
+        metadata_dest = os.path.join(self.get_staging_path(), ".staging.nomm.yaml") # get current staging metadata (will update this data with data from above)
+        
+        # if there is already a metadata file, go read the contents to make sure we don't overwrite anything.
+        if os.path.exists(metadata_dest):
+            with open(metadata_dest, 'r') as f:
+                current_staging_metadata = yaml.safe_load(f)
+        else:
+            current_staging_metadata = {}
+            current_staging_metadata["info"] = {}
+            current_staging_metadata["mods"] = {}
+        
+        # this req should only fail if all previous files were manually downloaded
+        if os.path.exists(metadata_source):
+            with open(metadata_source, 'r') as f:
+                current_download_metadata = yaml.safe_load(f)
+                
+                if not current_staging_metadata["info"]: # add basic info if it's not already there
+                    current_staging_metadata["info"] = current_download_metadata["info"]
+                
+                # now add all of the specific mod information
+                mod_name = current_download_metadata["mods"][filename]["name"]
+                current_staging_metadata["mods"][mod_name] = current_download_metadata["mods"][filename]
+                current_staging_metadata["mods"][mod_name]["mod_files"] = extracted_roots
+            
+            # write the updated staging metadata file
+            with open(metadata_dest, 'w') as f:
+                yaml.safe_dump(current_staging_metadata, f)
 
         self.create_downloads_page()
         self.create_mods_page()
