@@ -39,6 +39,7 @@ name: 'Warhammer 40,000: Darktide' # the name of the game, with any symbols, spa
 steamappid: 0000000 # the steam app id, you can find this on: https://steamdb.info/
 mods_path: mods/ # the path where the mods need to be installed when they are enabled
 gogstoreid: 1207666893 # the gog store id, you can find this on: https://gogapidocs.readthedocs.io/en/latest/gameslist.html
+nexus_game_id: "warhammer40kdarktide" # the nexus game key - used for nexus downloads (generally the game name with no symbols and all attached, but please check before submitting)
 ```
 > [!NOTE]
 > Obviously you should only add `gogstoreid` if the game is actually on the GOG store.
