@@ -26,13 +26,15 @@ class GameDashboard(Adw.Window):
         self.current_filter = "all" # default filter is all
         self.active_tab = "mods" # default tab is mods
 
-        self.setup_custom_styles()
         self.game_config = self.load_game_config()
         self.user_config = self.load_user_config()
         self.downloads_path = self.game_config.get("downloads_path")
         self.staging_path = Path(os.path.join(Path(self.user_config.get("staging_path")), game_name))
         self.platform = self.game_config.get("platform")
         
+        self.staging_metadata_path = os.path.join(self.staging_path, ".staging.nomm.yaml")
+        self.downloads_metadata_path = os.path.join(self.downloads_path, ".downloads.nomm.yaml")
+
         if self.downloads_path and os.path.exists(self.downloads_path):
             self.setup_folder_monitor()
         
@@ -172,7 +174,7 @@ class GameDashboard(Adw.Window):
                 os.remove(zip_path)
             
             # Delete Metadata (if it exists)
-            metadata_file_path = os.path.join(self.downloads_path, ".downloads.nomm.yaml")
+            metadata_file_path = self.downloads_metadata_path
             if os.path.exists(metadata_file_path):
                 with open(metadata_file_path, 'r') as f:
                     metadata = yaml.safe_load(f)
@@ -223,25 +225,20 @@ class GameDashboard(Adw.Window):
 
     def update_indicators(self):
         # 1. Update Mods Stats
-        m_inactive, m_active = 0, 0
+        mods_inactive, mods_active = 0, 0
         staging_dir = self.get_staging_path()
         dest_dir = self.get_game_destination_path()
-        m_items = os.listdir(staging_dir) if staging_dir.exists() else []
+        if os.path.exists(self.staging_metadata_path):
+            with open(self.staging_metadata_path, 'r') as f:
+                staging_metadata = yaml.safe_load(f)
+            for mod in staging_metadata["mods"]:
+                if staging_metadata["mods"][mod]["status"] == "enabled":
+                    mods_active += 1
+                elif staging_metadata["mods"][mod]["status"] == "disabled":
+                    mods_inactive += 1
         
-        for item in m_items:
-            # --- ADD THIS FILTER ---
-            # Ignore hidden files (starts with .) and metadata (ends with .nomm.yaml)
-            if item.startswith('.') or item.lower().endswith('.nomm.yaml'):
-                continue
-            # -----------------------
-
-            if dest_dir and (dest_dir / item).is_symlink():
-                m_active += 1
-            else:
-                m_inactive += 1
-        
-        self.mods_inactive_label.set_text(str(m_inactive))
-        self.mods_active_label.set_text(str(m_active))
+        self.mods_inactive_label.set_text(str(mods_inactive))
+        self.mods_active_label.set_text(str(mods_active))
 
         # 2. Update Downloads Stats
         d_avail, d_inst = 0, 0
@@ -297,48 +294,81 @@ class GameDashboard(Adw.Window):
         self.mods_list_box = Gtk.ListBox(css_classes=["boxed-list"])
         self.mods_list_box.set_filter_func(self.filter_mods_rows)
         
-        s = self.get_staging_path()
-        d = self.get_game_destination_path()
-        items = os.listdir(s) if s.exists() else []
-        
-        for i in sorted(items, key=lambda x: os.path.getmtime(s/x), reverse=True):
-            if i.lower().endswith(".nomm.yaml"):
-                continue
+        staging_path = self.get_staging_path()
+        destination_path = self.get_game_destination_path()
 
-            # --- METADATA SEARCH ---
-            display_name, version_text, changelog , mod_link = i, "—", "", ""
-            for meta_file in os.listdir(s):
-                if meta_file.endswith(".nomm.yaml") and i in meta_file:
-                    try:
-                        with open(s / meta_file, 'r') as f:
-                            data = yaml.safe_load(f)
-                            display_name = data.get("name", i)
-                            version_text = data.get("version", "—")
-                            changelog = data.get("changelog", "")
-                            mod_link = data.get("mod_link", "")
-                        break 
-                    except: pass
+        #TODO remove
+        items = os.listdir(staging_path) if staging_path.exists() else []
+
+        # load metadata
+        if os.path.exists(self.staging_metadata_path):
+            with open(self.staging_metadata_path,'r') as f:
+                staging_metadata = yaml.safe_load(f)
+        else:
+            container.append(Gtk.Label(label="The staging metadata file could not be found, did you install any mods?", css_classes=["dim-label"]))
+            staging_metadata = {}
+            staging_metadata["mods"] = {}
+        
+        for mod in sorted(staging_metadata["mods"]):
+            display_name = mod
+            mod_metadata = staging_metadata["mods"][mod]
+
+            # load the metadata from the file
+            version_text = mod_metadata.get("version", "—")
+            changelog = mod_metadata.get("changelog", "")
+            mod_link = mod_metadata.get("mod_link", "")
+            mod_files = mod_metadata.get("mod_files", "")
 
             # Use standard title/subtitle to keep the row height and layout stable
             row = Adw.ActionRow(title=display_name)
-            if display_name != i:
-                row.set_subtitle(i)
-            row.mod_name = i.lower() 
+            if len(mod_files) == 1:
+                row.set_subtitle(mod_files[0])
+            row.mod_name = display_name.lower()
+
+            row_element_margin = 10
 
             # Prefix: Switch
-            sw = Gtk.Switch(active=(d/i).is_symlink() if d else False, valign=Gtk.Align.CENTER, css_classes=["green-switch"])
-            sw.connect("state-set", self.on_switch_toggled, i)
-            row.add_prefix(sw)
+            mod_toggle_switch = Gtk.Switch(active=(destination_path/mod_files[0]).is_symlink() if destination_path else False, valign=Gtk.Align.CENTER, css_classes=["green-switch"])
+            mod_toggle_switch.connect("state-set", self.on_mod_toggled, mod_files, mod)
+            row.add_prefix(mod_toggle_switch)
+
+            # Prefix: # of files
+            number_of_files = len(mod_files)
+            file_list_badge = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
+            file_list_badge.set_tooltip_text("\n".join(mod_files))
+            file_list_badge.add_css_class("version-badge")
+            file_list_badge.set_valign(Gtk.Align.CENTER)
+            file_list_badge.set_margin_end(row_element_margin)
+            file_list_badge.append(Gtk.Label(label=f"{number_of_files} file(s)"))
+            row.add_prefix(file_list_badge)
+
+            # Prefix: Missing Files
+            missing_files = []
+            for mod_file in mod_files:    
+                if not os.path.exists(staging_path/mod_file):
+                    missing_files.append(mod_file)
+            if missing_files:
+                missing_file_badge = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
+                missing_file_badge.add_css_class("warning-badge")
+                missing_file_badge.set_valign(Gtk.Align.CENTER)
+                missing_file_badge.set_margin_end(row_element_margin)
+                missing_file_badge.set_tooltip_text("Missing Files:\n"+"\n".join(missing_files))
+                missing_file_badge.append(Gtk.Label(label=f"Missing {len(missing_files)} file(s)"))
+                row.add_prefix(missing_file_badge)
 
             # --- VERSION BADGE (Left-most Suffix) ---
             # Adding this first keeps it closest to the title
             version_badge = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
             version_badge.add_css_class("version-badge")
             version_badge.set_valign(Gtk.Align.CENTER)
-            version_badge.set_margin_end(15) 
-            
-            v_label = Gtk.Label(label=version_text)
-            version_badge.append(v_label)
+            version_badge.set_margin_end(row_element_margin)
+            version_badge.append(Gtk.Label(label=version_text))
+            if changelog: # if there's a changelog, add it as a tooltip
+                version_badge.set_tooltip_text(changelog)
+                q_icon = Gtk.Image.new_from_icon_name("help-about-symbolic")
+                q_icon.set_pixel_size(14)
+                version_badge.append(q_icon)
+            row.add_suffix(version_badge)
 
             # --- Mod Link Badge
             if mod_link:
@@ -346,7 +376,7 @@ class GameDashboard(Adw.Window):
                 mod_link_badge.add_css_class("flat") # Keeps it from looking like a chunky button
                 mod_link_badge.add_css_class("version-badge")
                 mod_link_badge.set_valign(Gtk.Align.CENTER)
-                mod_link_badge.set_margin_end(15)
+                mod_link_badge.set_margin_end(row_element_margin)
                 mod_link_badge.set_cursor_from_name("pointer")
                 
                 # Create the External Link Icon
@@ -357,24 +387,17 @@ class GameDashboard(Adw.Window):
                 mod_link_badge.connect("clicked", lambda b, l=mod_link: webbrowser.open(l))
                 row.add_suffix(mod_link_badge)
 
-            if changelog:
-                version_badge.set_tooltip_text(changelog)
-                q_icon = Gtk.Image.new_from_icon_name("help-about-symbolic")
-                q_icon.set_pixel_size(14)
-                version_badge.append(q_icon)
-            
-            row.add_suffix(version_badge)
-
             # --- OTHER SUFFIXES (Timestamp & Trash) ---
-            mtime = os.path.getmtime(s/i)
-            ts_label = Gtk.Label(label=datetime.fromtimestamp(mtime).strftime('%Y-%m-%d %H:%M'), css_classes=["dim-label"], margin_end=10)
-            row.add_suffix(ts_label)
+            if not missing_files:
+                mtime = os.path.getmtime(staging_path/mod_files[0])
+                ts_label = Gtk.Label(label=datetime.fromtimestamp(mtime).strftime('%Y-%m-%d %H:%M'), css_classes=["dim-label"], margin_end=10)
+                row.add_suffix(ts_label)
 
             # Trash Bin Stack (Restored your specific logic)
             u_stack = Gtk.Stack(transition_type=Gtk.StackTransitionType.CROSSFADE, hhomogeneous=False, interpolate_size=True)
             bin_btn = Gtk.Button(icon_name="user-trash-symbolic", valign=Gtk.Align.CENTER, css_classes=["flat"])
             conf_del_btn = Gtk.Button(label="Are you sure?", valign=Gtk.Align.CENTER, css_classes=["destructive-action"])
-            conf_del_btn.connect("clicked", self.on_uninstall_item, i) 
+            conf_del_btn.connect("clicked", self.on_uninstall_item, mod_files, mod)
             
             bin_btn.connect("clicked", lambda b, s=u_stack: [
                 s.set_visible_child_name("c"), 
@@ -429,7 +452,7 @@ class GameDashboard(Adw.Window):
                 
                 # New Metadata extraction
                 display_name, version_text, changelog = f, "—", ""
-                meta_path = os.path.join(self.downloads_path, ".downloads.nomm.yaml")
+                meta_path = self.downloads_metadata_path
                 if os.path.exists(meta_path):
                     try:
                         with open(meta_path, 'r') as meta_f:
@@ -689,30 +712,37 @@ class GameDashboard(Adw.Window):
         except Exception as e:
             self.show_message("Installation Error", str(e))
 
-
-    def setup_custom_styles(self):
-        css = """
-        .badge-green { background-color: #26a269; color: white; border-radius: 6px; padding: 2px 10px; font-weight: bold; }
-        .badge-grey { background-color: #333333; color: white; border-radius: 6px; padding: 2px 10px; font-weight: bold; }
-        switch.green-switch:checked { background-color: #26a269; }
-        """
-        provider = Gtk.CssProvider()
-        provider.load_from_data(css.encode())
-        Gtk.StyleContext.add_provider_for_display(Gdk.Display.get_default(), provider, 800)
-
-    def on_switch_toggled(self, switch, state, item_name):
-        staging_item = self.get_staging_path() / item_name
+    def on_mod_toggled(self, switch, state, mod_files, mod):
         dest_dir = self.get_game_destination_path()
         if not dest_dir: return False
-        link_path = dest_dir / item_name
-        if state:
-            if not link_path.exists():
-                try: os.symlink(staging_item, link_path)
-                except: switch.set_active(False)
+
+        if os.path.exists(self.staging_metadata_path):
+            with open(self.staging_metadata_path, 'r') as f:
+                staging_metadata = yaml.safe_load(f)
         else:
-            if link_path.is_symlink():
-                try: link_path.unlink()
-                except: switch.set_active(True)
+            staging_metadata = None
+
+        for mod_file in mod_files:
+            staging_item = self.staging_path / mod_file
+            link_path = dest_dir / mod_file
+
+            if state:
+                if not link_path.exists():
+                    try:
+                        os.symlink(staging_item, link_path)
+                        if staging_metadata: staging_metadata["mods"][mod]["status"] = "enabled"
+                    except: switch.set_active(False)
+            else:
+                if link_path.is_symlink():
+                    try:
+                        link_path.unlink()
+                        if staging_metadata: staging_metadata["mods"][mod]["status"] = "disabled"
+                    except: switch.set_active(True)
+
+        if staging_metadata:
+            with open(self.staging_metadata_path, 'w') as f:
+                yaml.safe_dump(staging_metadata, f)
+
         self.update_indicators()
         return False
 
@@ -797,8 +827,8 @@ class GameDashboard(Adw.Window):
 
     def post_install_actions(self, filename: str, extracted_roots: list):
         """Standardized cleanup for all installation types (FOMOD / Standard)"""
-        metadata_source = os.path.join(self.downloads_path, ".downloads.nomm.yaml") # get downloads metadata (need this data to update the data below)
-        metadata_dest = os.path.join(self.get_staging_path(), ".staging.nomm.yaml") # get current staging metadata (will update this data with data from above)
+        metadata_source = self.downloads_metadata_path # get downloads metadata (need this data to update the data below)
+        metadata_dest = self.staging_metadata_path # get current staging metadata (will update this data with data from above)
         
         # if there is already a metadata file, go read the contents to make sure we don't overwrite anything.
         if os.path.exists(metadata_dest):
@@ -826,6 +856,7 @@ class GameDashboard(Adw.Window):
                     current_staging_metadata["mods"][mod_name] = {} 
                 # regardless, add the list of installed files
                 current_staging_metadata["mods"][mod_name]["mod_files"] = extracted_roots
+                current_staging_metadata["mods"][mod_name]["status"] = "disabled"
             
             # write the updated staging metadata file
             with open(metadata_dest, 'w') as f:
@@ -835,28 +866,30 @@ class GameDashboard(Adw.Window):
         self.create_mods_page()
         self.update_indicators()
 
-    def on_uninstall_item(self, btn, item_name):
+    def on_uninstall_item(self, btn, mod_files, mod_name):
         try:
             dest = self.get_game_destination_path()
             staging_path = self.get_staging_path()
             
-            # Remove symlink from game folder
-            if dest and (dest / item_name).is_symlink(): 
-                (dest / item_name).unlink()
+            for item_name in mod_files:
+                # Remove symlink from game folder
+                if dest and (dest / item_name).is_symlink(): 
+                    (dest / item_name).unlink()
+                
+                # Remove the actual files from staging
+                path = staging_path / item_name
+                if path.exists():
+                    if path.is_dir(): shutil.rmtree(path)
+                    else: path.unlink()
             
-            # Remove the actual files from staging
-            path = staging_path / item_name
-            if path.exists():
-                if path.is_dir(): shutil.rmtree(path)
-                else: path.unlink()
-            
-            # --- NEW: Cleanup corresponding metadata if it exists ---
-            # We look for any .nomm.yaml files that might be associated with this item
-            # (Note: This assumes the item_name matches the base of the zip)
-            for meta_file in staging_path.glob("*.nomm.yaml"):
-                # If you want to be precise, you'd need to track which zip created which files
-                # For now, this is a placeholder check
-                pass
+            # Cleanup corresponding metadata if it exists
+            if os.path.exists(self.staging_metadata_path):
+                with open(self.staging_metadata_path, 'r') as f:
+                    staging_metadata = yaml.safe_load(f)
+                if mod_name in staging_metadata["mods"]:
+                    del staging_metadata["mods"][mod_name]
+                with open(self.staging_metadata_path, 'w') as f:
+                    yaml.safe_dump(staging_metadata, f)
 
             self.create_mods_page()
             self.create_downloads_page()

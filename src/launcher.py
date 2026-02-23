@@ -103,16 +103,48 @@ togglebutton {
     text-shadow: 0 2px 10px rgba(0,0,0,0.5);
 }
 
+.warning-badge { 
+    background-color: rgba(255, 255, 0, 0.4);
+    border-radius: 99px;
+    padding: 4px 8px;
+    border: 1px solid rgba(255, 255, 0, 0.4);
+}
+
+.warning-badge:hover {
+    background-color: rgba(255, 255, 0, 0.7);
+    border: 1px solid @accent_bg_color;
+}
+
 .version-badge { 
     background-color: rgba(255, 255, 255, 0.1); 
-    border-radius: 99px; 
-    padding: 4px 12px; 
+    border-radius: 99px;
+    padding: 4px 12px;
     border: 1px solid rgba(255, 255, 255, 0.1);
 }
         
 .version-badge:hover {
     background-color: rgba(255, 255, 255, 0.2);
     border: 1px solid @accent_bg_color;
+}
+
+.badge-green { 
+    background-color: @accent_bg_color;
+    color: white;
+    border-radius: 6px;
+    padding: 2px 10px;
+    font-weight: bold;
+}
+
+.badge-grey {
+background-color: #333333;
+color: white;
+border-radius: 6px;
+padding: 2px 10px;
+font-weight: bold;
+}
+
+switch.green-switch:checked {
+background-color: @accent_bg_color;
 }
 
 """
