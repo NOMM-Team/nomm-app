@@ -1,3 +1,8 @@
+[![Watch the video](https://i.imgur.com/N0jQhdX.png)](https://www.youtube.com/watch?v=3UWBQxQY9kk)
+<div align="center">
+  <a href="https://discord.gg/x7VjSRvAkm"><img src="https://img.shields.io/discord/1472479817512521772?color=0098DB&label=Discord&logo=discord&logoColor=0098DB"></a>
+</div>
+
 # NOMM (Native Open Mod Manager)
 
 ## The project
@@ -5,9 +10,6 @@
 This may or may not eventually become a stupid simple, super clean native mod manager for linux.
 The goal here is to keep the setup really simple for idiots like me who don't need multiple profiles and all that jazz.
 Just a few clicks, a clean, modern interface, and you're done :)
-
-[![Watch the video](https://i.imgur.com/1iGS3zd.png)](https://www.youtube.com/watch?v=3UWBQxQY9kk)
-^ Click on the image above for a quick preview of current features ^
 
 > [!WARNING]
 > This project is partially made with the help of Gemini.
