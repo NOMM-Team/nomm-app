@@ -435,39 +435,31 @@ class GameDashboard(Adw.Window):
 
             # --- VERSION BADGE (Left-most Suffix) ---
             # Adding this first keeps it closest to the title
-            version_badge = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
+            version_badge = Gtk.Button()
+            button_content = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
+            button_content.append(Gtk.Label(label=version_text))
 
-            # if there is a new version and it's different than the current version... an update's available!
+            if changelog:
+                version_badge.set_tooltip_text(changelog)
+                q_icon = Gtk.Image.new_from_icon_name("help-about-symbolic")
+                q_icon.set_pixel_size(14)
+                button_content.append(q_icon)
+            
+            version_badge.set_child(button_content)
+
             if new_version and new_version != version_text:
                 version_badge.add_css_class("badge-action-row-accent")
             else:
                 version_badge.add_css_class("badge-action-row")
+            
+            version_badge.set_cursor_from_name("pointer")
             version_badge.set_valign(Gtk.Align.CENTER)
             version_badge.set_margin_end(row_element_margin)
-            version_badge.append(Gtk.Label(label=version_text))
-            if changelog: # if there's a changelog, add it as a tooltip
-                version_badge.set_tooltip_text(changelog)
-                q_icon = Gtk.Image.new_from_icon_name("help-about-symbolic")
-                q_icon.set_pixel_size(14)
-                version_badge.append(q_icon)
-            row.add_suffix(version_badge)
 
-            # --- Mod Link Badge
             if mod_link:
-                mod_link_badge = Gtk.Button()
-                mod_link_badge.add_css_class("flat") # Keeps it from looking like a chunky button
-                mod_link_badge.add_css_class("badge-action-row")
-                mod_link_badge.set_valign(Gtk.Align.CENTER)
-                mod_link_badge.set_margin_end(row_element_margin)
-                mod_link_badge.set_cursor_from_name("pointer")
-                
-                # Create the External Link Icon
-                link_icon = Gtk.Image.new_from_icon_name("external-link-symbolic")
-                link_icon.set_pixel_size(14) # Matches your changelog icon size
-                
-                mod_link_badge.set_child(link_icon)
-                mod_link_badge.connect("clicked", lambda b, l=mod_link: webbrowser.open(l))
-                row.add_suffix(mod_link_badge)
+                version_badge.connect("clicked", lambda b, l=mod_link: webbrowser.open(l))
+            
+            row.add_suffix(version_badge)
 
             # --- OTHER SUFFIXES (Timestamp & Trash) ---
             if not missing_files:
@@ -482,7 +474,7 @@ class GameDashboard(Adw.Window):
             conf_del_btn.connect("clicked", self.on_uninstall_item, mod_files, mod)
             
             bin_btn.connect("clicked", lambda b, s=u_stack: [
-                s.set_visible_child_name("c"), 
+                s.set_visible_child_name("c"),
                 GLib.timeout_add_seconds(3, lambda: s.set_visible_child_name("b") or False)
             ])
             u_stack.add_named(bin_btn, "b"); u_stack.add_named(conf_del_btn, "c")
