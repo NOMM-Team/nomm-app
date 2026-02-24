@@ -79,6 +79,7 @@ Phase 1 Development Progress:
 
 Phase 2 Development Progress:
 - [x] Rudimentary FOMOD support
+- [x] Add mod update checker
 - [ ] Handle more complex FOMOD, and handle them cleanly
 - [ ] Let user skip launcher and go straight to game
 - [ ] Figure out how to create a flatpak for the app
