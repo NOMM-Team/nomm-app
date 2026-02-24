@@ -771,9 +771,8 @@ class GameDashboard(Adw.Window):
                 # 2. Standard Installation (If not FOMOD or parsing failed)
                 z.extractall(staging_path)
             
-                extracted_roots = []
-                for root in z.namelist():
-                    extracted_roots.append(root.split('/')[0])
+                # This returns only the unique top-level names (I don't want to list files in subdirectories)
+                extracted_roots = list({name.split('/')[0] for name in z.namelist()})
 
                 self.post_install_actions(filename, extracted_roots)
 
