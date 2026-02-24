@@ -5,6 +5,7 @@ import shutil
 import zipfile
 import webbrowser
 import re
+import requests
 
 from pathlib import Path
 from datetime import datetime
@@ -34,6 +35,12 @@ class GameDashboard(Adw.Window):
         
         self.staging_metadata_path = os.path.join(self.staging_path, ".staging.nomm.yaml")
         self.downloads_metadata_path = os.path.join(self.downloads_path, ".downloads.nomm.yaml")
+
+        self.headers = {
+            'apikey': self.user_config["nexus_api_key"],
+            'Application-Name': 'Nomm',
+            'Application-Version': '0.5.0'
+        }
 
         if self.downloads_path and os.path.exists(self.downloads_path):
             self.setup_folder_monitor()
@@ -188,6 +195,12 @@ class GameDashboard(Adw.Window):
         except Exception as e:
             self.show_message("Error", f"Could not delete file: {e}")
 
+    def load_downloads_metadata(self):
+        if not os.path.exists(self.downloads_metadata_path):
+            return None
+        with open(self.downloads_metadata_path, 'r') as f:
+            return yaml.safe_load(f)
+
     def load_staging_metadata(self):
         if not os.path.exists(self.staging_metadata_path):
             return None
@@ -279,8 +292,55 @@ class GameDashboard(Adw.Window):
         # Check if the text is in the mod name we stored on the row
         return search_text in getattr(row, 'mod_name', '')
 
-    def check_for_updates(self):
-        pass
+    def check_for_updates(self, btn):
+        staging_metadata = self.load_staging_metadata()
+        if not staging_metadata: return
+
+        game_id = staging_metadata.get("info", {}).get("nexus_game_id")
+        if not game_id: return
+
+        mods_updated = False
+
+        for mod_name, details in staging_metadata["mods"].items():
+            mod_id = details.get("mod_id")
+            local_version = str(details.get("version", ""))
+            if not mod_id: continue
+
+            try:
+                # 1. Check for new version
+                mod_url = f"https://api.nexusmods.com/v1/games/{game_id}/mods/{mod_id}.json"
+                resp = requests.get(mod_url, headers=self.headers, timeout=10)
+                
+                if resp.status_code == 200:
+                    remote_data = resp.json()
+                    remote_version = str(remote_data.get("version", ""))
+
+                    if remote_version and remote_version != local_version:
+                        
+                        details["new_version"] = remote_version
+                        mods_updated = True
+
+                        # 2. If the versions are different, fetch the latest changelog
+                        changelog_url = f"https://api.nexusmods.com/v1/games/{game_id}/mods/{mod_id}/changelogs.json"
+                        changelog_resp = requests.get(changelog_url, headers=self.headers, timeout=10)
+                        
+                        if changelog_resp.status_code == 200:
+                            logs = changelog_resp.json()
+                            # Nexus returns a dict where keys are version numbers
+                            # We grab the log for the specific remote version found
+                            new_log = logs.get(remote_version)
+                            if new_log:
+                                # Join list of changes into a single string if necessary
+                                details["changelog"] = "\n".join(new_log) if isinstance(new_log, list) else new_log
+
+            except Exception as e:
+                print(f"Error checking {mod_name}: {e}")
+
+        # 3. Save only if changes were actually made
+        if mods_updated:
+            self.write_staging_metadata(staging_metadata)
+            print("Metadata updated with new version info and changelogs.")
+            self.create_mods_page()
 
     def create_mods_page(self):
         if self.view_stack.get_child_by_name("mods"): 
@@ -330,9 +390,11 @@ class GameDashboard(Adw.Window):
 
             # load the metadata from the file
             version_text = mod_metadata.get("version", "—")
+            new_version = mod_metadata.get("new_version", "")
             changelog = mod_metadata.get("changelog", "")
             mod_link = mod_metadata.get("mod_link", "")
             mod_files = mod_metadata.get("mod_files", "")
+            
 
             # Use standard title/subtitle to keep the row height and layout stable
             row = Adw.ActionRow(title=display_name)
@@ -374,7 +436,12 @@ class GameDashboard(Adw.Window):
             # --- VERSION BADGE (Left-most Suffix) ---
             # Adding this first keeps it closest to the title
             version_badge = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
-            version_badge.add_css_class("version-badge")
+
+            # if there is a new version and it's different than the current version... an update's available!
+            if new_version and new_version != version_text:
+                version_badge.add_css_class("accent-badge")
+            else:
+                version_badge.add_css_class("version-badge")
             version_badge.set_valign(Gtk.Align.CENTER)
             version_badge.set_margin_end(row_element_margin)
             version_badge.append(Gtk.Label(label=version_text))

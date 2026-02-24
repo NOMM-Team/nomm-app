@@ -127,6 +127,18 @@ togglebutton {
     border: 1px solid @accent_bg_color;
 }
 
+.accent-badge { 
+    background-color: alpha(@accent_bg_color, 0.7); 
+    border-radius: 99px;
+    padding: 4px 12px;
+    border: 1px solid alpha(@accent_bg_color, 0.8);
+}
+        
+.accent-badge:hover {
+    background-color: @accent_bg_color;
+    border: 1px solid @accent_bg_color;
+}
+
 .badge-green { 
     background-color: @accent_bg_color;
     color: white;
