@@ -188,6 +188,18 @@ class GameDashboard(Adw.Window):
         except Exception as e:
             self.show_message("Error", f"Could not delete file: {e}")
 
+    def load_staging_metadata(self):
+        if not os.path.exists(self.staging_metadata_path):
+            return None
+        with open(self.staging_metadata_path, 'r') as f:
+            return yaml.safe_load(f)
+
+    def write_staging_metadata(self, metadata):
+        if not os.path.exists(self.staging_metadata_path):
+            return
+        with open(self.staging_metadata_path, 'w') as f:
+            return yaml.safe_dump(metadata, f)
+
     def load_user_config(self):
         # TODO: Homogenise this config load with one in launcher.py and probably load_game_config
         if os.path.exists(self.user_config_path):
@@ -228,9 +240,8 @@ class GameDashboard(Adw.Window):
         mods_inactive, mods_active = 0, 0
         staging_dir = self.get_staging_path()
         dest_dir = self.get_game_destination_path()
-        if os.path.exists(self.staging_metadata_path):
-            with open(self.staging_metadata_path, 'r') as f:
-                staging_metadata = yaml.safe_load(f)
+        staging_metadata = self.load_staging_metadata()
+        if staging_metadata:
             for mod in staging_metadata["mods"]:
                 if staging_metadata["mods"][mod]["status"] == "enabled":
                     mods_active += 1
@@ -271,6 +282,9 @@ class GameDashboard(Adw.Window):
         # Check if the text is in the mod name we stored on the row
         return search_text in getattr(row, 'mod_name', '')
 
+    def check_for_updates(self):
+        pass
+
     def create_mods_page(self):
         if self.view_stack.get_child_by_name("mods"): 
             self.view_stack.remove(self.view_stack.get_child_by_name("mods"))
@@ -284,11 +298,21 @@ class GameDashboard(Adw.Window):
         self.mod_search_entry.connect("search-changed", self.on_mod_search_changed)
         action_bar.append(self.mod_search_entry)
 
+        # add the folder button
         folder_btn = Gtk.Button(icon_name="folder-open-symbolic", css_classes=["flat"])
         folder_btn.set_halign(Gtk.Align.END); folder_btn.set_hexpand(True)
         folder_btn.set_cursor_from_name("pointer")
         folder_btn.connect("clicked", lambda x: webbrowser.open(f"file://{self.get_staging_path()}"))
         action_bar.append(folder_btn)
+
+        # add the update button
+        update_btn = Gtk.Button(icon_name="view-refresh-symbolic", css_classes=["flat"])
+        update_btn.set_halign(Gtk.Align.END);
+        update_btn.set_cursor_from_name("pointer")
+        update_btn.connect("clicked", self.check_for_updates)
+        action_bar.append(update_btn)
+
+        # add the action bar
         container.append(action_bar)
 
         self.mods_list_box = Gtk.ListBox(css_classes=["boxed-list"])
@@ -297,14 +321,8 @@ class GameDashboard(Adw.Window):
         staging_path = self.get_staging_path()
         destination_path = self.get_game_destination_path()
 
-        #TODO remove
-        items = os.listdir(staging_path) if staging_path.exists() else []
-
-        # load metadata
-        if os.path.exists(self.staging_metadata_path):
-            with open(self.staging_metadata_path,'r') as f:
-                staging_metadata = yaml.safe_load(f)
-        else:
+        staging_metadata = self.load_staging_metadata()
+        if not staging_metadata:
             container.append(Gtk.Label(label="The staging metadata file could not be found, did you install any mods?", css_classes=["dim-label"]))
             staging_metadata = {}
             staging_metadata["mods"] = {}
@@ -525,7 +543,7 @@ class GameDashboard(Adw.Window):
                 c_btn.connect("clicked", self.execute_inline_delete_with_meta, f)
                 
                 b_btn.connect("clicked", lambda b, s=d_stack: [
-                    s.set_visible_child_name("c"), 
+                    s.set_visible_child_name("c"),
                     GLib.timeout_add_seconds(3, lambda: s.set_visible_child_name("b") or False)
                 ])
                 d_stack.add_named(b_btn, "b"); d_stack.add_named(c_btn, "c")
@@ -716,11 +734,7 @@ class GameDashboard(Adw.Window):
         dest_dir = self.get_game_destination_path()
         if not dest_dir: return False
 
-        if os.path.exists(self.staging_metadata_path):
-            with open(self.staging_metadata_path, 'r') as f:
-                staging_metadata = yaml.safe_load(f)
-        else:
-            staging_metadata = None
+        staging_metadata = self.load_staging_metadata()
 
         for mod_file in mod_files:
             staging_item = self.staging_path / mod_file
@@ -830,12 +844,10 @@ class GameDashboard(Adw.Window):
         metadata_dest = self.staging_metadata_path # get current staging metadata (will update this data with data from above)
         
         # if there is already a metadata file, go read the contents to make sure we don't overwrite anything.
-        if os.path.exists(metadata_dest):
-            with open(metadata_dest, 'r') as f:
-                current_staging_metadata = yaml.safe_load(f)
-        else:
+        current_staging_metadata = self.load_staging_metadata()
+        # if there isn't, instanciate it
+        if not current_staging_metadata:
             current_staging_metadata = {}
-            current_staging_metadata["info"] = {}
             current_staging_metadata["mods"] = {}
         
         # this req should only fail if all previous files were manually downloaded
@@ -843,7 +855,7 @@ class GameDashboard(Adw.Window):
             with open(metadata_source, 'r') as f:
                 current_download_metadata = yaml.safe_load(f)
                 
-                if not current_staging_metadata["info"]: # add basic info if it's not already there
+                if "info" not in current_staging_metadata: # add basic info if it's not already there
                     current_staging_metadata["info"] = current_download_metadata["info"]
                 
                 # if the mod was downloaded with metadata, add all of the specific mod information
@@ -882,9 +894,8 @@ class GameDashboard(Adw.Window):
                     else: path.unlink()
             
             # Cleanup corresponding metadata if it exists
-            if os.path.exists(self.staging_metadata_path):
-                with open(self.staging_metadata_path, 'r') as f:
-                    staging_metadata = yaml.safe_load(f)
+            staging_metadata = self.load_staging_metadata()
+            if staging_metadata:
                 if mod_name in staging_metadata["mods"]:
                     del staging_metadata["mods"][mod_name]
                 with open(self.staging_metadata_path, 'w') as f:
