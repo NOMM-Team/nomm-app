@@ -224,9 +224,6 @@ class GameDashboard(Adw.Window):
                         if slug(data.get("name", "")) == target: return data
         return {}
 
-    def get_staging_path(self):
-        return self.staging_path
-
     def get_game_destination_path(self):
         game_path = self.game_config.get("game_path")
         mods_subfolder = self.game_config.get("mods_path", "")
@@ -238,7 +235,7 @@ class GameDashboard(Adw.Window):
     def update_indicators(self):
         # 1. Update Mods Stats
         mods_inactive, mods_active = 0, 0
-        staging_dir = self.get_staging_path()
+        staging_dir = self.staging_path
         dest_dir = self.get_game_destination_path()
         staging_metadata = self.load_staging_metadata()
         if staging_metadata:
@@ -302,7 +299,7 @@ class GameDashboard(Adw.Window):
         folder_btn = Gtk.Button(icon_name="folder-open-symbolic", css_classes=["flat"])
         folder_btn.set_halign(Gtk.Align.END); folder_btn.set_hexpand(True)
         folder_btn.set_cursor_from_name("pointer")
-        folder_btn.connect("clicked", lambda x: webbrowser.open(f"file://{self.get_staging_path()}"))
+        folder_btn.connect("clicked", lambda x: webbrowser.open(f"file://{self.staging_path}"))
         action_bar.append(folder_btn)
 
         # add the update button
@@ -318,7 +315,7 @@ class GameDashboard(Adw.Window):
         self.mods_list_box = Gtk.ListBox(css_classes=["boxed-list"])
         self.mods_list_box.set_filter_func(self.filter_mods_rows)
         
-        staging_path = self.get_staging_path()
+        staging_path = self.staging_path
         destination_path = self.get_game_destination_path()
 
         staging_metadata = self.load_staging_metadata()
@@ -458,7 +455,7 @@ class GameDashboard(Adw.Window):
         self.list_box = Gtk.ListBox(css_classes=["boxed-list"])
         self.list_box.set_filter_func(self.filter_list_rows)
 
-        staging_path = self.get_staging_path()
+        staging_path = self.staging_path
 
         if self.downloads_path and os.path.exists(self.downloads_path):
             files = [f for f in os.listdir(self.downloads_path) if f.lower().endswith('.zip')]
@@ -762,7 +759,7 @@ class GameDashboard(Adw.Window):
 
     def on_install_clicked(self, btn, filename):
         try:
-            staging_path = self.get_staging_path()
+            staging_path = self.staging_path
             zip_full_path = os.path.join(self.downloads_path, filename)
             
             with zipfile.ZipFile(zip_full_path, 'r') as z:
@@ -797,7 +794,7 @@ class GameDashboard(Adw.Window):
         if response == Gtk.ResponseType.OK:
             source_folder_name = dialog.get_selected_source()
             if source_folder_name:
-                staging_path = self.get_staging_path()
+                staging_path = self.staging_path
                 
                 with zipfile.ZipFile(zip_path, 'r') as z:
                     all_files = z.namelist()
@@ -880,7 +877,7 @@ class GameDashboard(Adw.Window):
     def on_uninstall_item(self, btn, mod_files, mod_name):
         try:
             dest = self.get_game_destination_path()
-            staging_path = self.get_staging_path()
+            staging_path = self.staging_path
             
             for item_name in mod_files:
                 # Remove symlink from game folder
@@ -914,7 +911,7 @@ class GameDashboard(Adw.Window):
         except: pass
 
     def is_mod_installed(self, zip_filename):
-        staging = self.get_staging_path()
+        staging = self.staging_path
         try:
             with zipfile.ZipFile(os.path.join(self.downloads_path, zip_filename), 'r') as z:
                 return all((staging / x).exists() for x in z.namelist() if not x.endswith('/'))
@@ -927,7 +924,7 @@ class GameDashboard(Adw.Window):
         try:
             with zipfile.ZipFile(os.path.join(self.downloads_path, zip_filename), 'r') as z:
                 files = [x for x in z.namelist() if not x.endswith('/')]
-                if files: return datetime.fromtimestamp((self.get_staging_path() / files[0]).stat().st_mtime).strftime('%Y-%m-%d %H:%M')
+                if files: return datetime.fromtimestamp((self.staging_path / files[0]).stat().st_mtime).strftime('%Y-%m-%d %H:%M')
         except: pass
         return "—"
 
