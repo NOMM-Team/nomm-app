@@ -97,7 +97,7 @@ class GameDashboard(Adw.Window):
         mods_badge_box.set_valign(Gtk.Align.END)
         mods_badge_box.set_margin_bottom(8); mods_badge_box.set_margin_end(8)
         
-        self.mods_inactive_label = Gtk.Label(label="0", css_classes=["badge-green"])
+        self.mods_inactive_label = Gtk.Label(label="0", css_classes=["badge-accent"])
         self.mods_active_label = Gtk.Label(label="0", css_classes=["badge-grey"])
         mods_badge_box.append(self.mods_inactive_label)
         mods_badge_box.append(self.mods_active_label)
@@ -116,7 +116,7 @@ class GameDashboard(Adw.Window):
         dl_badge_box.set_valign(Gtk.Align.END)
         dl_badge_box.set_margin_bottom(8); dl_badge_box.set_margin_end(8)
         
-        self.dl_avail_label = Gtk.Label(label="0", css_classes=["badge-green"])
+        self.dl_avail_label = Gtk.Label(label="0", css_classes=["badge-accent"])
         self.dl_inst_label = Gtk.Label(label="0", css_classes=["badge-grey"])
         dl_badge_box.append(self.dl_avail_label)
         dl_badge_box.append(self.dl_inst_label)
@@ -413,7 +413,7 @@ class GameDashboard(Adw.Window):
             number_of_files = len(mod_files)
             file_list_badge = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
             file_list_badge.set_tooltip_text("\n".join(mod_files))
-            file_list_badge.add_css_class("version-badge")
+            file_list_badge.add_css_class("badge-action-row")
             file_list_badge.set_valign(Gtk.Align.CENTER)
             file_list_badge.set_margin_end(row_element_margin)
             file_list_badge.append(Gtk.Label(label=f"{number_of_files} file(s)"))
@@ -439,9 +439,9 @@ class GameDashboard(Adw.Window):
 
             # if there is a new version and it's different than the current version... an update's available!
             if new_version and new_version != version_text:
-                version_badge.add_css_class("accent-badge")
+                version_badge.add_css_class("badge-action-row-accent")
             else:
-                version_badge.add_css_class("version-badge")
+                version_badge.add_css_class("badge-action-row")
             version_badge.set_valign(Gtk.Align.CENTER)
             version_badge.set_margin_end(row_element_margin)
             version_badge.append(Gtk.Label(label=version_text))
@@ -456,7 +456,7 @@ class GameDashboard(Adw.Window):
             if mod_link:
                 mod_link_badge = Gtk.Button()
                 mod_link_badge.add_css_class("flat") # Keeps it from looking like a chunky button
-                mod_link_badge.add_css_class("version-badge")
+                mod_link_badge.add_css_class("badge-action-row")
                 mod_link_badge.set_valign(Gtk.Align.CENTER)
                 mod_link_badge.set_margin_end(row_element_margin)
                 mod_link_badge.set_cursor_from_name("pointer")
@@ -550,7 +550,7 @@ class GameDashboard(Adw.Window):
 
                 # --- VERSION BADGE ---
                 version_badge = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
-                version_badge.add_css_class("version-badge")
+                version_badge.add_css_class("badge-action-row")
                 version_badge.set_valign(Gtk.Align.CENTER)
                 version_badge.set_margin_end(20) 
                 
@@ -646,7 +646,7 @@ class GameDashboard(Adw.Window):
                 
                 creator_btn = Gtk.Button(label=creator)
                 creator_btn.add_css_class("flat")
-                creator_btn.add_css_class("version-badge") 
+                creator_btn.add_css_class("badge-action-row") 
                 creator_btn.set_cursor_from_name("pointer")
                 creator_btn.connect("clicked", lambda b, l=link: webbrowser.open(l))
                 
@@ -662,7 +662,7 @@ class GameDashboard(Adw.Window):
                 version_badge.set_margin_end(15) # Space before the Install/Download button
                 
                 v_label = Gtk.Label(label=util_version)
-                v_label.add_css_class("version-badge") # Applying pill style to label
+                v_label.add_css_class("badge-action-row") # Applying pill style to label
                 
                 version_badge.append(v_label)
                 row.add_suffix(version_badge)

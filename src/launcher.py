@@ -115,31 +115,31 @@ togglebutton {
     border: 1px solid @accent_bg_color;
 }
 
-.version-badge { 
+.badge-action-row { 
     background-color: rgba(255, 255, 255, 0.1); 
     border-radius: 99px;
     padding: 4px 12px;
     border: 1px solid rgba(255, 255, 255, 0.1);
 }
         
-.version-badge:hover {
+.badge-action-row:hover {
     background-color: rgba(255, 255, 255, 0.2);
     border: 1px solid @accent_bg_color;
 }
 
-.accent-badge { 
+.badge-action-row-accent { 
     background-color: alpha(@accent_bg_color, 0.7); 
     border-radius: 99px;
     padding: 4px 12px;
     border: 1px solid alpha(@accent_bg_color, 0.8);
 }
         
-.accent-badge:hover {
+.badge-action-row-accent:hover {
     background-color: @accent_bg_color;
     border: 1px solid @accent_bg_color;
 }
 
-.badge-green { 
+.badge-accent {
     background-color: @accent_bg_color;
     color: white;
     border-radius: 6px;
