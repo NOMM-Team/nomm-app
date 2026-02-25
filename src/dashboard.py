@@ -411,13 +411,14 @@ class GameDashboard(Adw.Window):
 
             # Prefix: # of files
             number_of_files = len(mod_files)
-            file_list_badge = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
-            file_list_badge.set_tooltip_text("\n".join(mod_files))
-            file_list_badge.add_css_class("badge-action-row")
-            file_list_badge.set_valign(Gtk.Align.CENTER)
-            file_list_badge.set_margin_end(row_element_margin)
-            file_list_badge.append(Gtk.Label(label=f"{number_of_files} file(s)"))
-            row.add_prefix(file_list_badge)
+            if number_of_files > 1:
+                file_list_badge = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
+                file_list_badge.set_tooltip_text("\n".join(mod_files))
+                file_list_badge.add_css_class("badge-action-row")
+                file_list_badge.set_valign(Gtk.Align.CENTER)
+                file_list_badge.set_margin_end(row_element_margin)
+                file_list_badge.append(Gtk.Label(label=f"{number_of_files} file(s)"))
+                row.add_prefix(file_list_badge)
 
             # Prefix: Missing Files
             missing_files = []
