@@ -1,0 +1,35 @@
+id: com.nomm.Nomm
+runtime: org.gnome.Platform
+runtime-version: '49' # Matching the latest stable GNOME runtime
+sdk: org.gnome.Sdk
+command: nomm # The name of your entry-point script
+finish-args:
+  # Network access for downloading images and Nexus mods
+  - --share=network
+  - --share=ipc
+  - --socket=fallback-x11
+  - --socket=wayland
+  - --device=dri
+  # Access to Steam and Heroic configurations
+  - --filesystem=home:ro
+  # Specific permission for Heroic's Flatpak config if Heroic is also a Flatpak
+  - --filesystem=xdg-run/app/com.heroicgameslauncher.hgl:ro
+  - --filesystem=xdg-run/app/com.valvesoftware.Steam:ro
+  - --own-name=com.nomm.Nomm
+
+modules:
+  # 1. Python dependencies (generated via flatpak-pip-generator)
+  - python3-modules.json
+
+  # 2. Your Application
+  - name: nomm
+    buildsystem: simple
+    build-commands:
+      # Copy your files to the /app/bin directory in the sandbox
+      - install -D src/launcher.py /app/bin/nomm
+      - cp -r src /app/bin/src
+      - cp -r assets /app/bin/assets
+      - cp -r default_game_configs /app/bin/default_game_configs
+    sources:
+      - type: dir
+        path: .
