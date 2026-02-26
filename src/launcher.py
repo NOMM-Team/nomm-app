@@ -412,33 +412,40 @@ class Nomm(Adw.Application):
         self.stack.set_visible_child_name("loading")
         threading.Thread(target=self.run_background_workflow, daemon=True).start()
 
-    def game_title_matcher(self, game_path: str, game_config_path: str, game_config_data: dict, folder_name: str, game_title: str, platform: str, app_id=None):
+    def game_title_matcher(self, game_path: str, game_config_path: str, game_config_data: dict, folder_name: str, game_title_list: str, platform: str, app_id=None):
         '''Tries to match supported game titles with folder names identified and if it does it adds them to the match list'''
-        slugged_game_title = slugify(game_title)
-        slugged_folder_name = slugify(folder_name)
-        if slugged_folder_name == slugged_game_title:
-            
-            # --- AUTO-REGISTER PATH DURING SCAN ---
-            # Update the data dictionary with the discovered platform & path
-            game_config_data["platform"] = platform
-            game_config_data["game_path"] = game_path
-            
-            # Save the updated config back to the YAML file
-            with open(game_config_path, 'w') as f_out:
-                yaml.dump(game_config_data, f_out, default_flow_style=False)
-            
-            # add a special case if game is gog to avoid using app ID as game title
-            if platform == "heroic-gog":
-                game_title = game_config_data["name"]
 
-            self.matches.append({
-                "name": game_title,
-                "img": self.find_game_art(app_id, platform),
-                "path": game_path,
-                "app_id": app_id,
-                "platform": platform
-            })
-            return True
+        if not game_title_list:
+            return
+
+        slugged_folder_name = slugify(folder_name)
+        if not isinstance(game_title_list, list):
+            game_title_list = [game_title_list] # this is a workaround to ensure that games with only one title/ID will still be interpreted in following loop
+        for game_title in game_title_list: # loop through all associated game titles/ID for that entry
+            slugged_game_title = slugify(game_title)
+            if slugged_folder_name == slugged_game_title:
+                
+                # --- AUTO-REGISTER PATH DURING SCAN ---
+                # Update the data dictionary with the discovered platform & path
+                game_config_data["platform"] = platform
+                game_config_data["game_path"] = game_path
+                
+                # Save the updated config back to the YAML file
+                with open(game_config_path, 'w') as f_out:
+                    yaml.dump(game_config_data, f_out, default_flow_style=False)
+                
+                # add a special case if game is gog to avoid using app ID as game title
+                if platform == "heroic-gog":
+                    game_title = game_config_data["name"]
+
+                self.matches.append({
+                    "name": game_title,
+                    "img": self.find_game_art(app_id, platform),
+                    "path": game_path,
+                    "app_id": app_id,
+                    "platform": platform
+                })
+                return True
         return False
 
     def run_background_workflow(self):
@@ -482,7 +489,10 @@ class Nomm(Adw.Application):
                         with open(conf_path, 'r') as f:
                             data = yaml.safe_load(f) or {}
                         
-                        game_title, steam_app_id, gog_store_id = data.get("name"), data.get("steamappid"), str(data.get("gogstoreid", None))
+                        game_title, steam_app_id, gog_store_id_list = data.get("name"), data.get("steamappid"), data.get("gogstoreids")
+                        if gog_store_id_list: # there can potentially be two gog store IDs that match to the same game
+                            gog_store_id_list = [str(item) for item in gog_store_id_list]
+
                         if not game_title: continue
                         
                         # Steam library searching:
@@ -497,7 +507,7 @@ class Nomm(Adw.Application):
                         # (Heroic) Epic library searching
                         self.check_heroic_games(conf_path, data, game_title, "heroic-epic")
                         # (Heroic) GOG library searching
-                        self.check_heroic_games(conf_path, data, gog_store_id, "heroic-gog")
+                        self.check_heroic_games(conf_path, data, gog_store_id_list, "heroic-gog")
                     
                     except Exception as e:
                         print(f"Error processing {filename} during scan: {e}")
@@ -915,6 +925,8 @@ class Nomm(Adw.Application):
             paths = download_heroic_assets(app_id, platform)
             return paths["art_square"]
         elif platform == "heroic-gog":
+            if isinstance(app_id, list):
+                app_id = app_id[0]
             paths = download_heroic_assets(app_id, platform)
             return paths["art_square"]
         return None

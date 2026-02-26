@@ -2,6 +2,8 @@ name: 'The Witcher 3'
 steamappid: 292030
 mods_path: mods/
 
-gogstoreid: 1207664643
+gogstoreids:
+- 1207664643
+- 1495134320
 
 nexus_game_id: "witcher3"

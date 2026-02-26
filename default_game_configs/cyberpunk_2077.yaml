@@ -2,6 +2,7 @@ name: 'Cyberpunk 2077'
 steamappid: 1091500
 mods_path: ""
 
-gogstoreid: 1423049311
+gogstoreids:
+- 1423049311
 
 nexus_game_id: "cyberpunk2077"
