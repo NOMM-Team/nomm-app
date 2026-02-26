@@ -13,6 +13,8 @@ from gi.repository import Gtk, GLib, Gio, Notify, GdkPixbuf
 def download_heroic_assets(appName: str, platform: str):
     # 1. Define Paths
     json_path = os.path.expanduser("~/.var/app/com.heroicgameslauncher.hgl/config/heroic/store/download-manager.json")
+    if isinstance(appName, list):
+        appName = appName[0]
     cache_base = os.path.expanduser(f"~/nomm/image-cache/{platform}/{appName}")
     
     # 2. CACHE CHECK: If the directory exists, check for existing files
