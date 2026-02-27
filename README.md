@@ -45,7 +45,7 @@ gogstoreids:
 nexus_game_id: "warhammer40kdarktide" # the nexus game key - used for nexus downloads (generally the game name with no symbols and all attached, but please check before submitting)
 ```
 > [!NOTE]
-> Obviously you should only add `gogstoreid` if the game is actually on the GOG store.
+> Obviously you should only add `gogstoreids` if the game is actually on the GOG store.
 
 You can additionally define some extra stuff for added features:
 ```yaml
