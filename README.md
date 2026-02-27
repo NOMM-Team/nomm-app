@@ -40,7 +40,8 @@ In that yaml you will need to define some basic information for it to be recogni
 name: 'Warhammer 40,000: Darktide' # the name of the game, with any symbols, spaces and whatnot kept intact
 steamappid: 0000000 # the steam app id, you can find this on: https://steamdb.info/
 mods_path: mods/ # the path where the mods need to be installed when they are enabled
-gogstoreid: 1207666893 # the gog store id, you can find this on: https://gogapidocs.readthedocs.io/en/latest/gameslist.html
+gogstoreids:
+- 1207666893 # the gog store ids, this has to be a list (but can contain only a single entry if needed) in case multiple ids correspond tot he same game i.e. "The Witcher 3" and "the Witcher 3 Complete Edition"
 nexus_game_id: "warhammer40kdarktide" # the nexus game key - used for nexus downloads (generally the game name with no symbols and all attached, but please check before submitting)
 ```
 > [!NOTE]
