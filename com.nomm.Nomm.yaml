@@ -13,9 +13,18 @@ finish-args:
   # Access to Steam and Heroic configurations
   - --filesystem=home:ro
   # Specific permission for Heroic's Flatpak config if Heroic is also a Flatpak
+  - --filesystem=~/.var/app/com.heroicgameslauncher.hgl/config/heroic:ro
   - --filesystem=xdg-run/app/com.heroicgameslauncher.hgl:ro
-  - --filesystem=xdg-run/app/com.valvesoftware.Steam:ro
   - --own-name=com.nomm.Nomm
+  # Access to Steam
+  # Standard Steam path
+  - --filesystem=~/.local/share/Steam:ro
+  # Flatpak Steam path (if the user is running Steam as a Flatpak)
+  - --filesystem=~/.var/app/com.valvesoftware.Steam:ro
+  - --filesystem=xdg-run/app/com.valvesoftware.Steam:ro
+  # mounting points
+  - --filesystem=/run/media:ro
+  - --filesystem=/mnt:ro
 
 modules:
   # 1. Python dependencies (generated via flatpak-pip-generator)
@@ -24,10 +33,16 @@ modules:
   # 2. Your Application
   - name: nomm
     buildsystem: simple
+
     build-commands:
-      # Copy your files to the /app/bin directory in the sandbox
+      # 1. Install the entry point FROM the src folder to /app/bin
       - install -D src/launcher.py /app/bin/nomm
-      - cp -r src /app/bin/src
+      
+      # 2. Copy all other python files FROM src into the same /app/bin folder
+      # This ensures 'nomm' and 'dashboard.py' are flat neighbors
+      - cp src/*.py /app/bin/
+      
+      # 3. Copy your non-code folders
       - cp -r assets /app/bin/assets
       - cp -r default_game_configs /app/bin/default_game_configs
     sources:
