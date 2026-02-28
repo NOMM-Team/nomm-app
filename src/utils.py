@@ -18,7 +18,8 @@ def download_heroic_assets(appName: str, platform: str):
 
     if isinstance(appName, list):
         appName = appName[0]
-    cache_base = os.path.expanduser(f"~/nomm/image-cache/{platform}/{appName}")
+    
+    cache_base = os.path.join(GLib.get_user_data_dir(), f"nomm/image-cache/{platform}/{appName}")
     
     # 2. CACHE CHECK: If the directory exists, check for existing files
     if os.path.exists(cache_base):
