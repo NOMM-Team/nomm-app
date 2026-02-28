@@ -1,0 +1,11 @@
+[Desktop Entry]
+Version=0.5
+Type=Application
+Name=Nomm
+Comment=Modern Linux-First Mod Manager
+Exec=nomm %u
+Icon=com.nomm.Nomm
+Terminal=false
+Categories=Game;Utility;
+StartupWMClass=nomm
+MimeType=x-scheme-handler/nxm;

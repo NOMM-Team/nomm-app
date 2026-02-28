@@ -170,10 +170,28 @@ class Nomm(Adw.Application):
         super().__init__(application_id='com.nomm.Nomm', **kwargs)
         self.matches = []
         self.steam_base = self.get_steam_base_dir()
-        self.user_config_path = os.path.expanduser("~/nomm/user_config.yaml")
-        self.default_game_config_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "default_game_configs")
-        self.game_config_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "game_configs")
+
+        user_data_dir = os.path.join(GLib.get_user_data_dir(), "nomm")
+        self.user_config_path = os.path.join(user_data_dir, "user_config.yaml")
+        self.game_config_path = os.path.join(user_data_dir, "game_configs")
+
+        default_game_config_path_dev = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "default_game_configs")
+        default_game_config_path_flat = os.path.join(os.path.dirname(os.path.abspath(__file__)), "default_game_configs")
+
+        if os.path.exists(default_game_config_path_dev): # in dev environment (launching python file directly)
+            self.default_game_config_path = default_game_config_path_dev
+            self.assets_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "assets")
+        else: # in flatpak environment
+            self.default_game_config_path = default_game_config_path_flat
+            self.assets_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "assets")
         self.win = None
+
+        # Debug prints
+        print(f"user_config_path: {self.user_config_path}")
+        print(f"default_game_config_path: {self.default_game_config_path}")
+        print(f"game_config_path: {self.game_config_path}")
+
+
 
     def get_steam_base_dir(self):
         paths = [
@@ -182,6 +200,7 @@ class Nomm(Adw.Application):
             os.path.expanduser("~/snap/steam/common/.local/share/Steam/")
         ]
         for p in paths:
+            print(f"Steam path: {p}")
             if os.path.exists(p): return p
         return None
 
@@ -233,7 +252,7 @@ class Nomm(Adw.Application):
         )
         status_page.add_css_class("setup-page")
         
-        assets_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "assets")
+        assets_dir = self.assets_path
         logo_path = os.path.join(assets_dir, "nomm.png")
         if os.path.exists(logo_path):
             try:
@@ -414,7 +433,6 @@ class Nomm(Adw.Application):
 
     def game_title_matcher(self, game_path: str, game_config_path: str, game_config_data: dict, folder_name: str, game_title_list: str, platform: str, app_id=None):
         '''Tries to match supported game titles with folder names identified and if it does it adds them to the match list'''
-
         if not game_title_list:
             return
 
@@ -449,13 +467,15 @@ class Nomm(Adw.Application):
         return False
 
     def run_background_workflow(self):
+        print("Background game search process started")
         config_dir = self.game_config_path
         found_libs = set()
         try:
             with open(self.user_config_path, 'r') as f:
                 current_config = yaml.safe_load(f) or {}
                 found_libs = set(current_config.get("library_paths", []))
-        except: pass
+        except:
+            print("Could not find user config")
 
         if not found_libs:
             potential_mounts = {"/", os.path.expanduser("~")}
@@ -465,7 +485,8 @@ class Nomm(Adw.Application):
                         parts = line.split()
                         if len(parts) >= 3 and parts[1].startswith(('/', '/run/media', '/mnt')):
                             potential_mounts.add(parts[1])
-            except: pass
+            except:
+                print("Could not access drives")
 
             targets = ["SteamLibrary/steamapps/common", "steamapps/common"]
             for m in potential_mounts:
@@ -490,6 +511,7 @@ class Nomm(Adw.Application):
                             data = yaml.safe_load(f) or {}
                         
                         game_title, steam_app_id, gog_store_id_list = data.get("name"), data.get("steamappid"), data.get("gogstoreids")
+                        print(f"Looking for game {game_title}")
                         if gog_store_id_list: # there can potentially be two gog store IDs that match to the same game
                             gog_store_id_list = [str(item) for item in gog_store_id_list]
 
@@ -601,7 +623,7 @@ class Nomm(Adw.Application):
             # 3. THE PLATFORM BADGE
             platform = game['platform']
             
-            assets_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "assets")
+            assets_dir = self.assets_path
 
             if platform == "steam":
                 icon_path = os.path.join(assets_dir, "steam_logo.svg")
@@ -800,7 +822,7 @@ class Nomm(Adw.Application):
         community_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=20, halign=Gtk.Align.CENTER)
         community_box.set_margin_top(10)
 
-        assets_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "assets")
+        assets_dir = self.assets_path
 
         def create_social_button(icon_filename, url):
             btn_content = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
@@ -862,6 +884,7 @@ class Nomm(Adw.Application):
             game_download_path = os.path.join(download_base, game_data['name'])
             
             # Create the physical folder if it doesn't exist
+            print(f"Switch to game download path: {game_download_path}")
             if not os.path.exists(game_download_path):
                 os.makedirs(game_download_path, exist_ok=True)
 
@@ -893,7 +916,8 @@ class Nomm(Adw.Application):
             application=self,
             steam_base=self.steam_base,
             app_id=game_data.get('app_id'),
-            user_config_path=self.user_config_path
+            user_config_path=self.user_config_path,
+            game_config_path=self.game_config_path
         )
         self.dashboard.launch()
         
@@ -934,7 +958,7 @@ class Nomm(Adw.Application):
     def register_nomm_nxm_protocol(self):
         """Internalized protocol registration helper"""
         app_path = os.path.abspath(sys.argv[0])
-        icon_path = os.path.join(os.path.dirname(os.path.dirname(app_path)), "assets", "nomm.png")
+        icon_path = os.path.join(self.assets_path, "nomm.png")
         desktop_file_content = f"""[Desktop Entry]
 Name=Nomm
 Exec=python3 {app_path} %u
@@ -975,6 +999,7 @@ if __name__ == "__main__":
         create_success_file()
         download_nexus_mod(nxm_link)
     else:
+        print("Launching app")
         app = Nomm()
         app.run(None)
     

@@ -17,13 +17,14 @@ from gi.repository import Gtk, Adw, Gdk, Gio, GLib
 from utils import download_heroic_assets
 
 class GameDashboard(Adw.Window):
-    def __init__(self, game_name, game_path, application, steam_base=None, app_id=None, user_config_path=None, **kwargs):
+    def __init__(self, game_name, game_path, application, steam_base=None, app_id=None, user_config_path=None, game_config_path=None, **kwargs):
         super().__init__(application=application, **kwargs)
         self.app = application
         self.game_name = game_name
         self.game_path = game_path
         self.app_id = app_id
         self.user_config_path = user_config_path
+        self.game_config_path = game_config_path
         self.current_filter = "all" # default filter is all
         self.active_tab = "mods" # default tab is mods
 
@@ -226,7 +227,7 @@ class GameDashboard(Adw.Window):
 
     def load_game_config(self):
         #TODO: merge this method and move to utils
-        config_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "game_configs")
+        config_dir = self.game_config_path
         def slug(text): return re.sub(r'[^a-z0-9]', '', text.lower())
         target = slug(self.game_name)
         if os.path.exists(config_dir):

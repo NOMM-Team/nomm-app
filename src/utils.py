@@ -96,7 +96,6 @@ def download_with_progress(url, dest_folder):
     dest_path = os.path.join(dest_folder, filename)
     os.makedirs(dest_folder, exist_ok=True)
 
-
     shenanigans_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "shenanigans.yaml")
     with open(shenanigans_path) as f:
         SHENANIGANS = yaml.safe_load(f)["shenanigans"]

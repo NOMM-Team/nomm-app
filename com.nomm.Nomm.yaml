@@ -23,8 +23,8 @@ finish-args:
   - --filesystem=~/.var/app/com.valvesoftware.Steam:ro
   - --filesystem=xdg-run/app/com.valvesoftware.Steam:ro
   # mounting points
-  - --filesystem=/run/media:ro
-  - --filesystem=/mnt:ro
+  - --filesystem=/run/media:rw
+  - --filesystem=/mnt:rw
 
 modules:
   # 1. Python dependencies (generated via flatpak-pip-generator)
@@ -35,14 +35,24 @@ modules:
     buildsystem: simple
 
     build-commands:
-      # 1. Install the entry point FROM the src folder to /app/bin
+      # Install entry point from the src folder to /app/bin
       - install -D src/launcher.py /app/bin/nomm
       
-      # 2. Copy all other python files FROM src into the same /app/bin folder
+      # Install desktop file
+      - install -D com.nomm.Nomm.desktop /app/share/applications/com.nomm.Nomm.desktop
+
+      # Install metainfo
+      - install -D com.nomm.Nomm.metainfo.xml /app/share/metainfo/com.nomm.Nomm.metainfo.xml
+
+      # Install icon
+      - install -D assets/nomm.png /app/share/icons/hicolor/64x64/apps/com.nomm.Nomm.png
+
+      # Copy all other python files FROM src into the same /app/bin folder
       # This ensures 'nomm' and 'dashboard.py' are flat neighbors
       - cp src/*.py /app/bin/
+      - cp src/*.yaml /app/bin/
       
-      # 3. Copy your non-code folders
+      # Copy your non-code folders
       - cp -r assets /app/bin/assets
       - cp -r default_game_configs /app/bin/default_game_configs
     sources:

@@ -5,13 +5,17 @@ from urllib.parse import urlsplit, urlunsplit
 from pathlib import Path
 from utils import download_with_progress, send_download_notification
 
+from gi.repository import GLib
+
 def download_nexus_mod(nxm_link):
     """
     Downloads a mod into a game-specific subfolder found by matching nexus_game_id.
     """
-    user_config_path = os.path.expanduser("~/nomm/user_config.yaml")
-    game_configs_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "game_configs")
-    
+
+    user_data_dir = os.path.join(GLib.get_user_data_dir(), "nomm")
+    user_config_path = os.path.join(user_data_dir, "user_config.yaml")
+    game_configs_dir = os.path.join(user_data_dir, "game_configs")
+
     # 1. Load User Config
     try:
         with open(user_config_path, 'r') as f:
@@ -60,16 +64,22 @@ def download_nexus_mod(nxm_link):
         headers = {
             'apikey': api_key,
             'Application-Name': 'Nomm',
-            'Application-Version': '0.5.0'
+            'Application-Version': '0.5.0',
+            'User-Agent': 'Nomm/0.5.0 (Linux; Flatpak) Requests/Python'
         }
         params = {
             'key': nxm_query.get("key"),
             'expires': nxm_query.get("expires")
         }
+        # debug
+        print(f"key: {nxm_query.get("key")}")
+        print(f"expires: {nxm_query.get("expires")}")
         
         download_api_url = f"https://api.nexusmods.com/v1/games/{nexus_game_id}/mods/{mod_id}/files/{file_id}/download_link.json"
 
         response = requests.get(download_api_url, headers=headers, params=params)
+        if response.status_code == 403:
+            print(f"Nexus API Error: {response.json()}") # This will tell you if it's 'Key Expired' or 'Forbidden'
         response.raise_for_status()
         
         download_data = response.json()
