@@ -538,9 +538,13 @@ class Nomm(Adw.Application):
 
     def check_heroic_games(self, game_config_path: str, game_config_data: dict, game_title: str, platform: str):
         if platform == "heroic-epic":
-            json_path = os.path.expanduser("~/.var/app/com.heroicgameslauncher.hgl/config/heroic/legendaryConfig/legendary/installed.json")
+            json_path = os.path.expanduser("~/.var/app/com.heroicgameslauncher.hgl/config/heroic/legendaryConfig/legendary/installed.json") # flatpak
+            if not os.path.exists(json_path): # try the normal installation format
+                json_path = os.path.expanduser("~/.config/heroic/legendaryConfig/legendary/installed.json")
         elif platform == "heroic-gog":
-            json_path = os.path.expanduser("~/.var/app/com.heroicgameslauncher.hgl/config/heroic/gog_store/installed.json")
+            json_path = os.path.expanduser("~/.var/app/com.heroicgameslauncher.hgl/config/heroic/gog_store/installed.json") # flatpak
+            if not os.path.exists(json_path): # try the normal installation format
+                json_path = os.path.expanduser("~/.config/heroic/gog_store/installed.json")
 
         if not os.path.exists(json_path):
             print(f"No {platform} installed.json found.")
