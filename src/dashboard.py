@@ -1032,6 +1032,16 @@ class GameDashboard(Adw.Window):
         self.app.do_activate(); self.close()
 
     def on_launch_clicked(self, btn):
-        if self.app_id: webbrowser.open(f"steam://launch/{self.app_id}")
+        if self.app_id:
+            if self.platform == "steam":
+                webbrowser.open(f"steam://launch/{self.app_id}")
+            elif self.platform == "heroic-gog":
+                webbrowser.open(f"heroic://launch/gog/{self.app_id}")
+            elif self.platform == "heroic-epic":
+                webbrowser.open(f"heroic://launch/epic/{self.app_id}")
+
+
+
+
 
     def launch(self): self.present()
