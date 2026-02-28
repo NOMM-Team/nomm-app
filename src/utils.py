@@ -12,7 +12,10 @@ from gi.repository import Gtk, GLib, Gio, Notify, GdkPixbuf
 
 def download_heroic_assets(appName: str, platform: str):
     # 1. Define Paths
-    json_path = os.path.expanduser("~/.var/app/com.heroicgameslauncher.hgl/config/heroic/store/download-manager.json")
+    json_path = os.path.expanduser("~/.var/app/com.heroicgameslauncher.hgl/config/heroic/store/download-manager.json") # flatpak
+    if not os.path.exists(json_path):
+        json_path = os.path.expanduser("~/.config/heroic/store/download-manager.json") # not flatpak
+
     if isinstance(appName, list):
         appName = appName[0]
     cache_base = os.path.expanduser(f"~/nomm/image-cache/{platform}/{appName}")
