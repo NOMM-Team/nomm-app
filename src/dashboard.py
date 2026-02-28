@@ -266,7 +266,7 @@ class GameDashboard(Adw.Window):
         d_avail, d_inst = 0, 0
         if self.downloads_path and os.path.exists(self.downloads_path):
             # This part is already correct because it filters for '.zip'
-            zips = [f for f in os.listdir(self.downloads_path) if f.lower().endswith('.zip')]
+            zips = [f for f in os.listdir(self.downloads_path) if f.lower().endswith('.zip') or f.lower().endswith('.rar')]
             for f in zips:
                 if self.is_mod_installed(f):
                     d_inst += 1
@@ -519,7 +519,7 @@ class GameDashboard(Adw.Window):
         staging_path = self.staging_path
 
         if self.downloads_path and os.path.exists(self.downloads_path):
-            files = [f for f in os.listdir(self.downloads_path) if f.lower().endswith('.zip')]
+            files = [f for f in os.listdir(self.downloads_path) if f.lower().endswith('.zip') or f.lower().endswith('.rar')]
             files.sort(key=lambda f: os.path.getmtime(os.path.join(self.downloads_path, f)), reverse=True)
 
             for f in files:
