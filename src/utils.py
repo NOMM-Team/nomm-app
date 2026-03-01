@@ -3,6 +3,8 @@ import json
 import requests
 import threading
 import gi
+gi.require_version("Gtk", "4.0")
+from gi.repository import Gtk, Adw, GLib, Gdk, Gio, GdkPixbuf
 import yaml
 import random
 

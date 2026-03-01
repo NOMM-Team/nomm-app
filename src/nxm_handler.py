@@ -72,8 +72,8 @@ def download_nexus_mod(nxm_link):
             'expires': nxm_query.get("expires")
         }
         # debug
-        print(f"key: {nxm_query.get("key")}")
-        print(f"expires: {nxm_query.get("expires")}")
+        print(f"key: {nxm_query.get('key')}")
+        print(f"expires: {nxm_query.get('expires')}")
         
         download_api_url = f"https://api.nexusmods.com/v1/games/{nexus_game_id}/mods/{mod_id}/files/{file_id}/download_link.json"
 
