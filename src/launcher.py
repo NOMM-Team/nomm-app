@@ -197,7 +197,8 @@ class Nomm(Adw.Application):
         paths = [
             os.path.expanduser("~/.var/app/com.valvesoftware.Steam/.local/share/Steam/"),
             os.path.expanduser("~/.local/share/Steam/"),
-            os.path.expanduser("~/snap/steam/common/.local/share/Steam/")
+            os.path.expanduser("~/snap/steam/common/.local/share/Steam/"),
+            os.path.expanduser("~/.steam/debian-installation/")
         ]
         for p in paths:
             if os.path.exists(p): return p
