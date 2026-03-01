@@ -1,15 +1,10 @@
 #fomod_handler.py
 
 #global imports
-import os, zipfile, yaml, shutil
+import os, zipfile, yaml, shutil, gi
 
 #specific imports
 import xml.etree.ElementTree as ET
-
-#GtK version forced
-import gi 
-gi.require_version("Gtk", "4.0") 
-gi.require_version("Adw", "1")
 from gi.repository import Gtk, Adw
 
 class FomodSelectionDialog(Gtk.Dialog):

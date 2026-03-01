@@ -1,15 +1,10 @@
 #dashboard.py
 
-#global imports
-import os, yaml, shutil, zipfile, webbrowser, re, requests, fomod_handler
+#Global imports
+import os, yaml, shutil, zipfile, webbrowser, re, requests, fomod_handler, gi
 
-#gi again, force 4.0
-import gi
-gi.require_version("Gtk", "4.0")
-gi.require_version("Adw", "1") 
+#Specific imports
 from gi.repository import Gtk, Adw, Gdk, Gio, GLib
-
-#specific imports
 from pathlib import Path
 from datetime import datetime
 from utils import download_heroic_assets

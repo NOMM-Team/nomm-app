@@ -5,10 +5,6 @@
 #global imports
 import os, yaml, threading, re, shutil, gi, sys, subprocess, json, requests
 
-#force specific gtk version before GTK is called
-gi.require_version('Gtk', '4.0')
-gi.require_version('Adw', '1')
-
 #specific imports
 from gi.repository import Gtk, Adw, GLib, Gdk, Gio, GdkPixbuf
 from dashboard import GameDashboard
