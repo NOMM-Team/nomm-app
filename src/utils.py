@@ -1,14 +1,10 @@
-import os
-import json
-import requests
-import threading
-import gi
-import yaml
-import random
+#utils.py
 
-gi.require_version('Gtk', '4.0')
-gi.require_version('Notify', '0.7')
-from gi.repository import Gtk, GLib, Gio, Notify, GdkPixbuf
+#Global imports
+import os, json, requests, threading, gi, yaml, random
+
+#Specific imports
+from gi.repository import Gtk, Adw, GLib, Gdk, Gio, GdkPixbuf, Notify
 
 def download_heroic_assets(appName: str, platform: str):
     # 1. Define Paths

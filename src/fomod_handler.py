@@ -1,7 +1,9 @@
-import os
-import zipfile
-import yaml
-import shutil
+#fomod_handler.py
+
+#global imports
+import os, zipfile, yaml, shutil, gi
+
+#specific imports
 import xml.etree.ElementTree as ET
 from gi.repository import Gtk, Adw
 
