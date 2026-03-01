@@ -51,6 +51,7 @@ modules:
       # This ensures 'nomm' and 'dashboard.py' are flat neighbors
       - cp src/*.py /app/bin/
       - cp src/*.yaml /app/bin/
+      - cp src/*.css /app/bin/
       
       # Copy your non-code folders
       - cp -r assets /app/bin/assets
