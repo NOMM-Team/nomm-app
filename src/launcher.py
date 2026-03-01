@@ -200,8 +200,8 @@ class Nomm(Adw.Application):
             os.path.expanduser("~/snap/steam/common/.local/share/Steam/")
         ]
         for p in paths:
-            print(f"Steam path: {p}")
             if os.path.exists(p): return p
+            print(f"Steam path found: {p}")
         return None
 
     def sync_configs(self):
@@ -445,8 +445,10 @@ class Nomm(Adw.Application):
                 
                 # --- AUTO-REGISTER PATH DURING SCAN ---
                 # Update the data dictionary with the discovered platform & path
+                clean_game_path = game_path.strip()
+                print(f"Saved game path: {clean_game_path}")
                 game_config_data["platform"] = platform
-                game_config_data["game_path"] = game_path
+                game_config_data["game_path"] = clean_game_path
                 
                 # Save the updated config back to the YAML file
                 with open(game_config_path, 'w') as f_out:
@@ -455,11 +457,12 @@ class Nomm(Adw.Application):
                 # add a special case if game is gog to avoid using app ID as game title
                 if platform == "heroic-gog":
                     game_title = game_config_data["name"]
+                    app_id = slugged_folder_name # this is to make sure that a singular app_id is sent to the find_game_art matcher
 
                 self.matches.append({
                     "name": game_title,
                     "img": self.find_game_art(app_id, platform),
-                    "path": game_path,
+                    "path": clean_game_path,
                     "app_id": app_id,
                     "platform": platform
                 })
@@ -538,9 +541,13 @@ class Nomm(Adw.Application):
 
     def check_heroic_games(self, game_config_path: str, game_config_data: dict, game_title: str, platform: str):
         if platform == "heroic-epic":
-            json_path = os.path.expanduser("~/.var/app/com.heroicgameslauncher.hgl/config/heroic/legendaryConfig/legendary/installed.json")
+            json_path = os.path.expanduser("~/.var/app/com.heroicgameslauncher.hgl/config/heroic/legendaryConfig/legendary/installed.json") # flatpak
+            if not os.path.exists(json_path): # try the normal installation format
+                json_path = os.path.expanduser("~/.config/heroic/legendaryConfig/legendary/installed.json")
         elif platform == "heroic-gog":
-            json_path = os.path.expanduser("~/.var/app/com.heroicgameslauncher.hgl/config/heroic/gog_store/installed.json")
+            json_path = os.path.expanduser("~/.var/app/com.heroicgameslauncher.hgl/config/heroic/gog_store/installed.json") # flatpak
+            if not os.path.exists(json_path): # try the normal installation format
+                json_path = os.path.expanduser("~/.config/heroic/gog_store/installed.json")
 
         if not os.path.exists(json_path):
             print(f"No {platform} installed.json found.")
@@ -950,6 +957,7 @@ class Nomm(Adw.Application):
             return paths["art_square"]
         elif platform == "heroic-gog":
             if isinstance(app_id, list):
+                print("Something went seriously wrong, contact NOMM author")
                 app_id = app_id[0]
             paths = download_heroic_assets(app_id, platform)
             return paths["art_square"]
