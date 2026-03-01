@@ -1,9 +1,12 @@
-import os
-import zipfile
-import yaml
-import shutil
+#fomod_handler.py
+
+#global imports
+import os, zipfile, yaml, shutil
+
+#specific imports
 import xml.etree.ElementTree as ET
 
+#GtK version forced
 import gi 
 gi.require_version("Gtk", "4.0") 
 gi.require_version("Adw", "1")

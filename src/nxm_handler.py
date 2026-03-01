@@ -1,10 +1,12 @@
-import os
-import yaml
-import requests
+#nxm_handler.py
+
+#Global imports
+import os, yaml, requests
+
+#Specific imports
 from urllib.parse import urlsplit, urlunsplit
 from pathlib import Path
 from utils import download_with_progress, send_download_notification
-
 from gi.repository import GLib
 
 def download_nexus_mod(nxm_link):

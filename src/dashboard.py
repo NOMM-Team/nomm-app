@@ -1,24 +1,17 @@
-import os
+#dashboard.py
 
+#global imports
+import os, yaml, shutil, zipfile, webbrowser, re, requests, fomod_handler
+
+#gi again, force 4.0
 import gi
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1") 
 from gi.repository import Gtk, Adw, Gdk, Gio, GLib
 
-import yaml
-import shutil
-import zipfile
-import webbrowser
-import re
-import requests
-
+#specific imports
 from pathlib import Path
 from datetime import datetime
-import fomod_handler
-
-gi.require_version('Gtk', '4.0')
-gi.require_version('Adw', '1')
-from gi.repository import Gtk, Adw, Gdk, Gio, GLib
 from utils import download_heroic_assets
 
 class GameDashboard(Adw.Window):

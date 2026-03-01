@@ -1,18 +1,15 @@
+#launcher.py
+
 #!/usr/bin/env python3
 
-import os
-import yaml
-import threading
-import re
-import shutil
-import gi
-import sys
-import subprocess
-import json
-import requests
+#global imports
+import os, yaml, threading, re, shutil, gi, sys, subprocess, json, requests
 
+#force specific gtk version before GTK is called
 gi.require_version('Gtk', '4.0')
 gi.require_version('Adw', '1')
+
+#specific imports
 from gi.repository import Gtk, Adw, GLib, Gdk, Gio, GdkPixbuf
 from dashboard import GameDashboard
 from utils import download_heroic_assets
