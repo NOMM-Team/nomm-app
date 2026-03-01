@@ -266,9 +266,8 @@ class GameDashboard(Adw.Window):
         # 2. Update Downloads Stats
         d_avail, d_inst = 0, 0
         if self.downloads_path and os.path.exists(self.downloads_path):
-            # This part is already correct because it filters for '.zip'
-            zips = [f for f in os.listdir(self.downloads_path) if f.lower().endswith('.zip') or f.lower().endswith('.rar')]
-            for f in zips:
+            archives = [f for f in os.listdir(self.downloads_path) if f.lower().endswith('.zip') or f.lower().endswith('.rar')]
+            for f in archives:
                 if self.is_mod_installed(f):
                     d_inst += 1
                 else:
@@ -926,7 +925,7 @@ class GameDashboard(Adw.Window):
                     mod_name = current_download_metadata["mods"][filename]["name"]
                     current_staging_metadata["mods"][mod_name] = current_download_metadata["mods"][filename]
                 else: # if the mod was manually downloaded, add basic info only
-                    mod_name = filename.replace(".zip", "")
+                    mod_name = filename.replace(".zip", "").replace(".rar", "")
                     current_staging_metadata["mods"][mod_name] = {} 
                 # regardless, add the list of installed files
                 current_staging_metadata["mods"][mod_name]["mod_files"] = extracted_roots
@@ -976,12 +975,31 @@ class GameDashboard(Adw.Window):
             self.create_downloads_page(); self.update_indicators()
         except: pass
 
-    def is_mod_installed(self, zip_filename):
+    def is_mod_installed(self, archive_filename):
         staging = self.staging_path
+        
+        # 1. Metadata Check
+        staging_metadata = self.load_staging_metadata() 
+        if staging_metadata and archive_filename in staging_metadata.get("mods", {}):
+            return True
+
+        archive_path = os.path.join(self.downloads_path, archive_filename)
+        if not os.path.exists(archive_path):
+            return False
+
         try:
-            with zipfile.ZipFile(os.path.join(self.downloads_path, zip_filename), 'r') as z:
-                return all((staging / x).exists() for x in z.namelist() if not x.endswith('/'))
-        except: return False
+            # Determine which library to use
+            if archive_filename.lower().endswith(".rar"):
+                archive_class = rarfile.RarFile
+            else:
+                archive_class = zipfile.ZipFile
+
+            with archive_class(archive_path, 'r') as archive:
+                return all((staging / x).exists() for x in archive.namelist() if not x.endswith('/'))
+                
+        except Exception as e:
+            print(f"Error checking installation status: {e}")
+            return False
 
     def get_download_timestamp(self, f):
         return datetime.fromtimestamp(os.path.getmtime(os.path.join(self.downloads_path, f))).strftime('%Y-%m-%d %H:%M')
