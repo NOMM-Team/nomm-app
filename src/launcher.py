@@ -15,22 +15,6 @@ from dashboard import GameDashboard
 from utils import download_heroic_assets
 from nxm_handler import download_nexus_mod
 
-#call css file
-def styles_application(self):
-    css_provider = Gtk.CssProvider()
-    
-    css_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "layout.css")
-    
-    try:
-        css_provider.load_from_path(css_path)
-        Gtk.StyleContext.add_provider_for_display(
-            Gdk.Display.get_default(),
-            css_provider,
-            Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION
-        )
-        print(f"Successfully loaded styles from {css_path}")
-    except Exception as e:
-        print(f"Error loading CSS: {e}")
 
 def slugify(text):
     return re.sub(r'[^a-z0-9]', '', text.lower())
