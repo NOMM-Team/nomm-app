@@ -3,6 +3,7 @@ import gi
 import yaml
 import shutil
 import zipfile
+import rarfile
 import webbrowser
 import re
 import requests
@@ -524,7 +525,7 @@ class GameDashboard(Adw.Window):
 
             for f in files:
                 installed = self.is_mod_installed(f)
-                zip_full_path = os.path.join(self.downloads_path, f)
+                archive_full_path = os.path.join(self.downloads_path, f)
                 
                 # New Metadata extraction
                 display_name, version_text, changelog = f, "—", ""
@@ -570,7 +571,7 @@ class GameDashboard(Adw.Window):
                 if installed:
                     inst_ts_val = None
                     try:
-                        with zipfile.ZipFile(zip_full_path, 'r') as z:
+                        with zipfile.ZipFile(archive_full_path, 'r') as z:
                             # Get the root folder/file from the zip
                             first_item = z.namelist()[0].split('/')[0]
                             target_item = staging_path / first_item
@@ -821,31 +822,35 @@ class GameDashboard(Adw.Window):
     def on_install_clicked(self, btn, filename):
         try:
             staging_path = self.staging_path
-            zip_full_path = os.path.join(self.downloads_path, filename)
+            archive_full_path = os.path.join(self.downloads_path, filename)
             
-            with zipfile.ZipFile(zip_full_path, 'r') as z:
-                # 1. Case-insensitive check for fomod/ModuleConfig.xml
-                all_files = z.namelist()
+            # 1. Determine which library to use
+            if filename.lower().endswith(".rar"):
+                archive_class = rarfile.RarFile
+            else:
+                archive_class = zipfile.ZipFile
+
+            # 2. Open the archive (the API is identical for both)
+            with archive_class(archive_full_path, 'r') as archive:
+                all_files = archive.namelist()
+                
+                # Case-insensitive check for fomod/ModuleConfig.xml
                 fomod_xml_path = next((f for f in all_files if f.lower().endswith("fomod/moduleconfig.xml")), None)
 
                 if fomod_xml_path:
-                    xml_data = z.read(fomod_xml_path)
-                    # Proceed with your FOMOD logic...
+                    xml_data = archive.read(fomod_xml_path)
                     module_name, options = fomod_handler.parse_fomod_xml(xml_data)
                     
                     if options:
                         dialog = fomod_handler.FomodSelectionDialog(self, module_name, options)
-                        # We pass the filename to the response handler so it knows which ZIP to finish extracting
-                        dialog.connect("response", self.on_fomod_dialog_response, zip_full_path, filename)
+                        # Pass the archive_class so the response handler knows how to reopen it
+                        dialog.connect("response", self.on_fomod_dialog_response, archive_full_path, filename, archive_class)
                         dialog.present()
                         return
 
-                # 2. Standard Installation (If not FOMOD or parsing failed)
-                z.extractall(staging_path)
-            
-                # This returns only the unique top-level names (I don't want to list files in subdirectories)
-                extracted_roots = list({name.split('/')[0] for name in z.namelist()})
-
+                # Standard Installation
+                archive.extractall(staging_path)
+                extracted_roots = list({name.split('/')[0] for name in all_files})
                 self.post_install_actions(filename, extracted_roots)
 
         except Exception as e:
