@@ -30,6 +30,17 @@ modules:
   # 1. Python dependencies (generated via flatpak-pip-generator)
   - python3-modules.json
 
+  # bundling unrar because otherwise the default version in flatpak doesn't work
+  - name: unrar
+    buildsystem: simple
+    build-commands:
+      - make -f makefile
+      - install -Dm755 unrar /app/bin/unrar
+    sources:
+      - type: archive
+        url: https://www.rarlab.com/rar/unrarsrc-6.2.10.tar.gz
+        sha256: 55fe6ebd5e48d6655bfda3fd19b55438ca05e13c7e69772420caad9fdb68ef42
+        
   # 2. Your Application
   - name: nomm
     buildsystem: simple
