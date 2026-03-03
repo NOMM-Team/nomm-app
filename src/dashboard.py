@@ -7,6 +7,9 @@ from pathlib import Path
 from datetime import datetime
 from utils import download_heroic_assets
 
+# Point rarfile to the bundled binary
+rarfile.UNRAR_TOOL = "/app/bin/unrar"
+
 class GameDashboard(Adw.Window):
     def __init__(self, game_name, game_path, application, steam_base=None, app_id=None, user_config_path=None, game_config_path=None, **kwargs):
         super().__init__(application=application, **kwargs)
@@ -171,21 +174,21 @@ class GameDashboard(Adw.Window):
             zip_path = os.path.join(self.downloads_path, file_name)
             if os.path.exists(zip_path):
                 os.remove(zip_path)
-            
-            # Delete Metadata (if it exists)
-            metadata_file_path = self.downloads_metadata_path
-            if os.path.exists(metadata_file_path):
-                with open(metadata_file_path, 'r') as f:
-                    metadata = yaml.safe_load(f)
-                if metadata["mods"][file_name]:
-                    del metadata["mods"][file_name]
-                    with open(metadata_file_path, 'w') as f:
-                        yaml.safe_dump(metadata, f)
-                
-            self.create_downloads_page()
-            self.update_indicators()
         except Exception as e:
             self.show_message("Error", f"Could not delete file: {e}")
+
+        try:
+            # Delete Metadata (if it exists)
+            downloads_metadata = self.load_downloads_metadata()
+            if downloads_metadata:
+                if file_name in downloads_metadata["mods"]:
+                    del downloads_metadata["mods"][file_name]
+                    self.write_metadata(downloads_metadata, self.downloads_metadata_path)
+        except Exception as e:
+            self.show_message("Error", f"Could not delete metadata for file: {e}")
+
+        self.create_downloads_page()
+        self.update_indicators()
 
     def load_downloads_metadata(self):
         if not os.path.exists(self.downloads_metadata_path):
@@ -199,10 +202,10 @@ class GameDashboard(Adw.Window):
         with open(self.staging_metadata_path, 'r') as f:
             return yaml.safe_load(f)
 
-    def write_staging_metadata(self, metadata):
-        if not os.path.exists(self.staging_metadata_path):
+    def write_staging_metadata(self, metadata, metadata_path):
+        if not os.path.exists(metadata_path):
             return
-        with open(self.staging_metadata_path, 'w') as f:
+        with open(metadata_path, 'w') as f:
             return yaml.safe_dump(metadata, f)
 
     def load_user_config(self):
@@ -256,7 +259,7 @@ class GameDashboard(Adw.Window):
         # 2. Update Downloads Stats
         d_avail, d_inst = 0, 0
         if self.downloads_path and os.path.exists(self.downloads_path):
-            archives = [f for f in os.listdir(self.downloads_path) if f.lower().endswith('.zip') or f.lower().endswith('.rar')]
+            archives = [f for f in os.listdir(self.downloads_path) if f.lower().endswith('.zip') or f.lower().endswith('.rar') or f.lower().endswith('.7z')]
             for f in archives:
                 if self.is_mod_installed(f):
                     d_inst += 1
@@ -329,7 +332,7 @@ class GameDashboard(Adw.Window):
 
         # 3. Save only if changes were actually made
         if mods_updated:
-            self.write_staging_metadata(staging_metadata)
+            self.write_metadata(staging_metadata, self.staging_metadata_path)
             print("Metadata updated with new version info and changelogs.")
             self.create_mods_page()
 
@@ -453,10 +456,9 @@ class GameDashboard(Adw.Window):
             
             row.add_suffix(version_badge)
 
-            # --- OTHER SUFFIXES (Timestamp & Trash) ---
-            if not missing_files:
-                mtime = os.path.getmtime(staging_path/mod_files[0])
-                ts_label = Gtk.Label(label=datetime.fromtimestamp(mtime).strftime('%Y-%m-%d %H:%M'), css_classes=["dim-label"], margin_end=10)
+            # Timestamp
+            if "install_timestamp" in mod_metadata:
+                ts_label = Gtk.Label(label="Installed: " + mod_metadata["install_timestamp"], css_classes=["dim-label", "caption"], margin_end=10)
                 row.add_suffix(ts_label)
 
             # Trash Bin Stack (Restored your specific logic)
@@ -509,7 +511,7 @@ class GameDashboard(Adw.Window):
         staging_path = self.staging_path
 
         if self.downloads_path and os.path.exists(self.downloads_path):
-            files = [f for f in os.listdir(self.downloads_path) if f.lower().endswith('.zip') or f.lower().endswith('.rar')]
+            files = [f for f in os.listdir(self.downloads_path) if f.lower().endswith('.zip') or f.lower().endswith('.rar') or f.lower().endswith('.7z')]
             files.sort(key=lambda f: os.path.getmtime(os.path.join(self.downloads_path, f)), reverse=True)
 
             for f in files:
@@ -556,23 +558,17 @@ class GameDashboard(Adw.Window):
                 dl_ts = Gtk.Label(label=dl_ts_text, xalign=1, css_classes=["dim-label", "caption"])
                 ts_box.append(dl_ts)
 
-                # Installation Timestamp (Found by checking zip root folder in staging)
+                # Installation Timestamp (Found by checking staging metadata)
                 if installed:
-                    inst_ts_val = None
-                    try:
-                        with zipfile.ZipFile(archive_full_path, 'r') as z:
-                            # Get the root folder/file from the zip
-                            first_item = z.namelist()[0].split('/')[0]
-                            target_item = staging_path / first_item
-                            
-                            if target_item.exists():
-                                mtime = os.path.getmtime(target_item)
-                                inst_ts_val = datetime.fromtimestamp(mtime).strftime('%Y-%m-%d %H:%M')
-                    except: pass
+                    installation_timestamp_value = None
+                    staging_metadata = self.load_staging_metadata()
+                    for mods in staging_metadata["mods"]:
+                        if "archive_name" in staging_metadata["mods"][mods] and staging_metadata["mods"][mods]["archive_name"] == f:
+                            installation_timestamp_value = staging_metadata["mods"][mods]["install_timestamp"]
 
-                    if inst_ts_val:
-                        inst_ts = Gtk.Label(label=f"Installed: {inst_ts_val}", xalign=1, css_classes=["dim-label", "caption"])
-                        ts_box.append(inst_ts)
+                    if installation_timestamp_value:
+                        installation_timestamp_badge = Gtk.Label(label=f"Installed: {installation_timestamp_value}", xalign=1, css_classes=["dim-label", "caption"])
+                        ts_box.append(installation_timestamp_badge)
                 
                 row.add_suffix(ts_box)
 
@@ -813,34 +809,53 @@ class GameDashboard(Adw.Window):
             staging_path = self.staging_path
             archive_full_path = os.path.join(self.downloads_path, filename)
             
-            # 1. Determine which library to use
-            if filename.lower().endswith(".rar"):
-                archive_class = rarfile.RarFile
+            # 1. Determine archive type
+            filename_lower = filename.lower()
+            is_rar = filename_lower.endswith(".rar")
+            is_7z = filename_lower.endswith(".7z")
+            is_zip = filename_lower.endswith(".zip")
+
+            # Extract and inspect based on type
+            all_files = []
+            if is_rar:
+                with rarfile.RarFile(archive_full_path) as rf:
+                    all_files = rf.namelist()
+                    rf.extractall(staging_path)
+            elif is_7z:
+                pass 
+                # Use py7zr for .7z files
+                # with py7zr.SevenZipFile(archive_full_path, mode='r') as szf:
+                    # all_files = szf.getnames()  # py7zr uses getnames()
+                    # szf.extractall(path=staging_path)
+            elif is_zip:
+                # Assume ZIP
+                with zipfile.ZipFile(archive_full_path, 'r') as zf:
+                    all_files = zf.namelist()
+                    zf.extractall(staging_path)
             else:
-                archive_class = zipfile.ZipFile
+                print(f"Archive type not recognised for {filename}")
+                return
 
-            # 2. Open the archive (the API is identical for both)
-            with archive_class(archive_full_path, 'r') as archive:
-                all_files = archive.namelist()
+            fomod_xml_path = next((f for f in all_files if f.lower().endswith("fomod/moduleconfig.xml")), None)
+
+            if fomod_xml_path:
+                # Re-read the XML from the extracted location
+                xml_path = os.path.join(staging_path, fomod_xml_path)
+                with open(xml_path, 'rb') as f:
+                    xml_data = f.read()
                 
-                # Case-insensitive check for fomod/ModuleConfig.xml
-                fomod_xml_path = next((f for f in all_files if f.lower().endswith("fomod/moduleconfig.xml")), None)
+                module_name, options = fomod_handler.parse_fomod_xml(xml_data)
+                
+                if options:
+                    dialog = fomod_handler.FomodSelectionDialog(self, module_name, options)
+                    # Pass None for archive_class as we already extracted it
+                    dialog.connect("response", self.on_fomod_dialog_response, archive_full_path, filename, None)
+                    dialog.present()
+                    return
 
-                if fomod_xml_path:
-                    xml_data = archive.read(fomod_xml_path)
-                    module_name, options = fomod_handler.parse_fomod_xml(xml_data)
-                    
-                    if options:
-                        dialog = fomod_handler.FomodSelectionDialog(self, module_name, options)
-                        # Pass the archive_class so the response handler knows how to reopen it
-                        dialog.connect("response", self.on_fomod_dialog_response, archive_full_path, filename, archive_class)
-                        dialog.present()
-                        return
-
-                # Standard Installation
-                archive.extractall(staging_path)
-                extracted_roots = list({name.split('/')[0] for name in all_files})
-                self.post_install_actions(filename, extracted_roots)
+            # Standard Installation
+            extracted_roots = list({name.split('/')[0] for name in all_files})
+            self.post_install_actions(filename, extracted_roots)
 
         except Exception as e:
             self.show_message("Error", f"Installation failed: {e}")
@@ -920,6 +935,8 @@ class GameDashboard(Adw.Window):
                 # regardless, add the list of installed files
                 current_staging_metadata["mods"][mod_name]["mod_files"] = extracted_roots
                 current_staging_metadata["mods"][mod_name]["status"] = "disabled"
+                current_staging_metadata["mods"][mod_name]["archive_name"] = filename
+                current_staging_metadata["mods"][mod_name]["install_timestamp"] = datetime.now().strftime("%Y-%m-%d %H:%M")
             
             # write the updated staging metadata file
             with open(metadata_dest, 'w') as f:
@@ -969,38 +986,21 @@ class GameDashboard(Adw.Window):
         staging = self.staging_path
         
         # 1. Metadata Check
-        staging_metadata = self.load_staging_metadata() 
-        if staging_metadata and archive_filename in staging_metadata.get("mods", {}):
-            return True
+        staging_metadata = self.load_staging_metadata()
+
+        if staging_metadata:
+            for mod in staging_metadata["mods"]:
+                print(f"{archive_filename} compared to {staging_metadata["mods"][mod]["archive_name"]}")
+                if archive_filename == staging_metadata["mods"][mod]["archive_name"]:
+                    return True
 
         archive_path = os.path.join(self.downloads_path, archive_filename)
         if not os.path.exists(archive_path):
             return False
-
-        try:
-            # Determine which library to use
-            if archive_filename.lower().endswith(".rar"):
-                archive_class = rarfile.RarFile
-            else:
-                archive_class = zipfile.ZipFile
-
-            with archive_class(archive_path, 'r') as archive:
-                return all((staging / x).exists() for x in archive.namelist() if not x.endswith('/'))
-                
-        except Exception as e:
-            print(f"Error checking installation status: {e}")
-            return False
+        return False
 
     def get_download_timestamp(self, f):
         return datetime.fromtimestamp(os.path.getmtime(os.path.join(self.downloads_path, f))).strftime('%Y-%m-%d %H:%M')
-
-    def get_install_timestamp_from_zip(self, zip_filename):
-        try:
-            with zipfile.ZipFile(os.path.join(self.downloads_path, zip_filename), 'r') as z:
-                files = [x for x in z.namelist() if not x.endswith('/')]
-                if files: return datetime.fromtimestamp((self.staging_path / files[0]).stat().st_mtime).strftime('%Y-%m-%d %H:%M')
-        except: pass
-        return "—"
 
     def setup_folder_monitor(self):
         f = Gio.File.new_for_path(self.downloads_path)
