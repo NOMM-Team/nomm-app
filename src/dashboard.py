@@ -398,7 +398,7 @@ class GameDashboard(Adw.Window):
 
             row_element_margin = 10
 
-            # Prefix: Switch
+            # Prefix: Enable Switch
             mod_toggle_switch = Gtk.Switch(active=(destination_path/mod_files[0]).is_symlink() if destination_path else False, valign=Gtk.Align.CENTER, css_classes=["green-switch"])
             mod_toggle_switch.connect("state-set", self.on_mod_toggled, mod_files, mod)
             row.add_prefix(mod_toggle_switch)
@@ -428,8 +428,8 @@ class GameDashboard(Adw.Window):
                 missing_file_badge.append(Gtk.Label(label=f"Missing {len(missing_files)} file(s)"))
                 row.add_prefix(missing_file_badge)
 
-            # --- VERSION BADGE (Left-most Suffix) ---
-            # Adding this first keeps it closest to the title
+            # --- Suffixes
+            # Version badge
             version_badge = Gtk.Button()
             button_content = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
             button_content.append(Gtk.Label(label=version_text))
@@ -451,17 +451,27 @@ class GameDashboard(Adw.Window):
             version_badge.set_valign(Gtk.Align.CENTER)
             version_badge.set_margin_end(row_element_margin)
 
-            if mod_link:
+            if mod_link: # add mod link to the version badges
                 version_badge.connect("clicked", lambda b, l=mod_link: webbrowser.open(l))
             
             row.add_suffix(version_badge)
 
-            # Timestamp
-            if "install_timestamp" in mod_metadata:
-                ts_label = Gtk.Label(label="Installed: " + mod_metadata["install_timestamp"], css_classes=["dim-label", "caption"], margin_end=10)
-                row.add_suffix(ts_label)
+            # Timestamps
+            if "install_timestamp" in mod_metadata or "enabled_timestamp" in mod_metadata:
+                timestamp_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=2, valign=Gtk.Align.CENTER, margin_end=15)
+                # Enabled Timestamp
+                if "enabled_timestamp" in mod_metadata:
+                    enabled_timestamp = Gtk.Label(label=f"Enabled: {mod_metadata["enabled_timestamp"]}", xalign=1, css_classes=["dim-label", "caption"])
+                    timestamp_box.append(enabled_timestamp)
 
-            # Trash Bin Stack (Restored your specific logic)
+                # Installed Timestamp
+                if "install_timestamp" in mod_metadata:
+                    installed_timestamp = Gtk.Label(label=f"Installed: {mod_metadata["install_timestamp"]}", xalign=1, css_classes=["dim-label", "caption"])
+                    timestamp_box.append(installed_timestamp)
+                
+                row.add_suffix(timestamp_box)
+
+            # Trash Bin Stack
             u_stack = Gtk.Stack(transition_type=Gtk.StackTransitionType.CROSSFADE, hhomogeneous=False, interpolate_size=True)
             bin_btn = Gtk.Button(icon_name="user-trash-symbolic", valign=Gtk.Align.CENTER, css_classes=["flat"])
             conf_del_btn = Gtk.Button(label="Are you sure?", valign=Gtk.Align.CENTER, css_classes=["destructive-action"])
@@ -788,20 +798,28 @@ class GameDashboard(Adw.Window):
                 if not link_path.exists():
                     try:
                         os.symlink(staging_item, link_path)
-                        if staging_metadata: staging_metadata["mods"][mod]["status"] = "enabled"
+                        if staging_metadata:
+                            staging_metadata["mods"][mod]["status"] = "enabled"
+                            staging_metadata["mods"][mod]["enabled_timestamp"] = datetime.now().strftime("%Y-%m-%d %H:%M")
+
                     except: switch.set_active(False)
             else:
                 if link_path.is_symlink():
                     try:
                         link_path.unlink()
-                        if staging_metadata: staging_metadata["mods"][mod]["status"] = "disabled"
+                        if staging_metadata:
+                            staging_metadata["mods"][mod]["status"] = "disabled"
+                            del staging_metadata["mods"][mod]["enabled_timestamp"]
                     except: switch.set_active(True)
 
         if staging_metadata:
             with open(self.staging_metadata_path, 'w') as f:
                 yaml.safe_dump(staging_metadata, f)
 
+        # update indicators & mods page
         self.update_indicators()
+        self.create_mods_page()
+
         return False
 
     def on_install_clicked(self, btn, filename):
@@ -990,7 +1008,9 @@ class GameDashboard(Adw.Window):
 
         if staging_metadata:
             for mod in staging_metadata["mods"]:
-                print(f"{archive_filename} compared to {staging_metadata["mods"][mod]["archive_name"]}")
+                if "archive_name" not in staging_metadata["mods"][mod]: # temporary so that this doesn't crash current users
+                    return False
+                # print(f"{archive_filename} compared to {staging_metadata["mods"][mod]["archive_name"]}")
                 if archive_filename == staging_metadata["mods"][mod]["archive_name"]:
                     return True
 
