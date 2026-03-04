@@ -399,7 +399,7 @@ class GameDashboard(Adw.Window):
             row_element_margin = 10
 
             # Prefix: Enable Switch
-            mod_toggle_switch = Gtk.Switch(active=(destination_path/mod_files[0]).is_symlink() if destination_path else False, valign=Gtk.Align.CENTER, css_classes=["green-switch"])
+            mod_toggle_switch = Gtk.Switch(active=(destination_path/mod_files[0]).is_symlink() if destination_path else False, valign=Gtk.Align.CENTER, css_classes=["accent-switch"])
             mod_toggle_switch.connect("state-set", self.on_mod_toggled, mod_files, mod)
             row.add_prefix(mod_toggle_switch)
 
