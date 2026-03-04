@@ -167,7 +167,7 @@ class GameDashboard(Adw.Window):
         main_layout.append(footer)
         self.set_content(main_layout)
 
-    def execute_inline_delete_with_meta(self, btn, file_name):
+    def delete_download_package(self, btn, file_name):
         """Deletes the mod zip and associated data in downloads.nomm.yaml file if it exists."""
         try:
             # Delete ZIP
@@ -592,7 +592,7 @@ class GameDashboard(Adw.Window):
                 b_btn = Gtk.Button(icon_name="user-trash-symbolic", valign=Gtk.Align.CENTER, css_classes=["flat"])
                 b_btn.set_cursor_from_name("pointer")
                 c_btn = Gtk.Button(label="Are you sure?", valign=Gtk.Align.CENTER, css_classes=["destructive-action"])
-                c_btn.connect("clicked", self.execute_inline_delete_with_meta, f)
+                c_btn.connect("clicked", self.delete_download_package, f)
                 
                 b_btn.connect("clicked", lambda b, s=d_stack: [
                     s.set_visible_child_name("c"),
@@ -992,13 +992,6 @@ class GameDashboard(Adw.Window):
         self.create_mods_page()
         self.create_downloads_page()
         self.update_indicators()
-        
-
-    def execute_inline_delete(self, btn, f):
-        try:
-            os.remove(os.path.join(self.downloads_path, f))
-            self.create_downloads_page(); self.update_indicators()
-        except: pass
 
     def is_mod_installed(self, archive_filename):
         staging = self.staging_path
