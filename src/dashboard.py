@@ -244,7 +244,6 @@ class GameDashboard(Adw.Window):
         # 1. Update Mods Stats
         mods_inactive, mods_active = 0, 0
         staging_dir = self.staging_path
-        dest_dir = self.get_game_destination_path()
         staging_metadata = self.load_staging_metadata()
         if staging_metadata:
             for mod in staging_metadata["mods"]:
@@ -370,8 +369,7 @@ class GameDashboard(Adw.Window):
         self.mods_list_box.set_filter_func(self.filter_mods_rows)
         
         staging_path = self.staging_path
-        destination_path = self.get_game_destination_path()
-
+        
         staging_metadata = self.load_staging_metadata()
         if not staging_metadata:
             container.append(Gtk.Label(label="The staging metadata file could not be found, did you install any mods?", css_classes=["dim-label"]))
@@ -399,7 +397,7 @@ class GameDashboard(Adw.Window):
             row_element_margin = 10
 
             # Prefix: Enable Switch
-            mod_toggle_switch = Gtk.Switch(active=(destination_path/mod_files[0]).is_symlink() if destination_path else False, valign=Gtk.Align.CENTER, css_classes=["accent-switch"])
+            mod_toggle_switch = Gtk.Switch(active=True if "enabled_timestamp" in mod_metadata else False, valign=Gtk.Align.CENTER, css_classes=["accent-switch"])
             mod_toggle_switch.connect("state-set", self.on_mod_toggled, mod_files, mod)
             row.add_prefix(mod_toggle_switch)
 
@@ -979,20 +977,22 @@ class GameDashboard(Adw.Window):
                 if path.exists():
                     if path.is_dir(): shutil.rmtree(path)
                     else: path.unlink()
-            
-            # Cleanup corresponding metadata if it exists
-            staging_metadata = self.load_staging_metadata()
-            if staging_metadata:
-                if mod_name in staging_metadata["mods"]:
-                    del staging_metadata["mods"][mod_name]
-                with open(self.staging_metadata_path, 'w') as f:
-                    yaml.safe_dump(staging_metadata, f)
 
-            self.create_mods_page()
-            self.create_downloads_page()
-            self.update_indicators()
-        except Exception as e: 
-            self.show_message("Error", str(e))
+        except Exception as e:
+            self.show_message("Error while disabling mod: ", str(e))
+
+        # Cleanup corresponding metadata if it exists
+        staging_metadata = self.load_staging_metadata()
+        if staging_metadata:
+            if mod_name in staging_metadata["mods"]:
+                del staging_metadata["mods"][mod_name]
+            with open(self.staging_metadata_path, 'w') as f:
+                yaml.safe_dump(staging_metadata, f)
+
+        self.create_mods_page()
+        self.create_downloads_page()
+        self.update_indicators()
+        
 
     def execute_inline_delete(self, btn, f):
         try:
