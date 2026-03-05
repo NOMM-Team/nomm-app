@@ -2,7 +2,7 @@
 import os, yaml, shutil, zipfile, webbrowser, re, requests, fomod_handler, gi, rarfile
 
 #Specific imports
-from gi.repository import Gtk, Adw, Gdk, Gio, GLib
+from gi.repository import Gtk, Adw, Gdk, Gio, GLib, Pango
 from pathlib import Path
 from datetime import datetime
 from utils import download_heroic_assets
@@ -30,6 +30,8 @@ class GameDashboard(Adw.Window):
         
         self.staging_metadata_path = os.path.join(self.staging_path, ".staging.nomm.yaml")
         self.downloads_metadata_path = os.path.join(self.downloads_path, ".downloads.nomm.yaml")
+
+        self.parse_deployment_paths() # parse the deployment paths
 
         self.headers = {
             'apikey': self.user_config["nexus_api_key"],
@@ -202,7 +204,7 @@ class GameDashboard(Adw.Window):
         with open(self.staging_metadata_path, 'r') as f:
             return yaml.safe_load(f)
 
-    def write_staging_metadata(self, metadata, metadata_path):
+    def write_metadata(self, metadata, metadata_path):
         if not os.path.exists(metadata_path):
             return
         with open(metadata_path, 'w') as f:
@@ -232,13 +234,70 @@ class GameDashboard(Adw.Window):
                         if slug(data.get("name", "")) == target: return data
         return {}
 
-    def get_game_destination_path(self):
+    def get_mod_deployment_paths(self):
         game_path = self.game_config.get("game_path")
-        mods_subfolder = self.game_config.get("mods_path", "")
-        if not game_path: return None
-        dest = Path(game_path) / mods_subfolder
-        dest.mkdir(parents=True, exist_ok=True)
-        return dest
+        mod_install_path_dicts = self.game_config.get("mods_path", "")
+        if not game_path:
+            return None
+        if self.platform == "steam":
+            user_data_path = os.path.dirname(os.path.dirname(game_path)) + "/compatdata/" + str(self.app_id) + "/pfx"
+        elif self.platform == "heroic-gog" or self.platform == "heroic-gog":
+            #TODO: implement support for heroic user data files
+            print("user data folder not supported yet for heroic installations")
+
+        if not isinstance(mod_install_path_dicts, list):
+            mod_install_path_dicts = [{
+                "name": "Default",
+                "path": mod_install_paths}]
+        
+        for mod_install_path_dict in mod_install_path_dicts:
+            deployment_path = mod_install_path_dict["path"]
+            if "}" not in deployment_path: # if this is the nomm 0.5 format
+                deployment_path = Path(game_path) / deployment_path
+            else: # if this is in the nomm 0.6 format
+                deployment_path = deployment_path.replace("{game_path}", game_path)
+                deployment_path = deployment_path.replace("{user_data_path}", user_data_path)
+            mod_install_path_dict["path"] = deployment_path
+            Path(deployment_path).mkdir(parents=True, exist_ok=True)
+        
+        return mod_install_path_dicts
+
+    def parse_deployment_paths(self):
+        '''Parse game paths from {xxx} to proper paths'''
+        game_path = self.game_config.get("game_path")
+        deployment_dicts = self.game_config.get("mods_path", "")
+
+        if not game_path:
+            return
+
+        if self.platform == "steam":
+            user_data_path = os.path.dirname(os.path.dirname(game_path)) + "/compatdata/" + str(self.app_id) + "/pfx"
+        elif self.platform == "heroic-gog" or self.platform == "heroic-gog":
+            #TODO: implement support for heroic user data files
+            print("user data folder not supported yet for heroic installations")
+            return
+        else:
+            print("unrecognised platform")
+            return
+
+        # handle case where there is only one path provided, and it's not a list of dicts
+        if not isinstance(deployment_dicts, list):
+            deployment_dicts = [{
+                "name": "default",
+                "path": deployment_dicts}]
+        
+        # parse the paths
+        for deployment_dict in deployment_dicts:
+            deployment_path = deployment_dict["path"]
+            if "}" not in deployment_path: # if this is the nomm 0.5 format
+                deployment_path = game_path + "/" + deployment_path
+            else: # if this is in the nomm 0.6 format
+                deployment_path = deployment_path.replace("{game_path}", game_path)
+                deployment_path = deployment_path.replace("{user_data_path}", user_data_path)
+            deployment_dict["path"] = deployment_path
+        
+        self.deployment_targets = deployment_dicts
+
 
     def update_indicators(self):
         # 1. Update Mods Stats
@@ -386,7 +445,6 @@ class GameDashboard(Adw.Window):
             changelog = mod_metadata.get("changelog", "")
             mod_link = mod_metadata.get("mod_link", "")
             mod_files = mod_metadata.get("mod_files", "")
-            
 
             # Use standard title/subtitle to keep the row height and layout stable
             row = Adw.ActionRow(title=display_name)
@@ -427,6 +485,23 @@ class GameDashboard(Adw.Window):
                 row.add_prefix(missing_file_badge)
 
             # --- Suffixes
+            # Deployment target badge
+            if len(self.deployment_targets) > 1 and "deployment_target" in mod_metadata:
+                deployment_badge = Gtk.Button()
+                button_content = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
+                button_content.append(Gtk.Label(label=mod_metadata["deployment_target"]))
+                deployment_badge.add_css_class("badge-action-row")
+                for deployment_target in self.deployment_targets:
+                    if deployment_target["name"] == mod_metadata["deployment_target"]:
+                        deployment_path = deployment_target["path"]
+                        deployment_description = deployment_target["description"]
+                tooltip_text = deployment_path + "\n\n" + deployment_description
+                deployment_badge.set_tooltip_text(tooltip_text)
+                deployment_badge.set_child(button_content)
+                deployment_badge.set_valign(Gtk.Align.CENTER)
+                deployment_badge.set_margin_end(row_element_margin)
+                row.add_suffix(deployment_badge)
+
             # Version badge
             version_badge = Gtk.Button()
             button_content = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
@@ -782,15 +857,25 @@ class GameDashboard(Adw.Window):
         except Exception as e:
             self.show_message("Installation Error", str(e))
 
-    def on_mod_toggled(self, switch, state, mod_files, mod):
-        dest_dir = self.get_game_destination_path()
-        if not dest_dir: return False
-
+    def on_mod_toggled(self, switch, state, mod_files: list, mod: str):
+        '''User clicked the toggle on the mods page: need to either enable or disable the mod'''
+        deployment_targets = self.deployment_targets
         staging_metadata = self.load_staging_metadata()
 
+        if not deployment_paths or not staging_metadata:
+            return False
+
+        if not "deployment_target" in staging_metadata["mods"][mod]:
+            dest_dir = deployment_targets[0]["path"]
+        else:
+            for deployment_target in deployment_targets:
+                if deployment_target["name"] == staging_metadata["mods"][mod]["deployment_target"]["name"]:
+                    dest_dir = deployment_target["path"]
+
+        # deploy the files
         for mod_file in mod_files:
             staging_item = self.staging_path / mod_file
-            link_path = dest_dir / mod_file
+            link_path = dest_dir / mod_file 
 
             if state:
                 if not link_path.exists():
@@ -799,6 +884,8 @@ class GameDashboard(Adw.Window):
                         if staging_metadata:
                             staging_metadata["mods"][mod]["status"] = "enabled"
                             staging_metadata["mods"][mod]["enabled_timestamp"] = datetime.now().strftime("%Y-%m-%d %H:%M")
+                            if selected_item:
+                                staging_metadata["mods"][mod]["deployment_name"] = selected_item["name"]
 
                     except: switch.set_active(False)
             else:
@@ -871,7 +958,7 @@ class GameDashboard(Adw.Window):
 
             # Standard Installation
             extracted_roots = list({name.split('/')[0] for name in all_files})
-            self.post_install_actions(filename, extracted_roots)
+            self.resolve_deployment_path(filename, extracted_roots)
 
         except Exception as e:
             self.show_message("Error", f"Installation failed: {e}")
@@ -915,17 +1002,127 @@ class GameDashboard(Adw.Window):
                         #temporary fix to not break fomod support
                         #TODO: handle FOMODs better
                         source_folder_name = [source_folder_name]
-                        self.post_install_actions(filename, source_folder_name)
+                        self.resolve_deployment_path(filename, source_folder_name)
                     else:
                         print(f"Could not find {source_folder_name} inside the ZIP.")
 
         dialog.destroy()
 
-    def post_install_actions(self, filename: str, extracted_roots: list):
-        """Standardized cleanup for all installation types (FOMOD / Standard)"""
-        metadata_source = self.downloads_metadata_path # get downloads metadata (need this data to update the data below)
-        metadata_dest = self.staging_metadata_path # get current staging metadata (will update this data with data from above)
+    def choose_deployment_path(self, callback):
+        '''Method that lets user choose the deployment path when there are multiple defined in game config'''
+        deployment_targets = self.deployment_targets
+
+        dialog = Gtk.Dialog(
+            title="Select Deployment Path",
+            transient_for=self,
+            modal=True,
+            decorated=False,
+            default_width=450
+        )
         
+        dialog.add_button("_Cancel", Gtk.ResponseType.CANCEL)
+
+        content_area = dialog.get_content_area()
+        content_area.set_spacing(12)
+        
+        # GTK 4 individual margin properties
+        content_area.set_margin_top(15)
+        content_area.set_margin_bottom(15)
+        content_area.set_margin_start(15)
+        content_area.set_margin_end(15)
+
+        header = Gtk.Label(label="Multiple deployment locations available:")
+        header.set_halign(Gtk.Align.START)
+        header.add_css_class("heading") 
+        content_area.append(header)
+
+        listbox = Gtk.ListBox()
+        listbox.add_css_class("boxed-list")
+        listbox.set_selection_mode(Gtk.SelectionMode.SINGLE)
+        listbox.set_activate_on_single_click(True)
+
+        row_data_map = {}
+
+        for item in deployment_targets:
+            row = Gtk.ListBoxRow()
+            row.set_tooltip_text(item.get("description", ""))
+            
+            vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=2)
+            # Correcting margins for the row content as well
+            vbox.set_margin_top(12)
+            vbox.set_margin_bottom(12)
+            vbox.set_margin_start(12)
+            vbox.set_margin_end(12)
+
+            name_label = Gtk.Label()
+            name_label.set_markup(f"<b>{item['name']}</b>")
+            name_label.set_halign(Gtk.Align.START)
+
+            path_label = Gtk.Label()
+            path_label.set_markup(f"<span size='small' alpha='70%'>{item['path']}</span>")
+            path_label.set_halign(Gtk.Align.START)
+            path_label.set_ellipsize(Pango.EllipsizeMode.END)
+
+            vbox.append(name_label)
+            vbox.append(path_label)
+            row.set_child(vbox)
+            
+            listbox.append(row)
+            row_data_map[row] = item
+
+        scrolled = Gtk.ScrolledWindow()
+        scrolled.set_vexpand(True)
+        scrolled.set_propagate_natural_height(True)
+        scrolled.set_child(listbox)
+        content_area.append(scrolled)
+
+        def on_row_activated(lb, row):
+            # 1. Store the choice in a place the response handler can see it
+            # We can attach it to the dialog object itself for easy access
+            dialog.selected_data = row_data_map[row]
+            
+            # 2. Emit the OK response. 
+            # This triggers 'on_response' with Gtk.ResponseType.OK
+            dialog.response(Gtk.ResponseType.OK)
+
+        listbox.connect("row-activated", on_row_activated)
+
+        def on_response(d, response_id):
+            if response_id == Gtk.ResponseType.OK:
+                # Retrieve the data we stored earlier
+                callback(getattr(dialog, 'selected_data', None))
+            else:
+                # This handles clicking Cancel, Escape, or the 'X' button
+                callback(None)
+            dialog.destroy()
+
+        dialog.connect("response", on_response)
+        dialog.present()
+
+
+    def resolve_deployment_path(self, filename: str, extracted_roots: list):
+        """Resolve deployment path before continuing installation"""
+
+        def on_path_resolved(deployment_target):
+            if not deployment_target:
+                print("Installation cancelled by user.")
+                return 
+            
+            # Pass the control to the finalisation logic
+            self.finalise_installation(filename, extracted_roots, deployment_target)
+
+        # Is there a need to ask user to choose
+        if len(self.deployment_targets) > 1:
+            self.choose_deployment_path(on_path_resolved)
+        else:
+            # If only one, call the resolver immediately
+            on_path_resolved(self.deployment_targets[0])
+
+    def finalise_installation(self, filename, extracted_roots, deployment_target):
+        """Update the metadata"""
+
+        metadata_source = self.downloads_metadata_path # get downloads metadata (need this data to update the data below)
+
         # if there is already a metadata file, go read the contents to make sure we don't overwrite anything.
         current_staging_metadata = self.load_staging_metadata()
         # if there isn't, instanciate it
@@ -947,32 +1144,42 @@ class GameDashboard(Adw.Window):
                     current_staging_metadata["mods"][mod_name] = current_download_metadata["mods"][filename]
                 else: # if the mod was manually downloaded, add basic info only
                     mod_name = filename.replace(".zip", "").replace(".rar", "")
-                    current_staging_metadata["mods"][mod_name] = {} 
+                    current_staging_metadata["mods"][mod_name] = {}
                 # regardless, add the list of installed files
                 current_staging_metadata["mods"][mod_name]["mod_files"] = extracted_roots
                 current_staging_metadata["mods"][mod_name]["status"] = "disabled"
                 current_staging_metadata["mods"][mod_name]["archive_name"] = filename
                 current_staging_metadata["mods"][mod_name]["install_timestamp"] = datetime.now().strftime("%Y-%m-%d %H:%M")
+                current_staging_metadata["mods"][mod_name]["deployment_target"] = deployment_target["name"]
             
             # write the updated staging metadata file
-            with open(metadata_dest, 'w') as f:
-                yaml.safe_dump(current_staging_metadata, f)
+            self.write_metadata(current_staging_metadata, self.staging_metadata_path)
 
         self.create_downloads_page()
         self.create_mods_page()
         self.update_indicators()
 
-    def on_uninstall_item(self, btn, mod_files, mod_name):
+    def on_uninstall_item(self, btn, mod_files: list, mod_name: str):
+        '''Uninstall a mod from the downloads page'''
+        # get the mod deployment path
+        staging_metadata = self.load_staging_metadata()
+        if len(self.deployment_targets) == 1 or "deployment_target" not in staging_metadata["mods"][mod_name]:
+            dest = self.deployment_targets[0]["path"]
+        else: # case when there are multiple paths defined for the game
+            for deployment_target in self.deployment_targets:
+                if deployment_target["name"] == staging_metadata["mods"][mod_name]["deployment_target"]:
+                    dest = deployment_target["path"]
+
+        # remove the files
         try:
-            dest = self.get_game_destination_path()
             staging_path = self.staging_path
-            
+            dest = Path(dest)
             for item_name in mod_files:
                 # Remove symlink from game folder
                 if dest and (dest / item_name).is_symlink(): 
                     (dest / item_name).unlink()
                 
-                # Remove the actual files from staging
+                # Remove the mod files from staging
                 path = staging_path / item_name
                 if path.exists():
                     if path.is_dir(): shutil.rmtree(path)
@@ -982,7 +1189,6 @@ class GameDashboard(Adw.Window):
             self.show_message("Error while disabling mod: ", str(e))
 
         # Cleanup corresponding metadata if it exists
-        staging_metadata = self.load_staging_metadata()
         if staging_metadata:
             if mod_name in staging_metadata["mods"]:
                 del staging_metadata["mods"][mod_name]
