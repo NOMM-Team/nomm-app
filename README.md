@@ -126,8 +126,10 @@ From now on when you want to launch it you can just look for it in your start me
 
 The app is built with:
 - [Python](python.org) (3.14)
-- [GTK](https://www.gtk.org/)
+- [GTK](https://www.gtk.org/) (>4.0)
 - [Libadwaita](https://gnome.pages.gitlab.gnome.org/libadwaita/)
+- [Requests](https://pypi.org/project/requests/)
+- [Unrar](https://pypi.org/project/unrar/)
 
 This means you should be able to run it directly on most linux distros without too many problems via the console by typing:
 `python3 ./launcher.py`
