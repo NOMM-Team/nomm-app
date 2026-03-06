@@ -99,7 +99,30 @@ Bonus (nice to have)
 - [ ] Game profiles?
 - [ ] ???
 
-## "Building" / Executing
+## Installing/Running
+
+The easiest way to run the app is with flatpak!
+
+To do so :
+
+1. Go to the [releases](https://github.com/Allexio/nomm/releases) tab.
+2. Expand the `Assets` box of the latest version
+3. Click on the `nomm.flatpak` file to download it
+4. Once downloaded, if you have KDE/GNOME you may simply double click the file. This should boot up `KDE Discover` or `Gnome Software`.
+5. Once there you should have a button to install the app, click it.
+6. Once installed, you will see a `Launch` or `Run` button appear, click it.
+
+And you're done!
+
+For more advanced users (those who prefer the console or may not have a standard distro)
+
+You may install and run the flatpak via command line:
+4. `flatpak install nomm.flatpak`
+5. `flatpak run flatpak run com.nomm.Nomm`
+
+From now on when you want to launch it you can just look for it in your start menu (by typing "nomm")
+
+## "Building"
 
 The app is built with:
 - [Python](python.org) (3.14)
