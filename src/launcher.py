@@ -537,29 +537,30 @@ class Nomm(Adw.Application):
                     print(f"Error rendering SVG badge: {e}")
 
             # Number of mods badge
+            mod_total_badge = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=4)
+            
+            # Styling & Placement
+            mod_total_badge.set_halign(Gtk.Align.START)
+            mod_total_badge.set_valign(Gtk.Align.END)
+            mod_total_badge.set_margin_start(10)
+            mod_total_badge.set_margin_bottom(10)
+            mod_total_badge.add_css_class("platform-badge")
+                
+            # If there is a mod downloads folder, count the number of archives inside
             try:
                 with open(self.user_config_path, 'r') as f:
                     user_config_data = yaml.safe_load(f)
 
                 game_downloads_path = user_config_data.get("download_path") + '/' + game["name"]
-                
-                mod_total_badge = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=4)
-                
-                # Styling & Placement
-                mod_total_badge.set_halign(Gtk.Align.START)
-                mod_total_badge.set_valign(Gtk.Align.END)
-                mod_total_badge.set_margin_start(10)
-                mod_total_badge.set_margin_bottom(10)
-                mod_total_badge.add_css_class("platform-badge")
-                
-                # Add label
                 mod_total_badge_label = Gtk.Label(label=self.count_archives(game_downloads_path), css_classes=["badge-accent"])
-                mod_total_badge.append(mod_total_badge_label)
-
-                # Add to the image overlay
-                image_overlay.add_overlay(mod_total_badge)
+            # If not, just set the number to 0
             except Exception as e:
-                print(f"Error adding mod total: {e}")
+                print(f"Could not add mod total to poster: {e}")
+                mod_total_badge_label = Gtk.Label(label='0', css_classes=["badge-accent"])
+
+            # Add label
+            mod_total_badge.append(mod_total_badge_label)
+            image_overlay.add_overlay(mod_total_badge)
 
             # 4. Final Assembly
             card.append(image_overlay)
