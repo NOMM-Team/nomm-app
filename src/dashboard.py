@@ -221,6 +221,19 @@ class GameDashboard(Adw.Window):
                 return {}
         return {}
 
+    def get_current_game_config_path(self, game_config_path):
+        #TODO: merge with below
+        def slug(text): return re.sub(r'[^a-z0-9]', '', text.lower())
+        target = slug(self.game_name)
+        if os.path.exists(game_config_path):
+            for filename in os.listdir(game_config_path):
+                if filename.lower().endswith((".yaml")):
+                    with open(os.path.join(game_config_path, filename), 'r') as f:
+                        data = yaml.safe_load(f) or {}
+                        if slug(data.get("name", "")) == target:
+                            current_game_config_path = game_config_path + '/' + filename
+                            return current_game_config_path
+
     def load_game_config(self):
         #TODO: merge this method and move to utils
         config_dir = self.game_config_path
@@ -300,7 +313,7 @@ class GameDashboard(Adw.Window):
 
 
     def update_indicators(self):
-        # 1. Update Mods Stats
+        # Update Mods Stats
         mods_inactive, mods_active = 0, 0
         staging_dir = self.staging_path
         staging_metadata = self.load_staging_metadata()
@@ -314,7 +327,7 @@ class GameDashboard(Adw.Window):
         self.mods_inactive_label.set_text(str(mods_inactive))
         self.mods_active_label.set_text(str(mods_active))
 
-        # 2. Update Downloads Stats
+        # Update Downloads Stats
         d_avail, d_inst = 0, 0
         if self.downloads_path and os.path.exists(self.downloads_path):
             archives = [f for f in os.listdir(self.downloads_path) if f.lower().endswith('.zip') or f.lower().endswith('.rar') or f.lower().endswith('.7z')]
@@ -862,20 +875,23 @@ class GameDashboard(Adw.Window):
         deployment_targets = self.deployment_targets
         staging_metadata = self.load_staging_metadata()
 
-        if not deployment_paths or not staging_metadata:
+        if not deployment_targets or not staging_metadata:
             return False
 
         if not "deployment_target" in staging_metadata["mods"][mod]:
             dest_dir = deployment_targets[0]["path"]
         else:
             for deployment_target in deployment_targets:
-                if deployment_target["name"] == staging_metadata["mods"][mod]["deployment_target"]["name"]:
+                if deployment_target["name"] == staging_metadata["mods"][mod]["deployment_target"]:
                     dest_dir = deployment_target["path"]
 
         # deploy the files
         for mod_file in mod_files:
             staging_item = self.staging_path / mod_file
-            link_path = dest_dir / mod_file 
+            link_path = Path(dest_dir) / mod_file 
+
+            # check path exists and create if not
+            Path(dest_dir).mkdir(parents=True, exist_ok=True)
 
             if state:
                 if not link_path.exists():
@@ -884,10 +900,10 @@ class GameDashboard(Adw.Window):
                         if staging_metadata:
                             staging_metadata["mods"][mod]["status"] = "enabled"
                             staging_metadata["mods"][mod]["enabled_timestamp"] = datetime.now().strftime("%Y-%m-%d %H:%M")
-                            if selected_item:
-                                staging_metadata["mods"][mod]["deployment_name"] = selected_item["name"]
 
-                    except: switch.set_active(False)
+                    except Exception as e:
+                        print(f"Failed to enable mod {e}")
+                        switch.set_active(False)
             else:
                 if link_path.is_symlink():
                     try:
@@ -895,7 +911,9 @@ class GameDashboard(Adw.Window):
                         if staging_metadata:
                             staging_metadata["mods"][mod]["status"] = "disabled"
                             del staging_metadata["mods"][mod]["enabled_timestamp"]
-                    except: switch.set_active(True)
+                    except Exception as e:
+                        print(f"Failed to disable mod {e}")
+                        switch.set_active(True)
 
         if staging_metadata:
             with open(self.staging_metadata_path, 'w') as f:
@@ -1224,7 +1242,20 @@ class GameDashboard(Adw.Window):
     def setup_folder_monitor(self):
         f = Gio.File.new_for_path(self.downloads_path)
         self.monitor = f.monitor_directory(Gio.FileMonitorFlags.NONE, None)
-        self.monitor.connect("changed", lambda m, f, of, et: self.create_downloads_page() or self.update_indicators() if et in [Gio.FileMonitorEvent.CREATED, Gio.FileMonitorEvent.DELETED] else None)
+        self.monitor.connect("changed", self.on_downloads_folder_changed)
+
+    def on_downloads_folder_changed(self, monitor, file, other_file, event_type):
+        """Callback that handles file system events in the downloads folder"""
+        
+        # Define which events we actually care about
+        relevant_events = [
+            Gio.FileMonitorEvent.CREATED,
+            Gio.FileMonitorEvent.DELETED
+        ]
+
+        if event_type in relevant_events:
+            self.create_downloads_page()
+            self.update_indicators()
 
     def on_filter_toggled(self, btn, f_name):
         if btn.get_active():
