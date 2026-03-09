@@ -1,5 +1,3 @@
-#launcher.py
-
 #!/usr/bin/env python3
 
 #global imports
@@ -13,7 +11,7 @@ gi.require_version('Notify', '0.7')
 from gi.repository import Gtk, Adw, GLib, Gdk, Gio, GdkPixbuf
 from dashboard import GameDashboard
 from utils import download_heroic_assets
-from nxm_handler import download_nexus_mod
+from nxm_handler import handle_nexus_link
 
 
 def slugify(text):
@@ -45,8 +43,6 @@ class Nomm(Adw.Application):
         print(f"user_config_path: {self.user_config_path}")
         print(f"default_game_config_path: {self.default_game_config_path}")
         print(f"game_config_path: {self.game_config_path}")
-
-
 
     def get_steam_base_dir(self):
         paths = [
@@ -334,7 +330,8 @@ class Nomm(Adw.Application):
                     "img": self.find_game_art(app_id, platform),
                     "path": clean_game_path,
                     "app_id": app_id,
-                    "platform": platform
+                    "platform": platform,
+                    "game_config_path": game_config_path
                 })
                 return True
         return False
@@ -447,6 +444,13 @@ class Nomm(Adw.Application):
         
         return None
 
+    def count_archives(self, directory):
+        # Define the extensions we care about
+        extensions = (".zip", ".rar", ".7z")
+        
+        # Count only files that end with those extensions (case-insensitive)
+        return sum(1 for entry in os.scandir(directory) 
+                if entry.is_file() and entry.name.lower().endswith(extensions))
 
     def show_library_ui(self):
         self.remove_stack_child("library")
@@ -511,26 +515,51 @@ class Nomm(Adw.Application):
 
             if os.path.exists(icon_path):
                 try:
-                    badge_pb = GdkPixbuf.Pixbuf.new_from_file_at_scale(
+                    platform_badge_pb = GdkPixbuf.Pixbuf.new_from_file_at_scale(
                         icon_path, 32, 32, True # True = Preserve aspect ratio
                     )
                     
                     # Using this for now as it's the only method I found to actually force the pictures to stay in their boxes
                     # TODO: find a non-deprecated way to do the same thing
-                    badge_tex = Gdk.Texture.new_for_pixbuf(badge_pb)
-                    badge_img = Gtk.Picture.new_for_paintable(badge_tex)
+                    platform_badge_tex = Gdk.Texture.new_for_pixbuf(platform_badge_pb)
+                    platform_badge = Gtk.Picture.new_for_paintable(platform_badge_tex)
                     
                     # Styling & Placement
-                    badge_img.set_halign(Gtk.Align.END)
-                    badge_img.set_valign(Gtk.Align.END)
-                    badge_img.set_margin_end(10)
-                    badge_img.set_margin_bottom(10)
-                    badge_img.add_css_class("platform-badge")
+                    platform_badge.set_halign(Gtk.Align.END)
+                    platform_badge.set_valign(Gtk.Align.END)
+                    platform_badge.set_margin_end(10)
+                    platform_badge.set_margin_bottom(10)
+                    platform_badge.add_css_class("platform-badge")
                     
                     # Add to the image overlay created earlier
-                    image_overlay.add_overlay(badge_img)
+                    image_overlay.add_overlay(platform_badge)
                 except Exception as e:
                     print(f"Error rendering SVG badge: {e}")
+
+            # Number of mods badge
+            try:
+                with open(self.user_config_path, 'r') as f:
+                    user_config_data = yaml.safe_load(f)
+
+                game_downloads_path = user_config_data.get("download_path") + '/' + game["name"]
+                
+                mod_total_badge = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=4)
+                
+                # Styling & Placement
+                mod_total_badge.set_halign(Gtk.Align.START)
+                mod_total_badge.set_valign(Gtk.Align.END)
+                mod_total_badge.set_margin_start(10)
+                mod_total_badge.set_margin_bottom(10)
+                mod_total_badge.add_css_class("platform-badge")
+                
+                # Add label
+                mod_total_badge_label = Gtk.Label(label=self.count_archives(game_downloads_path), css_classes=["badge-accent"])
+                mod_total_badge.append(mod_total_badge_label)
+
+                # Add to the image overlay
+                image_overlay.add_overlay(mod_total_badge)
+            except Exception as e:
+                print(f"Error adding mod total: {e}")
 
             # 4. Final Assembly
             card.append(image_overlay)
@@ -875,9 +904,8 @@ if __name__ == "__main__":
         nxm_link = sys.argv[1]
         print(f"nomm is processing: {nxm_link}")
         create_success_file()
-        download_nexus_mod(nxm_link)
+        handle_nexus_link(nxm_link)
     else:
         print("Launching app")
         app = Nomm()
         app.run(None)
-    
