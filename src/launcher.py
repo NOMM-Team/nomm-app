@@ -540,104 +540,118 @@ class Nomm(Adw.Application):
             homogeneous=True
         )
 
-        for game in self.matches:
-            # 1. THE CARD
-            card = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
-            card.set_size_request(200, 300)
-            card.set_halign(Gtk.Align.START) # FIX 2: Prevents card from expanding horizontally
-            card.set_hexpand(False)          # FIX 3: Explicitly refuse extra horizontal space
-            card.add_css_class("game-card")
-            card.set_overflow(Gtk.Overflow.HIDDEN)
-            card.set_tooltip_text(f"{game['name']}\n{game['path']}")
+        if self.matches:
+            for game in self.matches:
+                # 1. THE CARD
+                card = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+                card.set_size_request(200, 300)
+                card.set_halign(Gtk.Align.START)
+                card.set_hexpand(False)
+                card.add_css_class("game-card")
+                card.set_overflow(Gtk.Overflow.HIDDEN)
+                card.set_tooltip_text(f"{game['name']}\n{game['path']}")
 
-            gesture = Gtk.GestureClick()
-            gesture.connect("released", self.on_game_clicked, game)
-            card.add_controller(gesture)
+                gesture = Gtk.GestureClick()
+                gesture.connect("released", self.on_game_clicked, game)
+                card.add_controller(gesture)
 
-            # 2. THE IMAGE OVERLAY (To superimpose the badge)
-            image_overlay = Gtk.Overlay()
-            
-            # --- Image Loading Logic ---
-            img_widget = None
-            if game['img'] and os.path.exists(game['img']):
-                try:
-                    pb = GdkPixbuf.Pixbuf.new_from_file_at_scale(game['img'], 200, 300, False)
-                    texture = Gdk.Texture.new_for_pixbuf(pb)
-                    img_widget = Gtk.Picture.new_for_paintable(texture)
-                    img_widget.set_can_shrink(True)
-                except Exception as e:
-                    print(f"Scaling error: {e}")
-
-            poster = img_widget if img_widget else self.get_placeholder_game_poster()
-            image_overlay.set_child(poster)
-
-            # 3. THE PLATFORM BADGE
-            platform = game['platform']
-            
-            assets_dir = self.assets_path
-
-            if platform == "steam":
-                icon_path = os.path.join(assets_dir, "steam_logo.svg")
-            elif platform == "heroic-epic":
-                icon_path = os.path.join(assets_dir, "epic_logo.svg")
-            elif platform == "heroic-gog":
-                icon_path = os.path.join(assets_dir, "gog_logo.svg")
-
-            if os.path.exists(icon_path):
-                try:
-                    platform_badge_pb = GdkPixbuf.Pixbuf.new_from_file_at_scale(
-                        icon_path, 32, 32, True # True = Preserve aspect ratio
-                    )
-                    
-                    # Using this for now as it's the only method I found to actually force the pictures to stay in their boxes
-                    # TODO: find a non-deprecated way to do the same thing
-                    platform_badge_tex = Gdk.Texture.new_for_pixbuf(platform_badge_pb)
-                    platform_badge = Gtk.Picture.new_for_paintable(platform_badge_tex)
-                    
-                    # Styling & Placement
-                    platform_badge.set_halign(Gtk.Align.END)
-                    platform_badge.set_valign(Gtk.Align.END)
-                    platform_badge.set_margin_end(10)
-                    platform_badge.set_margin_bottom(10)
-                    platform_badge.add_css_class("platform-badge")
-                    
-                    # Add to the image overlay created earlier
-                    image_overlay.add_overlay(platform_badge)
-                except Exception as e:
-                    print(f"Error rendering SVG badge: {e}")
-
-            # Number of mods badge
-            mod_total_badge = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=4)
-            
-            # Styling & Placement
-            mod_total_badge.set_halign(Gtk.Align.START)
-            mod_total_badge.set_valign(Gtk.Align.END)
-            mod_total_badge.set_margin_start(10)
-            mod_total_badge.set_margin_bottom(10)
-            mod_total_badge.add_css_class("platform-badge")
+                # 2. THE IMAGE OVERLAY (To superimpose the badge)
+                image_overlay = Gtk.Overlay()
                 
-            # If there is a mod downloads folder, count the number of archives inside
-            try:
-                with open(self.user_config_path, 'r') as f:
-                    user_config_data = yaml.safe_load(f)
+                # --- Image Loading Logic ---
+                img_widget = None
+                if game['img'] and os.path.exists(game['img']):
+                    try:
+                        pb = GdkPixbuf.Pixbuf.new_from_file_at_scale(game['img'], 200, 300, False)
+                        texture = Gdk.Texture.new_for_pixbuf(pb)
+                        img_widget = Gtk.Picture.new_for_paintable(texture)
+                        img_widget.set_can_shrink(True)
+                    except Exception as e:
+                        print(f"Scaling error: {e}")
 
-                game_downloads_path = user_config_data.get("download_path") + '/' + game["name"]
-                mod_total_badge_label = Gtk.Label(label=self.count_archives(game_downloads_path), css_classes=["badge-accent"])
-            # If not, just set the number to 0
-            except Exception as e:
-                print(f"Could not add mod total to poster: {e}")
-                mod_total_badge_label = Gtk.Label(label='0', css_classes=["badge-accent"])
+                poster = img_widget if img_widget else self.get_placeholder_game_poster()
+                image_overlay.set_child(poster)
 
-            # Add label
-            mod_total_badge.append(mod_total_badge_label)
-            image_overlay.add_overlay(mod_total_badge)
+                # 3. THE PLATFORM BADGE
+                platform = game['platform']
+                
+                assets_dir = self.assets_path
 
-            # 4. Final Assembly
-            card.append(image_overlay)
-            flow.append(card)
+                if platform == "steam":
+                    icon_path = os.path.join(assets_dir, "steam_logo.svg")
+                elif platform == "heroic-epic":
+                    icon_path = os.path.join(assets_dir, "epic_logo.svg")
+                elif platform == "heroic-gog":
+                    icon_path = os.path.join(assets_dir, "gog_logo.svg")
 
-        scroll.set_child(flow)
-        overlay.set_child(scroll)
+                if os.path.exists(icon_path):
+                    try:
+                        platform_badge_pb = GdkPixbuf.Pixbuf.new_from_file_at_scale(
+                            icon_path, 32, 32, True # True = Preserve aspect ratio
+                        )
+                        
+                        # Using this for now as it's the only method I found to actually force the pictures to stay in their boxes
+                        # TODO: find a non-deprecated way to do the same thing
+                        platform_badge_tex = Gdk.Texture.new_for_pixbuf(platform_badge_pb)
+                        platform_badge = Gtk.Picture.new_for_paintable(platform_badge_tex)
+                        
+                        # Styling & Placement
+                        platform_badge.set_halign(Gtk.Align.END)
+                        platform_badge.set_valign(Gtk.Align.END)
+                        platform_badge.set_margin_end(10)
+                        platform_badge.set_margin_bottom(10)
+                        platform_badge.add_css_class("platform-badge")
+                        
+                        # Add to the image overlay created earlier
+                        image_overlay.add_overlay(platform_badge)
+                    except Exception as e:
+                        print(f"Error rendering SVG badge: {e}")
+
+                # Number of mods badge
+                mod_total_badge = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=4)
+                
+                # Styling & Placement
+                mod_total_badge.set_halign(Gtk.Align.START)
+                mod_total_badge.set_valign(Gtk.Align.END)
+                mod_total_badge.set_margin_start(10)
+                mod_total_badge.set_margin_bottom(10)
+                mod_total_badge.add_css_class("platform-badge")
+                    
+                # If there is a mod downloads folder, count the number of archives inside
+                try:
+                    with open(self.user_config_path, 'r') as f:
+                        user_config_data = yaml.safe_load(f)
+
+                    game_downloads_path = user_config_data.get("download_path") + '/' + game["name"]
+                    mod_total_badge_label = Gtk.Label(label=self.count_archives(game_downloads_path), css_classes=["badge-accent"])
+                # If not, just set the number to 0
+                except Exception as e:
+                    print(f"Could not add mod total to poster: {e}")
+                    mod_total_badge_label = Gtk.Label(label='0', css_classes=["badge-accent"])
+
+                # Add label
+                mod_total_badge.append(mod_total_badge_label)
+                image_overlay.add_overlay(mod_total_badge)
+
+                # 4. Final Assembly
+                card.append(image_overlay)
+                flow.append(card)
+
+            scroll.set_child(flow)
+            overlay.set_child(scroll)
+
+        else: # no games found
+            status_page = Adw.StatusPage(
+                title="No games detected",
+                description="We couldn't find any Steam or Heroic games. This could be due to\n \
+- You not having any supported games installed\n \
+- Your Steam/Heroic installation type not being handled\n\n \
+Feel free to contact me on Discord or Github for more help!",
+                icon_name="input-gaming-symbolic"
+            )
+            overlay.set_child(status_page)
+
+        
 
         refresh_btn = Gtk.Button(icon_name="view-refresh-symbolic")
         refresh_btn.add_css_class("circular")
