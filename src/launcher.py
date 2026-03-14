@@ -64,8 +64,11 @@ class Nomm(Adw.Application):
             os.path.expanduser("~/.steam/debian-installation/")
         ]
         for p in paths:
-            if os.path.exists(p): return p
-            print(f"Steam path found: {p}")
+            if os.path.exists(p):
+                print(f"Steam path found: {p}")
+                return p
+                
+        print(f"WARNING: Steam path could not be found!!")
         return None
 
     def sync_configs(self):
@@ -431,9 +434,10 @@ class Nomm(Adw.Application):
         # Locate Steam libraries
         if not found_libs:
             found_libs = self.get_steam_library_paths(self.steam_base + "config/libraryfolders.vdf")
-            current_config["library_paths"] = sorted(list(found_libs))
-            with open(self.user_config_path, 'w') as f:
-                yaml.dump(current_config, f)
+            if found_libs:
+                current_config["library_paths"] = sorted(list(found_libs))
+                with open(self.user_config_path, 'w') as f:
+                    yaml.dump(current_config, f)
 
         # Locate Heroic (GOG/Epic) libraries
         self.get_heroic_library_paths()
@@ -459,12 +463,13 @@ class Nomm(Adw.Application):
                     if not game_title: continue
                     
                     # Search in Steam librarie(s)
-                    for lib in found_libs:
-                        if not os.path.exists(lib): continue
-                        for folder in os.listdir(lib):
-                            game_path = os.path.join(lib, folder)
-                            if self.game_title_matcher(game_path, conf_path, data, folder, game_title, platform="steam", app_id=steam_app_id):
-                                break
+                    if found_libs:
+                        for lib in found_libs:
+                            if not os.path.exists(lib): continue
+                            for folder in os.listdir(lib):
+                                game_path = os.path.join(lib, folder)
+                                if self.game_title_matcher(game_path, conf_path, data, folder, game_title, platform="steam", app_id=steam_app_id):
+                                    break
                     
                     # Search in Epic (Heroic) library
                     if self.epic_library_path:
