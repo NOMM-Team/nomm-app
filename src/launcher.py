@@ -193,18 +193,39 @@ class Nomm(Adw.Application):
         self.remove_stack_child("setup")
         status_page = Adw.StatusPage(
             title="Select your staging folder",
-            description="Please select the folder where mods will be temporarily stored after installing them (but before deployment).",
+            description="Please select the folder where mods will be temporarily stored.",
             icon_name="folder-git-symbolic"
         )
         status_page.add_css_class("setup-page")
         
+        # 1. Create a container box for our widgets
+        vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)
+        vbox.set_halign(Gtk.Align.CENTER)
+
+        # 2. Create the Warning Label
+        warning_label = Gtk.Label()
+        warning_label.set_markup(
+            "<b>Important:</b> If using Steam Flatpak, ensure it has permission to access this folder (you can do this via command line or Flatseal)."
+        )
+        warning_label.set_wrap(True)
+        warning_label.set_max_width_chars(50)
+        warning_label.set_justify(Gtk.Justification.CENTER)
+        
+        # 3. Style it red using Libadwaita's built-in error color
+        warning_label.add_css_class("error") 
+        # Alternatively, use "destructive-action" for a slightly different red
+        
         btn = Gtk.Button(label="Set Mod Staging Path")
-        btn.set_halign(Gtk.Align.CENTER)
         btn.add_css_class("suggested-action")
-        btn.set_margin_top(24)
+        btn.set_margin_top(12)
         btn.connect("clicked", self.on_select_staging_folder_clicked)
         
-        status_page.set_child(btn)
+        # 4. Assemble the box and set it as the status page child
+        vbox.append(warning_label)
+        vbox.append(btn)
+        
+        status_page.set_child(vbox)
+        
         self.stack.add_named(status_page, "setup")
         self.stack.set_visible_child_name("setup")
         GLib.timeout_add(100, lambda: status_page.add_css_class("visible"))
