@@ -396,6 +396,27 @@ class Nomm(Adw.Application):
         
         return libraries
 
+    def get_heroic_library_paths(self):
+        # Check for Epic (Heroic) library path
+        epic_library_path = os.path.expanduser("~/.var/app/com.heroicgameslauncher.hgl/config/heroic/legendaryConfig/legendary/installed.json") # flatpak
+        if not os.path.exists(epic_library_path): # not flatpak
+            epic_library_path = os.path.expanduser("~/.config/heroic/legendaryConfig/legendary/installed.json")
+            if not os.path.exists(epic_library_path): # not found
+                epic_library_path = None
+                print(f"No installed.json found for Epic.")
+
+        # Check for GOG (Heroic) library path
+        gog_library_path = os.path.expanduser("~/.var/app/com.heroicgameslauncher.hgl/config/heroic/gog_store/installed.json") # flatpak
+        if not os.path.exists(gog_library_path): # not flatpak
+            gog_library_path = os.path.expanduser("~/.config/heroic/gog_store/installed.json")
+            if not os.path.exists(gog_library_path): # not found
+                gog_library_path = None
+                print(f"No installed.json found for GOG.")
+
+        # Save for easy access later on:
+        self.epic_library_path = epic_library_path
+        self.gog_library_path = gog_library_path
+
     def run_background_workflow(self):
         print("Background game search process started")
         config_dir = self.game_config_path
@@ -413,6 +434,9 @@ class Nomm(Adw.Application):
             current_config["library_paths"] = sorted(list(found_libs))
             with open(self.user_config_path, 'w') as f:
                 yaml.dump(current_config, f)
+
+        # Locate Heroic (GOG/Epic) libraries
+        self.get_heroic_library_paths()
 
         if not os.path.exists(config_dir):
             print(f"Something went wrong, could not access the game configs directory at {config_dir}")
@@ -443,9 +467,11 @@ class Nomm(Adw.Application):
                                 break
                     
                     # Search in Epic (Heroic) library
-                    self.check_heroic_games(conf_path, data, game_title, "heroic-epic")
+                    if self.epic_library_path:
+                        self.check_heroic_games(conf_path, data, game_title, "heroic-epic")
                     # Search in GOG (Heroic) library
-                    self.check_heroic_games(conf_path, data, gog_store_id_list, "heroic-gog")
+                    if self.gog_library_path:
+                        self.check_heroic_games(conf_path, data, gog_store_id_list, "heroic-gog")
                 
                 except Exception as e:
                     print(f"Error processing {filename} during scan: {e}")
@@ -454,22 +480,15 @@ class Nomm(Adw.Application):
 
     def check_heroic_games(self, game_config_path: str, game_config_data: dict, game_title: str, platform: str):
         if platform == "heroic-epic":
-            json_path = os.path.expanduser("~/.var/app/com.heroicgameslauncher.hgl/config/heroic/legendaryConfig/legendary/installed.json") # flatpak
-            if not os.path.exists(json_path): # not flatpak
-                json_path = os.path.expanduser("~/.config/heroic/legendaryConfig/legendary/installed.json")
+            json_path = self.epic_library_path
         elif platform == "heroic-gog":
-            json_path = os.path.expanduser("~/.var/app/com.heroicgameslauncher.hgl/config/heroic/gog_store/installed.json") # flatpak
-            if not os.path.exists(json_path): # not flatpak
-                json_path = os.path.expanduser("~/.config/heroic/gog_store/installed.json")
-
-        if not os.path.exists(json_path):
-            print(f"No {platform} installed.json found.")
-            return None
+            json_path = self.gog_library_path
+        
         try:
             with open(json_path, 'r') as f:
                 installed_games = json.load(f)
         except Exception as e:
-            print(f"Error when trying to access {platform} json file: {e}")
+            print(f"Error when trying to access {platform} json file at {json_path}: {e}")
             return None
 
         # for Epic Games, installed_games is a dict where keys are IDs and values are game info
