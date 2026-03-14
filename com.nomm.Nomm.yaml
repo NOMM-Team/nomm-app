@@ -10,19 +10,14 @@ finish-args:
   - --socket=fallback-x11
   - --socket=wayland
   - --device=dri
-  # Access to Steam and Heroic configurations
-  - --filesystem=home:ro
-  # Specific permission for Heroic's Flatpak config if Heroic is also a Flatpak
-  - --filesystem=~/.var/app/com.heroicgameslauncher.hgl/config/heroic:ro
-  - --filesystem=xdg-run/app/com.heroicgameslauncher.hgl:ro
   - --own-name=com.nomm.Nomm
-  # Access to Steam
-  # Standard Steam path
-  - --filesystem=~/.local/share/Steam:ro
-  # Flatpak Steam path (if the user is running Steam as a Flatpak)
-  - --filesystem=~/.var/app/com.valvesoftware.Steam:ro
-  - --filesystem=xdg-run/app/com.valvesoftware.Steam:ro
-  # mounting points
+  # Heroic
+  - --filesystem=~/.config/heroic:ro # Standard
+  - --filesystem=~/.var/app/com.heroicgameslauncher.hgl/config/heroic:ro # Flatpak
+  # Steam
+  - --filesystem=~/.local/share/Steam:ro # Standard
+  - --filesystem=~/.var/app/com.valvesoftware.Steam:ro # Flatpak
+  # Mounting points (to install mods in games)
   - --filesystem=/run/media:rw
   - --filesystem=/mnt:rw
 
