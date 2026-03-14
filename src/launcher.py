@@ -43,6 +43,8 @@ class Nomm(Adw.Application):
         print(f"user_config_path: {self.user_config_path}")
         print(f"default_game_config_path: {self.default_game_config_path}")
         print(f"game_config_path: {self.game_config_path}")
+        if self.steam_base:
+            print(f"base steam path: {self.steam_base}")
 
     def get_steam_base_dir(self):
         paths = [
