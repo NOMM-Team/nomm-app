@@ -407,55 +407,59 @@ class Nomm(Adw.Application):
         except:
             print("Could not find user config")
 
+        # Locate Steam libraries
         if not found_libs:
             found_libs = self.get_steam_library_paths(self.steam_base + "config/libraryfolders.vdf")
             current_config["library_paths"] = sorted(list(found_libs))
             with open(self.user_config_path, 'w') as f:
                 yaml.dump(current_config, f)
 
+        if not os.path.exists(config_dir):
+            print(f"Something went wrong, could not access the game configs directory at {config_dir}")
+            exit(1)
+
         self.matches = []
-        if os.path.exists(config_dir):
-            for filename in os.listdir(config_dir):
-                if filename.lower().endswith((".yaml", ".yml")):
-                    conf_path = os.path.join(config_dir, filename)
-                    try:
-                        with open(conf_path, 'r') as f:
-                            data = yaml.safe_load(f) or {}
-                        
-                        game_title, steam_app_id, gog_store_id_list = data.get("name"), data.get("steamappid"), data.get("gogstoreids")
-                        print(f"Looking for game {game_title}")
-                        if gog_store_id_list: # there can potentially be two gog store IDs that match to the same game
-                            gog_store_id_list = [str(item) for item in gog_store_id_list]
 
-                        if not game_title: continue
-                        
-                        # Steam library searching:
-
-                        for lib in found_libs:
-                            if not os.path.exists(lib): continue
-                            for folder in os.listdir(lib):
-                                game_path = os.path.join(lib, folder)
-                                if self.game_title_matcher(game_path, conf_path, data, folder, game_title, platform="steam", app_id=steam_app_id):
-                                    break
-                        
-                        # (Heroic) Epic library searching
-                        self.check_heroic_games(conf_path, data, game_title, "heroic-epic")
-                        # (Heroic) GOG library searching
-                        self.check_heroic_games(conf_path, data, gog_store_id_list, "heroic-gog")
+        for filename in os.listdir(config_dir):
+            if filename.lower().endswith((".yaml", ".yml")):
+                conf_path = os.path.join(config_dir, filename)
+                try:
+                    with open(conf_path, 'r') as f:
+                        data = yaml.safe_load(f) or {}
                     
-                    except Exception as e:
-                        print(f"Error processing {filename} during scan: {e}")
+                    game_title, steam_app_id, gog_store_id_list = data.get("name"), data.get("steamappid"), data.get("gogstoreids")
+                    print(f"Looking for game {game_title}")
+                    if gog_store_id_list: # there can potentially be two gog store IDs that match to the same game
+                        gog_store_id_list = [str(item) for item in gog_store_id_list]
+
+                    if not game_title: continue
+                    
+                    # Search in Steam librarie(s)
+                    for lib in found_libs:
+                        if not os.path.exists(lib): continue
+                        for folder in os.listdir(lib):
+                            game_path = os.path.join(lib, folder)
+                            if self.game_title_matcher(game_path, conf_path, data, folder, game_title, platform="steam", app_id=steam_app_id):
+                                break
+                    
+                    # Search in Epic (Heroic) library
+                    self.check_heroic_games(conf_path, data, game_title, "heroic-epic")
+                    # Search in GOG (Heroic) library
+                    self.check_heroic_games(conf_path, data, gog_store_id_list, "heroic-gog")
+                
+                except Exception as e:
+                    print(f"Error processing {filename} during scan: {e}")
 
         GLib.idle_add(self.show_library_ui)
 
     def check_heroic_games(self, game_config_path: str, game_config_data: dict, game_title: str, platform: str):
         if platform == "heroic-epic":
             json_path = os.path.expanduser("~/.var/app/com.heroicgameslauncher.hgl/config/heroic/legendaryConfig/legendary/installed.json") # flatpak
-            if not os.path.exists(json_path): # try the normal installation format
+            if not os.path.exists(json_path): # not flatpak
                 json_path = os.path.expanduser("~/.config/heroic/legendaryConfig/legendary/installed.json")
         elif platform == "heroic-gog":
             json_path = os.path.expanduser("~/.var/app/com.heroicgameslauncher.hgl/config/heroic/gog_store/installed.json") # flatpak
-            if not os.path.exists(json_path): # try the normal installation format
+            if not os.path.exists(json_path): # not flatpak
                 json_path = os.path.expanduser("~/.config/heroic/gog_store/installed.json")
 
         if not os.path.exists(json_path):
