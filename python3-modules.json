@@ -31,8 +31,8 @@
                 },
                 {
                     "type": "file",
-                    "url": "https://files.pythonhosted.org/packages/13/69/33ddede1939fdd074bce5434295f38fae7136463422fe4fd3e0e89b98062/charset_normalizer-3.4.4.tar.gz",
-                    "sha256": "94537985111c35f28720e43603b8e7b43a6ecfb2ce1d3058bbe955b73404e21a"
+                    "url": "https://files.pythonhosted.org/packages/1d/35/02daf95b9cd686320bb622eb148792655c9412dbb9b67abb5694e5910a24/charset_normalizer-3.4.5.tar.gz",
+                    "sha256": "95adae7b6c42a6c5b5b559b1a99149f090a57128155daeea91732c8d970d8644"
                 },
                 {
                     "type": "file",
@@ -62,6 +62,20 @@
                     "type": "file",
                     "url": "https://files.pythonhosted.org/packages/62/fc/ab37559419ca36dd8dd317c3a98395ed4dcee2beeb28bf6059b972906727/rarfile-4.2-py3-none-any.whl",
                     "sha256": "8757e1e3757e32962e229cab2432efc1f15f210823cc96ccba0f6a39d17370c9"
+                }
+            ]
+        },
+        {
+            "name": "python3-vdf",
+            "buildsystem": "simple",
+            "build-commands": [
+                "pip3 install --verbose --exists-action=i --no-index --find-links=\"file://${PWD}\" --prefix=${FLATPAK_DEST} \"vdf\" --no-build-isolation"
+            ],
+            "sources": [
+                {
+                    "type": "file",
+                    "url": "https://files.pythonhosted.org/packages/96/60/6456b687cf55cf60020dcd01f9bc51561c3cc84f05fd8e0feb71ce60f894/vdf-3.4-py2.py3-none-any.whl",
+                    "sha256": "68c1a125cc49e343d535af2dd25074e9cb0908c6607f073947c4a04bbe234534"
                 }
             ]
         }

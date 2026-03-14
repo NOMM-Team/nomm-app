@@ -11,6 +11,7 @@ import sys
 import subprocess
 import json
 import requests
+import vdf
 
 # force specific gtk version before GTK is called
 gi.require_version('Gtk', '4.0')
@@ -368,6 +369,33 @@ class Nomm(Adw.Application):
                 return True
         return False
 
+    def get_steam_library_paths(self, vdf_path):
+        libraries = []
+
+        # attempt to open the libraryfolders.vdf file
+        try:
+            with open(vdf_path, 'r') as f:
+                data = vdf.load(f)
+        except:
+            print(f"Could not find libraryfolders.vdf file at {vdf_path}")
+            return
+        # parse the information with the vdf parser
+        try:    
+            # The structure is "libraryfolders" -> "0", "1", "2", etc.
+            folders = data.get("libraryfolders", {})
+            
+            for index in folders:
+                # Each numbered block contains a "path" key
+                path = folders[index].get("path")
+                if path:
+                    full_path = path + "/steamapps/common"
+                    libraries.append(os.path.normpath(full_path))
+                
+        except Exception as e:
+            print(f"Error parsing VDF: {e}")
+        
+        return libraries
+
     def run_background_workflow(self):
         print("Background game search process started")
         config_dir = self.game_config_path
@@ -380,25 +408,7 @@ class Nomm(Adw.Application):
             print("Could not find user config")
 
         if not found_libs:
-            potential_mounts = {"/", os.path.expanduser("~")}
-            try:
-                with open('/proc/mounts', 'r') as f:
-                    for line in f:
-                        parts = line.split()
-                        if len(parts) >= 3 and parts[1].startswith(('/', '/run/media', '/mnt')):
-                            potential_mounts.add(parts[1])
-            except:
-                print("Could not access drives")
-
-            targets = ["SteamLibrary/steamapps/common", "steamapps/common"]
-            for m in potential_mounts:
-                if not os.path.exists(m): continue
-                for root, dirs, _ in os.walk(m):
-                    if any(root.endswith(t) for t in targets):
-                        found_libs.add(os.path.realpath(root))
-                        del dirs[:]
-                        break
-
+            found_libs = self.get_steam_library_paths(self.steam_base + "config/libraryfolders.vdf")
             current_config["library_paths"] = sorted(list(found_libs))
             with open(self.user_config_path, 'w') as f:
                 yaml.dump(current_config, f)
