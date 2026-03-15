@@ -4,8 +4,15 @@ mods_path: ""
 nexus_game_id: "monsterhunterwilds"
 
 essential-utilities:
+  reframeworkVR:
+    name: "REFramework (VR Support)"
+    creator: praydog
+    creator-link: https://github.com/praydog
+    source: "https://github.com/praydog/REFramework/releases/download/v1.5.9.1/MHWILDS.zip"
+    utility_path: ""
+  
   reframework:
-    name: REFramework
+    name: "REFramework (No VR Support)"
     creator: praydog
     creator-link: https://github.com/praydog
     source: "https://github.com/praydog/REFramework/releases/download/v1.5.9.1/MHWILDS.zip"
