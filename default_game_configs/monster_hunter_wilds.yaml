@@ -1,15 +1,14 @@
-name: 'Monster Hunter Wilds' # the name of the game, with any symbols, spaces and whatnot kept intact
-steamappid: 2246340 # the steam app id, you can find this on: https://steamdb.info/
-mods_path: "" # the path where the mods need to be installed when they are enabled
-nexus_game_id: "monsterhunterwilds" # the nexus game key - used for nexus downloads (generally the game name with no symbols and all attached, but please check before submitting)
+name: 'Monster Hunter Wilds'
+steamappid: 2246340
+mods_path: ""
+nexus_game_id: "monsterhunterwilds"
 
-# facultatif
-essential-utilities: # this lets you define things such as mod loaders or essential utilities
-  reframework: # you can have multiple ones, each one needs its own key
-    name: REFramework # the name of the tool
-    creator: praydog # the creator of the tool
-    creator-link: https://github.com/praydog # a link to the creator's page, portal, social, whatever
-    source: "https://github.com/praydog/REFramework/releases/download/v1.5.9.1/MHWILDS.zip" #the actual thing we'll need to download
-    utility_path: "" # where the utility needs to be extracted to
+essential-utilities:
+  reframework:
+    name: REFramework
+    creator: praydog
+    creator-link: https://github.com/praydog
+    source: "https://github.com/praydog/REFramework/releases/download/v1.5.9.1/MHWILDS.zip"
+    utility_path: ""
     whitelist: 
       - dinput8.dll
