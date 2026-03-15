@@ -58,10 +58,10 @@ class Nomm(Adw.Application):
 
     def get_steam_base_dir(self):
         paths = [
+            os.path.expanduser("~/.steam/debian-installation/"),
             os.path.expanduser("~/.var/app/com.valvesoftware.Steam/.local/share/Steam/"),
             os.path.expanduser("~/.local/share/Steam/"),
-            os.path.expanduser("~/snap/steam/common/.local/share/Steam/"),
-            os.path.expanduser("~/.steam/debian-installation/")
+            os.path.expanduser("~/snap/steam/common/.local/share/Steam/")
         ]
         for p in paths:
             if os.path.exists(p):
