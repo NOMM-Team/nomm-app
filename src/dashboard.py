@@ -874,7 +874,7 @@ class GameDashboard(Adw.Window):
                         if blacklist and any(blocked in file_name for blocked in blacklist):
                             continue
 
-                        # Extracting file_info that are either (1) whitelisted (2) not blacklisted
+                        # Extracting file_info.filename that are either (1) whitelisted (2) not blacklisted
                         z.extract(file_info, target_dir)
 
             # Run enable command if provided
