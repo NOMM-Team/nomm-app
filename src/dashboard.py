@@ -861,6 +861,7 @@ class GameDashboard(Adw.Window):
 
             # Filtering blacklisted files and whitelisted words
             with zipfile.ZipFile(zip_path, 'r') as z:
+                # Small optimization to avoid loading RAM with the file
                 if not whitelist and not blacklist:
                     z.extractall(target_dir)
                 else:
@@ -873,6 +874,7 @@ class GameDashboard(Adw.Window):
                         if blacklist and any(blocked in file_name for blocked in blacklist):
                             continue
 
+                        # Extracting file_info that are either (1) whitelisted (2) not blacklisted
                         z.extract(file_info, target_dir)
 
             # Run enable command if provided
