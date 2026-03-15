@@ -861,18 +861,19 @@ class GameDashboard(Adw.Window):
 
             # Filtering blacklisted files and whitelisted words
             with zipfile.ZipFile(zip_path, 'r') as z:
-                for file_info in z.infolist():
-                    file_name = file_info.filename
-                    
-                    if whitelist:
-                        if not any(allowed in file_name for allowed in whitelist):
+                if not whitelist and not blacklist:
+                    z.extractall(target_dir)
+                else:
+                    for file_info in z.infolist():
+                        file_name = file_info.filename
+
+                        if whitelist and not any(allowed in file_name for allowed in whitelist):
                             continue
-                    
-                    if blacklist:
-                        if any(blocked in file_name for blocked in blacklist):
+
+                        if blacklist and any(blocked in file_name for blocked in blacklist):
                             continue
-                            
-                    z.extract(file_info, target_dir)
+
+                        z.extract(file_info, target_dir)
 
             # Run enable command if provided
             cmd = util.get("enable_command")
