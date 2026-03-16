@@ -856,9 +856,26 @@ class GameDashboard(Adw.Window):
             target_dir = game_root / install_subpath
             target_dir.mkdir(parents=True, exist_ok=True)
 
-            # Extract content
+            whitelist = util.get("whitelist", [])
+            blacklist = util.get("blacklist", [])
+
+            # Filtering blacklisted files and whitelisted words
             with zipfile.ZipFile(zip_path, 'r') as z:
-                z.extractall(target_dir)
+                # Small optimization to avoid loading RAM with the file
+                if not whitelist and not blacklist:
+                    z.extractall(target_dir)
+                else:
+                    for file_info in z.infolist():
+                        file_name = file_info.filename
+
+                        if whitelist and not any(allowed in file_name for allowed in whitelist):
+                            continue
+
+                        if blacklist and any(blocked in file_name for blocked in blacklist):
+                            continue
+
+                        # Extracting file_info.filename that are either (1) whitelisted (2) not blacklisted
+                        z.extract(file_info, target_dir)
 
             # Run enable command if provided
             cmd = util.get("enable_command")
