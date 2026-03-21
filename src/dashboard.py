@@ -221,6 +221,46 @@ class GameDashboard(Adw.Window):
                 return {}
         return {}
 
+    def check_for_conflicts(self):
+        '''Check staging folder for any conflicts with staged files'''
+        path_registry = {}
+        staging_path = self.staging_path
+
+        if not staging_path or not os.path.exists(staging_path):
+            return []
+
+        # Get all mod folders in staging
+        mod_folders = [f for f in os.listdir(staging_path) 
+                    if os.path.isdir(os.path.join(staging_path, f))]
+
+        for mod_name in mod_folders:
+            mod_root = os.path.join(staging_path, mod_name)
+            
+            # Walk through all files inside this specific mod
+            for root, _, files in os.walk(mod_root):
+                for filename in files:
+                    # We need the path relative to the mod folder 
+                    # (e.g., "Data/mesh.bin") so we can compare it across mods
+                    full_path = os.path.join(root, filename)
+                    rel_path = os.path.relpath(full_path, mod_root)
+
+                    if rel_path not in path_registry:
+                        path_registry[rel_path] = []
+                    
+                    path_registry[rel_path].append(mod_name)
+
+        # Extract only the lists where multiple mods claim the same file
+        conflicts = []
+        for mod_list in path_registry.values():
+            if len(mod_list) > 1:
+                # We use set() then list() to ensure we don't 
+                # list the same mod twice if it has weird internal duplicates
+                unique_mods = sorted(list(set(mod_list)))
+                if unique_mods not in conflicts:
+                    conflicts.append(unique_mods)
+
+        return conflicts
+
     def get_current_game_config_path(self, game_config_path):
         #TODO: merge with below
         def slug(text): return re.sub(r'[^a-z0-9]', '', text.lower())
@@ -315,7 +355,6 @@ class GameDashboard(Adw.Window):
     def update_indicators(self):
         # Update Mods Stats
         mods_inactive, mods_active = 0, 0
-        staging_dir = self.staging_path
         staging_metadata = self.load_staging_metadata()
         if staging_metadata:
             for mod in staging_metadata["mods"]:
@@ -447,7 +486,10 @@ class GameDashboard(Adw.Window):
             container.append(Gtk.Label(label="The staging metadata file could not be found, did you install any mods?", css_classes=["dim-label"]))
             staging_metadata = {}
             staging_metadata["mods"] = {}
-        
+
+        # Check for conflicts
+        conflicts = self.check_for_conflicts()
+
         for mod in sorted(staging_metadata["mods"]):
             display_name = mod
             mod_metadata = staging_metadata["mods"][mod]
@@ -496,6 +538,26 @@ class GameDashboard(Adw.Window):
                 missing_file_badge.set_tooltip_text("Missing Files:\n"+"\n".join(missing_files))
                 missing_file_badge.append(Gtk.Label(label=f"Missing {len(missing_files)} file(s)"))
                 row.add_prefix(missing_file_badge)
+
+            # Prefix: Conflicts
+            conflicting_mods = []
+            for conflict_list in conflicts:
+                if display_name in conflict_list:
+                    other_mods = conflict_list.copy()
+                    other_mods.remove(display_name)
+                    for other_mod in other_mods:
+                        conflicting_mods.append(other_mod)
+            if conflicting_mods:
+                conflicts_badge = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
+                conflicts_badge.add_css_class("warning-badge")
+                conflicts_badge.set_valign(Gtk.Align.CENTER)
+                conflicts_badge.set_margin_end(row_element_margin)
+                conflicts_badge.set_tooltip_text("Conflicting mods:\n"+"\n".join(conflicting_mods))
+                conflict_icon = Gtk.Image.new_from_icon_name("vcs-merge-request-symbolic")
+                conflict_icon.set_pixel_size(18)
+                conflicts_badge.append(conflict_icon)
+
+                row.add_prefix(conflicts_badge)
 
             # --- Suffixes
             # Deployment target badge
@@ -672,7 +734,7 @@ class GameDashboard(Adw.Window):
                 install_btn = Gtk.Button(label="Reinstall" if installed else "Install", valign=Gtk.Align.CENTER)
                 if not installed: install_btn.add_css_class("suggested-action")
                 install_btn.set_cursor_from_name("pointer")
-                install_btn.connect("clicked", self.on_install_clicked, file_name, display_name)
+                install_btn.connect("clicked", self.on_install_clicked, file_name)
                 row.add_suffix(install_btn)
 
                 # TRASH BIN
@@ -942,10 +1004,11 @@ class GameDashboard(Adw.Window):
 
         return False
 
-    def on_install_clicked(self, btn, filename, display_name):
+    def on_install_clicked(self, btn, filename):
         
         # This is to ensure that all the files in staging are neatly arranged in their own folder
         # ...and avoid loose files or files within directories to be merged together
+        display_name = filename.replace(".zip", "").replace(".rar", "").replace(".7z", "")
         staging_path = os.path.join(self.staging_path, display_name)
         archive_full_path = os.path.join(self.downloads_path, filename)
         
@@ -1181,7 +1244,7 @@ class GameDashboard(Adw.Window):
                     mod_name = current_download_metadata["mods"][filename]["name"]
                     current_staging_metadata["mods"][mod_name] = current_download_metadata["mods"][filename]
                 else: # if the mod was manually downloaded, add basic info only
-                    mod_name = filename.replace(".zip", "").replace(".rar", "")
+                    mod_name = filename.replace(".zip", "").replace(".rar", "").replace(".7z", "")
                     current_staging_metadata["mods"][mod_name] = {}
                 # regardless, add the list of installed files
                 current_staging_metadata["mods"][mod_name]["mod_files"] = extracted_roots
