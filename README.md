@@ -40,12 +40,23 @@ In that yaml you will need to define some basic information for it to be recogni
 name: 'Warhammer 40,000: Darktide' # the name of the game, with any symbols, spaces and whatnot kept intact
 steamappid: 0000000 # the steam app id, you can find this on: https://steamdb.info/
 mods_path: mods/ # the path where the mods need to be installed when they are enabled
+```
+
+> [!NOTE]
+> `mods_path` can also contain a list of paths, in which case the app will ask the user in which path to install each mod they install.
+
+```yaml
 gogstoreids:
-- 1207666893 # the gog store ids, this has to be a list (but can contain only a single entry if needed) in case multiple ids correspond tot he same game i.e. "The Witcher 3" and "the Witcher 3 Complete Edition"
+- 1207666893 # the gog store ids, this has to be a list (but can contain only a single entry if needed) in case multiple ids correspond to the same game i.e. "The Witcher 3" and "the Witcher 3 Complete Edition"
+```
+
+> [!NOTE]
+> You should only add `gogstoreids` if the game is actually on the GOG store.
+
+```yaml
 nexus_game_id: "warhammer40kdarktide" # the nexus game key - used for nexus downloads (generally the game name with no symbols and all attached, but please check before submitting)
 ```
-> [!NOTE]
-> Obviously you should only add `gogstoreids` if the game is actually on the GOG store.
+
 
 You can additionally define some extra stuff for added features:
 ```yaml
@@ -56,6 +67,8 @@ essential-utilities: # this lets you define things such as mod loaders or essent
     name: Darktide Mod Loader # the name of the tool
     creator: Talon-d # the creator of the tool
     creator-link: https://github.com/talon-d # a link to the creator's page, portal, social, whatever
+    whitelist: d8input.dll # a list of files that should ONLY be included (optional)
+    blacklist: d7input.dll # a list of files that should NOT be included (optional)
     source: "https://github.com/talon-d/darktideML-4linux/releases/download/1.5/darktideML-4linux1-5.zip" #the actual thing we'll need to download
     utility_path: "" # where the utility needs to be extracted to
     enable_command: "sh handle_darktide_mods.sh --enable" # any command that needs to be run (from the root of the game folder) to enable the mod loader
