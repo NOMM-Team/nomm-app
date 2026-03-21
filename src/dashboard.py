@@ -486,7 +486,7 @@ class GameDashboard(Adw.Window):
             # Prefix: Missing Files
             missing_files = []
             for mod_file in mod_files:    
-                if not os.path.exists(staging_path/mod_file):
+                if not os.path.exists(staging_path/display_name/mod_file):
                     missing_files.append(mod_file)
             if missing_files:
                 missing_file_badge = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
@@ -610,25 +610,25 @@ class GameDashboard(Adw.Window):
             files = [f for f in os.listdir(self.downloads_path) if f.lower().endswith('.zip') or f.lower().endswith('.rar') or f.lower().endswith('.7z')]
             files.sort(key=lambda f: os.path.getmtime(os.path.join(self.downloads_path, f)), reverse=True)
 
-            for f in files:
-                installed = self.is_mod_installed(f)
-                archive_full_path = os.path.join(self.downloads_path, f)
+            for file_name in files:
+                installed = self.is_mod_installed(file_name)
+                archive_full_path = os.path.join(self.downloads_path, file_name)
                 
                 # New Metadata extraction
-                display_name, version_text, changelog = f, "—", ""
+                display_name, version_text, changelog = file_name, "—", ""
                 meta_path = self.downloads_metadata_path
                 if os.path.exists(meta_path):
                     try:
                         with open(meta_path, 'r') as meta_f:
                             metadata = yaml.safe_load(meta_f)
-                            display_name = metadata["mods"][f].get("name", f)
-                            version_text = metadata["mods"][f].get("version", "—")
-                            changelog = metadata["mods"][f].get("changelog", "")
+                            display_name = metadata["mods"][file_name].get("name", file_name)
+                            version_text = metadata["mods"][file_name].get("version", "—")
+                            changelog = metadata["mods"][file_name].get("changelog", "")
                     except: pass
 
                 row = Adw.ActionRow(title=display_name)
                 row.is_installed = installed
-                if display_name != f: row.set_subtitle(f)
+                if display_name != file_name: row.set_subtitle(file_name)
 
                 # --- VERSION BADGE ---
                 version_badge = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
@@ -650,7 +650,7 @@ class GameDashboard(Adw.Window):
                 ts_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=2, valign=Gtk.Align.CENTER, margin_end=15)
                 
                 # Download Timestamp
-                dl_ts_text = f"Downloaded: {self.get_download_timestamp(f)}"
+                dl_ts_text = f"Downloaded: {self.get_download_timestamp(file_name)}"
                 dl_ts = Gtk.Label(label=dl_ts_text, xalign=1, css_classes=["dim-label", "caption"])
                 ts_box.append(dl_ts)
 
@@ -659,7 +659,7 @@ class GameDashboard(Adw.Window):
                     installation_timestamp_value = None
                     staging_metadata = self.load_staging_metadata()
                     for mods in staging_metadata["mods"]:
-                        if "archive_name" in staging_metadata["mods"][mods] and staging_metadata["mods"][mods]["archive_name"] == f:
+                        if "archive_name" in staging_metadata["mods"][mods] and staging_metadata["mods"][mods]["archive_name"] == file_name:
                             installation_timestamp_value = staging_metadata["mods"][mods]["install_timestamp"]
 
                     if installation_timestamp_value:
@@ -672,7 +672,7 @@ class GameDashboard(Adw.Window):
                 install_btn = Gtk.Button(label="Reinstall" if installed else "Install", valign=Gtk.Align.CENTER)
                 if not installed: install_btn.add_css_class("suggested-action")
                 install_btn.set_cursor_from_name("pointer")
-                install_btn.connect("clicked", self.on_install_clicked, f)
+                install_btn.connect("clicked", self.on_install_clicked, file_name, display_name)
                 row.add_suffix(install_btn)
 
                 # TRASH BIN
@@ -680,7 +680,7 @@ class GameDashboard(Adw.Window):
                 b_btn = Gtk.Button(icon_name="user-trash-symbolic", valign=Gtk.Align.CENTER, css_classes=["flat"])
                 b_btn.set_cursor_from_name("pointer")
                 c_btn = Gtk.Button(label="Are you sure?", valign=Gtk.Align.CENTER, css_classes=["destructive-action"])
-                c_btn.connect("clicked", self.delete_download_package, f)
+                c_btn.connect("clicked", self.delete_download_package, file_name)
                 
                 b_btn.connect("clicked", lambda b, s=d_stack: [
                     s.set_visible_child_name("c"),
@@ -904,8 +904,8 @@ class GameDashboard(Adw.Window):
 
         # deploy the files
         for mod_file in mod_files:
-            staging_item = self.staging_path / mod_file
-            link_path = Path(dest_dir) / mod_file 
+            staging_item = self.staging_path / mod / mod_file # staging path / mod name / actual mod file
+            link_path = Path(dest_dir) / mod_file
 
             # check path exists and create if not
             Path(dest_dir).mkdir(parents=True, exist_ok=True)
@@ -942,17 +942,20 @@ class GameDashboard(Adw.Window):
 
         return False
 
-    def on_install_clicked(self, btn, filename):
-        try:
-            staging_path = self.staging_path
-            archive_full_path = os.path.join(self.downloads_path, filename)
-            
-            # 1. Determine archive type
-            filename_lower = filename.lower()
-            is_rar = filename_lower.endswith(".rar")
-            is_7z = filename_lower.endswith(".7z")
-            is_zip = filename_lower.endswith(".zip")
+    def on_install_clicked(self, btn, filename, display_name):
+        
+        # This is to ensure that all the files in staging are neatly arranged in their own folder
+        # ...and avoid loose files or files within directories to be merged together
+        staging_path = os.path.join(self.staging_path, display_name)
+        archive_full_path = os.path.join(self.downloads_path, filename)
+        
+        # Determine archive type
+        filename_lower = filename.lower()
+        is_rar = filename_lower.endswith(".rar")
+        is_7z = filename_lower.endswith(".7z")
+        is_zip = filename_lower.endswith(".zip")
 
+        try:
             # Extract and inspect based on type
             all_files = []
             if is_rar:
@@ -960,13 +963,13 @@ class GameDashboard(Adw.Window):
                     all_files = rf.namelist()
                     rf.extractall(staging_path)
             elif is_7z:
-                pass 
+                pass
+                # TODO: find a way to fix py7zr library in flatpak or use somthing else
                 # Use py7zr for .7z files
                 # with py7zr.SevenZipFile(archive_full_path, mode='r') as szf:
                     # all_files = szf.getnames()  # py7zr uses getnames()
                     # szf.extractall(path=staging_path)
             elif is_zip:
-                # Assume ZIP
                 with zipfile.ZipFile(archive_full_path, 'r') as zf:
                     all_files = zf.namelist()
                     zf.extractall(staging_path)
