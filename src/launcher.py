@@ -862,7 +862,7 @@ Feel free to contact me on Discord or Github for more help!",
         self.show_loading_and_scan()
 
     def on_game_clicked(self, gesture, n_press, x, y, game_data):
-        # 1. Get the base path from user_config
+        # Get the base path from user_config
         download_base = ""
         try:
             with open(self.user_config_path, 'r') as f:
@@ -871,7 +871,7 @@ Feel free to contact me on Discord or Github for more help!",
         except: pass
 
         if download_base:
-            # 2. Define the game-specific path
+            # Define the game-specific path
             game_download_path = os.path.join(download_base, game_data['name'])
             
             # Create the physical folder if it doesn't exist
@@ -879,7 +879,7 @@ Feel free to contact me on Discord or Github for more help!",
             if not os.path.exists(game_download_path):
                 os.makedirs(game_download_path, exist_ok=True)
 
-            # 3. Update the game-specific YAML config
+            # Update the game-specific YAML config
             config_dir = self.game_config_path
             slug = slugify(game_data['name'])
             
@@ -900,7 +900,7 @@ Feel free to contact me on Discord or Github for more help!",
                     except Exception as e:
                         print(f"Failed to update game config: {e}")
 
-        # 4. Launch Dashboard
+        # Launch Dashboard
         self.dashboard = GameDashboard(
             game_name=game_data['name'], 
             game_path=game_data['path'],
