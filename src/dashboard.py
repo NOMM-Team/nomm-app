@@ -1271,23 +1271,19 @@ class GameDashboard(Adw.Window):
                 if deployment_target["name"] == staging_metadata["mods"][mod_name]["deployment_target"]:
                     dest = deployment_target["path"]
 
-        # remove the files
-        try:
+        try: # Remove symlinks from game folders
             staging_path = self.staging_path
             dest = Path(dest)
             for item_name in mod_files:
-                # Remove symlink from game folder
                 if dest and (dest / item_name).is_symlink(): 
                     (dest / item_name).unlink()
-                
-                # Remove the mod files from staging
-                path = staging_path / item_name
-                if path.exists():
-                    if path.is_dir(): shutil.rmtree(path)
-                    else: path.unlink()
-
         except Exception as e:
-            self.show_message("Error while disabling mod: ", str(e))
+            self.show_message("Error while removing symlinks: ", str(e))
+
+        try: # Remove the mod files from staging
+            shutil.rmtree(staging_path / mod_name)
+        except Exception as e:
+            self.show_message("Error while removing mod from staging: ", str(e))
 
         # Cleanup corresponding metadata if it exists
         if staging_metadata:
