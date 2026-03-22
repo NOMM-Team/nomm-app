@@ -325,10 +325,9 @@ class GameDashboard(Adw.Window):
 
         if self.platform == "steam":
             user_data_path = os.path.dirname(os.path.dirname(game_path)) + "/compatdata/" + str(self.app_id) + "/pfx"
-        elif self.platform == "heroic-gog" or self.platform == "heroic-gog":
+        elif self.platform == "heroic-gog" or self.platform == "heroic-epic":
             #TODO: implement support for heroic user data files
             print("user data folder not supported yet for heroic installations")
-            return
         else:
             print("unrecognised platform")
             return
