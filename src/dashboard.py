@@ -734,7 +734,7 @@ class GameDashboard(Adw.Window):
                 install_btn = Gtk.Button(label="Reinstall" if installed else "Install", valign=Gtk.Align.CENTER)
                 if not installed: install_btn.add_css_class("suggested-action")
                 install_btn.set_cursor_from_name("pointer")
-                install_btn.connect("clicked", self.on_install_clicked, file_name)
+                install_btn.connect("clicked", self.on_install_clicked, file_name, display_name)
                 row.add_suffix(install_btn)
 
                 # TRASH BIN
@@ -1004,11 +1004,11 @@ class GameDashboard(Adw.Window):
 
         return False
 
-    def on_install_clicked(self, btn, filename):
+    def on_install_clicked(self, btn, filename, display_name):
         
         # This is to ensure that all the files in staging are neatly arranged in their own folder
         # ...and avoid loose files or files within directories to be merged together
-        display_name = filename.replace(".zip", "").replace(".rar", "").replace(".7z", "")
+        display_name = display_name.replace(".zip", "").replace(".rar", "").replace(".7z", "")
         staging_path = os.path.join(self.staging_path, display_name)
         archive_full_path = os.path.join(self.downloads_path, filename)
         
