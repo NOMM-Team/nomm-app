@@ -235,7 +235,7 @@ class Nomm(Adw.Application):
         GLib.timeout_add(100, lambda: status_page.add_css_class("visible"))
 
     def on_select_staging_folder_clicked(self, btn):
-        dialog = Gtk.FileDialog(title="Select Mod Downloads Folder")
+        dialog = Gtk.FileDialog(title="Select Mod Staging Folder")
         dialog.select_folder(self.win, None, self.on_staging_folder_selected_callback)
 
     def on_staging_folder_selected_callback(self, dialog, result):
