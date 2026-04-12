@@ -1234,30 +1234,34 @@ class GameDashboard(Adw.Window):
             current_staging_metadata = {}
             current_staging_metadata["mods"] = {}
         
-        # this req should only fail if all previous files were manually downloaded
-        if os.path.exists(metadata_source):
-            with open(metadata_source, 'r') as f:
-                current_download_metadata = yaml.safe_load(f)
+        try:
+            # this req should only fail if all previous files were manually downloaded
+            if os.path.exists(metadata_source):
+                with open(metadata_source, 'r') as f:
+                    current_download_metadata = yaml.safe_load(f)
+                    
+                    if "info" not in current_staging_metadata: # add basic info if it's not already there
+                        current_staging_metadata["info"] = current_download_metadata["info"]
+                    
+                    # if the mod was downloaded with metadata, add all of the specific mod information
+                    if filename in current_download_metadata["mods"]:
+                        mod_name = current_download_metadata["mods"][filename]["name"]
+                        current_staging_metadata["mods"][mod_name] = current_download_metadata["mods"][filename]
+                    else: # if the mod was manually downloaded, add basic info only
+                        mod_name = filename.replace(".zip", "").replace(".rar", "").replace(".7z", "")
+                        current_staging_metadata["mods"][mod_name] = {}
+                    # regardless, add the list of installed files
+                    current_staging_metadata["mods"][mod_name]["mod_files"] = extracted_roots
+                    current_staging_metadata["mods"][mod_name]["status"] = "disabled"
+                    current_staging_metadata["mods"][mod_name]["archive_name"] = filename
+                    current_staging_metadata["mods"][mod_name]["install_timestamp"] = datetime.now().strftime("%Y-%m-%d %H:%M")
+                    current_staging_metadata["mods"][mod_name]["deployment_target"] = deployment_target["name"]
                 
-                if "info" not in current_staging_metadata: # add basic info if it's not already there
-                    current_staging_metadata["info"] = current_download_metadata["info"]
-                
-                # if the mod was downloaded with metadata, add all of the specific mod information
-                if filename in current_download_metadata["mods"]:
-                    mod_name = current_download_metadata["mods"][filename]["name"]
-                    current_staging_metadata["mods"][mod_name] = current_download_metadata["mods"][filename]
-                else: # if the mod was manually downloaded, add basic info only
-                    mod_name = filename.replace(".zip", "").replace(".rar", "").replace(".7z", "")
-                    current_staging_metadata["mods"][mod_name] = {}
-                # regardless, add the list of installed files
-                current_staging_metadata["mods"][mod_name]["mod_files"] = extracted_roots
-                current_staging_metadata["mods"][mod_name]["status"] = "disabled"
-                current_staging_metadata["mods"][mod_name]["archive_name"] = filename
-                current_staging_metadata["mods"][mod_name]["install_timestamp"] = datetime.now().strftime("%Y-%m-%d %H:%M")
-                current_staging_metadata["mods"][mod_name]["deployment_target"] = deployment_target["name"]
-            
-            # write the updated staging metadata file
-            self.write_metadata(current_staging_metadata, self.staging_metadata_path)
+                # write the updated staging metadata file
+                self.write_metadata(current_staging_metadata, self.staging_metadata_path)
+
+        except Exception as e:
+            self.show_message("Error", f"Installation failed: There was an issue creating/updating the metadata file: {e}")
 
         self.create_downloads_page()
         self.create_mods_page()
