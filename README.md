@@ -124,7 +124,7 @@ Phase 2 Development Progress:
 - [x] Add mod update checker
 - [ ] Handle more complex FOMOD, and handle them cleanly
 - [ ] Let user skip launcher and go straight to game
-- [ ] Figure out how to create a flatpak for the app
+- [x] Figure out how to create a flatpak for the app
 - [ ] Add language-specific strings
 - [ ] Think about how to let user define load orders
 - [ ] Let user define load orders
