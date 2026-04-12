@@ -6,6 +6,6 @@ Comment=Modern Linux-First Mod Manager
 Exec=nomm %u
 Icon=com.nomm.Nomm
 Terminal=false
-Categories=Game;Utility;
+Categories=Utility;Game;
 StartupWMClass=nomm
 MimeType=x-scheme-handler/nxm;
