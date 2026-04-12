@@ -7,9 +7,13 @@
 
 ## The project
 
-This may or may not eventually become a stupid simple, super clean native mod manager for linux.
-The goal here is to keep the setup really simple for idiots like me who don't need multiple profiles and all that jazz.
+NOMM is a stupid simple, super clean "native" (as in it runs on Linux without having to use translation tools...) mod manager for Linux.
+The goal here is to keep the setup really simple for idiots like me who don't need complex features and all that jazz.
 Just a few clicks, a clean, modern interface, and you're done :)
+
+Don't come here expecting it to manage mods for something like Skyrim. There are specific tools for that (see [NaK](https://github.com/SulfurNitride/NaK) or [Jackify](https://github.com/Omni-guides/Jackify)).
+
+Instead, think of NOMM as more of a general purpose tool for most games that just need you to point to a directory and extract some zip files.
 
 > [!WARNING]
 > This project is partially made with the help of Gemini (especially on the GUI side of things).
