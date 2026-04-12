@@ -40,34 +40,58 @@ For instance, if you would want to add support for Stadew Valley, you would crea
 
 In that yaml you will need to define some basic information for it to be recognised:
 
+### Defining basic information
+- Name
 ```yaml
 name: 'Warhammer 40,000: Darktide' # the name of the game, with any symbols, spaces and whatnot kept intact
-steamappid: 0000000 # the steam app id, you can find this on: https://steamdb.info/
-mods_path: mods/ # the path where the mods need to be installed when they are enabled
 ```
-
-> [!NOTE]
-> `mods_path` can also contain a list of paths, in which case the app will ask the user in which path to install each mod they install.
-
+- Steam App ID
 ```yaml
-gogstoreids:
-- 1207666893 # the gog store ids, this has to be a list (but can contain only a single entry if needed) in case multiple ids correspond to the same game i.e. "The Witcher 3" and "the Witcher 3 Complete Edition"
+steamappid: 0000000 # the steam app id, you can find this on: https://steamdb.info/
 ```
-
-> [!NOTE]
-> You should only add `gogstoreids` if the game is actually on the GOG store.
-
+- Nexus Mods ID
 ```yaml
 nexus_game_id: "warhammer40kdarktide" # the nexus game key - used for nexus downloads (generally the game name with no symbols and all attached, but please check before submitting)
 ```
-
-
-You can additionally define some extra stuff for added features:
+- GOG Store ID(s)
+```yaml
+gogstoreids:
+- 1207666893 # the gog store ids, this has to be a list in case multiple IDs correspond to the same game i.e. "The Witcher 3" and "the Witcher 3 Complete Edition"
+```
+> [!NOTE]
+> You can remove `gogstoreids` if the game is not on the GOG store.
+- Load order
 ```yaml
 load_order_path: mods/mod_load_order.txt # for games with a text-editable load order, you can specify a path and a button will appear in the app to edit it directly.
+```
 
+### Defining where mods should be enabled in the game folders
+
+`mods_path` can be defined in two ways:
+- "Legacy" (This works in all versions of NOMM)
+```yaml
+mods_path: mods/ # the path where the mods need to be installed when they are enabled
+```
+- "Multiple" (only available in Nomm versions > 0.6.0)
+```yaml
+mods_path: 
+- path: "{user_data_path}/drive_c/users/steamuser/AppData/Local/Larian Studios/Baldur's Gate 3/Mods"
+  name: Default
+  description: "Used for most mods, the in game mod manager included"
+- path: "{game_path}/"
+  name: Native
+  description: "Used for native mods that require the Native mod loader, such as the 'Native Camera Tweaks' mod."
+```
+
+> [!NOTE]
+> `mods_path` can contain as many paths as you want, but the goal here is not to add a path for a single mod. If there is only *one* mod using that path, chances are it is a library mod that should be installed with the utilities section below.
+
+### Essential utilities
+
+Nomm lets you define some "essential utilities" that will be used to mod a game. Think libraries or modding tools that have their own needs in terms of installation complexity that don't fit with other "standard" mods and generally require additional actions to get them set up.
+```yaml
 essential-utilities: # this lets you define things such as mod loaders or essential utilities
-  darktide-mod-loader: # you can have multiple ones, each one needs its own key
+  darktide-mod-loader: # you can have multiple ones, each one needs its own unique key
     name: Darktide Mod Loader # the name of the tool
     creator: Talon-d # the creator of the tool
     creator-link: https://github.com/talon-d # a link to the creator's page, portal, social, whatever
