@@ -12,10 +12,10 @@ The goal here is to keep the setup really simple for idiots like me who don't ne
 Just a few clicks, a clean, modern interface, and you're done :)
 
 > [!WARNING]
-> This project is partially made with the help of Gemini.
+> This project is partially made with the help of Gemini (especially on the GUI side of things).
 > 
-> If you hate AI, that makes two of us 🙂
-> _However_, I would never have been able to make something like this without it.
+> If you hate AI, that makes two of us, _however_, I would never have been able to make something like this without it (simply because of the amount of work and research it would have required).
+> <br>I want to be clear that even if coding is not my job, I _do_ have a computer science background and understand all of the code that Gemini has created. 
 
 ### My Guiding Principles
 
