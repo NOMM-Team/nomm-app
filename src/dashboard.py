@@ -1,7 +1,16 @@
-#Global imports
-import os, yaml, shutil, zipfile, webbrowser, re, requests, fomod_handler, gi, rarfile
+# Global imports
+import os
+import yaml
+import shutil
+import zipfile
+import webbrowser
+import re
+import requests
+import fomod_handler
+import gi
+import rarfile
 
-#Specific imports
+# Specific imports
 from gi.repository import Gtk, Adw, Gdk, Gio, GLib, Pango
 from pathlib import Path
 from datetime import datetime
