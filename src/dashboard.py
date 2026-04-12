@@ -1368,6 +1368,8 @@ class GameDashboard(Adw.Window):
         Gtk.StyleContext.add_provider_for_display(Gdk.Display.get_default(), provider, 800)
 
     def show_message(self, h, b):
+        print(f"Error message displayed to user")
+        print(b)
         d = Adw.MessageDialog(transient_for=self, heading=h, body=b)
         d.add_response("ok", "OK"); d.connect("response", lambda d, r: d.close()); d.present()
 
