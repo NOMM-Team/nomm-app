@@ -245,48 +245,15 @@ class Nomm(Adw.Application):
                 path = selected_file.get_path()
                 # Save path, then move to Protocol screen
                 self.temp_config["staging_path"] = path
-                self.show_protocol_choice_screen()
+                self.show_nexus_api_key_screen()
         except Exception: pass
 
-    def show_protocol_choice_screen(self):
-        """Step 3: NXM Protocol Choice"""
-        self.remove_stack_child("protocol")
-        box = Adw.StatusPage(
-            title="Handle Nexus Links?",
-            description="Would you like NOMM to handle 'nxm://' links from Nexus Mods?",
-            icon_name="network-transmit-receive-symbolic"
-        )
-        
-        btn_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12, halign=Gtk.Align.CENTER)
-        btn_box.set_margin_top(24)
-
-        yes_btn = Gtk.Button(label="Yes, Register Nomm", css_classes=["suggested-action"])
-        yes_btn.connect("clicked", self.on_protocol_choice, True)
-        
-        no_btn = Gtk.Button(label="No, Maybe Later")
-        no_btn.connect("clicked", self.on_protocol_choice, False)
-
-        btn_box.append(yes_btn)
-        btn_box.append(no_btn)
-        box.set_child(btn_box)
-
-        self.stack.add_named(box, "protocol")
-        self.stack.set_visible_child_name("protocol")
-
-    def on_protocol_choice(self, btn, choice):
-        if choice:
-            self.register_nomm_nxm_protocol()
-            self.show_api_key_screen()
-        else:
-            # Skip API key and just finish
-            self.finalize_setup("")
-
-    def show_api_key_screen(self):
+    def show_nexus_api_key_screen(self):
         """Step 4: Nexus API Key Entry"""
         self.remove_stack_child("api_key")
         status_page = Adw.StatusPage(
             title="Nexus API Key",
-            description="Enter your API Key from Nexus Mods (Site Preferences > API Keys)",
+            description="If you want to download mods from Nexus Mods, enter your API Key (Site Preferences > API Keys > scroll all the way down)",
             icon_name="dialog-password-symbolic"
         )
 
@@ -946,32 +913,6 @@ Feel free to contact me on Discord or Github for more help!",
             paths = download_heroic_assets(app_id, platform)
             return paths["art_square"]
         return None
-
-    def register_nomm_nxm_protocol(self):
-        """Internalized protocol registration helper"""
-        app_path = os.path.abspath(sys.argv[0])
-        icon_path = os.path.join(self.assets_path, "nomm.png")
-        desktop_file_content = f"""[Desktop Entry]
-Name=Nomm
-Exec=python3 {app_path} %u
-Type=Application
-Terminal=false
-Icon={icon_path}
-MimeType=x-scheme-handler/nxm;
-"""
-        desktop_dir = os.path.expanduser("~/.local/share/applications")
-        desktop_path = os.path.join(desktop_dir, "nomm.desktop")
-        os.makedirs(desktop_dir, exist_ok=True)
-
-        try:
-            with open(desktop_path, "w") as f:
-                f.write(desktop_file_content)
-            
-            subprocess.run(["update-desktop-database", desktop_dir], check=True)
-            subprocess.run(["xdg-settings", "set", "default-url-scheme-handler", "nxm", "nomm.desktop"], check=True)
-            print("Protocol registered successfully!")
-        except Exception as e:
-            print(f"Failed to register protocol: {e}")
 
 def create_success_file():
     # 'os.path.expanduser' handles the "~" correctly for any user
