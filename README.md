@@ -1,4 +1,4 @@
-[![Watch the video](https://i.imgur.com/N0jQhdX.png)](https://www.youtube.com/watch?v=3UWBQxQY9kk)
+[![Watch the video](https://i.imgur.com/Qdn83As.png)](https://www.youtube.com/watch?v=3UWBQxQY9kk)
 <div align="center">
   <a href="https://discord.gg/WFRePSjEQY"><img src="https://img.shields.io/discord/1472479817512521772?color=0098DB&label=Discord&logo=discord&logoColor=0098DB"></a>
 </div>
