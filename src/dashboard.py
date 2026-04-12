@@ -1017,6 +1017,10 @@ class GameDashboard(Adw.Window):
         is_7z = filename_lower.endswith(".7z")
         is_zip = filename_lower.endswith(".zip")
 
+        if not self.deployment_targets:
+            self.show_message("Error", f"Installation failed: Your configuration YAML is missing a mods_path. Please check the readme on github for information on how to configure the yaml file.")
+            return
+
         try:
             # Extract and inspect based on type
             all_files = []
@@ -1206,7 +1210,7 @@ class GameDashboard(Adw.Window):
         def on_path_resolved(deployment_target):
             if not deployment_target:
                 print("Installation cancelled by user.")
-                return 
+                return
             
             # Pass the control to the finalisation logic
             self.finalise_installation(filename, extracted_roots, deployment_target)
