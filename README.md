@@ -135,17 +135,29 @@ You may install and run the flatpak via command line:
 
 From now on when you want to launch it you can just look for it in your start menu (by typing "nomm")
 
-## "Building"
+## Building
+
+### Dependencies
 
 The app is built with:
-- [Python](python.org) (3.14)
-- [GTK](https://www.gtk.org/) (>4.0)
-- [Libadwaita](https://gnome.pages.gitlab.gnome.org/libadwaita/)
-- [Requests](https://pypi.org/project/requests/)
-- [Unrar](https://pypi.org/project/unrar/)
+- [Python](python.org) (3.14) -> ...Python...
+- [GTK](https://www.gtk.org/) (>4.0) -> UI framework
+- [Libadwaita](https://gnome.pages.gitlab.gnome.org/libadwaita/) -> UI framework
+- [Requests](https://pypi.org/project/requests/) -> requests to nexusmods, gog, epic, etc.
+- [Unrar](https://pypi.org/project/unrar/) -> extraction of mods in rar format
+- [vdf](https://github.com/ValvePython/vdf) -> read steam config files
+- [PyYAML](https://pyyaml.org/) -> read and write yaml files
 
-This means you should be able to run it directly on most linux distros without too many problems via the console by typing:
-`python3 ./launcher.py`
-Whilst in the path where the code is.
+### Prerequisites
 
+- Obviously to build a flatpak you need to have a distro with flatpak support (most of them do) -> this should normally include the `flatpak-builder` utility
+- You need to download the [flatpak-pip-generator](https://github.com/flatpak/flatpak-builder-tools/blob/master/pip/flatpak-pip-generator) tool
 
+### Building the app
+
+1. Make the `build.sh` file executable (if you don't know how to do this see [here](https://stackoverflow.com/questions/817060/creating-executable-files-in-linux))
+2. Place your `flatpak-pip-generator.py` file at the root of the app's directory
+3. Run `./build.sh`
+4. Wait for flatpak to be built
+5. You should now have a `nomm.flatpak` file in the directory
+6. To install your newly obtained flatpak, follow the steps in the "[Installing/Running](https://github.com/Allexio/nomm?tab=readme-ov-file#installingrunning)" section above
