@@ -282,5 +282,3 @@ def download_nexus_mod(nxm_link: str, headers: dict, final_download_dir: str, ne
     except Exception as e:
         print(f"An error occurred: {e}")
         return False
-
-#handle_nexus_link("nxm://cyberpunk2077/collections/jiwwyn/revisions/70")
