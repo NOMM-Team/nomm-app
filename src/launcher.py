@@ -702,7 +702,7 @@ Feel free to contact me on Discord or Github for more help!"),
         settings_win.set_content(content)
 
         # --- STORAGE SECTION ---
-        storage_group = Adw.PreferencesGroup(title="Storage", description="Configure where NOMM manages your files.")
+        storage_group = Adw.PreferencesGroup(title=_("Storage"), description=_("Configure where NOMM manages your files."))
         content.append(storage_group)
 
         # 1. Downloads Path Row
@@ -728,7 +728,7 @@ Feel free to contact me on Discord or Github for more help!"),
         storage_group.add(staging_row)
 
         # --- NEXUS SECTION ---
-        nexus_group = Adw.PreferencesGroup(title="Nexus Mods Integration")
+        nexus_group = Adw.PreferencesGroup(title=_("Nexus Mods Integration"))
         content.append(nexus_group)
 
         api_entry = Gtk.PasswordEntry(hexpand=True, valign=Gtk.Align.CENTER)
@@ -820,7 +820,7 @@ Feel free to contact me on Discord or Github for more help!"),
         # Separator and Close
         content.append(Gtk.Separator(margin_top=10))
         
-        save_btn = Gtk.Button(label="Close", css_classes=["suggested-action"], margin_top=12)
+        save_btn = Gtk.Button(label=_("Close"), css_classes=["suggested-action"], margin_top=12)
         save_btn.connect("clicked", lambda b: (self.update_config('nexus_api_key', api_entry.get_text()), settings_win.destroy()))
         content.append(save_btn)
 
