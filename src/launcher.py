@@ -24,13 +24,13 @@ from gi.repository import Gtk, Adw, GLib, Gdk, Gio, GdkPixbuf
 from dashboard import GameDashboard
 from utils import download_heroic_assets
 from nxm_handler import handle_nexus_link
+APP_NAME = 'com.nomm.Nomm'
 
-# define stuff for localisation
-APP_NAME = "com.nomm.Nomm"
-LOCALE_DIR = "/app/share/locale" # Standard Flatpak locale path
-gettext.bindtextdomain(APP_NAME, LOCALE_DIR)
-gettext.textdomain(APP_NAME)
-_ = gettext.gettext
+# Localisation setup
+# Initialize the translation system
+translation_system = gettext.translation(APP_NAME, localedir='/app/share/locale', fallback=True)
+# Install the '_' function globally so all other imported files can see it
+translation_system.install()
 
 def slugify(text):
     return re.sub(r'[^a-z0-9]', '', text.lower())
