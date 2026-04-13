@@ -114,7 +114,7 @@ class GameDashboard(Adw.Window):
 
         # 2. DOWNLOADS TAB OVERLAY
         dl_tab_overlay = Gtk.Overlay()
-        self.dl_tab_btn = Gtk.ToggleButton(label="DOWNLOADS", css_classes=["overlay-tab"])
+        self.dl_tab_btn = Gtk.ToggleButton(label=_("DOWNLOADS"), css_classes=["overlay-tab"])
         self.dl_tab_btn.set_cursor_from_name("pointer")
         
         dl_badge_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=4)
@@ -164,12 +164,12 @@ class GameDashboard(Adw.Window):
         self.update_indicators()
 
         footer = Gtk.CenterBox(margin_start=40, margin_end=40, margin_top=20, margin_bottom=40)
-        back_btn = Gtk.Button(label="Change Game", css_classes=["flat"])
+        back_btn = Gtk.Button(label=_("Change Game"), css_classes=["flat"])
         back_btn.set_cursor_from_name("pointer")
         back_btn.connect("clicked", self.on_back_clicked)
         footer.set_start_widget(back_btn)
         
-        launch_btn = Gtk.Button(label="Launch Game", css_classes=["suggested-action"])
+        launch_btn = Gtk.Button(label=_("Launch Game"), css_classes=["suggested-action"])
         launch_btn.set_size_request(240, 64)
         launch_btn.set_cursor_from_name("pointer")
         launch_btn.connect("clicked", self.on_launch_clicked)
@@ -186,7 +186,10 @@ class GameDashboard(Adw.Window):
             if os.path.exists(zip_path):
                 os.remove(zip_path)
         except Exception as e:
-            self.show_message("Error", f"Could not delete file: {e}")
+            self.show_message(
+                _("Error"),
+                _("Could not delete the file: {}").format(e)
+            )
 
         try:
             # Delete Metadata (if it exists)
@@ -196,7 +199,10 @@ class GameDashboard(Adw.Window):
                     del downloads_metadata["mods"][file_name]
                     self.write_metadata(downloads_metadata, self.downloads_metadata_path)
         except Exception as e:
-            self.show_message("Error", f"Could not delete metadata for file: {e}")
+            self.show_message(
+                _("Error"),
+                _("Could not delete metadata for file: {}").format(e)
+            )
 
         self.create_downloads_page()
         self.update_indicators()
@@ -491,7 +497,7 @@ class GameDashboard(Adw.Window):
         
         staging_metadata = self.load_staging_metadata()
         if not staging_metadata:
-            container.append(Gtk.Label(label="The staging metadata file could not be found, did you install any mods?", css_classes=["dim-label"]))
+            container.append(Gtk.Label(label=_("The staging metadata file could not be found, did you install any mods?"), css_classes=["dim-label"]))
             staging_metadata = {}
             staging_metadata["mods"] = {}
 
@@ -543,8 +549,13 @@ class GameDashboard(Adw.Window):
                 missing_file_badge.add_css_class("warning-badge")
                 missing_file_badge.set_valign(Gtk.Align.CENTER)
                 missing_file_badge.set_margin_end(row_element_margin)
-                missing_file_badge.set_tooltip_text("Missing Files:\n"+"\n".join(missing_files))
-                missing_file_badge.append(Gtk.Label(label=f"Missing {len(missing_files)} file(s)"))
+                label_text = ngettext(
+                    "Missing {} file.",
+                    "Missing {} files.",
+                    len(missing_files)
+                ).format(len(missing_files))
+                missing_file_badge.set_tooltip_text(_("Missing Files:")+"\n\n".join(missing_files))
+                missing_file_badge.append(Gtk.Label(label=label_text))
                 row.add_prefix(missing_file_badge)
 
             # Prefix: Conflicts
@@ -560,7 +571,12 @@ class GameDashboard(Adw.Window):
                 conflicts_badge.add_css_class("warning-badge")
                 conflicts_badge.set_valign(Gtk.Align.CENTER)
                 conflicts_badge.set_margin_end(row_element_margin)
-                conflicts_badge.set_tooltip_text("Conflicting mods:\n"+"\n".join(conflicting_mods))
+                label_text = ngettext(
+                    "Conflicting mod: {}",
+                    "Conflicting mods: {}",
+                    len(conflicting_mods)
+                ).format("\n".join(conflicting_mods))
+                conflicts_badge.set_tooltip_text(label_text)
                 conflict_icon = Gtk.Image.new_from_icon_name("vcs-merge-request-symbolic")
                 conflict_icon.set_pixel_size(18)
                 conflicts_badge.append(conflict_icon)
@@ -617,12 +633,14 @@ class GameDashboard(Adw.Window):
                 timestamp_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=2, valign=Gtk.Align.CENTER, margin_end=15)
                 # Enabled Timestamp
                 if "enabled_timestamp" in mod_metadata:
-                    enabled_timestamp = Gtk.Label(label=f"Enabled: {mod_metadata["enabled_timestamp"]}", xalign=1, css_classes=["dim-label", "caption"])
+                    enabled_timestamp_label = _("Enabled: {}").format(mod_metadata["enabled_timestamp"])
+                    enabled_timestamp = Gtk.Label(label=enabled_timestamp_label, xalign=1, css_classes=["dim-label", "caption"])
                     timestamp_box.append(enabled_timestamp)
 
                 # Installed Timestamp
                 if "install_timestamp" in mod_metadata:
-                    installed_timestamp = Gtk.Label(label=f"Installed: {mod_metadata["install_timestamp"]}", xalign=1, css_classes=["dim-label", "caption"])
+                    installed_timestamp_label = _("Installed: {}").format(mod_metadata["install_timestamp"])
+                    installed_timestamp = Gtk.Label(label=installed_timestamp_label, xalign=1, css_classes=["dim-label", "caption"])
                     timestamp_box.append(installed_timestamp)
                 
                 row.add_suffix(timestamp_box)
@@ -630,7 +648,7 @@ class GameDashboard(Adw.Window):
             # Trash Bin Stack
             u_stack = Gtk.Stack(transition_type=Gtk.StackTransitionType.CROSSFADE, hhomogeneous=False, interpolate_size=True)
             bin_btn = Gtk.Button(icon_name="user-trash-symbolic", valign=Gtk.Align.CENTER, css_classes=["flat"])
-            conf_del_btn = Gtk.Button(label="Are you sure?", valign=Gtk.Align.CENTER, css_classes=["destructive-action"])
+            conf_del_btn = Gtk.Button(label=_("Are you sure?"), valign=Gtk.Align.CENTER, css_classes=["destructive-action"])
             conf_del_btn.connect("clicked", self.on_uninstall_item, mod_files, mod)
             
             bin_btn.connect("clicked", lambda b, s=u_stack: [
@@ -720,7 +738,7 @@ class GameDashboard(Adw.Window):
                 ts_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=2, valign=Gtk.Align.CENTER, margin_end=15)
                 
                 # Download Timestamp
-                dl_ts_text = f"Downloaded: {self.get_download_timestamp(file_name)}"
+                dl_ts_text = _("Downloaded: {}").format(self.get_download_timestamp(file_name))
                 dl_ts = Gtk.Label(label=dl_ts_text, xalign=1, css_classes=["dim-label", "caption"])
                 ts_box.append(dl_ts)
 
@@ -733,13 +751,14 @@ class GameDashboard(Adw.Window):
                             installation_timestamp_value = staging_metadata["mods"][mods]["install_timestamp"]
 
                     if installation_timestamp_value:
+                        installation_ts_text = _("Installed: {}").format(installation_timestamp_value)
                         installation_timestamp_badge = Gtk.Label(label=f"Installed: {installation_timestamp_value}", xalign=1, css_classes=["dim-label", "caption"])
                         ts_box.append(installation_timestamp_badge)
                 
                 row.add_suffix(ts_box)
 
                 # --- BUTTONS ---
-                install_btn = Gtk.Button(label="Reinstall" if installed else "Install", valign=Gtk.Align.CENTER)
+                install_btn = Gtk.Button(label=_("Reinstall") if installed else _("Install"), valign=Gtk.Align.CENTER)
                 if not installed: install_btn.add_css_class("suggested-action")
                 install_btn.set_cursor_from_name("pointer")
                 install_btn.connect("clicked", self.on_install_clicked, file_name, display_name)
@@ -749,7 +768,7 @@ class GameDashboard(Adw.Window):
                 d_stack = Gtk.Stack(transition_type=Gtk.StackTransitionType.CROSSFADE, hhomogeneous=False, interpolate_size=True)
                 b_btn = Gtk.Button(icon_name="user-trash-symbolic", valign=Gtk.Align.CENTER, css_classes=["flat"])
                 b_btn.set_cursor_from_name("pointer")
-                c_btn = Gtk.Button(label="Are you sure?", valign=Gtk.Align.CENTER, css_classes=["destructive-action"])
+                c_btn = Gtk.Button(label=_("Are you sure?"), valign=Gtk.Align.CENTER, css_classes=["destructive-action"])
                 c_btn.connect("clicked", self.delete_download_package, file_name)
                 
                 b_btn.connect("clicked", lambda b, s=d_stack: [
@@ -774,7 +793,7 @@ class GameDashboard(Adw.Window):
         utilities_cfg = self.game_config.get("essential-utilities", {})
         
         if not utilities_cfg or not isinstance(utilities_cfg, dict):
-            container.append(Gtk.Label(label="No utilities defined.", css_classes=["dim-label"]))
+            container.append(Gtk.Label(label=_("No utilities defined."), css_classes=["dim-label"]))
         else:
             list_box = Gtk.ListBox(css_classes=["boxed-list"])
             list_box.set_selection_mode(Gtk.SelectionMode.NONE)
@@ -829,10 +848,10 @@ class GameDashboard(Adw.Window):
 
                 stack = Gtk.Stack(transition_type=Gtk.StackTransitionType.CROSSFADE)
                 
-                dl_btn = Gtk.Button(label="Download", css_classes=["suggested-action"], valign=Gtk.Align.CENTER)
+                dl_btn = Gtk.Button(label=_("Download"), css_classes=["suggested-action"], valign=Gtk.Align.CENTER)
                 dl_btn.connect("clicked", self.on_utility_download_clicked, util, stack)
                 
-                inst_btn = Gtk.Button(label="Reinstall" if is_installed else "Install", valign=Gtk.Align.CENTER)
+                inst_btn = Gtk.Button(label=_("Reinstall") if is_installed else "Install", valign=Gtk.Align.CENTER)
                 if not is_installed: inst_btn.add_css_class("suggested-action")
                 inst_btn.connect("clicked", self.on_utility_install_clicked, util)
                 
@@ -851,7 +870,7 @@ class GameDashboard(Adw.Window):
         load_order_rel = self.game_config.get("load_order_path")
         if load_order_rel:
             btn_container = Gtk.CenterBox(margin_top=20, margin_bottom=20)
-            load_order_btn = Gtk.Button(label="Edit Load Order", css_classes=["pill"])
+            load_order_btn = Gtk.Button(label=_("Edit Load Order"), css_classes=["pill"])
             load_order_btn.set_size_request(200, 40)
             load_order_btn.set_cursor_from_name("pointer")
             load_order_btn.connect("clicked", self.on_open_load_order)
@@ -871,7 +890,10 @@ class GameDashboard(Adw.Window):
             # file:// protocol usually triggers the default text editor for text files
             webbrowser.open(f"file://{full_path.resolve()}")
         else:
-            self.show_message("Error", f"Load order file not found at:\n{full_path}")
+            self.show_message(
+                _("Error"), 
+                _("Load order file not found at:\n {}").format(full_path)
+            )
 
     def on_utility_download_clicked(self, btn, util, stack):
         source_url = util.get("source")
@@ -896,15 +918,15 @@ class GameDashboard(Adw.Window):
         threading.Thread(target=download_thread, daemon=True).start()
 
     def on_utility_install_clicked(self, btn, util):
-        msg = "Warning: This process may be destructive to existing game files. Please ensure you have backed up your game directory before proceeding."
+        msg = _("Warning: This process may be destructive to existing game files. Please ensure you have backed up your game directory before proceeding.")
         
         dialog = Adw.MessageDialog(
             transient_for=self,
-            heading="Confirm Installation",
+            heading=_("Confirm Installation"),
             body=msg
         )
-        dialog.add_response("cancel", "Cancel")
-        dialog.add_response("install", "Install Anyway")
+        dialog.add_response("cancel", _("Cancel"))
+        dialog.add_response("install", _("Install Anyway"))
         dialog.set_response_appearance("install", Adw.ResponseAppearance.DESTRUCTIVE)
         
         def on_response(d, response_id):
@@ -953,9 +975,12 @@ class GameDashboard(Adw.Window):
                 import subprocess
                 subprocess.run(cmd, shell=True, cwd=game_root)
 
-            self.show_message("Success", f"{util.get('name')} has been installed.")
+            self.show_message(
+                _("Success"),
+                _("{} has been installed.").format(util.get('name'))
+            )
         except Exception as e:
-            self.show_message("Installation Error", str(e))
+            self.show_message(_("Installation Error"), str(e))
 
     def on_mod_toggled(self, switch, state, mod_files: list, mod: str):
         '''User clicked the toggle on the mods page: need to either enable or disable the mod'''
@@ -986,7 +1011,7 @@ class GameDashboard(Adw.Window):
                         os.symlink(staging_item, link_path)
                         if staging_metadata:
                             staging_metadata["mods"][mod]["status"] = "enabled"
-                            staging_metadata["mods"][mod]["enabled_timestamp"] = datetime.now().strftime("%Y-%m-%d %H:%M")
+                            staging_metadata["mods"][mod]["enabled_timestamp"] = datetime.now().strftime("%c")
 
                     except Exception as e:
                         print(f"Failed to enable mod {e}")
@@ -1027,7 +1052,7 @@ class GameDashboard(Adw.Window):
         is_zip = filename_lower.endswith(".zip")
 
         if not self.deployment_targets:
-            self.show_message("Error", f"Installation failed: Your configuration YAML is missing a mods_path. Please check the readme on github for information on how to configure the yaml file.")
+            self.show_message(_("Error"), _("Installation failed: Your configuration YAML is missing a mods_path. Please check the readme on github for information on how to configure the yaml file."))
             return
 
         try:
@@ -1126,7 +1151,7 @@ class GameDashboard(Adw.Window):
         deployment_targets = self.deployment_targets
 
         dialog = Gtk.Dialog(
-            title="Select Deployment Path",
+            title=_("Select Deployment Path"),
             transient_for=self,
             modal=True,
             decorated=False,
@@ -1144,7 +1169,7 @@ class GameDashboard(Adw.Window):
         content_area.set_margin_start(15)
         content_area.set_margin_end(15)
 
-        header = Gtk.Label(label="Multiple deployment locations available:")
+        header = Gtk.Label(label=_("Multiple deployment locations available:"))
         header.set_halign(Gtk.Align.START)
         header.add_css_class("heading") 
         content_area.append(header)
@@ -1263,7 +1288,7 @@ class GameDashboard(Adw.Window):
                     current_staging_metadata["mods"][mod_name]["mod_files"] = extracted_roots
                     current_staging_metadata["mods"][mod_name]["status"] = "disabled"
                     current_staging_metadata["mods"][mod_name]["archive_name"] = filename
-                    current_staging_metadata["mods"][mod_name]["install_timestamp"] = datetime.now().strftime("%Y-%m-%d %H:%M")
+                    current_staging_metadata["mods"][mod_name]["install_timestamp"] = datetime.now().strftime("%c")
                     current_staging_metadata["mods"][mod_name]["deployment_target"] = deployment_target["name"]
                 
                 # write the updated staging metadata file
@@ -1294,12 +1319,12 @@ class GameDashboard(Adw.Window):
                 if dest and (dest / item_name).is_symlink(): 
                     (dest / item_name).unlink()
         except Exception as e:
-            self.show_message("Error while removing symlinks: ", str(e))
+            self.show_message(_("Error while removing symlinks: "), str(e))
 
         try: # Remove the mod files from staging
             shutil.rmtree(staging_path / mod_name)
         except Exception as e:
-            self.show_message("Error while removing mod from staging: ", str(e))
+            self.show_message(_("Error while removing mod from staging: "), str(e))
 
         # Cleanup corresponding metadata if it exists
         if staging_metadata:
@@ -1332,7 +1357,7 @@ class GameDashboard(Adw.Window):
         return False
 
     def get_download_timestamp(self, f):
-        return datetime.fromtimestamp(os.path.getmtime(os.path.join(self.downloads_path, f))).strftime('%Y-%m-%d %H:%M')
+        return datetime.fromtimestamp(os.path.getmtime(os.path.join(self.downloads_path, f))).strftime('%c')
 
     def setup_folder_monitor(self):
         f = Gio.File.new_for_path(self.downloads_path)
@@ -1399,9 +1424,5 @@ class GameDashboard(Adw.Window):
                 webbrowser.open(f"heroic://launch/gog/{self.app_id}")
             elif self.platform == "heroic-epic":
                 webbrowser.open(f"heroic://launch/epic/{self.app_id}")
-
-
-
-
 
     def launch(self): self.present()
