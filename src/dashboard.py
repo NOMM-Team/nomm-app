@@ -215,7 +215,7 @@ class GameDashboard(Adw.Window):
 
     def write_metadata(self, metadata, metadata_path):
         if not os.path.exists(metadata_path):
-            return
+            print(f"Creating new metadata file : ", metadata_path)
         with open(metadata_path, 'w') as f:
             return yaml.safe_dump(metadata, f)
 
