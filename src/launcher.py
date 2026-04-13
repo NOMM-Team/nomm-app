@@ -922,22 +922,10 @@ Feel free to contact me on Discord or Github for more help!"),
             return paths["art_square"]
         return None
 
-def create_success_file():
-    # 'os.path.expanduser' handles the "~" correctly for any user
-    home_path = os.path.expanduser("~/success.txt")
-    
-    try:
-        with open(home_path, "w") as f:
-            f.write("Operation completed successfully!")
-        print(f"File created at: {home_path}")
-    except Exception as e:
-        print(f"Failed to create file: {e}")
-
 if __name__ == "__main__":
     if len(sys.argv) > 1 and sys.argv[1].startswith("nxm://"):
         nxm_link = sys.argv[1]
         print(f"nomm is processing: {nxm_link}")
-        create_success_file()
         handle_nexus_link(nxm_link)
     else:
         print("Launching app")
