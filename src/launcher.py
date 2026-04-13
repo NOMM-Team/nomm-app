@@ -12,6 +12,8 @@ import subprocess
 import json
 import requests
 import vdf
+import gettext
+import locale
 
 # force specific gtk version before GTK is called
 gi.require_version('Gtk', '4.0')
@@ -23,6 +25,12 @@ from dashboard import GameDashboard
 from utils import download_heroic_assets
 from nxm_handler import handle_nexus_link
 
+# define stuff for localisation
+APP_NAME = "com.nomm.Nomm"
+LOCALE_DIR = "/app/share/locale" # Standard Flatpak locale path
+gettext.bindtextdomain(APP_NAME, LOCALE_DIR)
+gettext.textdomain(APP_NAME)
+_ = gettext.gettext
 
 def slugify(text):
     return re.sub(r'[^a-z0-9]', '', text.lower())
@@ -30,7 +38,7 @@ def slugify(text):
 class Nomm(Adw.Application):
     def __init__(self, **kwargs):
         # 1. Update Application ID to match your protocol registration
-        super().__init__(application_id='com.nomm.Nomm', **kwargs)
+        super().__init__(application_id=APP_NAME, **kwargs)
         self.matches = []
         self.steam_base = self.get_steam_base_dir()
 
@@ -128,8 +136,8 @@ class Nomm(Adw.Application):
         """Step 0: Intro page & "Let's go" button"""
         self.remove_stack_child("setup")
         status_page = Adw.StatusPage(
-            title="Welcome to the Native Open Mod Manager (NOMM) app!",
-            description="This app is still in early development, so expect some bugs and missing features.\nI hope you can still enjoy what the app currently offers and please don't forget that you can report any bugs or request features on the Github!",
+            title=_("Welcome to the Native Open Mod Manager (NOMM) app!"),
+            description=_("This app is still in early development, so expect some bugs and missing features.\nI hope you can still enjoy what the app currently offers and please don't forget that you can report any bugs or request features on the Github!"),
         )
         status_page.add_css_class("setup-page")
         
@@ -161,13 +169,13 @@ class Nomm(Adw.Application):
         """Step 1: Downloads Folder Selection"""
         self.remove_stack_child("setup")
         status_page = Adw.StatusPage(
-            title="Select your mods download folder",
-            description="Please select the folder where mod downloads will be stored.\nMod downloads will be categorised by game name.\nI recommend you create a nomm directory at the end of your target path.",
+            title=_("Select your mods download folder"),
+            description=_("Please select the folder where mod downloads will be stored.\nMod downloads will be categorised by game name.\nI recommend you create a nomm directory at the end of your target path."),
             icon_name="folder-download-symbolic"
         )
         status_page.add_css_class("setup-page")
         
-        btn = Gtk.Button(label="Set Mod Download Path")
+        btn = Gtk.Button(label=_("Set Mod Download Path"))
         btn.set_halign(Gtk.Align.CENTER)
         btn.add_css_class("suggested-action")
         btn.set_margin_top(24)
@@ -179,7 +187,7 @@ class Nomm(Adw.Application):
         GLib.timeout_add(100, lambda: status_page.add_css_class("visible"))
 
     def on_select_downloads_folder_clicked(self, btn):
-        dialog = Gtk.FileDialog(title="Select Mod Downloads Folder")
+        dialog = Gtk.FileDialog(title=_("Select Mod Downloads Folder"))
         dialog.select_folder(self.win, None, self.on_downloads_folder_selected_callback)
 
     def on_downloads_folder_selected_callback(self, dialog, result):
@@ -209,7 +217,7 @@ class Nomm(Adw.Application):
         # 2. Create the Warning Label
         warning_label = Gtk.Label()
         warning_label.set_markup(
-            "<b>Important:</b> If using Steam Flatpak, ensure it has permission to access this folder (you can do this via command line or Flatseal)."
+            _("<b>Important:</b> If using Steam Flatpak, ensure it has permission to access this folder (you can do this via command line or Flatseal).")
         )
         warning_label.set_wrap(True)
         warning_label.set_max_width_chars(50)
@@ -219,7 +227,7 @@ class Nomm(Adw.Application):
         warning_label.add_css_class("error") 
         # Alternatively, use "destructive-action" for a slightly different red
         
-        btn = Gtk.Button(label="Set Mod Staging Path")
+        btn = Gtk.Button(label=_("Set Mod Staging Path"))
         btn.add_css_class("suggested-action")
         btn.set_margin_top(12)
         btn.connect("clicked", self.on_select_staging_folder_clicked)
@@ -235,7 +243,7 @@ class Nomm(Adw.Application):
         GLib.timeout_add(100, lambda: status_page.add_css_class("visible"))
 
     def on_select_staging_folder_clicked(self, btn):
-        dialog = Gtk.FileDialog(title="Select Mod Staging Folder")
+        dialog = Gtk.FileDialog(title=_("Select Mod Staging Folder"))
         dialog.select_folder(self.win, None, self.on_staging_folder_selected_callback)
 
     def on_staging_folder_selected_callback(self, dialog, result):
@@ -252,19 +260,19 @@ class Nomm(Adw.Application):
         """Step 4: Nexus API Key Entry"""
         self.remove_stack_child("api_key")
         status_page = Adw.StatusPage(
-            title="Nexus API Key",
-            description="If you want to download mods from Nexus Mods, enter your API Key (Site Preferences > API Keys > scroll all the way down)",
+            title=_("Nexus API Key"),
+            description=_("If you want to download mods from Nexus Mods, enter your API Key (Site Preferences > API Keys > scroll all the way down)"),
             icon_name="dialog-password-symbolic"
         )
 
         entry_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12, halign=Gtk.Align.CENTER)
         entry_box.set_margin_top(24)
         
-        self.api_entry = Gtk.Entry(placeholder_text="Enter API Key...")
+        self.api_entry = Gtk.Entry(placeholder_text=_("Enter API Key..."))
         self.api_entry.set_size_request(400, -1) 
         self.api_entry.set_visibility(False) # Masks the key like a password
         
-        cont_btn = Gtk.Button(label="Continue & Scan", css_classes=["suggested-action"])
+        cont_btn = Gtk.Button(label=_("Continue"), css_classes=["suggested-action"])
         cont_btn.connect("clicked", lambda b: self.finalize_setup(self.api_entry.get_text()))
 
         entry_box.append(self.api_entry)
@@ -291,7 +299,7 @@ class Nomm(Adw.Application):
         spinner = Gtk.Spinner()
         spinner.set_size_request(128, 128)
         spinner.start()
-        label = Gtk.Label(label="NOMM: Mapping Libraries...")
+        label = Gtk.Label(label=_("NOMM: Searching for games..."))
         label.add_css_class("title-1")
         box.append(spinner)
         box.append(label)
@@ -486,7 +494,7 @@ class Nomm(Adw.Application):
         extensions = (".zip", ".rar", ".7z")
         
         # Count only files that end with those extensions (case-insensitive)
-        return sum(1 for entry in os.scandir(directory) 
+        return sum(1 for entry in os.scandir(directory)
                 if entry.is_file() and entry.name.lower().endswith(extensions))
 
     def show_library_ui(self):
@@ -609,11 +617,11 @@ class Nomm(Adw.Application):
 
         else: # no games found
             status_page = Adw.StatusPage(
-                title="No games detected",
-                description="We couldn't find any Steam or Heroic games. This could be due to\n \
+                title=_("No games detected"),
+                description=_("We couldn't find any Steam or Heroic games. This could be due to\n \
 - You not having any supported games installed\n \
 - Your Steam/Heroic installation type not being handled\n\n \
-Feel free to contact me on Discord or Github for more help!",
+Feel free to contact me on Discord or Github for more help!"),
                 icon_name="input-gaming-symbolic"
             )
             overlay.set_child(status_page)
@@ -698,7 +706,7 @@ Feel free to contact me on Discord or Github for more help!",
         content.append(storage_group)
 
         # 1. Downloads Path Row
-        path_row = Adw.ActionRow(title="Mod Downloads Path")
+        path_row = Adw.ActionRow(title=_("Mod Downloads Path"))
         current_path = self.load_config().get('download_path', 'Not set')
         path_row.set_subtitle(current_path)
 
@@ -709,7 +717,7 @@ Feel free to contact me on Discord or Github for more help!",
         storage_group.add(path_row)
 
         # 2. Staging Path Row
-        staging_row = Adw.ActionRow(title="Mod Staging Path")
+        staging_row = Adw.ActionRow(title=_("Mod Staging Path"))
         current_staging = self.load_config().get('staging_path', 'Not set')
         staging_row.set_subtitle(current_staging)
 
@@ -724,13 +732,13 @@ Feel free to contact me on Discord or Github for more help!",
         content.append(nexus_group)
 
         api_entry = Gtk.PasswordEntry(hexpand=True, valign=Gtk.Align.CENTER)
-        api_entry.set_property("placeholder-text", "Paste API Key...")
+        api_entry.set_property("placeholder-text", _("Paste API Key..."))
         api_entry.set_text(self.load_config().get('nexus_api_key', ''))
 
         check_btn = Gtk.Button(icon_name="view-refresh-symbolic", valign=Gtk.Align.CENTER, css_classes=["flat"])
         spinner = Gtk.Spinner(valign=Gtk.Align.CENTER)
 
-        api_row = Adw.ActionRow(title="Nexus API Key")
+        api_row = Adw.ActionRow(title=_("Nexus API Key"))
         api_row.add_suffix(api_entry)
         api_row.add_suffix(spinner)
         api_row.add_suffix(check_btn)
