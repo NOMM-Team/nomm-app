@@ -1,0 +1,12 @@
+name: FINAL FANTASY VII REBIRTH
+steamappid: 2909400
+
+nexus_game_id: finalfantasy7rebirth
+
+mods_path:
+- path: End/Content/Paks/~mods/
+  name: Default
+  description: Regular mods that go in the ~mods folder
+- path: End/Mods/
+  name: Dresscode Mods
+  description: Mods specifically made for Dresscode
