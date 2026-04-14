@@ -1395,12 +1395,6 @@ class GameDashboard(Adw.Window):
                 if "library_hero.jpg" in files: return os.path.join(root, "library_hero.jpg")
         return None
 
-    def apply_dynamic_accent(self, hex):
-        css = f"@define-color accent_bg_color {hex}; @define-color accent_color {hex};"
-        provider = Gtk.CssProvider()
-        provider.load_from_data(css.encode())
-        Gtk.StyleContext.add_provider_for_display(Gdk.Display.get_default(), provider, 800)
-
     def show_message(self, h, b):
         print(f"Error message displayed to user")
         print(b)

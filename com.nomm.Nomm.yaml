@@ -59,9 +59,14 @@ modules:
       - cp src/*.yaml /app/bin/
       - cp src/*.css /app/bin/
       
-      # Copy your non-code folders
+      # Copy non-code folders
       - cp -r assets /app/bin/assets
       - cp -r default_game_configs /app/bin/default_game_configs
+
+      # Localisation
+      - mkdir -p /app/share/locale/fr/LC_MESSAGES
+      - msgfmt locale/fr.po -o /app/share/locale/fr/LC_MESSAGES/com.nomm.Nomm.mo
+
     sources:
       - type: dir
         path: .
