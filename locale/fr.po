@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: 0.7.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-04-13 23:01+0200\n"
+"POT-Creation-Date: 2026-04-14 18:54+0200\n"
 "PO-Revision-Date: 2026-04-13 18:51+0200\n"
 "Last-Translator: Allexio <contact@allexio.eu>\n"
 "Language: fr_FR \n"
@@ -43,7 +43,9 @@ msgstr "Les métadonnées du fichier {} n'ont pas pu être effacées"
 
 #: src/dashboard.py:500
 msgid "The staging metadata file could not be found, did you install any mods?"
-msgstr "Le fichier de métadonnées de staging n'a pas été trouvé, as-tu installé des mods?"
+msgstr ""
+"Le fichier de métadonnées de staging n'a pas été trouvé, as-tu installé des "
+"mods?"
 
 #: src/dashboard.py:553
 msgid "Missing {} file."
@@ -72,6 +74,20 @@ msgstr "Installé : {}"
 #: src/dashboard.py:651 src/dashboard.py:771
 msgid "Are you sure?"
 msgstr "Es-tu certain ?"
+
+#: src/dashboard.py:677
+msgid "All"
+msgstr "Tous"
+
+#: src/dashboard.py:680
+#, fuzzy
+msgid "Uninstalled"
+msgstr "Non-Installés"
+
+#: src/dashboard.py:680
+#, fuzzy
+msgid "Installed"
+msgstr "Installés"
 
 #: src/dashboard.py:741
 msgid "Downloaded: {}"
@@ -108,7 +124,10 @@ msgstr "Fichier d'ordre de chargement non trouvé à : {}"
 msgid ""
 "Warning: This process may be destructive to existing game files. Please "
 "ensure you have backed up your game directory before proceeding."
-msgstr "Attention : Ce procédé peut modifier sans retour les fichiers de jeu existants. Assurez-vous d'avoir fait une sauvegarde de vos fichier de jeu avant de procéder."
+msgstr ""
+"Attention : Ce procédé peut modifier sans retour les fichiers de jeu "
+"existants. Assurez-vous d'avoir fait une sauvegarde de vos fichier de jeu "
+"avant de procéder."
 
 #: src/dashboard.py:925
 msgid "Confirm Installation"
@@ -138,7 +157,10 @@ msgstr "Erreur lors de l'installation"
 msgid ""
 "Installation failed: Your configuration YAML is missing a mods_path. Please "
 "check the readme on github for information on how to configure the yaml file."
-msgstr "Installation échouée : Il manque un 'mods_path' dans votre configuration YAML. Reagrdez le readme sur Github pour plus d'informations sur comment configurer un YAML pour NOMM."
+msgstr ""
+"Installation échouée : Il manque un 'mods_path' dans votre configuration "
+"YAML. Regardez le readme sur Github pour plus d'informations sur comment "
+"configurer un YAML pour NOMM."
 
 #: src/dashboard.py:1154
 msgid "Select Deployment Path"

@@ -674,10 +674,10 @@ class GameDashboard(Adw.Window):
         
         action_bar = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
         filter_group = Gtk.Box(css_classes=["linked"])
-        self.all_filter_btn = Gtk.ToggleButton(label="All", active=True)
+        self.all_filter_btn = Gtk.ToggleButton(label=_("All"), active=True)
         self.all_filter_btn.connect("toggled", self.on_filter_toggled, "all")
         filter_group.append(self.all_filter_btn)
-        for n, l in [("uninstalled", "Uninstalled"), ("installed", "Installed")]:
+        for n, l in [("uninstalled", _("Uninstalled")), ("installed", _("Installed"))]:
             b = Gtk.ToggleButton(label=l, group=self.all_filter_btn)
             b.connect("toggled", self.on_filter_toggled, n)
             filter_group.append(b)
@@ -752,7 +752,7 @@ class GameDashboard(Adw.Window):
 
                     if installation_timestamp_value:
                         installation_ts_text = _("Installed: {}").format(installation_timestamp_value)
-                        installation_timestamp_badge = Gtk.Label(label=f"Installed: {installation_timestamp_value}", xalign=1, css_classes=["dim-label", "caption"])
+                        installation_timestamp_badge = Gtk.Label(label=installation_ts_text, xalign=1, css_classes=["dim-label", "caption"])
                         ts_box.append(installation_timestamp_badge)
                 
                 row.add_suffix(ts_box)
