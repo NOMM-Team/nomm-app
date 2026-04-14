@@ -3,3 +3,13 @@ name: Marvel Rivals
 nexus_game_id: marvelrivals
 platform: steam
 steamappid: 2767030
+
+essential-utilities:
+  utoc-signature-bypass-patch:
+    name: UTOC Signature Bypass Patch for Marvel Rivals
+    version: 1.0.0
+    creator: DeathChaos
+    creator-link: https://www.nexusmods.com/profile/DeathChaos
+    source: https://github.com/DeathChaos25/MarvelRivalsUTOCSignatureBypass/releases/latest/download/Marvel.Rivals.UTOC.Signature.Bypass.Patch.zip
+    utility_path: MarvelGame/Marvel/Binaries/Win64
+    enable_command: ""
