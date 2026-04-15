@@ -1,5 +1,5 @@
 name: '7 Days to Die'
-steamappid: 251570
+steam_id: 251570
 mods_path: Mods/
 
-nexus_game_id: "7daystodie"
+nexus_id: "7daystodie"

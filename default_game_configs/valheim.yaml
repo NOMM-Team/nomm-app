@@ -1,8 +1,8 @@
 name: Valheim
-steamappid: 892970
+steam_id: 892970
 mods_path: "BepInEx/plugins/"
 
-nexus_game_id: "valheim"
+nexus_id: "valheim"
 
 essential-utilities:
   valheim-plus:

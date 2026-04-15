@@ -50,7 +50,7 @@ def handle_nexus_link(nxm_link):
                     with open(os.path.join(game_configs_dir, filename), 'r') as f:
                         g_data = yaml.safe_load(f)
                         # Check if this config matches the nexus game ID
-                        if g_data and g_data.get("nexus_game_id") == nexus_game_id:
+                        if g_data and g_data.get("nexus_id") == nexus_game_id:
                             game_folder_name = g_data.get("name", nexus_game_id)
                             break
                 except:
@@ -265,7 +265,7 @@ def download_nexus_mod(nxm_link: str, headers: dict, final_download_dir: str, ne
                 # initialise file with important game info
                 downloads_metadata["info"] = {}
                 downloads_metadata["info"]["game"] = game_folder_name
-                downloads_metadata["info"]["nexus_game_id"] = nexus_game_id
+                downloads_metadata["info"]["nexus_id"] = nexus_game_id
                 downloads_metadata["mods"] = {}
             downloads_metadata["mods"][file_name] = mod_metadata
             with open(downloads_metadata_path, "w") as f:

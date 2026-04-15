@@ -414,7 +414,7 @@ class GameDashboard(Adw.Window):
         staging_metadata = self.load_staging_metadata()
         if not staging_metadata: return
 
-        game_id = staging_metadata.get("info", {}).get("nexus_game_id")
+        game_id = staging_metadata.get("info", {}).get("nexus_id")
         if not game_id: return
 
         mods_updated = False

@@ -1,8 +1,8 @@
-mods_path: MarvelGame/Marvel/Content/Paks/~mods/
 name: Marvel Rivals
-nexus_game_id: marvelrivals
-platform: steam
-steamappid: 2767030
+steam_id: 2767030
+nexus_id: marvelrivals
+
+mods_path: MarvelGame/Marvel/Content/Paks/~mods/
 
 essential-utilities:
   utoc-signature-bypass-patch:
