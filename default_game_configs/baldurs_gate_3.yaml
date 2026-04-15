@@ -1,9 +1,6 @@
 name: "Baldur's Gate 3"
 steam_id: 1086940
-mods_path: 
-- path: "{user_data_path}/drive_c/users/steamuser/AppData/Local/Larian Studios/Baldur's Gate 3/Mods"
-  name: Default
-  description: "Used for most mods, the in game mod manager included"
+mods_path:
 - path: "{game_path}/"
   name: Native
   description: "Used for native mods that require the Native mod loader, such as the 'Native Camera Tweaks' mod."
