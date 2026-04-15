@@ -468,7 +468,7 @@ class GameDashboard(Adw.Window):
         
         # Action Bar (Search & Folder)
         action_bar = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
-        self.mod_search_entry = Gtk.SearchEntry(placeholder_text="Search mods...")
+        self.mod_search_entry = Gtk.SearchEntry(placeholder_text=_("Search mods..."))
         self.mod_search_entry.set_size_request(300, -1) 
         self.mod_search_entry.connect("search-changed", self.on_mod_search_changed)
         action_bar.append(self.mod_search_entry)
@@ -536,7 +536,12 @@ class GameDashboard(Adw.Window):
                 file_list_badge.add_css_class("badge-action-row")
                 file_list_badge.set_valign(Gtk.Align.CENTER)
                 file_list_badge.set_margin_end(row_element_margin)
-                file_list_badge.append(Gtk.Label(label=f"{number_of_files} file(s)"))
+                label_text = ngettext(
+                    "{} file",
+                    "{} files",
+                    number_of_files
+                ).format(number_of_files)
+                file_list_badge.append(Gtk.Label(label=label_text))
                 row.add_prefix(file_list_badge)
 
             # Prefix: Missing Files
@@ -550,8 +555,8 @@ class GameDashboard(Adw.Window):
                 missing_file_badge.set_valign(Gtk.Align.CENTER)
                 missing_file_badge.set_margin_end(row_element_margin)
                 label_text = ngettext(
-                    "Missing {} file.",
-                    "Missing {} files.",
+                    "Missing {} file",
+                    "Missing {} files",
                     len(missing_files)
                 ).format(len(missing_files))
                 missing_file_badge.set_tooltip_text(_("Missing Files:")+"\n\n".join(missing_files))

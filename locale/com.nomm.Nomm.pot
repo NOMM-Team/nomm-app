@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-04-14 18:54+0200\n"
+"POT-Creation-Date: 2026-04-15 08:14+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -30,8 +30,8 @@ msgstr ""
 msgid "Launch Game"
 msgstr ""
 
-#: src/dashboard.py:190 src/dashboard.py:203 src/dashboard.py:894
-#: src/dashboard.py:1055
+#: src/dashboard.py:190 src/dashboard.py:203 src/dashboard.py:899
+#: src/dashboard.py:1060 src/dashboard.py:1107
 msgid "Error"
 msgstr ""
 
@@ -43,129 +43,143 @@ msgstr ""
 msgid "Could not delete metadata for file: {}"
 msgstr ""
 
+#: src/dashboard.py:471
+msgid "Search mods..."
+msgstr ""
+
 #: src/dashboard.py:500
 msgid "The staging metadata file could not be found, did you install any mods?"
 msgstr ""
 
-#: src/dashboard.py:553
+#: src/dashboard.py:540
+msgid "{} file."
+msgid_plural "{} files."
+msgstr[0] ""
+msgstr[1] ""
+
+#: src/dashboard.py:558
 msgid "Missing {} file."
 msgid_plural "Missing {} files."
 msgstr[0] ""
 msgstr[1] ""
 
-#: src/dashboard.py:557
+#: src/dashboard.py:562
 msgid "Missing Files:"
 msgstr ""
 
-#: src/dashboard.py:575
+#: src/dashboard.py:580
 msgid "Conflicting mod: {}"
 msgid_plural "Conflicting mods: {}"
 msgstr[0] ""
 msgstr[1] ""
 
-#: src/dashboard.py:636
+#: src/dashboard.py:641
 msgid "Enabled: {}"
 msgstr ""
 
-#: src/dashboard.py:642 src/dashboard.py:754
+#: src/dashboard.py:647 src/dashboard.py:759
 msgid "Installed: {}"
 msgstr ""
 
-#: src/dashboard.py:651 src/dashboard.py:771
+#: src/dashboard.py:656 src/dashboard.py:776
 msgid "Are you sure?"
 msgstr ""
 
-#: src/dashboard.py:677
+#: src/dashboard.py:682
 msgid "All"
 msgstr ""
 
-#: src/dashboard.py:680
+#: src/dashboard.py:685
 msgid "Uninstalled"
 msgstr ""
 
-#: src/dashboard.py:680
+#: src/dashboard.py:685
 msgid "Installed"
 msgstr ""
 
-#: src/dashboard.py:741
+#: src/dashboard.py:746
 msgid "Downloaded: {}"
 msgstr ""
 
-#: src/dashboard.py:761 src/dashboard.py:854
+#: src/dashboard.py:766 src/dashboard.py:859
 msgid "Reinstall"
 msgstr ""
 
-#: src/dashboard.py:761
+#: src/dashboard.py:766
 msgid "Install"
 msgstr ""
 
-#: src/dashboard.py:796
+#: src/dashboard.py:801
 msgid "No utilities defined."
 msgstr ""
 
-#: src/dashboard.py:851
+#: src/dashboard.py:856
 msgid "Download"
 msgstr ""
 
-#: src/dashboard.py:873
+#: src/dashboard.py:878
 msgid "Edit Load Order"
 msgstr ""
 
-#: src/dashboard.py:895
+#: src/dashboard.py:900
 msgid ""
 "Load order file not found at:\n"
 " {}"
 msgstr ""
 
-#: src/dashboard.py:921
+#: src/dashboard.py:926
 msgid ""
 "Warning: This process may be destructive to existing game files. Please "
 "ensure you have backed up your game directory before proceeding."
 msgstr ""
 
-#: src/dashboard.py:925
+#: src/dashboard.py:930
 msgid "Confirm Installation"
 msgstr ""
 
-#: src/dashboard.py:928
+#: src/dashboard.py:933
 msgid "Cancel"
 msgstr ""
 
-#: src/dashboard.py:929
+#: src/dashboard.py:934
 msgid "Install Anyway"
 msgstr ""
 
-#: src/dashboard.py:979
+#: src/dashboard.py:984
 msgid "Success"
 msgstr ""
 
-#: src/dashboard.py:980
+#: src/dashboard.py:985
 msgid "{} has been installed."
 msgstr ""
 
-#: src/dashboard.py:983
+#: src/dashboard.py:988
 msgid "Installation Error"
 msgstr ""
 
-#: src/dashboard.py:1055
+#: src/dashboard.py:1060
 msgid ""
 "Installation failed: Your configuration YAML is missing a mods_path. Please "
 "check the readme on github for information on how to configure the yaml file."
 msgstr ""
 
-#: src/dashboard.py:1154
+#: src/dashboard.py:1107
+msgid "Installation failed: {}"
+msgstr ""
+
+#: src/dashboard.py:1159
 msgid "Select Deployment Path"
 msgstr ""
 
-#: src/dashboard.py:1172
+#: src/dashboard.py:1177
 msgid "Multiple deployment locations available:"
 msgstr ""
 
-#: src/dashboard.py:1322
+#: src/dashboard.py:1327
 msgid "Error while removing symlinks: "
 msgstr ""
 
-#: src/dashboard.py:1327
+#: src/dashboard.py:1332
 msgid "Error while removing mod from staging: "
 msgstr ""
 
