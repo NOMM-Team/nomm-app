@@ -30,7 +30,7 @@ APP_NAME = 'com.nomm.Nomm'
 # Initialize the translation system
 translation_system = gettext.translation(APP_NAME, localedir='/app/share/locale', fallback=True)
 # Install the '_' function globally so all other imported files can see it
-translation_system.install()
+translation_system.install(names=['ngettext'])
 
 def slugify(text):
     return re.sub(r'[^a-z0-9]', '', text.lower())
