@@ -1099,7 +1099,7 @@ class GameDashboard(Adw.Window):
             self.resolve_deployment_path(filename, extracted_roots)
 
         except Exception as e:
-            self.show_message("Error", f"Installation failed: {e}")
+            self.show_message(_("Error"), _("Installation failed: {}").format(e))
 
     def on_fomod_dialog_response(self, dialog, response, zip_path, filename):
         if response == Gtk.ResponseType.OK:
