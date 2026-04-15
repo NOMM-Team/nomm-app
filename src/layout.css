@@ -26,8 +26,8 @@
 
 .refresh-fab {
     box-shadow: 0 6px 16px rgba(0,0,0,0.5);
-    background-color: @accent_bg_color;
-    color: @accent_fg_color;
+    background-color: var(--accent-bg-color);
+    color: var(--accent-fg-color);
     border: none;
     border-radius: 99px;
     opacity: 1;
@@ -35,7 +35,7 @@
 
 .refresh-fab:hover {
     filter: brightness(1.2);
-    box-shadow: 0 0 20px @accent_bg_color;
+    box-shadow: 0 0 20px var(--accent-bg-color);
 }
 
 .refresh-fab image {
@@ -78,7 +78,7 @@ togglebutton {
     background-color: rgba(0, 0, 0, 0.1); 
     color: white;
     /* Bottom accent line to show focus */
-    border-bottom: 6px solid @accent_bg_color;
+    border-bottom: 6px solid var(--accent-bg-color);
     text-shadow: 0 2px 10px rgba(0,0,0,0.5);
 }
 
@@ -91,7 +91,7 @@ togglebutton {
 
 .warning-badge:hover {
     background-color: rgba(255, 255, 0, 0.7);
-    border: 1px solid @accent_bg_color;
+    border: 1px solid var(--accent-bg-color);
 }
 
 .badge-action-row { 
@@ -103,23 +103,23 @@ togglebutton {
         
 .badge-action-row:hover {
     background-color: rgba(255, 255, 255, 0.2);
-    border: 1px solid @accent_bg_color;
+    border: 1px solid var(--accent-bg-color);
 }
 
 .badge-action-row-accent { 
-    background-color: alpha(@accent_bg_color, 0.7); 
+    background-color: alpha(var(--accent-bg-color), 0.7); 
     border-radius: 99px;
     padding: 4px 12px;
-    border: 1px solid alpha(@accent_bg_color, 0.8);
+    border: 1px solid alpha(var(--accent-bg-color), 0.8);
 }
         
 .badge-action-row-accent:hover {
-    background-color: @accent_bg_color;
-    border: 1px solid @accent_bg_color;
+    background-color: var(--accent-bg-color);
+    border: 1px solid var(--accent-bg-color);
 }
 
 .badge-accent {
-    background-color: @accent_bg_color;
+    background-color: var(--accent-bg-color);
     color: white;
     border-radius: 6px;
     padding: 2px 10px;
@@ -135,6 +135,6 @@ font-weight: bold;
 }
 
 switch.accent-switch:checked {
-background-color: @accent_bg_color;
+background-color: var(--accent-bg-color);
 }
 
