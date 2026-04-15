@@ -933,41 +933,21 @@ Feel free to contact me on Discord or Github for more help!"),
             # Define the game-specific path
             game_download_path = os.path.join(download_base, game_data['name'])
             
-            # Create the physical folder if it doesn't exist
             print(f"Switch to game download path: {game_download_path}")
-            if not os.path.exists(game_download_path):
-                os.makedirs(game_download_path, exist_ok=True)
 
-            # Update the game-specific YAML config
-            config_dir = self.game_config_path
-            slug = slugify(game_data['name'])
-            
-            for filename in os.listdir(config_dir):
-                if filename.lower().endswith((".yaml", ".yml")):
-                    conf_path = os.path.join(config_dir, filename)
-                    try:
-                        with open(conf_path, 'r') as f:
-                            data = yaml.safe_load(f) or {}
-                        
-                        # Match by name or app_id
-                        if slugify(data.get("name", "")) == slug or data.get("steamappid") == game_data.get("app_id"):
-                            data["downloads_path"] = game_download_path
-                            
-                            with open(conf_path, 'w') as f:
-                                yaml.dump(data, f, default_flow_style=False)
-                            break # Found and updated
-                    except Exception as e:
-                        print(f"Failed to update game config: {e}")
+            # Create the physical folder if it doesn't exist
+            os.makedirs(game_download_path, exist_ok=True)
 
         # Launch Dashboard
         self.dashboard = GameDashboard(
-            game_name=game_data['name'], 
+            game_name=game_data['name'],
             game_path=game_data['path'],
             application=self,
             steam_base=self.steam_base,
             app_id=game_data.get('app_id'),
             user_config_path=self.user_config_path,
-            game_config_path=game_data["game_config_path"]
+            game_config_path=game_data["game_config_path"],
+            game_download_path=game_download_path
         )
         self.update_config("last_selected_game", self.game_config_path)
         self.dashboard.launch()

@@ -20,7 +20,7 @@ from utils import download_heroic_assets
 rarfile.UNRAR_TOOL = "/app/bin/unrar"
 
 class GameDashboard(Adw.Window):
-    def __init__(self, game_name, game_path, application, steam_base=None, app_id=None, user_config_path=None, game_config_path=None, **kwargs):
+    def __init__(self, game_name, game_path, application, steam_base=None, app_id=None, user_config_path=None, game_config_path=None, game_download_path=None, **kwargs):
         super().__init__(application=application, **kwargs)
         self.app = application
         self.game_name = game_name
@@ -31,7 +31,7 @@ class GameDashboard(Adw.Window):
 
         self.game_config = self.load_yaml_config(game_config_path)
         self.user_config = self.load_yaml_config(user_config_path)
-        self.downloads_path = self.game_config.get("downloads_path")
+        self.downloads_path = game_download_path
         self.staging_path = Path(os.path.join(Path(self.user_config.get("staging_path")), game_name))
         self.platform = self.game_config.get("platform")
         
