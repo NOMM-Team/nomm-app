@@ -718,7 +718,6 @@ Feel free to contact me on Discord or Github for more help!"),
     def update_config(self, key, value):
         config = self.load_config()
         config[key] = value
-        print(config)
         # Ensure directory exists before writing
         os.makedirs(os.path.dirname(self.user_config_path), exist_ok=True)
         with open(self.user_config_path, 'w') as f:
@@ -968,8 +967,9 @@ Feel free to contact me on Discord or Github for more help!"),
             steam_base=self.steam_base,
             app_id=game_data.get('app_id'),
             user_config_path=self.user_config_path,
-            game_config_path=self.game_config_path
+            game_config_path=game_data["game_config_path"]
         )
+        self.update_config("last_selected_game", self.game_config_path)
         self.dashboard.launch()
         
         if self.win:

@@ -26,13 +26,11 @@ class GameDashboard(Adw.Window):
         self.game_name = game_name
         self.game_path = game_path
         self.app_id = app_id
-        self.user_config_path = user_config_path
-        self.game_config_path = game_config_path
         self.current_filter = "all" # default filter is all
         self.active_tab = "mods" # default tab is mods
 
-        self.game_config = self.load_game_config()
-        self.user_config = self.load_user_config()
+        self.game_config = self.load_yaml_config(game_config_path)
+        self.user_config = self.load_yaml_config(user_config_path)
         self.downloads_path = self.game_config.get("downloads_path")
         self.staging_path = Path(os.path.join(Path(self.user_config.get("staging_path")), game_name))
         self.platform = self.game_config.get("platform")
@@ -53,6 +51,7 @@ class GameDashboard(Adw.Window):
         
         self.set_title(f"NOMM - {game_name}")
 
+        # Per game accent colour theming
         if self.user_config["enable_per_game_accent_colour"] and self.game_config.get("accent_colour"):
             print("applying cool new colour")
             fg_color = self.get_contrast_color(self.game_config["accent_colour"])
@@ -72,6 +71,7 @@ class GameDashboard(Adw.Window):
                 Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION
             )
 
+        # Window configuration
         if self.user_config["enable_fullscreen"]:
             self.maximize()
             self.fullscreen()
@@ -262,11 +262,11 @@ class GameDashboard(Adw.Window):
         # Otherwise, use white text
         return "#000000" if luminance > 0.5 else "#ffffff"
 
-    def load_user_config(self):
+    def load_yaml_config(self, path: str):
         # TODO: Homogenise this config load with one in launcher.py and probably load_game_config
-        if os.path.exists(self.user_config_path):
+        if os.path.exists(path):
             try:
-                with open(self.user_config_path, 'r') as f:
+                with open(path, 'r') as f:
                     return yaml.safe_load(f) or {}
             except Exception as e:
                 print(f"Error loading config: {e}")
@@ -312,32 +312,6 @@ class GameDashboard(Adw.Window):
                     conflicts.append(unique_mods)
 
         return conflicts
-
-    def get_current_game_config_path(self, game_config_path):
-        #TODO: merge with below
-        def slug(text): return re.sub(r'[^a-z0-9]', '', text.lower())
-        target = slug(self.game_name)
-        if os.path.exists(game_config_path):
-            for filename in os.listdir(game_config_path):
-                if filename.lower().endswith((".yaml")):
-                    with open(os.path.join(game_config_path, filename), 'r') as f:
-                        data = yaml.safe_load(f) or {}
-                        if slug(data.get("name", "")) == target:
-                            current_game_config_path = game_config_path + '/' + filename
-                            return current_game_config_path
-
-    def load_game_config(self):
-        #TODO: merge this method and move to utils
-        config_dir = self.game_config_path
-        def slug(text): return re.sub(r'[^a-z0-9]', '', text.lower())
-        target = slug(self.game_name)
-        if os.path.exists(config_dir):
-            for filename in os.listdir(config_dir):
-                if filename.lower().endswith((".yaml", ".yml")):
-                    with open(os.path.join(config_dir, filename), 'r') as f:
-                        data = yaml.safe_load(f) or {}
-                        if slug(data.get("name", "")) == target: return data
-        return {}
 
     def get_mod_deployment_paths(self):
         game_path = self.game_config.get("game_path")
