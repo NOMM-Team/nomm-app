@@ -718,6 +718,7 @@ Feel free to contact me on Discord or Github for more help!"),
     def update_config(self, key, value):
         config = self.load_config()
         config[key] = value
+        print(config)
         # Ensure directory exists before writing
         os.makedirs(os.path.dirname(self.user_config_path), exist_ok=True)
         with open(self.user_config_path, 'w') as f:
@@ -752,7 +753,7 @@ Feel free to contact me on Discord or Github for more help!"),
         storage_group = Adw.PreferencesGroup(title=_("Storage"), description=_("Configure where NOMM manages your files."))
         content.append(storage_group)
 
-        # 1. Downloads Path Row
+        # Downloads Path Row
         path_row = Adw.ActionRow(title=_("Mod Downloads Path"))
         current_path = self.load_config().get('download_path', 'Not set')
         path_row.set_subtitle(current_path)
@@ -763,7 +764,7 @@ Feel free to contact me on Discord or Github for more help!"),
         path_row.add_suffix(folder_btn)
         storage_group.add(path_row)
 
-        # 2. Staging Path Row
+        # Staging Path Row
         staging_row = Adw.ActionRow(title=_("Mod Staging Path"))
         current_staging = self.load_config().get('staging_path', 'Not set')
         staging_row.set_subtitle(current_staging)
@@ -791,7 +792,7 @@ Feel free to contact me on Discord or Github for more help!"),
         api_row.add_suffix(check_btn)
         nexus_group.add(api_row)
 
-        # 3. Validation Logic
+        # Validation Logic for Nexus API key
         def on_validate_clicked(btn):
             key = api_entry.get_text()
             if not key: return
@@ -830,6 +831,31 @@ Feel free to contact me on Discord or Github for more help!"),
             threading.Thread(target=check_api, daemon=True).start()
 
         check_btn.connect("clicked", on_validate_clicked)
+
+        # --- GENERAL SETTINGS SECTION ---
+        general_group = Adw.PreferencesGroup(title=_("General Settings"))
+        content.append(general_group)
+
+        # Per-game accent colours
+        accent_row = Adw.SwitchRow(title=_("Per-Game Accent Colour"))
+        accent_row.set_subtitle(_("Accent colour will change for each game depending on configuration"))
+        accent_row.set_active(self.load_config().get('enable_per_game_accent_colour'))
+        accent_row.connect("notify::active", lambda row, pspec: self.toggle_per_game_accent_colour(row.get_active()))
+        general_group.add(accent_row)
+
+        # Skip launcher
+        launcher_skip_row = Adw.SwitchRow(title=_("Skip Launcher"))
+        launcher_skip_row.set_subtitle(_("App launches last used game profile instead of starting up launcher"))
+        launcher_skip_row.set_active(self.load_config().get('enable_launcher_skip'))
+        launcher_skip_row.connect("notify::active", lambda row, pspec: self.toggle_launcher_skip(row.get_active()))
+        general_group.add(launcher_skip_row)
+
+        # Fullscreen
+        fullscreen_row = Adw.SwitchRow(title=_("Fullscreen NOMM"))
+        fullscreen_row.set_subtitle(_("App launches in full screen when you select a game"))
+        fullscreen_row.set_active(self.load_config().get('enable_fullscreen'))
+        fullscreen_row.connect("notify::active", lambda row, pspec: self.toggle_fullscreen(row.get_active()))
+        general_group.add(fullscreen_row)
 
         # --- COMMUNITY SECTION ---
         community_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=20, halign=Gtk.Align.CENTER)
@@ -872,6 +898,18 @@ Feel free to contact me on Discord or Github for more help!"),
         content.append(save_btn)
 
         settings_win.present()
+
+    def toggle_per_game_accent_colour(self, state):
+        print(f"Per-game accent colours are now: {state}")
+        self.update_config('enable_per_game_accent_colour', state)
+
+    def toggle_launcher_skip(self, state):
+        print(f"Launcher skip is now: {state}")
+        self.update_config('enable_launcher_skip', state)
+
+    def toggle_fullscreen(self, state):
+        print(f"Fullscreen is now: {state}")
+        self.update_config('enable_fullscreen', state)
 
     def on_refresh_clicked(self, btn):
         try:

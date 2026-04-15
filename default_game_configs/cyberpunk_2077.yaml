@@ -1,7 +1,7 @@
 name: 'Cyberpunk 2077'
 steam_id: 1091500
 mods_path: ""
-
+accent_colour: "#FFFF00"
 gog_id: 1423049311
 
 nexus_id: "cyberpunk2077"

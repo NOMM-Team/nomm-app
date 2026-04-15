@@ -52,13 +52,34 @@ class GameDashboard(Adw.Window):
             self.setup_folder_monitor()
         
         self.set_title(f"NOMM - {game_name}")
-        self.maximize()
-        self.fullscreen()
-        
-        win_height = self.get_default_size()[1]
-        if self.is_maximized():
-            monitor = Gdk.Display.get_default().get_monitors().get_item(0)
-            win_height = monitor.get_geometry().height
+
+        if self.user_config["enable_per_game_accent_colour"] and self.game_config.get("accent_colour"):
+            print("applying cool new colour")
+            fg_color = self.get_contrast_color(self.game_config["accent_colour"])
+            css = f"""
+            window {{
+                --accent-bg-color: {self.game_config["accent_colour"]};
+                --accent-color: {self.game_config["accent_colour"]};
+                --accent-fg-color: {fg_color};
+            }}
+            """
+            style_provider = Gtk.CssProvider()
+            style_provider.load_from_data(css.encode())
+            
+            Gtk.StyleContext.add_provider_for_display(
+                Gdk.Display.get_default(),
+                style_provider,
+                Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION
+            )
+
+        if self.user_config["enable_fullscreen"]:
+            self.maximize()
+            self.fullscreen()
+        else:
+            self.set_default_size(1280, 720)
+
+        monitor = Gdk.Display.get_default().get_monitors().get_item(0)
+        win_height = monitor.get_geometry().height
         banner_height = int(win_height * 0.15)
 
         # Either get images from nomm cache (for gog and epic) or steam cache (for steam. duh.)
@@ -224,6 +245,22 @@ class GameDashboard(Adw.Window):
             print(f"Creating new metadata file : ", metadata_path)
         with open(metadata_path, 'w') as f:
             return yaml.safe_dump(metadata, f)
+
+    def get_contrast_color(self, hex_code):
+        # Remove # if present
+        hex_code = hex_code.lstrip('#')
+        
+        # Convert hex to RGB
+        r, g, b = [int(hex_code[i:i+2], 16) for i in (0, 2, 4)]
+        
+        # Calculate relative luminance
+        # Formula: 0.299*R + 0.587*G + 0.114*B
+        # We normalize 0-255 to 0-1
+        luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255
+        
+        # If luminance is > 0.5, the color is "bright", use black text
+        # Otherwise, use white text
+        return "#000000" if luminance > 0.5 else "#ffffff"
 
     def load_user_config(self):
         # TODO: Homogenise this config load with one in launcher.py and probably load_game_config
