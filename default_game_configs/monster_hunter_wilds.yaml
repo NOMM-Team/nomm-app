@@ -1,7 +1,7 @@
 name: 'Monster Hunter Wilds'
-steamappid: 2246340
+steam_id: 2246340
 mods_path: ""
-nexus_game_id: "monsterhunterwilds"
+nexus_id: "monsterhunterwilds"
 
 essential-utilities:
   reframeworkVR:

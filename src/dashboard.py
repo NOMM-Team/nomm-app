@@ -26,13 +26,11 @@ class GameDashboard(Adw.Window):
         self.game_name = game_name
         self.game_path = game_path
         self.app_id = app_id
-        self.user_config_path = user_config_path
-        self.game_config_path = game_config_path
         self.current_filter = "all" # default filter is all
         self.active_tab = "mods" # default tab is mods
 
-        self.game_config = self.load_game_config()
-        self.user_config = self.load_user_config()
+        self.game_config = self.load_yaml_config(game_config_path)
+        self.user_config = self.load_yaml_config(user_config_path)
         self.downloads_path = self.game_config.get("downloads_path")
         self.staging_path = Path(os.path.join(Path(self.user_config.get("staging_path")), game_name))
         self.platform = self.game_config.get("platform")
@@ -52,13 +50,36 @@ class GameDashboard(Adw.Window):
             self.setup_folder_monitor()
         
         self.set_title(f"NOMM - {game_name}")
-        self.maximize()
-        self.fullscreen()
-        
-        win_height = self.get_default_size()[1]
-        if self.is_maximized():
-            monitor = Gdk.Display.get_default().get_monitors().get_item(0)
-            win_height = monitor.get_geometry().height
+
+        # Per game accent colour theming
+        if self.user_config["enable_per_game_accent_colour"] and self.game_config.get("accent_colour"):
+            print("applying cool new colour")
+            fg_color = self.get_contrast_color(self.game_config["accent_colour"])
+            css = f"""
+            window {{
+                --accent-bg-color: {self.game_config["accent_colour"]};
+                --accent-color: {self.game_config["accent_colour"]};
+                --accent-fg-color: {fg_color};
+            }}
+            """
+            style_provider = Gtk.CssProvider()
+            style_provider.load_from_data(css.encode())
+            
+            Gtk.StyleContext.add_provider_for_display(
+                Gdk.Display.get_default(),
+                style_provider,
+                Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION
+            )
+
+        # Window configuration
+        if self.user_config["enable_fullscreen"]:
+            self.maximize()
+            self.fullscreen()
+        else:
+            self.set_default_size(1280, 720)
+
+        monitor = Gdk.Display.get_default().get_monitors().get_item(0)
+        win_height = monitor.get_geometry().height
         banner_height = int(win_height * 0.15)
 
         # Either get images from nomm cache (for gog and epic) or steam cache (for steam. duh.)
@@ -225,11 +246,27 @@ class GameDashboard(Adw.Window):
         with open(metadata_path, 'w') as f:
             return yaml.safe_dump(metadata, f)
 
-    def load_user_config(self):
+    def get_contrast_color(self, hex_code):
+        # Remove # if present
+        hex_code = hex_code.lstrip('#')
+        
+        # Convert hex to RGB
+        r, g, b = [int(hex_code[i:i+2], 16) for i in (0, 2, 4)]
+        
+        # Calculate relative luminance
+        # Formula: 0.299*R + 0.587*G + 0.114*B
+        # We normalize 0-255 to 0-1
+        luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255
+        
+        # If luminance is > 0.5, the color is "bright", use black text
+        # Otherwise, use white text
+        return "#000000" if luminance > 0.5 else "#ffffff"
+
+    def load_yaml_config(self, path: str):
         # TODO: Homogenise this config load with one in launcher.py and probably load_game_config
-        if os.path.exists(self.user_config_path):
+        if os.path.exists(path):
             try:
-                with open(self.user_config_path, 'r') as f:
+                with open(path, 'r') as f:
                     return yaml.safe_load(f) or {}
             except Exception as e:
                 print(f"Error loading config: {e}")
@@ -275,32 +312,6 @@ class GameDashboard(Adw.Window):
                     conflicts.append(unique_mods)
 
         return conflicts
-
-    def get_current_game_config_path(self, game_config_path):
-        #TODO: merge with below
-        def slug(text): return re.sub(r'[^a-z0-9]', '', text.lower())
-        target = slug(self.game_name)
-        if os.path.exists(game_config_path):
-            for filename in os.listdir(game_config_path):
-                if filename.lower().endswith((".yaml")):
-                    with open(os.path.join(game_config_path, filename), 'r') as f:
-                        data = yaml.safe_load(f) or {}
-                        if slug(data.get("name", "")) == target:
-                            current_game_config_path = game_config_path + '/' + filename
-                            return current_game_config_path
-
-    def load_game_config(self):
-        #TODO: merge this method and move to utils
-        config_dir = self.game_config_path
-        def slug(text): return re.sub(r'[^a-z0-9]', '', text.lower())
-        target = slug(self.game_name)
-        if os.path.exists(config_dir):
-            for filename in os.listdir(config_dir):
-                if filename.lower().endswith((".yaml", ".yml")):
-                    with open(os.path.join(config_dir, filename), 'r') as f:
-                        data = yaml.safe_load(f) or {}
-                        if slug(data.get("name", "")) == target: return data
-        return {}
 
     def get_mod_deployment_paths(self):
         game_path = self.game_config.get("game_path")
@@ -414,7 +425,7 @@ class GameDashboard(Adw.Window):
         staging_metadata = self.load_staging_metadata()
         if not staging_metadata: return
 
-        game_id = staging_metadata.get("info", {}).get("nexus_game_id")
+        game_id = staging_metadata.get("info", {}).get("nexus_id")
         if not game_id: return
 
         mods_updated = False
@@ -468,7 +479,7 @@ class GameDashboard(Adw.Window):
         
         # Action Bar (Search & Folder)
         action_bar = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
-        self.mod_search_entry = Gtk.SearchEntry(placeholder_text="Search mods...")
+        self.mod_search_entry = Gtk.SearchEntry(placeholder_text=_("Search mods..."))
         self.mod_search_entry.set_size_request(300, -1) 
         self.mod_search_entry.connect("search-changed", self.on_mod_search_changed)
         action_bar.append(self.mod_search_entry)
@@ -536,7 +547,12 @@ class GameDashboard(Adw.Window):
                 file_list_badge.add_css_class("badge-action-row")
                 file_list_badge.set_valign(Gtk.Align.CENTER)
                 file_list_badge.set_margin_end(row_element_margin)
-                file_list_badge.append(Gtk.Label(label=f"{number_of_files} file(s)"))
+                label_text = ngettext(
+                    "{} file",
+                    "{} files",
+                    number_of_files
+                ).format(number_of_files)
+                file_list_badge.append(Gtk.Label(label=label_text))
                 row.add_prefix(file_list_badge)
 
             # Prefix: Missing Files
@@ -550,8 +566,8 @@ class GameDashboard(Adw.Window):
                 missing_file_badge.set_valign(Gtk.Align.CENTER)
                 missing_file_badge.set_margin_end(row_element_margin)
                 label_text = ngettext(
-                    "Missing {} file.",
-                    "Missing {} files.",
+                    "Missing {} file",
+                    "Missing {} files",
                     len(missing_files)
                 ).format(len(missing_files))
                 missing_file_badge.set_tooltip_text(_("Missing Files:")+"\n\n".join(missing_files))
@@ -674,10 +690,10 @@ class GameDashboard(Adw.Window):
         
         action_bar = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
         filter_group = Gtk.Box(css_classes=["linked"])
-        self.all_filter_btn = Gtk.ToggleButton(label="All", active=True)
+        self.all_filter_btn = Gtk.ToggleButton(label=_("All"), active=True)
         self.all_filter_btn.connect("toggled", self.on_filter_toggled, "all")
         filter_group.append(self.all_filter_btn)
-        for n, l in [("uninstalled", "Uninstalled"), ("installed", "Installed")]:
+        for n, l in [("uninstalled", _("Uninstalled")), ("installed", _("Installed"))]:
             b = Gtk.ToggleButton(label=l, group=self.all_filter_btn)
             b.connect("toggled", self.on_filter_toggled, n)
             filter_group.append(b)
@@ -752,7 +768,7 @@ class GameDashboard(Adw.Window):
 
                     if installation_timestamp_value:
                         installation_ts_text = _("Installed: {}").format(installation_timestamp_value)
-                        installation_timestamp_badge = Gtk.Label(label=f"Installed: {installation_timestamp_value}", xalign=1, css_classes=["dim-label", "caption"])
+                        installation_timestamp_badge = Gtk.Label(label=installation_ts_text, xalign=1, css_classes=["dim-label", "caption"])
                         ts_box.append(installation_timestamp_badge)
                 
                 row.add_suffix(ts_box)
@@ -1099,7 +1115,7 @@ class GameDashboard(Adw.Window):
             self.resolve_deployment_path(filename, extracted_roots)
 
         except Exception as e:
-            self.show_message("Error", f"Installation failed: {e}")
+            self.show_message(_("Error"), _("Installation failed: {}").format(e))
 
     def on_fomod_dialog_response(self, dialog, response, zip_path, filename):
         if response == Gtk.ResponseType.OK:

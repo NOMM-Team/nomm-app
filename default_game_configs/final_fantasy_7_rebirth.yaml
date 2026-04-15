@@ -1,7 +1,6 @@
 name: FINAL FANTASY VII REBIRTH
-steamappid: 2909400
-
-nexus_game_id: finalfantasy7rebirth
+steam_id: 2909400
+nexus_id: finalfantasy7rebirth
 
 mods_path:
 - path: End/Content/Paks/~mods/

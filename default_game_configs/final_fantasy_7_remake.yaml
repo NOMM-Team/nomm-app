@@ -1,6 +1,6 @@
-name: FINAL FANTASY VII REMAKE
-steamappid: 1462040
-
-nexus_game_id: finalfantasy7remake
+name: FINAL FANTASY VII REMAKE INTERGRADE
+steam_folder_name: FINAL FANTASY VII REMAKE
+steam_id: 1462040
+nexus_id: finalfantasy7remake
 
 mods_path: End/Content/Paks/~mods/

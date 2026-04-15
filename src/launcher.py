@@ -30,7 +30,7 @@ APP_NAME = 'com.nomm.Nomm'
 # Initialize the translation system
 translation_system = gettext.translation(APP_NAME, localedir='/app/share/locale', fallback=True)
 # Install the '_' function globally so all other imported files can see it
-translation_system.install()
+translation_system.install(names=['ngettext'])
 
 def slugify(text):
     return re.sub(r'[^a-z0-9]', '', text.lower())
@@ -347,6 +347,47 @@ class Nomm(Adw.Application):
                 return True
         return False
 
+    def game_matcher(self, yaml_path: str, yaml_data: dict, game_path: str, platform: str):
+        '''Tries to match supported game titles with folder names identified and if it does it adds them to the match list'''
+
+        library_game_name = os.path.basename(game_path)
+        yaml_game_name = yaml_data.get("steam_folder_name", yaml_data.get("name"))
+
+        if not slugify(library_game_name) == slugify(yaml_game_name):
+            return False # not a match
+
+        # it's a match - extract useful information from yaml
+        game_title = yaml_data["name"]
+
+        # --- AUTO-REGISTER PATH DURING SCAN ---
+        # Update the data dictionary with the discovered platform & path
+        game_path = game_path.strip()
+        print(f"Saved game path: {game_path}")
+        yaml_data["platform"] = platform
+        yaml_data["game_path"] = game_path
+        
+        # Save the updated config back to the YAML file
+        with open(yaml_path, 'w') as f:
+            yaml.dump(yaml_data, f, default_flow_style=False)
+        
+        # add a special case if game is gog to avoid using app ID as game title
+        if platform == "heroic-gog":
+            game_title = game_config_data["name"]
+            app_id = slugged_folder_name # this is to make sure that a singular app_id is sent to the find_game_art matcher
+        elif platform == "steam":
+            app_id = yaml_data["steam_id"]
+
+        self.matches.append({
+            "name": game_title,
+            "img": self.find_game_art(app_id, platform),
+            "path": game_path,
+            "app_id": app_id,
+            "platform": platform,
+            "game_config_path": yaml_path
+        })
+        return True
+
+
     def get_steam_library_paths(self, vdf_path):
         libraries = []
 
@@ -425,17 +466,20 @@ class Nomm(Adw.Application):
 
         for filename in os.listdir(config_dir):
             if filename.lower().endswith((".yaml", ".yml")):
-                conf_path = os.path.join(config_dir, filename)
+                yaml_path = os.path.join(config_dir, filename)
                 try:
-                    with open(conf_path, 'r') as f:
-                        data = yaml.safe_load(f) or {}
-                    
-                    game_title, steam_app_id, gog_store_id_list = data.get("name"), data.get("steamappid"), data.get("gogstoreids")
-                    print(f"Looking for game {game_title}")
-                    if gog_store_id_list: # there can potentially be two gog store IDs that match to the same game
-                        gog_store_id_list = [str(item) for item in gog_store_id_list]
+                    with open(yaml_path, 'r') as f:
+                        yaml_data = yaml.safe_load(f) or {}
 
-                    if not game_title: continue
+                    if not yaml_data.get("name"):
+                        print("Malformed game YAML: missing game name")
+                        continue
+                    
+                    print(f"Looking for game {yaml_data.get("name")}")
+
+                    if yaml_data.get("mods_path") == None:
+                        print("Malformed game YAML: missing mods_path")
+                        continue
                     
                     # Search in Steam librarie(s)
                     if found_libs:
@@ -443,26 +487,28 @@ class Nomm(Adw.Application):
                             if not os.path.exists(lib): continue
                             for folder in os.listdir(lib):
                                 game_path = os.path.join(lib, folder)
-                                if self.game_title_matcher(game_path, conf_path, data, folder, game_title, platform="steam", app_id=steam_app_id):
+                                if self.game_matcher(yaml_path, yaml_data, game_path, platform="steam"):
                                     break
                     
                     # Search in Epic (Heroic) library
                     if self.epic_library_path:
-                        self.check_heroic_games(conf_path, data, game_title, "heroic-epic")
+                        self.check_heroic_games(yaml_path, yaml_data, "heroic-epic")
                     # Search in GOG (Heroic) library
-                    if self.gog_library_path:
-                        self.check_heroic_games(conf_path, data, gog_store_id_list, "heroic-gog")
+                    if self.gog_library_path and yaml_data.get("gog_id"):
+                        self.check_heroic_games(yaml_path, yaml_data, "heroic-gog")
                 
                 except Exception as e:
                     print(f"Error processing {filename} during scan: {e}")
 
         GLib.idle_add(self.show_library_ui)
 
-    def check_heroic_games(self, game_config_path: str, game_config_data: dict, game_title: str, platform: str):
+    def check_heroic_games(self, game_config_path: str, game_config_data: dict, platform: str):
         if platform == "heroic-epic":
             json_path = self.epic_library_path
+            game_title = game_config_data["name"]
         elif platform == "heroic-gog":
             json_path = self.gog_library_path
+            game_title = str(game_config_data["gog_id"])
         
         try:
             with open(json_path, 'r') as f:
@@ -472,7 +518,7 @@ class Nomm(Adw.Application):
             return None
 
         # for Epic Games, installed_games is a dict where keys are IDs and values are game info
-        if platform == "heroic-epic": 
+        if platform == "heroic-epic":
             for app_id, game_info in installed_games.items():
                 # Heroic GOG games have no title in the json - I use the app id instead which is stored in appName
                 heroic_game_title = game_info.get("title", "")
@@ -602,6 +648,7 @@ class Nomm(Adw.Application):
                 # If not, just set the number to 0
                 except Exception as e:
                     print(f"Could not add mod total to poster: {e}")
+                    print("(You probably haven't downloaded any mods yet)")
                     mod_total_badge_label = Gtk.Label(label='0', css_classes=["badge-accent"])
 
                 # Add label
@@ -705,7 +752,7 @@ Feel free to contact me on Discord or Github for more help!"),
         storage_group = Adw.PreferencesGroup(title=_("Storage"), description=_("Configure where NOMM manages your files."))
         content.append(storage_group)
 
-        # 1. Downloads Path Row
+        # Downloads Path Row
         path_row = Adw.ActionRow(title=_("Mod Downloads Path"))
         current_path = self.load_config().get('download_path', 'Not set')
         path_row.set_subtitle(current_path)
@@ -716,7 +763,7 @@ Feel free to contact me on Discord or Github for more help!"),
         path_row.add_suffix(folder_btn)
         storage_group.add(path_row)
 
-        # 2. Staging Path Row
+        # Staging Path Row
         staging_row = Adw.ActionRow(title=_("Mod Staging Path"))
         current_staging = self.load_config().get('staging_path', 'Not set')
         staging_row.set_subtitle(current_staging)
@@ -744,7 +791,7 @@ Feel free to contact me on Discord or Github for more help!"),
         api_row.add_suffix(check_btn)
         nexus_group.add(api_row)
 
-        # 3. Validation Logic
+        # Validation Logic for Nexus API key
         def on_validate_clicked(btn):
             key = api_entry.get_text()
             if not key: return
@@ -783,6 +830,31 @@ Feel free to contact me on Discord or Github for more help!"),
             threading.Thread(target=check_api, daemon=True).start()
 
         check_btn.connect("clicked", on_validate_clicked)
+
+        # --- GENERAL SETTINGS SECTION ---
+        general_group = Adw.PreferencesGroup(title=_("General Settings"))
+        content.append(general_group)
+
+        # Per-game accent colours
+        accent_row = Adw.SwitchRow(title=_("Per-Game Accent Colour"))
+        accent_row.set_subtitle(_("Accent colour will change for each game depending on configuration"))
+        accent_row.set_active(self.load_config().get('enable_per_game_accent_colour'))
+        accent_row.connect("notify::active", lambda row, pspec: self.toggle_per_game_accent_colour(row.get_active()))
+        general_group.add(accent_row)
+
+        # Skip launcher
+        launcher_skip_row = Adw.SwitchRow(title=_("Skip Launcher"))
+        launcher_skip_row.set_subtitle(_("App launches last used game profile instead of starting up launcher"))
+        launcher_skip_row.set_active(self.load_config().get('enable_launcher_skip'))
+        launcher_skip_row.connect("notify::active", lambda row, pspec: self.toggle_launcher_skip(row.get_active()))
+        general_group.add(launcher_skip_row)
+
+        # Fullscreen
+        fullscreen_row = Adw.SwitchRow(title=_("Fullscreen NOMM"))
+        fullscreen_row.set_subtitle(_("App launches in full screen when you select a game"))
+        fullscreen_row.set_active(self.load_config().get('enable_fullscreen'))
+        fullscreen_row.connect("notify::active", lambda row, pspec: self.toggle_fullscreen(row.get_active()))
+        general_group.add(fullscreen_row)
 
         # --- COMMUNITY SECTION ---
         community_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=20, halign=Gtk.Align.CENTER)
@@ -825,6 +897,18 @@ Feel free to contact me on Discord or Github for more help!"),
         content.append(save_btn)
 
         settings_win.present()
+
+    def toggle_per_game_accent_colour(self, state):
+        print(f"Per-game accent colours are now: {state}")
+        self.update_config('enable_per_game_accent_colour', state)
+
+    def toggle_launcher_skip(self, state):
+        print(f"Launcher skip is now: {state}")
+        self.update_config('enable_launcher_skip', state)
+
+    def toggle_fullscreen(self, state):
+        print(f"Fullscreen is now: {state}")
+        self.update_config('enable_fullscreen', state)
 
     def on_refresh_clicked(self, btn):
         try:
@@ -883,8 +967,9 @@ Feel free to contact me on Discord or Github for more help!"),
             steam_base=self.steam_base,
             app_id=game_data.get('app_id'),
             user_config_path=self.user_config_path,
-            game_config_path=self.game_config_path
+            game_config_path=game_data["game_config_path"]
         )
+        self.update_config("last_selected_game", self.game_config_path)
         self.dashboard.launch()
         
         if self.win:

@@ -1,5 +1,5 @@
 name: 'Blade & Sorcery'
-steamappid: 629730
+steam_id: 629730
 mods_path: "BladeAndSorcery_Data/StreamingAssets/Mods"
 
-nexus_game_id: "bladeandsorcery"
+nexus_id: "bladeandsorcery"

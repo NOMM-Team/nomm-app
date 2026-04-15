@@ -1,6 +1,6 @@
-name: MGSDelta
-steamappid: 2417610
-
-nexus_game_id: metalgearsoliddeltasnakeeater
+name: "Metal Gear Solid Δ: Snake Eater"
+steam_folder_name: MGSDelta
+steam_id: 2417610
+nexus_id: metalgearsoliddeltasnakeeater
 
 mods_path: MGSDelta/Content/Paks/~mods/

@@ -1,10 +1,10 @@
 name: 'Warhammer 40,000: Darktide'
-steamappid: 1361210
+steam_id: 1361210
 mods_path: mods/
 
 load_order_path: mods/mod_load_order.txt
 
-nexus_game_id: "warhammer40kdarktide"
+nexus_id: "warhammer40kdarktide"
 
 essential-utilities:
   darktide-mod-loader:
