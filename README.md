@@ -126,7 +126,6 @@ Phase 1 Development Progress:
 Phase 2 Development Progress:
 - [x] Rudimentary FOMOD support
 - [x] Add mod update checker
-- [ ] Handle more complex FOMOD, and handle them cleanly
 - [x] Let user skip launcher and go straight to game
 - [x] Figure out how to create a flatpak for the app
 - [x] Add language-specific strings
@@ -137,7 +136,9 @@ Phase 2 Development Progress:
 
 Phase 3 Development Progress:
 - [ ] Manage conflicts (for sure this will be hard without an actually good developer)
-- [ ] ???
+- [ ] Review access rights to be more restrictive
+- [ ] Make a Flathub build
+- [ ] Handle more complex FOMOD, and handle them cleanly
 
 Bonus (nice to have)
 - [ ] Game profiles?
