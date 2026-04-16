@@ -43,23 +43,27 @@ In that yaml you will need to define some basic information for it to be recogni
 ### Defining basic information
 - Name
 ```yaml
-name: 'Warhammer 40,000: Darktide' # the name of the game, with any symbols, spaces and whatnot kept intact
+name: 'Metal Gear Solid Δ: Snake Eater' # the name of the game, with any symbols, spaces and whatnot kept intact
 ```
 - Steam App ID
 ```yaml
-steamappid: 0000000 # the steam app id, you can find this on: https://steamdb.info/
+steam_id: 2417610 # the steam app id, you can find this on: https://steamdb.info/
 ```
+- Steam Folder Name
+```yaml
+steam_folder_name: "MGSDelta" # the steam folder name for the game in your steamapps folder - only useful if the game name and folder name are different
+```
+
 - Nexus Mods ID
 ```yaml
-nexus_game_id: "warhammer40kdarktide" # the nexus game key - used for nexus downloads (generally the game name with no symbols and all attached, but please check before submitting)
+nexus_id: "metalgearsoliddeltasnakeeater" # the nexus game key - used for nexus downloads (generally the game name with no symbols and all attached, but please check before submitting)
 ```
 - GOG Store ID(s)
 ```yaml
-gogstoreids:
-- 1207666893 # the gog store ids, this has to be a list in case multiple IDs correspond to the same game i.e. "The Witcher 3" and "the Witcher 3 Complete Edition"
+gog_id: 1207666893 # the gog store id
 ```
 > [!NOTE]
-> You can remove `gogstoreids` if the game is not on the GOG store.
+> You can remove `gog_id` if the game is not on the GOG store.
 - Load order
 ```yaml
 load_order_path: mods/mod_load_order.txt # for games with a text-editable load order, you can specify a path and a button will appear in the app to edit it directly.
@@ -123,14 +127,13 @@ Phase 2 Development Progress:
 - [x] Rudimentary FOMOD support
 - [x] Add mod update checker
 - [ ] Handle more complex FOMOD, and handle them cleanly
-- [ ] Let user skip launcher and go straight to game
+- [x] Let user skip launcher and go straight to game
 - [x] Figure out how to create a flatpak for the app
-- [ ] Add language-specific strings
-- [ ] Think about how to let user define load orders
+- [x] Add language-specific strings
 - [ ] Let user define load orders
 - [x] Add support for GOG libraries / games (through Heroic)
 - [x] Add support for Epic libraries / games (through Heroic)
-- [ ] ???
+- [x] Detect conflicts
 
 Phase 3 Development Progress:
 - [ ] Manage conflicts (for sure this will be hard without an actually good developer)
