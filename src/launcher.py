@@ -120,6 +120,7 @@ class Nomm(Adw.Application):
         self.stack.set_transition_type(Gtk.StackTransitionType.CROSSFADE)
         self.win.set_content(self.stack)
 
+
         if not os.path.exists(self.user_config_path):
             self.show_welcome_screen()
         else:
@@ -545,6 +546,34 @@ class Nomm(Adw.Application):
 
     def show_library_ui(self):
         self.remove_stack_child("library")
+
+        # If user has selected launcher skip option, launch game profile directly
+        user_config = self.load_config()
+        if user_config.get('enable_launcher_skip') and user_config.get("last_selected_game"):
+
+            print(user_config.get("last_selected_game"))
+            game_info = None
+            for match in self.matches:
+                if match["name"] == user_config.get("last_selected_game"):
+                    game_info = match
+            if game_info:
+                self.dashboard = GameDashboard(
+                    game_name=game_info['name'],
+                    game_path=game_info['path'],
+                    application=self,
+                    steam_base=self.steam_base,
+                    app_id=game_info.get('app_id'),
+                    user_config_path=self.user_config_path,
+                    game_config_path=game_info["game_config_path"],
+                )
+                self.dashboard.launch()
+                if self.win:
+                    self.win.close()
+                    self.win = None
+            else:
+                print("Was supposed to skip launcher, but could not find game to skip to")
+
+
         view = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
         view.append(Adw.HeaderBar())
         
@@ -553,7 +582,7 @@ class Nomm(Adw.Application):
         
         # Homogeneous ensures the FlowBox treats every slot as a 200px block
         flow = Gtk.FlowBox(
-            valign=Gtk.Align.START, 
+            valign=Gtk.Align.START,
             halign=Gtk.Align.START, # FIX 1: Keeps the grid columns from stretching
             selection_mode=Gtk.SelectionMode.NONE,
             margin_top=40, margin_bottom=40, margin_start=40, margin_end=40,
@@ -932,9 +961,7 @@ Feel free to contact me on Discord or Github for more help!"),
         if download_base:
             # Define the game-specific path
             game_download_path = os.path.join(download_base, game_data['name'])
-            
             print(f"Switch to game download path: {game_download_path}")
-
             # Create the physical folder if it doesn't exist
             os.makedirs(game_download_path, exist_ok=True)
 
@@ -947,9 +974,8 @@ Feel free to contact me on Discord or Github for more help!"),
             app_id=game_data.get('app_id'),
             user_config_path=self.user_config_path,
             game_config_path=game_data["game_config_path"],
-            game_download_path=game_download_path
         )
-        self.update_config("last_selected_game", self.game_config_path)
+        self.update_config("last_selected_game", game_data["name"])
         self.dashboard.launch()
         
         if self.win:

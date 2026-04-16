@@ -20,7 +20,7 @@ from utils import download_heroic_assets
 rarfile.UNRAR_TOOL = "/app/bin/unrar"
 
 class GameDashboard(Adw.Window):
-    def __init__(self, game_name, game_path, application, steam_base=None, app_id=None, user_config_path=None, game_config_path=None, game_download_path=None, **kwargs):
+    def __init__(self, game_name, game_path, application, steam_base=None, app_id=None, user_config_path=None, game_config_path=None, **kwargs):
         super().__init__(application=application, **kwargs)
         self.app = application
         self.game_name = game_name
@@ -31,7 +31,8 @@ class GameDashboard(Adw.Window):
 
         self.game_config = self.load_yaml_config(game_config_path)
         self.user_config = self.load_yaml_config(user_config_path)
-        self.downloads_path = game_download_path
+        self.user_config_path = user_config_path
+        self.downloads_path = str(Path(os.path.join(Path(self.user_config.get("download_path")), game_name)))
         self.staging_path = Path(os.path.join(Path(self.user_config.get("staging_path")), game_name))
         self.platform = self.game_config.get("platform")
         
@@ -52,7 +53,7 @@ class GameDashboard(Adw.Window):
         self.set_title(f"NOMM - {game_name}")
 
         # Per game accent colour theming
-        if self.user_config["enable_per_game_accent_colour"] and self.game_config.get("accent_colour"):
+        if self.user_config.get("enable_per_game_accent_colour") and self.game_config.get("accent_colour"):
             print("applying cool new colour")
             fg_color = self.get_contrast_color(self.game_config["accent_colour"])
             css = f"""
@@ -72,7 +73,7 @@ class GameDashboard(Adw.Window):
             )
 
         # Window configuration
-        if self.user_config["enable_fullscreen"]:
+        if self.user_config.get("enable_fullscreen"):
             self.maximize()
             self.fullscreen()
         else:
@@ -218,7 +219,7 @@ class GameDashboard(Adw.Window):
             if downloads_metadata:
                 if file_name in downloads_metadata["mods"]:
                     del downloads_metadata["mods"][file_name]
-                    self.write_metadata(downloads_metadata, self.downloads_metadata_path)
+                    self.write_yaml(downloads_metadata, self.downloads_metadata_path)
         except Exception as e:
             self.show_message(
                 _("Error"),
@@ -240,11 +241,11 @@ class GameDashboard(Adw.Window):
         with open(self.staging_metadata_path, 'r') as f:
             return yaml.safe_load(f)
 
-    def write_metadata(self, metadata, metadata_path):
-        if not os.path.exists(metadata_path):
-            print(f"Creating new metadata file : ", metadata_path)
-        with open(metadata_path, 'w') as f:
-            return yaml.safe_dump(metadata, f)
+    def write_yaml(self, yaml_content, yaml_path):
+        if not os.path.exists(yaml_path):
+            print(f"Creating new yaml file : ", yaml_path)
+        with open(yaml_path, 'w') as f:
+            return yaml.safe_dump(yaml_content, f)
 
     def get_contrast_color(self, hex_code):
         # Remove # if present
@@ -467,7 +468,7 @@ class GameDashboard(Adw.Window):
 
         # 3. Save only if changes were actually made
         if mods_updated:
-            self.write_metadata(staging_metadata, self.staging_metadata_path)
+            self.write_yaml(staging_metadata, self.staging_metadata_path)
             print("Metadata updated with new version info and changelogs.")
             self.create_mods_page()
 
@@ -1308,7 +1309,7 @@ class GameDashboard(Adw.Window):
                     current_staging_metadata["mods"][mod_name]["deployment_target"] = deployment_target["name"]
                 
                 # write the updated staging metadata file
-                self.write_metadata(current_staging_metadata, self.staging_metadata_path)
+                self.write_yaml(current_staging_metadata, self.staging_metadata_path)
 
         except Exception as e:
             self.show_message("Error", f"Installation failed: There was an issue creating/updating the metadata file: {e}")
@@ -1424,6 +1425,9 @@ class GameDashboard(Adw.Window):
             self.update_indicators()
 
     def on_back_clicked(self, btn):
+        user_config = self.load_yaml_config(self.user_config_path)
+        user_config["last_selected_game"] = "dashboard"
+        self.write_yaml(user_config, self.user_config_path)
         self.app.do_activate(); self.close()
 
     def on_launch_clicked(self, btn):
