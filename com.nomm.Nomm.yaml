@@ -35,7 +35,20 @@ modules:
       - type: archive
         url: https://www.rarlab.com/rar/unrarsrc-6.2.10.tar.gz
         sha256: 55fe6ebd5e48d6655bfda3fd19b55438ca05e13c7e69772420caad9fdb68ef42
-        
+  
+  # bundling p7zip because I'm an idiot who couldn't make py7zr to work
+  - name: p7zip
+    buildsystem: simple
+    build-commands:
+      # '7za' is the standalone binary with the main codecs built-in
+      - make 7za
+      # We install it as '7z' so your Python code doesn't have to change
+      - install -Dm755 bin/7za /app/bin/7z
+    sources:
+      - type: archive
+        url: https://github.com/p7zip-project/p7zip/archive/refs/tags/v17.05.tar.gz
+        sha256: d2788f892571058c08d27095c22154579dfefb807ebe357d145ab2ddddefb1a6
+
   # 2. Your Application
   - name: nomm
     buildsystem: simple

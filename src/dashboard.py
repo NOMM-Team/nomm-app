@@ -1,14 +1,14 @@
 # Global imports
-import os
-import yaml
-import shutil
-import zipfile
-import webbrowser
-import re
-import requests
+import os # a shitton of stuff
+import yaml # yaml is how all my config files are stored
+import shutil # I use this sparingly to copy / delete folders
+import zipfile # for zip extraction
+import webbrowser # to launch web browser as needed
+import requests # various API calls
 import fomod_handler
-import gi
-import rarfile
+import gi # interface framework
+import rarfile # for rar extraction
+import subprocess # for bundled 7z
 
 # Specific imports
 from gi.repository import Gtk, Adw, Gdk, Gio, GLib, Pango
@@ -1058,7 +1058,7 @@ class GameDashboard(Adw.Window):
         
         # This is to ensure that all the files in staging are neatly arranged in their own folder
         # ...and avoid loose files or files within directories to be merged together
-        display_name = display_name.replace(".zip", "").replace(".rar", "").replace(".7z", "")
+        display_name = Path(filename).stem
         staging_path = os.path.join(self.staging_path, display_name)
         archive_full_path = os.path.join(self.downloads_path, filename)
         
@@ -1080,12 +1080,23 @@ class GameDashboard(Adw.Window):
                     all_files = rf.namelist()
                     rf.extractall(staging_path)
             elif is_7z:
-                pass
-                # TODO: find a way to fix py7zr library in flatpak or use somthing else
-                # Use py7zr for .7z files
-                # with py7zr.SevenZipFile(archive_full_path, mode='r') as szf:
-                    # all_files = szf.getnames()  # py7zr uses getnames()
-                    # szf.extractall(path=staging_path)
+                # Use bundled 7z binary. 'x' = extract, '-o' = output, '-y' = yes to all
+                os.makedirs(staging_path, exist_ok=True)
+                # Run and capture output
+                process = subprocess.run(
+                    ["7z", "x", archive_full_path, f"-o{staging_path}", "-y"],
+                    capture_output=True, 
+                    text=True
+                )
+
+                if process.returncode != 0:
+                    # This will print the ACTUAL 7z error to your terminal
+                    print(f"--- 7z STDOUT ---\n{process.stdout}")
+                    print(f"--- 7z STDERR ---\n{process.stderr}")
+                    
+                    # Raise a cleaner exception for your UI to show
+                    error_msg = process.stderr if process.stderr else _("Internal 7z error")
+                    raise Exception(f"7z (Code {process.returncode}): {error_msg}")
             elif is_zip:
                 with zipfile.ZipFile(archive_full_path, 'r') as zf:
                     all_files = zf.namelist()
