@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-04-15 08:14+0200\n"
+"POT-Creation-Date: 2026-04-16 23:30+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -18,176 +18,176 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=INTEGER; plural=EXPRESSION;\n"
 
-#: src/dashboard.py:117
+#: src/dashboard.py:139
 msgid "DOWNLOADS"
 msgstr ""
 
-#: src/dashboard.py:167
+#: src/dashboard.py:189
 msgid "Change Game"
 msgstr ""
 
-#: src/dashboard.py:172
+#: src/dashboard.py:194
 msgid "Launch Game"
 msgstr ""
 
-#: src/dashboard.py:190 src/dashboard.py:203 src/dashboard.py:899
-#: src/dashboard.py:1060 src/dashboard.py:1107
+#: src/dashboard.py:212 src/dashboard.py:225 src/dashboard.py:911
+#: src/dashboard.py:1072 src/dashboard.py:1119
 msgid "Error"
 msgstr ""
 
-#: src/dashboard.py:191
+#: src/dashboard.py:213
 msgid "Could not delete the file: {}"
 msgstr ""
 
-#: src/dashboard.py:204
+#: src/dashboard.py:226
 msgid "Could not delete metadata for file: {}"
 msgstr ""
 
-#: src/dashboard.py:471
+#: src/dashboard.py:483
 msgid "Search mods..."
 msgstr ""
 
-#: src/dashboard.py:500
+#: src/dashboard.py:512
 msgid "The staging metadata file could not be found, did you install any mods?"
 msgstr ""
 
-#: src/dashboard.py:540
-msgid "{} file."
-msgid_plural "{} files."
+#: src/dashboard.py:552
+msgid "{} file"
+msgid_plural "{} files"
 msgstr[0] ""
 msgstr[1] ""
 
-#: src/dashboard.py:558
-msgid "Missing {} file."
-msgid_plural "Missing {} files."
+#: src/dashboard.py:570
+msgid "Missing {} file"
+msgid_plural "Missing {} files"
 msgstr[0] ""
 msgstr[1] ""
 
-#: src/dashboard.py:562
+#: src/dashboard.py:574
 msgid "Missing Files:"
 msgstr ""
 
-#: src/dashboard.py:580
+#: src/dashboard.py:592
 msgid "Conflicting mod: {}"
 msgid_plural "Conflicting mods: {}"
 msgstr[0] ""
 msgstr[1] ""
 
-#: src/dashboard.py:641
+#: src/dashboard.py:653
 msgid "Enabled: {}"
 msgstr ""
 
-#: src/dashboard.py:647 src/dashboard.py:759
+#: src/dashboard.py:659 src/dashboard.py:771
 msgid "Installed: {}"
 msgstr ""
 
-#: src/dashboard.py:656 src/dashboard.py:776
+#: src/dashboard.py:668 src/dashboard.py:788
 msgid "Are you sure?"
 msgstr ""
 
-#: src/dashboard.py:682
+#: src/dashboard.py:694
 msgid "All"
 msgstr ""
 
-#: src/dashboard.py:685
+#: src/dashboard.py:697
 msgid "Uninstalled"
 msgstr ""
 
-#: src/dashboard.py:685
+#: src/dashboard.py:697
 msgid "Installed"
 msgstr ""
 
-#: src/dashboard.py:746
+#: src/dashboard.py:758
 msgid "Downloaded: {}"
 msgstr ""
 
-#: src/dashboard.py:766 src/dashboard.py:859
+#: src/dashboard.py:778 src/dashboard.py:871
 msgid "Reinstall"
 msgstr ""
 
-#: src/dashboard.py:766
+#: src/dashboard.py:778
 msgid "Install"
 msgstr ""
 
-#: src/dashboard.py:801
+#: src/dashboard.py:813
 msgid "No utilities defined."
 msgstr ""
 
-#: src/dashboard.py:856
+#: src/dashboard.py:868
 msgid "Download"
 msgstr ""
 
-#: src/dashboard.py:878
+#: src/dashboard.py:890
 msgid "Edit Load Order"
 msgstr ""
 
-#: src/dashboard.py:900
+#: src/dashboard.py:912
 msgid ""
 "Load order file not found at:\n"
 " {}"
 msgstr ""
 
-#: src/dashboard.py:926
+#: src/dashboard.py:938
 msgid ""
 "Warning: This process may be destructive to existing game files. Please "
 "ensure you have backed up your game directory before proceeding."
 msgstr ""
 
-#: src/dashboard.py:930
+#: src/dashboard.py:942
 msgid "Confirm Installation"
 msgstr ""
 
-#: src/dashboard.py:933
+#: src/dashboard.py:945
 msgid "Cancel"
 msgstr ""
 
-#: src/dashboard.py:934
+#: src/dashboard.py:946
 msgid "Install Anyway"
 msgstr ""
 
-#: src/dashboard.py:984
+#: src/dashboard.py:996
 msgid "Success"
 msgstr ""
 
-#: src/dashboard.py:985
+#: src/dashboard.py:997
 msgid "{} has been installed."
 msgstr ""
 
-#: src/dashboard.py:988
+#: src/dashboard.py:1000
 msgid "Installation Error"
 msgstr ""
 
-#: src/dashboard.py:1060
+#: src/dashboard.py:1072
 msgid ""
 "Installation failed: Your configuration YAML is missing a mods_path. Please "
 "check the readme on github for information on how to configure the yaml file."
 msgstr ""
 
-#: src/dashboard.py:1107
+#: src/dashboard.py:1119
 msgid "Installation failed: {}"
 msgstr ""
 
-#: src/dashboard.py:1159
+#: src/dashboard.py:1171
 msgid "Select Deployment Path"
 msgstr ""
 
-#: src/dashboard.py:1177
+#: src/dashboard.py:1189
 msgid "Multiple deployment locations available:"
 msgstr ""
 
-#: src/dashboard.py:1327
+#: src/dashboard.py:1339
 msgid "Error while removing symlinks: "
 msgstr ""
 
-#: src/dashboard.py:1332
+#: src/dashboard.py:1344
 msgid "Error while removing mod from staging: "
 msgstr ""
 
-#: src/launcher.py:139
+#: src/launcher.py:140
 msgid "Welcome to the Native Open Mod Manager (NOMM) app!"
 msgstr ""
 
-#: src/launcher.py:140
+#: src/launcher.py:141
 msgid ""
 "This app is still in early development, so expect some bugs and missing "
 "features.\n"
@@ -195,66 +195,66 @@ msgid ""
 "forget that you can report any bugs or request features on the Github!"
 msgstr ""
 
-#: src/launcher.py:172
+#: src/launcher.py:173
 msgid "Select your mods download folder"
 msgstr ""
 
-#: src/launcher.py:173
+#: src/launcher.py:174
 msgid ""
 "Please select the folder where mod downloads will be stored.\n"
 "Mod downloads will be categorised by game name.\n"
 "I recommend you create a nomm directory at the end of your target path."
 msgstr ""
 
-#: src/launcher.py:178
+#: src/launcher.py:179
 msgid "Set Mod Download Path"
 msgstr ""
 
-#: src/launcher.py:190
+#: src/launcher.py:191
 msgid "Select Mod Downloads Folder"
 msgstr ""
 
-#: src/launcher.py:220
+#: src/launcher.py:221
 msgid ""
 "<b>Important:</b> If using Steam Flatpak, ensure it has permission to access "
 "this folder (you can do this via command line or Flatseal)."
 msgstr ""
 
-#: src/launcher.py:230
+#: src/launcher.py:231
 msgid "Set Mod Staging Path"
 msgstr ""
 
-#: src/launcher.py:246
+#: src/launcher.py:247
 msgid "Select Mod Staging Folder"
 msgstr ""
 
-#: src/launcher.py:263 src/launcher.py:741
+#: src/launcher.py:264 src/launcher.py:817
 msgid "Nexus API Key"
 msgstr ""
 
-#: src/launcher.py:264
+#: src/launcher.py:265
 msgid ""
 "If you want to download mods from Nexus Mods, enter your API Key (Site "
 "Preferences > API Keys > scroll all the way down)"
 msgstr ""
 
-#: src/launcher.py:271
+#: src/launcher.py:272
 msgid "Enter API Key..."
 msgstr ""
 
-#: src/launcher.py:275
+#: src/launcher.py:276
 msgid "Continue"
 msgstr ""
 
-#: src/launcher.py:302
+#: src/launcher.py:303
 msgid "NOMM: Searching for games..."
 msgstr ""
 
-#: src/launcher.py:620
+#: src/launcher.py:696
 msgid "No games detected"
 msgstr ""
 
-#: src/launcher.py:621
+#: src/launcher.py:697
 msgid ""
 "We couldn't find any Steam or Heroic games. This could be due to\n"
 " - You not having any supported games installed\n"
@@ -263,30 +263,58 @@ msgid ""
 " Feel free to contact me on Discord or Github for more help!"
 msgstr ""
 
-#: src/launcher.py:705
+#: src/launcher.py:781
 msgid "Storage"
 msgstr ""
 
-#: src/launcher.py:705
+#: src/launcher.py:781
 msgid "Configure where NOMM manages your files."
 msgstr ""
 
-#: src/launcher.py:709
+#: src/launcher.py:785
 msgid "Mod Downloads Path"
 msgstr ""
 
-#: src/launcher.py:720
+#: src/launcher.py:796
 msgid "Mod Staging Path"
 msgstr ""
 
-#: src/launcher.py:731
+#: src/launcher.py:807
 msgid "Nexus Mods Integration"
 msgstr ""
 
-#: src/launcher.py:735
+#: src/launcher.py:811
 msgid "Paste API Key..."
 msgstr ""
 
-#: src/launcher.py:823
+#: src/launcher.py:864
+msgid "General Settings"
+msgstr ""
+
+#: src/launcher.py:868
+msgid "Per-Game Accent Colour"
+msgstr ""
+
+#: src/launcher.py:869
+msgid "Accent colour will change for each game depending on configuration"
+msgstr ""
+
+#: src/launcher.py:875
+msgid "Skip Launcher"
+msgstr ""
+
+#: src/launcher.py:876
+msgid "App launches last used game profile instead of starting up launcher"
+msgstr ""
+
+#: src/launcher.py:882
+msgid "Fullscreen NOMM"
+msgstr ""
+
+#: src/launcher.py:883
+msgid "App launches in full screen when you select a game"
+msgstr ""
+
+#: src/launcher.py:924
 msgid "Close"
 msgstr ""
