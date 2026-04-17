@@ -1081,7 +1081,6 @@ class GameDashboard(Adw.Window):
                     rf.extractall(staging_path)
             elif is_7z:
                 # Use bundled 7z binary. 'x' = extract, '-o' = output, '-y' = yes to all
-                os.makedirs(staging_path, exist_ok=True)
                 # Run and capture output
                 process = subprocess.run(
                     ["7z", "x", archive_full_path, f"-o{staging_path}", "-y"],
