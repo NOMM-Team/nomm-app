@@ -249,7 +249,7 @@ msgstr "Sélection du dossier de Staging"
 
 #: src/launcher.py:264 src/launcher.py:817
 msgid "Nexus API Key"
-msgstr "Clef d'API Nexus"
+msgstr "Clef API Nexus"
 
 #: src/launcher.py:265
 msgid ""
