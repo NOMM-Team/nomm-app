@@ -19,9 +19,9 @@ from utils import download_heroic_assets
 # Point rarfile to the bundled binary
 rarfile.UNRAR_TOOL = "/app/bin/unrar"
 
-class GameDashboard(Adw.Window):
+class GameDashboard(Gtk.Box):
     def __init__(self, game_name, game_path, application, steam_base=None, app_id=None, user_config_path=None, game_config_path=None, **kwargs):
-        super().__init__(application=application, **kwargs)
+        super().__init__(orientation=Gtk.Orientation.VERTICAL, **kwargs)
         self.app = application
         self.game_name = game_name
         self.game_path = game_path
@@ -49,8 +49,6 @@ class GameDashboard(Adw.Window):
 
         if self.downloads_path and os.path.exists(self.downloads_path):
             self.setup_folder_monitor()
-        
-        self.set_title(f"NOMM - {game_name}")
 
         # Per game accent colour theming
         if self.user_config.get("enable_per_game_accent_colour") and self.game_config.get("accent_colour"):
@@ -71,13 +69,6 @@ class GameDashboard(Adw.Window):
                 style_provider,
                 Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION
             )
-
-        # Window configuration
-        if self.user_config.get("enable_fullscreen"):
-            self.maximize()
-            self.fullscreen()
-        else:
-            self.set_default_size(1280, 720)
 
         monitor = Gdk.Display.get_default().get_monitors().get_item(0)
         win_height = monitor.get_geometry().height
@@ -198,7 +189,7 @@ class GameDashboard(Adw.Window):
         footer.set_end_widget(launch_btn)
 
         main_layout.append(footer)
-        self.set_content(main_layout)
+        self.append(main_layout)
 
     def delete_download_package(self, btn, file_name):
         """Deletes the mod zip and associated data in downloads.nomm.yaml file if it exists."""
@@ -1457,7 +1448,9 @@ class GameDashboard(Adw.Window):
         user_config = self.load_yaml_config(self.user_config_path)
         user_config["last_selected_game"] = "dashboard"
         self.write_yaml(user_config, self.user_config_path)
-        self.app.do_activate(); self.close()
+        
+        # Nouvelle méthode que nous allons créer dans launcher.py
+        self.app.return_to_library()
 
     def on_launch_clicked(self, btn):
         if self.app_id:

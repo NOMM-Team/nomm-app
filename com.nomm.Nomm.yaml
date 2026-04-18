@@ -20,6 +20,8 @@ finish-args:
   # Mounting points (to install mods in games)
   - --filesystem=/run/media:rw
   - --filesystem=/mnt:rw
+  #to allow to read and write files from home folder
+  - --filesystem=home
 
 modules:
   # 1. Python dependencies (generated via flatpak-pip-generator)
