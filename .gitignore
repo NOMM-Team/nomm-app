@@ -5,3 +5,4 @@ repo/
 /nomm.flatpak
 /flatpak-pip-generator.py
 /python3-modules.json
+/.vscode

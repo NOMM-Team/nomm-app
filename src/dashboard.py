@@ -603,6 +603,23 @@ class GameDashboard(Gtk.Box):
                 deployment_badge.set_margin_end(row_element_margin)
                 row.add_suffix(deployment_badge)
 
+            # Timestamps
+            if "install_timestamp" in mod_metadata or "enabled_timestamp" in mod_metadata:
+                timestamp_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=2, valign=Gtk.Align.CENTER, margin_end=15)
+                # Enabled Timestamp
+                if "enabled_timestamp" in mod_metadata:
+                    enabled_timestamp_label = _("Enabled: {}").format(mod_metadata["enabled_timestamp"])
+                    enabled_timestamp = Gtk.Label(label=enabled_timestamp_label, xalign=1, css_classes=["dim-label", "caption"])
+                    timestamp_box.append(enabled_timestamp)
+
+                # Installed Timestamp
+                if "install_timestamp" in mod_metadata:
+                    installed_timestamp_label = _("Installed: {}").format(mod_metadata["install_timestamp"])
+                    installed_timestamp = Gtk.Label(label=installed_timestamp_label, xalign=1, css_classes=["dim-label", "caption"])
+                    timestamp_box.append(installed_timestamp)
+                
+                row.add_suffix(timestamp_box)
+
             # Version badge
             version_badge = Gtk.Button()
             button_content = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
@@ -629,23 +646,6 @@ class GameDashboard(Gtk.Box):
                 version_badge.connect("clicked", lambda b, l=mod_link: webbrowser.open(l))
             
             row.add_suffix(version_badge)
-
-            # Timestamps
-            if "install_timestamp" in mod_metadata or "enabled_timestamp" in mod_metadata:
-                timestamp_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=2, valign=Gtk.Align.CENTER, margin_end=15)
-                # Enabled Timestamp
-                if "enabled_timestamp" in mod_metadata:
-                    enabled_timestamp_label = _("Enabled: {}").format(mod_metadata["enabled_timestamp"])
-                    enabled_timestamp = Gtk.Label(label=enabled_timestamp_label, xalign=1, css_classes=["dim-label", "caption"])
-                    timestamp_box.append(enabled_timestamp)
-
-                # Installed Timestamp
-                if "install_timestamp" in mod_metadata:
-                    installed_timestamp_label = _("Installed: {}").format(mod_metadata["install_timestamp"])
-                    installed_timestamp = Gtk.Label(label=installed_timestamp_label, xalign=1, css_classes=["dim-label", "caption"])
-                    timestamp_box.append(installed_timestamp)
-                
-                row.add_suffix(timestamp_box)
 
             # Trash Bin Stack
             u_stack = Gtk.Stack(transition_type=Gtk.StackTransitionType.CROSSFADE, hhomogeneous=False, interpolate_size=True)
