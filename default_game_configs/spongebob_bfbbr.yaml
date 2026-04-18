@@ -1,0 +1,22 @@
+name: "SpongeBob SquarePants: Battle for Bikini Bottom - Rehydrated"
+steam_folder_name: SpongeBob SquarePants Battle for Bikini Bottom - Rehydrated
+steam_id: 969990
+nexus_id: spongebobsquarepantsbattleforbikinibottomrehydrated
+
+mods_path:
+- path: Pineapple/Content/Paks/~mods
+  name: Default
+  description: Regular mods that go in the ~mods folder
+- path: Pineapple/Content/Paks/LogicMods
+  name: UE4SS Mods
+  description: Mods specifically made for UE4SS
+
+essential-utilities:
+  UE4SS (Unreal Engine 4/5 Scripting System):
+    name: UE4SS (Unreal Engine 4/5 Scripting System)
+    version: 3.0.1
+    creator: CheatingMuppet
+    creator-link: https://github.com/UE4SS/UE4SS
+    source: https://github.com/UE4SS-RE/RE-UE4SS/releases/download/experimental-latest/UE4SS_v3.0.1-946-g265115c0.zip
+    utility_path: Pineapple/Content/Paks/LogicMods
+    enable_command: ""
