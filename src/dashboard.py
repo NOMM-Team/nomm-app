@@ -1058,7 +1058,7 @@ class GameDashboard(Adw.Window):
         
         # This is to ensure that all the files in staging are neatly arranged in their own folder
         # ...and avoid loose files or files within directories to be merged together
-        display_name = Path(filename).stem
+        display_name = display_name.replace(".zip", "").replace(".rar", "").replace(".7z", "")
         staging_path = os.path.join(self.staging_path, display_name)
         archive_full_path = os.path.join(self.downloads_path, filename)
         
@@ -1096,6 +1096,13 @@ class GameDashboard(Adw.Window):
                     # Raise a cleaner exception for your UI to show
                     error_msg = process.stderr if process.stderr else _("Internal 7z error")
                     raise Exception(f"7z (Code {process.returncode}): {error_msg}")
+
+                for root, dirs, files in os.walk(staging_path):
+                    for file in files:
+                        # Get the path relative to the staging_path so it matches ZIP/RAR format
+                        full_file_path = os.path.join(root, file)
+                        rel_path = os.path.relpath(full_file_path, staging_path)
+                        all_files.append(rel_path)
             elif is_zip:
                 with zipfile.ZipFile(archive_full_path, 'r') as zf:
                     all_files = zf.namelist()
@@ -1120,6 +1127,9 @@ class GameDashboard(Adw.Window):
                     dialog.connect("response", self.on_fomod_dialog_response, archive_full_path, filename, None)
                     dialog.present()
                     return
+
+            if not all_files:
+                self.show_message(_("No files were read in your mod archive"))
 
             # Standard Installation
             extracted_roots = list({name.split('/')[0] for name in all_files})
@@ -1306,7 +1316,7 @@ class GameDashboard(Adw.Window):
                     
                     # if the mod was downloaded with metadata, add all of the specific mod information
                     if filename in current_download_metadata["mods"]:
-                        mod_name = current_download_metadata["mods"][filename]["name"]
+                        mod_name = current_download_metadata["mods"][filename]["name"].replace(".zip", "").replace(".rar", "").replace(".7z", "")
                         current_staging_metadata["mods"][mod_name] = current_download_metadata["mods"][filename]
                     else: # if the mod was manually downloaded, add basic info only
                         mod_name = filename.replace(".zip", "").replace(".rar", "").replace(".7z", "")
