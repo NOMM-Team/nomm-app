@@ -429,12 +429,17 @@ class GameDashboard(Adw.Window):
         game_id = staging_metadata.get("info", {}).get("nexus_id")
         if not game_id: return
 
+        print("Checking for updates")
+
         mods_updated = False
 
         for mod_name, details in staging_metadata["mods"].items():
+            print(f"Checking for update for mod: {mod_name}")
             mod_id = details.get("mod_id")
             local_version = str(details.get("version", ""))
-            if not mod_id: continue
+            if not mod_id:
+                print("No mod ID found, skipping mod update check")
+                continue
 
             try:
                 # 1. Check for new version
@@ -462,6 +467,8 @@ class GameDashboard(Adw.Window):
                             if new_log:
                                 # Join list of changes into a single string if necessary
                                 details["changelog"] = "\n".join(new_log) if isinstance(new_log, list) else new_log
+                else:
+                    print(f"Error getting update information:\n {resp.json()}")
 
             except Exception as e:
                 print(f"Error checking {mod_name}: {e}")
@@ -1001,10 +1008,12 @@ class GameDashboard(Adw.Window):
 
     def on_mod_toggled(self, switch, state, mod_files: list, mod: str):
         '''User clicked the toggle on the mods page: need to either enable or disable the mod'''
+        print(f"Toggling mod: {mod}")
         deployment_targets = self.deployment_targets
         staging_metadata = self.load_staging_metadata()
 
         if not deployment_targets or not staging_metadata:
+            print("Cancelling toggle")
             return False
 
         if not "deployment_target" in staging_metadata["mods"][mod]:
@@ -1019,10 +1028,17 @@ class GameDashboard(Adw.Window):
             staging_item = self.staging_path / mod / mod_file # staging path / mod name / actual mod file
             link_path = Path(dest_dir) / mod_file
 
-            # check path exists and create if not
-            Path(dest_dir).mkdir(parents=True, exist_ok=True)
-
             if state:
+                # 1. Recursive Directory Handling
+                # If the item in staging is a directory, merge it into the game folder
+                if staging_item.is_dir():
+                    link_path.mkdir(parents=True, exist_ok=True)
+                    continue
+                
+                # 2. File Handling
+                # Ensure the parent directory for the file exists
+                link_path.parent.mkdir(parents=True, exist_ok=True)
+
                 if not link_path.exists():
                     try:
                         os.symlink(staging_item, link_path)
@@ -1033,16 +1049,25 @@ class GameDashboard(Adw.Window):
                     except Exception as e:
                         print(f"Failed to enable mod {e}")
                         switch.set_active(False)
+                        # We stop here to prevent a flood of errors if it's a permission issue
+                        break 
+                else:
+                    # If it's not a symlink, it's a real game file. We don't overwrite.
+                    if not link_path.is_symlink():
+                        print(f"Conflict: {link_path} already exists as a real file, skipping.")
             else:
+                # Disable Logic
                 if link_path.is_symlink():
                     try:
                         link_path.unlink()
                         if staging_metadata:
                             staging_metadata["mods"][mod]["status"] = "disabled"
-                            del staging_metadata["mods"][mod]["enabled_timestamp"]
+                            # Using .pop prevents a Crash if the key is missing
+                            staging_metadata["mods"][mod].pop("enabled_timestamp", None)
                     except Exception as e:
                         print(f"Failed to disable mod {e}")
                         switch.set_active(True)
+                        break
 
         if staging_metadata:
             with open(self.staging_metadata_path, 'w') as f:
@@ -1077,7 +1102,6 @@ class GameDashboard(Adw.Window):
             all_files = []
             if is_rar:
                 with rarfile.RarFile(archive_full_path) as rf:
-                    all_files = rf.namelist()
                     rf.extractall(staging_path)
             elif is_7z:
                 # Use bundled 7z binary. 'x' = extract, '-o' = output, '-y' = yes to all
@@ -1088,33 +1112,31 @@ class GameDashboard(Adw.Window):
                     text=True
                 )
 
-                if process.returncode != 0:
-                    # This will print the ACTUAL 7z error to your terminal
-                    print(f"--- 7z STDOUT ---\n{process.stdout}")
-                    print(f"--- 7z STDERR ---\n{process.stderr}")
-                    
-                    # Raise a cleaner exception for your UI to show
-                    error_msg = process.stderr if process.stderr else _("Internal 7z error")
-                    raise Exception(f"7z (Code {process.returncode}): {error_msg}")
-
-                for root, dirs, files in os.walk(staging_path):
-                    for file in files:
-                        # Get the path relative to the staging_path so it matches ZIP/RAR format
-                        full_file_path = os.path.join(root, file)
-                        rel_path = os.path.relpath(full_file_path, staging_path)
-                        all_files.append(rel_path)
             elif is_zip:
                 with zipfile.ZipFile(archive_full_path, 'r') as zf:
-                    all_files = zf.namelist()
                     zf.extractall(staging_path)
             else:
                 print(f"Archive type not recognised for {filename}")
                 return
 
+            # This runs once for ALL extraction types
+            all_files = []
+            for root, dirs, files in os.walk(staging_path):
+                for file in files:
+                    full_path = os.path.join(root, file)
+                    # Get path relative to staging_path (e.g., "bin/mod.dll")
+                    rel_path = os.path.relpath(full_path, staging_path)
+                    # Normalize to forward slashes for cross-platform consistency
+                    all_files.append(rel_path.replace('\\', '/'))
+
+            if not all_files:
+                self.show_message(_("Error"), _("No files were found in your mod archive."))
+                return
+
+            # 3. FOMOD Check
             fomod_xml_path = next((f for f in all_files if f.lower().endswith("fomod/moduleconfig.xml")), None)
 
             if fomod_xml_path:
-                # Re-read the XML from the extracted location
                 xml_path = os.path.join(staging_path, fomod_xml_path)
                 with open(xml_path, 'rb') as f:
                     xml_data = f.read()
@@ -1123,7 +1145,6 @@ class GameDashboard(Adw.Window):
                 
                 if options:
                     dialog = fomod_handler.FomodSelectionDialog(self, module_name, options)
-                    # Pass None for archive_class as we already extracted it
                     dialog.connect("response", self.on_fomod_dialog_response, archive_full_path, filename, None)
                     dialog.present()
                     return
@@ -1132,13 +1153,14 @@ class GameDashboard(Adw.Window):
                 self.show_message(_("No files were read in your mod archive"))
 
             # Standard Installation
-            extracted_roots = list({name.split('/')[0] for name in all_files})
-            self.resolve_deployment_path(filename, extracted_roots)
+            # extracted_roots = list({name.split('/')[0] for name in all_files})
+            self.resolve_deployment_path(filename, all_files)
 
         except Exception as e:
             self.show_message(_("Error"), _("Installation failed: {}").format(e))
 
     def on_fomod_dialog_response(self, dialog, response, zip_path, filename):
+        #TODO: This method needs to be entirely reworked
         if response == Gtk.ResponseType.OK:
             source_folder_name = dialog.get_selected_source()
             if source_folder_name:
@@ -1147,8 +1169,8 @@ class GameDashboard(Adw.Window):
                 with zipfile.ZipFile(zip_path, 'r') as z:
                     all_files = z.namelist()
                     
-                    # 1. Find where the source_folder actually lives in the ZIP
-                    # We look for a directory entry that ends with our source_folder name
+                    # Find where the source_folder actually lives in the ZIP
+                    # look for a directory entry that ends with our source_folder name
                     actual_prefix = None
                     for f in all_files:
                         if f.endswith(f"{source_folder_name}/"):
