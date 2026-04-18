@@ -277,30 +277,17 @@ class GameDashboard(Adw.Window):
     def check_for_conflicts(self):
         '''Check staging folder for any conflicts with staged files'''
         path_registry = {}
-        staging_path = self.staging_path
+        staging_metadata = self.load_staging_metadata()
 
-        if not staging_path or not os.path.exists(staging_path):
+        if not staging_metadata:
             return []
 
-        # Get all mod folders in staging
-        mod_folders = [f for f in os.listdir(staging_path) 
-                    if os.path.isdir(os.path.join(staging_path, f))]
-
-        for mod_name in mod_folders:
-            mod_root = os.path.join(staging_path, mod_name)
-            
-            # Walk through all files inside this specific mod
-            for root, _, files in os.walk(mod_root):
-                for filename in files:
-                    # We need the path relative to the mod folder 
-                    # (e.g., "Data/mesh.bin") so we can compare it across mods
-                    full_path = os.path.join(root, filename)
-                    rel_path = os.path.relpath(full_path, mod_root)
-
-                    if rel_path not in path_registry:
-                        path_registry[rel_path] = []
-                    
-                    path_registry[rel_path].append(mod_name)
+        for mod in staging_metadata["mods"]:
+            for file_path in staging_metadata["mods"][mod]["mod_files"]:
+                if file_path not in path_registry:
+                    path_registry[file_path] = []
+                
+                path_registry[file_path].append(mod)
 
         # Extract only the lists where multiple mods claim the same file
         conflicts = []
