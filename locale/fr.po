@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: 0.7.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-04-16 23:30+0200\n"
+"POT-Creation-Date: 2026-04-19 11:39+0200\n"
 "PO-Revision-Date: 2026-04-13 18:51+0200\n"
 "Last-Translator: Allexio <contact@allexio.eu>\n"
 "Language: fr_FR \n"
@@ -16,118 +16,122 @@ msgstr ""
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: src/dashboard.py:139
+#: src/dashboard.py:120
+msgid "MODS"
+msgstr ""
+
+#: src/dashboard.py:147
 msgid "DOWNLOADS"
 msgstr "TÉLÉCHARGEMENTS"
 
-#: src/dashboard.py:189
-msgid "Change Game"
-msgstr "Changer de Jeu"
-
-#: src/dashboard.py:194
-msgid "Launch Game"
-msgstr "Lancer le Jeu"
-
-#: src/dashboard.py:212 src/dashboard.py:225 src/dashboard.py:911
-#: src/dashboard.py:1072 src/dashboard.py:1119
+#: src/dashboard.py:211 src/dashboard.py:224 src/dashboard.py:1107
+#: src/dashboard.py:1143 src/dashboard.py:1167
 msgid "Error"
 msgstr "Erreur"
 
-#: src/dashboard.py:213
+#: src/dashboard.py:212
 msgid "Could not delete the file: {}"
 msgstr "Le fichier {} n'a pas pu être effacé"
 
-#: src/dashboard.py:226
+#: src/dashboard.py:225
 msgid "Could not delete metadata for file: {}"
 msgstr "Les métadonnées du fichier {} n'ont pas pu être effacées"
 
-#: src/dashboard.py:483
+#: src/dashboard.py:482
 msgid "Search mods..."
 msgstr "Faire une recherche..."
 
-#: src/dashboard.py:512
+#: src/dashboard.py:518
 msgid "The staging metadata file could not be found, did you install any mods?"
 msgstr ""
 "Le fichier de métadonnées de staging n'a pas été trouvé, as-tu installé des "
 "mods?"
 
-#: src/dashboard.py:552
+#: src/dashboard.py:558
 msgid "{} file"
 msgid_plural "{} files"
 msgstr[0] "{} fichier"
 msgstr[1] "{} fichiers"
 
-#: src/dashboard.py:570
+#: src/dashboard.py:576
 msgid "Missing {} file"
 msgid_plural "Missing {} files"
 msgstr[0] "{} fichier manquant"
 msgstr[1] "{} fichiers manquants"
 
-#: src/dashboard.py:574
+#: src/dashboard.py:580
 msgid "Missing Files:"
 msgstr "Fichiers Manquants :"
 
-#: src/dashboard.py:592
+#: src/dashboard.py:598
 msgid "Conflicting mod: {}"
 msgid_plural "Conflicting mods: {}"
 msgstr[0] "Mods en conflit {}"
 msgstr[1] "Mod en conflit {}"
 
-#: src/dashboard.py:653
+#: src/dashboard.py:619
+msgid "This mod contains a text file, click to view."
+msgstr ""
+
+#: src/dashboard.py:676
 msgid "Enabled: {}"
 msgstr "Activé : {}"
 
-#: src/dashboard.py:659 src/dashboard.py:771
+#: src/dashboard.py:682 src/dashboard.py:794
 msgid "Installed: {}"
 msgstr "Installé : {}"
 
-#: src/dashboard.py:668 src/dashboard.py:788
+#: src/dashboard.py:691 src/dashboard.py:811
 msgid "Are you sure?"
 msgstr "Es-tu certain ?"
 
-#: src/dashboard.py:694
+#: src/dashboard.py:717
 msgid "All"
 msgstr "Tous"
 
-#: src/dashboard.py:697
+#: src/dashboard.py:720
 msgid "Uninstalled"
 msgstr "Non-Installés"
 
-#: src/dashboard.py:697
+#: src/dashboard.py:720
 msgid "Installed"
 msgstr "Installés"
 
-#: src/dashboard.py:758
+#: src/dashboard.py:781
 msgid "Downloaded: {}"
 msgstr "Téléchargé : {}"
 
-#: src/dashboard.py:778 src/dashboard.py:871
+#: src/dashboard.py:801 src/dashboard.py:894
 msgid "Reinstall"
 msgstr "Réinstaller"
 
-#: src/dashboard.py:778
+#: src/dashboard.py:801
 msgid "Install"
 msgstr "Installer"
 
-#: src/dashboard.py:813
+#: src/dashboard.py:836
 msgid "No utilities defined."
 msgstr "Aucun outil utilitaire n'a été défini"
 
-#: src/dashboard.py:868
+#: src/dashboard.py:891
 msgid "Download"
 msgstr "Télécharger"
 
-#: src/dashboard.py:890
+#: src/dashboard.py:913
 msgid "Edit Load Order"
 msgstr "Modifier l'ordre de chargement"
 
-#: src/dashboard.py:912
-msgid ""
-"Load order file not found at:\n"
-" {}"
-msgstr "Fichier d'ordre de chargement non trouvé à : {}"
+#: src/dashboard.py:928
+msgid "Error when attempting to load text file"
+msgstr ""
 
-#: src/dashboard.py:938
+#: src/dashboard.py:929
+msgid ""
+"File not found at:\n"
+" {}"
+msgstr "Fichier non trouvé : {}"
+
+#: src/dashboard.py:955
 msgid ""
 "Warning: This process may be destructive to existing game files. Please "
 "ensure you have backed up your game directory before proceeding."
@@ -136,31 +140,31 @@ msgstr ""
 "existants. Assurez-vous d'avoir fait une sauvegarde de vos fichier de jeu "
 "avant de procéder."
 
-#: src/dashboard.py:942
+#: src/dashboard.py:959
 msgid "Confirm Installation"
 msgstr "Confirmation de l'installation d'un outil de modding"
 
-#: src/dashboard.py:945
+#: src/dashboard.py:962
 msgid "Cancel"
 msgstr "Annuler"
 
-#: src/dashboard.py:946
+#: src/dashboard.py:963
 msgid "Install Anyway"
 msgstr "Continuer l'installation"
 
-#: src/dashboard.py:996
+#: src/dashboard.py:1013
 msgid "Success"
 msgstr "Succès"
 
-#: src/dashboard.py:997
+#: src/dashboard.py:1014
 msgid "{} has been installed."
 msgstr "{} a été installé avec succès."
 
-#: src/dashboard.py:1000
+#: src/dashboard.py:1017
 msgid "Installation Error"
 msgstr "Erreur lors de l'installation"
 
-#: src/dashboard.py:1072
+#: src/dashboard.py:1107
 msgid ""
 "Installation failed: Your configuration YAML is missing a mods_path. Please "
 "check the readme on github for information on how to configure the yaml file."
@@ -169,23 +173,27 @@ msgstr ""
 "YAML. Regardez le readme sur Github pour plus d'informations sur comment "
 "configurer un YAML pour NOMM."
 
-#: src/dashboard.py:1119
+#: src/dashboard.py:1143
+msgid "No files were found in your mod archive."
+msgstr "Aucun fichier n'a été trouvé dans votre archive."
+
+#: src/dashboard.py:1167
 msgid "Installation failed: {}"
 msgstr "Installation échouée : {}"
 
-#: src/dashboard.py:1171
+#: src/dashboard.py:1220
 msgid "Select Deployment Path"
 msgstr "Selection du chemin de déploiement"
 
-#: src/dashboard.py:1189
+#: src/dashboard.py:1238
 msgid "Multiple deployment locations available:"
 msgstr "Multiples options de déploiement disponibles : "
 
-#: src/dashboard.py:1339
+#: src/dashboard.py:1388
 msgid "Error while removing symlinks: "
 msgstr "Erreur lors de la suppression des symlinks : "
 
-#: src/dashboard.py:1344
+#: src/dashboard.py:1393
 msgid "Error while removing mod from staging: "
 msgstr "Erreur lors de la suppression du mod du dossier staging : "
 
@@ -325,7 +333,9 @@ msgstr "Couleurs d'accent par jeu"
 
 #: src/launcher.py:869
 msgid "Accent colour will change for each game depending on configuration"
-msgstr "Les couleurs d'accent vont changer automatiquement dépendant de la configuration des jeux"
+msgstr ""
+"Les couleurs d'accent vont changer automatiquement dépendant de la "
+"configuration des jeux"
 
 #: src/launcher.py:875
 msgid "Skip Launcher"
@@ -333,7 +343,9 @@ msgstr "Passer le Launcher"
 
 #: src/launcher.py:876
 msgid "App launches last used game profile instead of starting up launcher"
-msgstr "L'application va lancer directement le profil du dernier jeu que vous aviez selectionné"
+msgstr ""
+"L'application va lancer directement le profil du dernier jeu que vous aviez "
+"selectionné"
 
 #: src/launcher.py:882
 msgid "Fullscreen NOMM"
@@ -341,7 +353,8 @@ msgstr "NOMM Plein Écran"
 
 #: src/launcher.py:883
 msgid "App launches in full screen when you select a game"
-msgstr "L'application va se lancer en plein écran quand vous selectionnez un jeu"
+msgstr ""
+"L'application va se lancer en plein écran quand vous selectionnez un jeu"
 
 #: src/launcher.py:924
 msgid "Close"
