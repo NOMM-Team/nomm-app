@@ -11,7 +11,7 @@ import rarfile # for rar extraction
 import subprocess # for bundled 7z
 
 # Specific imports
-from gi.repository import Gtk, Adw, Gdk, Gio, GLib, Pango, GdkPixbuf
+from gi.repository import Gtk, Adw, Gdk, Gio, GLib, Pango
 from pathlib import Path
 from datetime import datetime
 from utils import download_heroic_assets
@@ -185,7 +185,6 @@ class GameDashboard(Gtk.Box):
         self.update_indicators()
 
         footer = Gtk.CenterBox(margin_start=40, margin_end=40, margin_top=10)
-        # footer.set_start_widget(back_btn)
 
         main_layout.append(footer)
         self.append(main_layout)

@@ -35,7 +35,7 @@
 
 .refresh-fab:hover {
     filter: brightness(1.2);
-    box-shadow: 0 0 20px var(--accent-bg-color, #3584e4);
+    border-bottom: 0 0 20px var(--accent-bg-color, #3584e4);
 }
 
 .refresh-fab image {

@@ -159,14 +159,14 @@ def send_download_notification(status, file_name="", game_name=None, icon_path=N
     Notify.init("NOMM")
     
     if status == "success":
-        title = "Téléchargement terminé"
-        full_body = f"Le fichier {file_name} a été téléchargé avec succès pour {game_name}."
+        title = "Download Successful"
+        full_body = f"File {file_name} successfully downloaded for {game_name}"
     elif status == "failure-game-not-found":
-        title = "Échec du téléchargement"
-        full_body = f"Le jeu {game_name} n'a pas été trouvé dans NOMM."
+        title = "Download Failed"
+        full_body = f"Game {game_name} could not be found in game_configs, are you sure it is defined?"
     elif status == "started":
-        title = "Téléchargement en cours..."
-        full_body = f"Le téléchargement de {file_name} a démarré en arrière-plan."
+        title = "Downloading..."
+        full_body = f"{file_name} download started as a background task"
     else:
         return
 
