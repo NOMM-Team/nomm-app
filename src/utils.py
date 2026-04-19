@@ -157,7 +157,8 @@ def download_with_progress(url, dest_folder):
             next_label.set_label(f"<i>{random.choice(SHENANIGANS)}</i>")
             stack.set_visible_child_name(next_name)
             return True
-        
+
+
         GLib.timeout_add(6000, rotate_tips) # Rotate every 6 seconds
         win.present()
         return win, progress_bar

@@ -71,7 +71,7 @@ class GameDashboard(Adw.Window):
                 style_provider,
                 Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION
             )
-            
+
         # Window configuration
         if self.user_config.get("enable_fullscreen"):
             self.maximize()

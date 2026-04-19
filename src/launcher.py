@@ -981,7 +981,7 @@ Feel free to contact me on Discord or Github for more help!"),
         if self.win:
             self.win.close()
             self.win = None
- 
+
     def get_placeholder_game_poster(self):
         b = Gtk.Box(orientation=1, valign=Gtk.Align.CENTER)
         img = Gtk.Image.new_from_icon_name("input-gaming-symbolic")
