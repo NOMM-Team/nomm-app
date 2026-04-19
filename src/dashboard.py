@@ -49,7 +49,7 @@ class GameDashboard(Adw.Window):
 
         if self.downloads_path and os.path.exists(self.downloads_path):
             self.setup_folder_monitor()
-            
+        
         self.set_title(f"NOMM - {game_name}")
 
         # Per game accent colour theming
@@ -72,7 +72,7 @@ class GameDashboard(Adw.Window):
                 Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION
             )
             
-            # Window configuration
+        # Window configuration
         if self.user_config.get("enable_fullscreen"):
             self.maximize()
             self.fullscreen()
@@ -522,7 +522,8 @@ class GameDashboard(Adw.Window):
 
         # Check for conflicts
         conflicts = self.check_for_conflicts()
-
+        
+        # Creating a group so file_badge are as large as each other
         file_badge_sizegroup = Gtk.SizeGroup(mode=Gtk.SizeGroupMode.HORIZONTAL)
         version_badge_sizegroup = Gtk.SizeGroup(mode=Gtk.SizeGroupMode.HORIZONTAL)
 
