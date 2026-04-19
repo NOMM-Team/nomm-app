@@ -185,7 +185,7 @@ class GameDashboard(Adw.Window):
         
         self.update_indicators()
 
-        footer = Gtk.CenterBox(margin_start=40, margin_end=40, margin_top=20, margin_bottom=40)
+        footer = Gtk.CenterBox(margin_start=40, margin_end=40, margin_top=20, margin_bottom=20)
         back_btn = Gtk.Button(label=_("Change Game"), css_classes=["flat"])
         back_btn.set_cursor_from_name("pointer")
         back_btn.connect("clicked", self.on_back_clicked)
@@ -466,11 +466,17 @@ class GameDashboard(Adw.Window):
             print("Metadata updated with new version info and changelogs.")
             self.create_mods_page()
 
+    def find_text_file(self, mod_files):
+        for file_path in mod_files:
+            if ".txt" in file_path:
+                return file_path
+        return None
+
     def create_mods_page(self):
         if self.view_stack.get_child_by_name("mods"): 
             self.view_stack.remove(self.view_stack.get_child_by_name("mods"))
             
-        container = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10, margin_start=100, margin_end=100, margin_top=40)
+        container = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10, margin_start=50, margin_end=50, margin_top=20)
         
         # Action Bar (Search & Folder)
         action_bar = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
@@ -595,6 +601,23 @@ class GameDashboard(Adw.Window):
                 row.add_prefix(conflicts_badge)
 
             # --- Suffixes
+            # Text file in mod files
+            text_file = self.find_text_file(mod_metadata["mod_files"])
+            if text_file:
+                info_text_badge = Gtk.Button()
+                button_content = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
+                info_icon = Gtk.Image.new_from_icon_name("help-about-symbolic")
+                info_icon.set_pixel_size(14)
+                button_content.append(info_icon)
+                info_text_badge.add_css_class("help-about-symbolic")
+                info_text_badge.set_tooltip_text(_("This mod contains a text file, click to view."))
+                info_text_badge.set_child(button_content)
+                info_text_badge.set_cursor_from_name("pointer")
+                info_text_badge.connect("clicked", self.load_text_file, Path(staging_path) / mod / text_file)
+                info_text_badge.set_valign(Gtk.Align.CENTER)
+                info_text_badge.set_margin_end(row_element_margin)
+                row.add_suffix(info_text_badge)
+            
             # Deployment target badge
             if len(self.deployment_targets) > 1 and "deployment_target" in mod_metadata:
                 deployment_badge = Gtk.Button()
@@ -884,26 +907,20 @@ class GameDashboard(Adw.Window):
             load_order_btn = Gtk.Button(label=_("Edit Load Order"), css_classes=["pill"])
             load_order_btn.set_size_request(200, 40)
             load_order_btn.set_cursor_from_name("pointer")
-            load_order_btn.connect("clicked", self.on_open_load_order)
+            load_order_btn.connect("clicked", self.load_text_file, Path(self.game_path) / self.game_config.get("load_order_path"))
             btn_container.set_center_widget(load_order_btn)
             container.append(btn_container)
 
         self.view_stack.add_named(container, "tools")
 
-    def on_open_load_order(self, btn):
-        load_order_rel = self.game_config.get("load_order_path")
-        if not load_order_rel:
-            return
-
-        full_path = Path(self.game_path) / load_order_rel
-        
-        if full_path.exists():
+    def load_text_file(self, btn, path):        
+        if path.exists():
             # file:// protocol usually triggers the default text editor for text files
-            webbrowser.open(f"file://{full_path.resolve()}")
+            webbrowser.open(f"file://{path.resolve()}")
         else:
             self.show_message(
-                _("Error"), 
-                _("Load order file not found at:\n {}").format(full_path)
+                _("Error when attempting to load text file"), 
+                _("File not found at:\n {}").format(path)
             )
 
     def on_utility_download_clicked(self, btn, util, stack):
@@ -1431,14 +1448,19 @@ class GameDashboard(Adw.Window):
     def find_hero_image(self, steam_base, app_id):
         if not steam_base or not app_id: return None
         cache_dir = os.path.join(steam_base, "appcache", "librarycache")
+        print(f"Fetching hero images in {cache_dir}")
         targets = [f"{app_id}_library_hero.jpg", "library_hero.jpg"]
         for name in targets:
             path = os.path.join(cache_dir, name)
-            if os.path.exists(path): return path
+            if os.path.exists(path):
+                print(f"Found image at {path}")
+                return path
         appid_dir = os.path.join(cache_dir, str(app_id))
         if os.path.exists(appid_dir):
             for root, _, files in os.walk(appid_dir):
-                if "library_hero.jpg" in files: return os.path.join(root, "library_hero.jpg")
+                if "library_hero.jpg" in files:
+                    print(f"Found image at {root}" + "/library_hero.jpg")
+                    return os.path.join(root, "library_hero.jpg")
         return None
 
     def show_message(self, h, b):
