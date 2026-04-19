@@ -2,6 +2,9 @@
 <div align="center">
   <a href="https://discord.gg/WFRePSjEQY"><img src="https://img.shields.io/discord/1472479817512521772?color=0098DB&label=Discord&logo=discord&logoColor=0098DB"></a>
 </div>
+# Warning: This repository is a fork of Nomm (developped and maintained by Allexio)
+
+This fork mostly aims to refactor Allexio's work. This could allow easier maintenance and is very much a wip refactor.
 
 # NOMM (Native Open Mod Manager)
 
