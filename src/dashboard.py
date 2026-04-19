@@ -115,11 +115,17 @@ class GameDashboard(Adw.Window):
         tab_container = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, homogeneous=False)
         main_tabs_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, homogeneous=True, hexpand=True)
 
-        # 1. MODS TAB OVERLAY
+        # MODS TAB OVERLAY
         mods_tab_overlay = Gtk.Overlay()
-        self.mods_tab_btn = Gtk.ToggleButton(label="MODS", css_classes=["overlay-tab"])
+        self.mods_tab_btn = Gtk.ToggleButton(label=_("MODS"), css_classes=["overlay-tab"])
         self.mods_tab_btn.set_cursor_from_name("pointer")
         
+        # add the back button (change game)
+        back_btn = Gtk.Button(icon_name="draw-arrow-back", css_classes=["flat"])
+        back_btn.set_halign(Gtk.Align.START)
+        back_btn.set_cursor_from_name("pointer")
+        back_btn.connect("clicked", self.on_back_clicked)
+
         mods_badge_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=4)
         mods_badge_box.set_halign(Gtk.Align.END)
         mods_badge_box.set_valign(Gtk.Align.END)
@@ -130,8 +136,10 @@ class GameDashboard(Adw.Window):
         mods_badge_box.append(self.mods_inactive_label)
         mods_badge_box.append(self.mods_active_label)
         
+        
         mods_tab_overlay.set_child(self.mods_tab_btn)
         mods_tab_overlay.add_overlay(mods_badge_box)
+        mods_tab_overlay.add_overlay(back_btn)
         main_tabs_box.append(mods_tab_overlay)
 
         # 2. DOWNLOADS TAB OVERLAY
@@ -185,17 +193,8 @@ class GameDashboard(Adw.Window):
         
         self.update_indicators()
 
-        footer = Gtk.CenterBox(margin_start=40, margin_end=40, margin_top=20, margin_bottom=20)
-        back_btn = Gtk.Button(label=_("Change Game"), css_classes=["flat"])
-        back_btn.set_cursor_from_name("pointer")
-        back_btn.connect("clicked", self.on_back_clicked)
+        footer = Gtk.CenterBox(margin_start=40, margin_end=40, margin_top=10)
         footer.set_start_widget(back_btn)
-        
-        launch_btn = Gtk.Button(label=_("Launch Game"), css_classes=["suggested-action"])
-        launch_btn.set_size_request(240, 64)
-        launch_btn.set_cursor_from_name("pointer")
-        launch_btn.connect("clicked", self.on_launch_clicked)
-        footer.set_end_widget(launch_btn)
 
         main_layout.append(footer)
         self.set_content(main_layout)
@@ -476,7 +475,7 @@ class GameDashboard(Adw.Window):
         if self.view_stack.get_child_by_name("mods"): 
             self.view_stack.remove(self.view_stack.get_child_by_name("mods"))
             
-        container = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10, margin_start=50, margin_end=50, margin_top=20)
+        container = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10, margin_start=30, margin_end=30, margin_top=20)
         
         # Action Bar (Search & Folder)
         action_bar = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
@@ -498,6 +497,13 @@ class GameDashboard(Adw.Window):
         update_btn.set_cursor_from_name("pointer")
         update_btn.connect("clicked", self.check_for_updates)
         action_bar.append(update_btn)
+
+        # add the play button
+        launch_btn = Gtk.Button(icon_name="media-playback-start", css_classes=["flat"])
+        launch_btn.set_halign(Gtk.Align.END);
+        launch_btn.set_cursor_from_name("pointer")
+        launch_btn.connect("clicked", self.on_launch_clicked)
+        action_bar.append(launch_btn)
 
         # add the action bar
         container.append(action_bar)
