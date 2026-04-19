@@ -330,8 +330,9 @@ class GameDashboard(Gtk.Box):
         if self.platform == "steam":
             user_data_path = os.path.dirname(os.path.dirname(game_path)) + "/compatdata/" + str(self.app_id) + "/pfx"
         elif self.platform == "heroic-gog" or self.platform == "heroic-epic":
+            user_data_path = os.path.dirname(os.path.dirname(game_path))
             #TODO: implement support for heroic user data files
-            print("user data folder not supported yet for heroic installations")
+            print("WARNING: User data folder not supported yet for heroic installations")
         else:
             print("unrecognised platform")
             return
@@ -1150,9 +1151,6 @@ class GameDashboard(Gtk.Box):
                     dialog.present()
                     return
 
-            if not all_files:
-                self.show_message(_("No files were read in your mod archive"))
-
             # Standard Installation
             # extracted_roots = list({name.split('/')[0] for name in all_files})
             self.resolve_deployment_path(filename, all_files)
@@ -1333,26 +1331,30 @@ class GameDashboard(Gtk.Box):
             if os.path.exists(metadata_source):
                 with open(metadata_source, 'r') as f:
                     current_download_metadata = yaml.safe_load(f)
+            else:
+                current_download_metadata = {}
+
                     
-                    if "info" not in current_staging_metadata: # add basic info if it's not already there
-                        current_staging_metadata["info"] = current_download_metadata["info"]
-                    
-                    # if the mod was downloaded with metadata, add all of the specific mod information
-                    if filename in current_download_metadata["mods"]:
-                        mod_name = current_download_metadata["mods"][filename]["name"].replace(".zip", "").replace(".rar", "").replace(".7z", "")
-                        current_staging_metadata["mods"][mod_name] = current_download_metadata["mods"][filename]
-                    else: # if the mod was manually downloaded, add basic info only
-                        mod_name = filename.replace(".zip", "").replace(".rar", "").replace(".7z", "")
-                        current_staging_metadata["mods"][mod_name] = {}
-                    # regardless, add the list of installed files
-                    current_staging_metadata["mods"][mod_name]["mod_files"] = extracted_roots
-                    current_staging_metadata["mods"][mod_name]["status"] = "disabled"
-                    current_staging_metadata["mods"][mod_name]["archive_name"] = filename
-                    current_staging_metadata["mods"][mod_name]["install_timestamp"] = datetime.now().strftime("%c")
-                    current_staging_metadata["mods"][mod_name]["deployment_target"] = deployment_target["name"]
-                
-                # write the updated staging metadata file
-                self.write_yaml(current_staging_metadata, self.staging_metadata_path)
+            if "info" not in current_staging_metadata and "info" in current_download_metadata: # add basic info if it's not already there
+                current_staging_metadata["info"] = current_download_metadata["info"]
+            if "mods" not in current_download_metadata:
+                current_download_metadata["mods"] = {}
+            # if the mod was downloaded with metadata, add all of the specific mod information
+            if filename in current_download_metadata["mods"]:
+                mod_name = current_download_metadata["mods"][filename]["name"].replace(".zip", "").replace(".rar", "").replace(".7z", "")
+                current_staging_metadata["mods"][mod_name] = current_download_metadata["mods"][filename]
+            else: # if the mod was manually downloaded, add basic info only
+                mod_name = filename.replace(".zip", "").replace(".rar", "").replace(".7z", "")
+                current_staging_metadata["mods"][mod_name] = {}
+            # regardless, add the list of installed files
+            current_staging_metadata["mods"][mod_name]["mod_files"] = extracted_roots
+            current_staging_metadata["mods"][mod_name]["status"] = "disabled"
+            current_staging_metadata["mods"][mod_name]["archive_name"] = filename
+            current_staging_metadata["mods"][mod_name]["install_timestamp"] = datetime.now().strftime("%c")
+            current_staging_metadata["mods"][mod_name]["deployment_target"] = deployment_target["name"]
+        
+            # write the updated staging metadata file
+            self.write_yaml(current_staging_metadata, self.staging_metadata_path)
 
         except Exception as e:
             self.show_message("Error", f"Installation failed: There was an issue creating/updating the metadata file: {e}")

@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-04-16 23:30+0200\n"
+"POT-Creation-Date: 2026-04-19 11:39+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -18,168 +18,176 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=INTEGER; plural=EXPRESSION;\n"
 
-#: src/dashboard.py:139
+#: src/dashboard.py:120
+msgid "MODS"
+msgstr ""
+
+#: src/dashboard.py:147
 msgid "DOWNLOADS"
 msgstr ""
 
-#: src/dashboard.py:189
-msgid "Change Game"
-msgstr ""
-
-#: src/dashboard.py:194
-msgid "Launch Game"
-msgstr ""
-
-#: src/dashboard.py:212 src/dashboard.py:225 src/dashboard.py:911
-#: src/dashboard.py:1072 src/dashboard.py:1119
+#: src/dashboard.py:211 src/dashboard.py:224 src/dashboard.py:1107
+#: src/dashboard.py:1143 src/dashboard.py:1167
 msgid "Error"
 msgstr ""
 
-#: src/dashboard.py:213
+#: src/dashboard.py:212
 msgid "Could not delete the file: {}"
 msgstr ""
 
-#: src/dashboard.py:226
+#: src/dashboard.py:225
 msgid "Could not delete metadata for file: {}"
 msgstr ""
 
-#: src/dashboard.py:483
+#: src/dashboard.py:482
 msgid "Search mods..."
 msgstr ""
 
-#: src/dashboard.py:512
+#: src/dashboard.py:518
 msgid "The staging metadata file could not be found, did you install any mods?"
 msgstr ""
 
-#: src/dashboard.py:552
+#: src/dashboard.py:558
 msgid "{} file"
 msgid_plural "{} files"
 msgstr[0] ""
 msgstr[1] ""
 
-#: src/dashboard.py:570
+#: src/dashboard.py:576
 msgid "Missing {} file"
 msgid_plural "Missing {} files"
 msgstr[0] ""
 msgstr[1] ""
 
-#: src/dashboard.py:574
+#: src/dashboard.py:580
 msgid "Missing Files:"
 msgstr ""
 
-#: src/dashboard.py:592
+#: src/dashboard.py:598
 msgid "Conflicting mod: {}"
 msgid_plural "Conflicting mods: {}"
 msgstr[0] ""
 msgstr[1] ""
 
-#: src/dashboard.py:653
+#: src/dashboard.py:619
+msgid "This mod contains a text file, click to view."
+msgstr ""
+
+#: src/dashboard.py:676
 msgid "Enabled: {}"
 msgstr ""
 
-#: src/dashboard.py:659 src/dashboard.py:771
+#: src/dashboard.py:682 src/dashboard.py:794
 msgid "Installed: {}"
 msgstr ""
 
-#: src/dashboard.py:668 src/dashboard.py:788
+#: src/dashboard.py:691 src/dashboard.py:811
 msgid "Are you sure?"
 msgstr ""
 
-#: src/dashboard.py:694
+#: src/dashboard.py:717
 msgid "All"
 msgstr ""
 
-#: src/dashboard.py:697
+#: src/dashboard.py:720
 msgid "Uninstalled"
 msgstr ""
 
-#: src/dashboard.py:697
+#: src/dashboard.py:720
 msgid "Installed"
 msgstr ""
 
-#: src/dashboard.py:758
+#: src/dashboard.py:781
 msgid "Downloaded: {}"
 msgstr ""
 
-#: src/dashboard.py:778 src/dashboard.py:871
+#: src/dashboard.py:801 src/dashboard.py:894
 msgid "Reinstall"
 msgstr ""
 
-#: src/dashboard.py:778
+#: src/dashboard.py:801
 msgid "Install"
 msgstr ""
 
-#: src/dashboard.py:813
+#: src/dashboard.py:836
 msgid "No utilities defined."
 msgstr ""
 
-#: src/dashboard.py:868
+#: src/dashboard.py:891
 msgid "Download"
 msgstr ""
 
-#: src/dashboard.py:890
+#: src/dashboard.py:913
 msgid "Edit Load Order"
 msgstr ""
 
-#: src/dashboard.py:912
+#: src/dashboard.py:928
+msgid "Error when attempting to load text file"
+msgstr ""
+
+#: src/dashboard.py:929
 msgid ""
-"Load order file not found at:\n"
+"File not found at:\n"
 " {}"
 msgstr ""
 
-#: src/dashboard.py:938
+#: src/dashboard.py:955
 msgid ""
 "Warning: This process may be destructive to existing game files. Please "
 "ensure you have backed up your game directory before proceeding."
 msgstr ""
 
-#: src/dashboard.py:942
+#: src/dashboard.py:959
 msgid "Confirm Installation"
 msgstr ""
 
-#: src/dashboard.py:945
+#: src/dashboard.py:962
 msgid "Cancel"
 msgstr ""
 
-#: src/dashboard.py:946
+#: src/dashboard.py:963
 msgid "Install Anyway"
 msgstr ""
 
-#: src/dashboard.py:996
+#: src/dashboard.py:1013
 msgid "Success"
 msgstr ""
 
-#: src/dashboard.py:997
+#: src/dashboard.py:1014
 msgid "{} has been installed."
 msgstr ""
 
-#: src/dashboard.py:1000
+#: src/dashboard.py:1017
 msgid "Installation Error"
 msgstr ""
 
-#: src/dashboard.py:1072
+#: src/dashboard.py:1107
 msgid ""
 "Installation failed: Your configuration YAML is missing a mods_path. Please "
 "check the readme on github for information on how to configure the yaml file."
 msgstr ""
 
-#: src/dashboard.py:1119
+#: src/dashboard.py:1143
+msgid "No files were found in your mod archive."
+msgstr ""
+
+#: src/dashboard.py:1167
 msgid "Installation failed: {}"
 msgstr ""
 
-#: src/dashboard.py:1171
+#: src/dashboard.py:1220
 msgid "Select Deployment Path"
 msgstr ""
 
-#: src/dashboard.py:1189
+#: src/dashboard.py:1238
 msgid "Multiple deployment locations available:"
 msgstr ""
 
-#: src/dashboard.py:1339
+#: src/dashboard.py:1388
 msgid "Error while removing symlinks: "
 msgstr ""
 
-#: src/dashboard.py:1344
+#: src/dashboard.py:1393
 msgid "Error while removing mod from staging: "
 msgstr ""
 
