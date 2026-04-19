@@ -514,6 +514,9 @@ class GameDashboard(Gtk.Box):
         # Check for conflicts
         conflicts = self.check_for_conflicts()
 
+        file_badge_sizegroup = Gtk.SizeGroup(mode=Gtk.SizeGroupMode.HORIZONTAL)
+        version_badge_sizegroup = Gtk.SizeGroup(mode=Gtk.SizeGroupMode.HORIZONTAL)
+
         for mod in sorted(staging_metadata["mods"]):
             display_name = mod
             mod_metadata = staging_metadata["mods"][mod]
@@ -541,7 +544,7 @@ class GameDashboard(Gtk.Box):
             # Prefix: # of files
             number_of_files = len(mod_files)
             if number_of_files > 1:
-                file_list_badge = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
+                file_list_badge = Gtk.CenterBox(orientation=Gtk.Orientation.HORIZONTAL)
                 file_list_badge.set_tooltip_text("\n".join(mod_files))
                 file_list_badge.add_css_class("badge-action-row")
                 file_list_badge.set_valign(Gtk.Align.CENTER)
@@ -551,7 +554,13 @@ class GameDashboard(Gtk.Box):
                     "{} files",
                     number_of_files
                 ).format(number_of_files)
-                file_list_badge.append(Gtk.Label(label=label_text))
+                
+                count_label = Gtk.Label(label=label_text)# 3. On place le label dans le slot central inviolable de la CenterBox
+                file_list_badge.set_center_widget(count_label)
+
+                # Ajout de la boîte au groupe d'alignement pour uniformiser la taille
+                file_badge_sizegroup.add_widget(file_list_badge)
+
                 row.add_prefix(file_list_badge)
 
             # Prefix: Missing Files
@@ -653,6 +662,8 @@ class GameDashboard(Gtk.Box):
             # Version badge
             version_badge = Gtk.Button()
             button_content = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
+            button_content.set_halign(Gtk.Align.CENTER)
+
             button_content.append(Gtk.Label(label=version_text))
 
             if changelog:
@@ -675,6 +686,8 @@ class GameDashboard(Gtk.Box):
             if mod_link: # add mod link to the version badges
                 version_badge.connect("clicked", lambda b, l=mod_link: webbrowser.open(l))
             
+            version_badge_sizegroup.add_widget(version_badge)
+
             row.add_suffix(version_badge)
 
             # Trash Bin Stack

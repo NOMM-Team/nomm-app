@@ -950,9 +950,19 @@ Feel free to contact me on Discord or Github for more help!"),
         self.show_loading_and_scan()
 
     def return_to_library(self):
+        config = self.load_config()
+        if config.get('enable_fullscreen'):
+            self.win.unfullscreen()
+
         self.stack.set_visible_child_name("library")
 
     def on_game_clicked(self, gesture, n_press, x, y, game_data):
+
+        config = self.load_config()
+        # Check if Nomm is supposed to launch as Fullscreen app
+        if config.get('enable_fullscreen'):
+            self.win.fullscreen()
+
         # Get the base path from user_config
         download_base = ""
         try:
