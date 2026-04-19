@@ -8,20 +8,14 @@ from urllib.parse import urlsplit, urlunsplit
 from pathlib import Path
 from gui.notifications import send_download_notification
 from core.downloader import download_mod
+from core.config import load_user_config
 from gi.repository import GLib
 
 def handle_nexus_link(nxm_link):
-    user_data_dir = os.path.join(GLib.get_user_data_dir(), "nomm")
-    user_config_path = os.path.join(user_data_dir, "user_config.yaml")
-    game_configs_dir = os.path.join(user_data_dir, "game_configs")
-
-    # Load User Config
-    try:
-        with open(user_config_path, 'r') as f:
-            user_config = yaml.safe_load(f)
-            api_key = user_config.get("nexus_api_key")
-            base_download_path = user_config.get("download_path")
-            
+    user_config = load_user_config()
+    api_key = user_config.get("nexus_api_key")
+    base_download_path = user_config.get("download_path")
+    try:    
         if not api_key or not base_download_path:
             print("Error: Missing API key or download path in user_config.yaml")
             return False

@@ -15,6 +15,7 @@ from gi.repository import Gtk, Adw, Gdk, Gio, GLib, Pango
 from pathlib import Path
 from datetime import datetime
 from core.heroic_asset import download_heroic_assets
+from core.config import load_yaml, write_yaml
 
 # Point rarfile to the bundled binary
 rarfile.UNRAR_TOOL = "/app/bin/unrar"
@@ -29,8 +30,8 @@ class GameDashboard(Gtk.Box):
         self.current_filter = "all" # default filter is all
         self.active_tab = "mods" # default tab is mods
 
-        self.game_config = self.load_yaml_config(game_config_path)
-        self.user_config = self.load_yaml_config(user_config_path)
+        self.game_config = load_yaml(game_config_path)
+        self.user_config = load_yaml(user_config_path)
         self.user_config_path = user_config_path
         self.downloads_path = str(Path(os.path.join(Path(self.user_config.get("download_path")), game_name)))
         self.staging_path = Path(os.path.join(Path(self.user_config.get("staging_path")), game_name))
@@ -208,7 +209,7 @@ class GameDashboard(Gtk.Box):
             if downloads_metadata:
                 if file_name in downloads_metadata["mods"]:
                     del downloads_metadata["mods"][file_name]
-                    self.write_yaml(downloads_metadata, self.downloads_metadata_path)
+                    write_yaml(downloads_metadata, self.downloads_metadata_path)
         except Exception as e:
             self.show_message(
                 _("Error"),
@@ -452,7 +453,7 @@ class GameDashboard(Gtk.Box):
 
         # 3. Save only if changes were actually made
         if mods_updated:
-            self.write_yaml(staging_metadata, self.staging_metadata_path)
+            write_yaml(staging_metadata, self.staging_metadata_path)
             print("Metadata updated with new version info and changelogs.")
             self.create_mods_page()
 
@@ -1366,7 +1367,7 @@ class GameDashboard(Gtk.Box):
             current_staging_metadata["mods"][mod_name]["deployment_target"] = deployment_target["name"]
         
             # write the updated staging metadata file
-            self.write_yaml(current_staging_metadata, self.staging_metadata_path)
+            write_yaml(current_staging_metadata, self.staging_metadata_path)
 
         except Exception as e:
             self.show_message("Error", f"Installation failed: There was an issue creating/updating the metadata file: {e}")
@@ -1487,9 +1488,9 @@ class GameDashboard(Gtk.Box):
             self.update_indicators()
 
     def on_back_clicked(self, btn):
-        user_config = self.load_yaml_config(self.user_config_path)
+        user_config = load_yaml(self.user_config_path)
         user_config["last_selected_game"] = "dashboard"
-        self.write_yaml(user_config, self.user_config_path)
+        write_yaml(user_config, self.user_config_path)
         
         # Nouvelle méthode que nous allons créer dans launcher.py
         self.app.return_to_library()

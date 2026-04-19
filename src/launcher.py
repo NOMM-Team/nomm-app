@@ -22,8 +22,9 @@ gi.require_version('Notify', '0.7')
 # specific imports
 from gi.repository import Gtk, Adw, GLib, Gdk, Gio, GdkPixbuf
 from dashboard import GameDashboard
-from utils import download_heroic_assets
+from core.heroic_asset import download_heroic_assets
 from nxm_handler import handle_nexus_link
+from core.config import load_user_config, update_user_config, write_yaml, get_user_config_path
 APP_NAME = 'com.nomm.Nomm'
 
 # Localisation setup
@@ -290,8 +291,7 @@ class Nomm(Adw.Application):
         # Create the ~/nomm/ directory if it doesn't exist yet
         os.makedirs(os.path.dirname(self.user_config_path), exist_ok=True)
         
-        with open(self.user_config_path, 'w') as f:
-            yaml.dump(self.temp_config, f, default_flow_style=False)
+        write_yaml(self.temp_config, get_user_config_path())
         self.show_loading_and_scan()
 
     def show_loading_and_scan(self):
@@ -329,8 +329,7 @@ class Nomm(Adw.Application):
                 game_config_data["game_path"] = clean_game_path
                 
                 # Save the updated config back to the YAML file
-                with open(game_config_path, 'w') as f_out:
-                    yaml.dump(game_config_data, f_out, default_flow_style=False)
+                write_yaml(current_config, get_user_config_path())
                 
                 # add a special case if game is gog to avoid using app ID as game title
                 if platform == "heroic-gog":
@@ -548,7 +547,7 @@ class Nomm(Adw.Application):
         self.remove_stack_child("library")
 
         # If user has selected launcher skip option, launch game profile directly
-        user_config = self.load_config()
+        user_config = load_user_config()
         if user_config.get('enable_launcher_skip') and user_config.get("last_selected_game"):
 
             print(user_config.get("last_selected_game"))
@@ -745,12 +744,8 @@ Feel free to contact me on Discord or Github for more help!"),
         return {}
 
     def update_config(self, key, value):
-        config = self.load_config()
-        config[key] = value
-        # Ensure directory exists before writing
-        os.makedirs(os.path.dirname(self.user_config_path), exist_ok=True)
-        with open(self.user_config_path, 'w') as f:
-            yaml.dump(config, f, default_flow_style=False)
+        from core.config import update_user_config
+        update_user_config(key, value)
 
     def pick_folder(self, parent_win, row, config_key):
         """Opens a folder dialog and updates the specific config key and UI row."""
@@ -763,7 +758,7 @@ Feel free to contact me on Discord or Github for more help!"),
                 folder = dialog.select_folder_finish(result)
                 if folder:
                     new_path = folder.get_path()
-                    self.update_config(config_key, new_path)
+                    update_user_config(config_key, new_path)
                     row.set_subtitle(new_path)
             except Exception as e:
                 print(f"Folder selection failed: {e}")
@@ -783,7 +778,7 @@ Feel free to contact me on Discord or Github for more help!"),
 
         # Downloads Path Row
         path_row = Adw.ActionRow(title=_("Mod Downloads Path"))
-        current_path = self.load_config().get('download_path', 'Not set')
+        current_path = load_user_config().get('download_path', 'Not set')
         path_row.set_subtitle(current_path)
 
         folder_btn = Gtk.Button(icon_name="folder-open-symbolic", valign=Gtk.Align.CENTER, css_classes=["flat"])
@@ -794,7 +789,7 @@ Feel free to contact me on Discord or Github for more help!"),
 
         # Staging Path Row
         staging_row = Adw.ActionRow(title=_("Mod Staging Path"))
-        current_staging = self.load_config().get('staging_path', 'Not set')
+        current_staging = load_user_config().get('staging_path', 'Not set')
         staging_row.set_subtitle(current_staging)
 
         staging_btn = Gtk.Button(icon_name="folder-open-symbolic", valign=Gtk.Align.CENTER, css_classes=["flat"])
@@ -809,7 +804,7 @@ Feel free to contact me on Discord or Github for more help!"),
 
         api_entry = Gtk.PasswordEntry(hexpand=True, valign=Gtk.Align.CENTER)
         api_entry.set_property("placeholder-text", _("Paste API Key..."))
-        api_entry.set_text(self.load_config().get('nexus_api_key', ''))
+        api_entry.set_text(load_user_config().get('nexus_api_key', ''))
 
         check_btn = Gtk.Button(icon_name="view-refresh-symbolic", valign=Gtk.Align.CENTER, css_classes=["flat"])
         spinner = Gtk.Spinner(valign=Gtk.Align.CENTER)
@@ -867,21 +862,21 @@ Feel free to contact me on Discord or Github for more help!"),
         # Per-game accent colours
         accent_row = Adw.SwitchRow(title=_("Per-Game Accent Colour"))
         accent_row.set_subtitle(_("Accent colour will change for each game depending on configuration"))
-        accent_row.set_active(self.load_config().get('enable_per_game_accent_colour'))
+        accent_row.set_active(load_user_config().get('enable_per_game_accent_colour'))
         accent_row.connect("notify::active", lambda row, pspec: self.toggle_per_game_accent_colour(row.get_active()))
         general_group.add(accent_row)
 
         # Skip launcher
         launcher_skip_row = Adw.SwitchRow(title=_("Skip Launcher"))
         launcher_skip_row.set_subtitle(_("App launches last used game profile instead of starting up launcher"))
-        launcher_skip_row.set_active(self.load_config().get('enable_launcher_skip'))
+        launcher_skip_row.set_active(load_user_config().get('enable_launcher_skip'))
         launcher_skip_row.connect("notify::active", lambda row, pspec: self.toggle_launcher_skip(row.get_active()))
         general_group.add(launcher_skip_row)
 
         # Fullscreen
         fullscreen_row = Adw.SwitchRow(title=_("Fullscreen NOMM"))
         fullscreen_row.set_subtitle(_("App launches in full screen when you select a game"))
-        fullscreen_row.set_active(self.load_config().get('enable_fullscreen'))
+        fullscreen_row.set_active(load_user_config().get('enable_fullscreen'))
         fullscreen_row.connect("notify::active", lambda row, pspec: self.toggle_fullscreen(row.get_active()))
         general_group.add(fullscreen_row)
 
@@ -922,22 +917,22 @@ Feel free to contact me on Discord or Github for more help!"),
         content.append(Gtk.Separator(margin_top=10))
         
         save_btn = Gtk.Button(label=_("Close"), css_classes=["suggested-action"], margin_top=12)
-        save_btn.connect("clicked", lambda b: (self.update_config('nexus_api_key', api_entry.get_text()), settings_win.destroy()))
+        save_btn.connect("clicked", lambda b: (update_user_config('nexus_api_key', api_entry.get_text()), settings_win.destroy()))
         content.append(save_btn)
 
         settings_win.present()
 
     def toggle_per_game_accent_colour(self, state):
         print(f"Per-game accent colours are now: {state}")
-        self.update_config('enable_per_game_accent_colour', state)
+        update_user_config('enable_per_game_accent_colour', state)
 
     def toggle_launcher_skip(self, state):
         print(f"Launcher skip is now: {state}")
-        self.update_config('enable_launcher_skip', state)
+        update_user_config('enable_launcher_skip', state)
 
     def toggle_fullscreen(self, state):
         print(f"Fullscreen is now: {state}")
-        self.update_config('enable_fullscreen', state)
+        update_user_config('enable_fullscreen', state)
 
     def on_refresh_clicked(self, btn):
         try:
@@ -950,7 +945,7 @@ Feel free to contact me on Discord or Github for more help!"),
         self.show_loading_and_scan()
 
     def return_to_library(self):
-        config = self.load_config()
+        config = load_user_config()
         if config.get('enable_fullscreen'):
             self.win.unfullscreen()
 
@@ -958,7 +953,7 @@ Feel free to contact me on Discord or Github for more help!"),
 
     def on_game_clicked(self, gesture, n_press, x, y, game_data):
 
-        config = self.load_config()
+        config = load_user_config()
         # Check if Nomm is supposed to launch as Fullscreen app
         if config.get('enable_fullscreen'):
             self.win.fullscreen()
@@ -988,7 +983,7 @@ Feel free to contact me on Discord or Github for more help!"),
             user_config_path=self.user_config_path,
             game_config_path=game_data["game_config_path"],
         )
-        self.update_config("last_selected_game", game_data["name"])
+        update_user_config("last_selected_game", game_data["name"])
         
         self.remove_stack_child("dashboard") # Nettoyer au cas où il y aurait un ancien dashboard
         self.stack.add_named(self.dashboard, "dashboard")
