@@ -566,10 +566,10 @@ class Nomm(Adw.Application):
                     user_config_path=self.user_config_path,
                     game_config_path=game_info["game_config_path"],
                 )
-                self.remove_stack_child("dashboard")
-                self.stack.add_named(self.dashboard, "dashboard")
-                self.stack.set_visible_child_name("dashboard")
-                return
+                self.dashboard.launch()
+                if self.win:
+                    self.win.close()
+                    self.win = None
             else:
                 print("Was supposed to skip launcher, but could not find game to skip to")
 
@@ -949,13 +949,6 @@ Feel free to contact me on Discord or Github for more help!"),
         except: pass
         self.show_loading_and_scan()
 
-    def return_to_library(self):
-        config = self.load_config()
-        if config.get('enable_fullscreen'):
-            self.win.unfullscreen()
-
-        self.stack.set_visible_child_name("library")
-
     def on_game_clicked(self, gesture, n_press, x, y, game_data):
 
         config = self.load_config()
@@ -989,11 +982,12 @@ Feel free to contact me on Discord or Github for more help!"),
             game_config_path=game_data["game_config_path"],
         )
         self.update_config("last_selected_game", game_data["name"])
+        self.dashboard.launch()
         
-        self.remove_stack_child("dashboard") # Nettoyer au cas où il y aurait un ancien dashboard
-        self.stack.add_named(self.dashboard, "dashboard")
-        self.stack.set_visible_child_name("dashboard")
-
+        if self.win:
+            self.win.close()
+            self.win = None
+        
     def get_placeholder_game_poster(self):
         b = Gtk.Box(orientation=1, valign=Gtk.Align.CENTER)
         img = Gtk.Image.new_from_icon_name("input-gaming-symbolic")

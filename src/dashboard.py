@@ -19,9 +19,9 @@ from utils import download_heroic_assets
 # Point rarfile to the bundled binary
 rarfile.UNRAR_TOOL = "/app/bin/unrar"
 
-class GameDashboard(Gtk.Box):
+class GameDashboard(Adw.Window):
     def __init__(self, game_name, game_path, application, steam_base=None, app_id=None, user_config_path=None, game_config_path=None, **kwargs):
-        super().__init__(orientation=Gtk.Orientation.VERTICAL, **kwargs)
+        super().__init__(application=application, **kwargs)
         self.app = application
         self.game_name = game_name
         self.game_path = game_path
@@ -49,6 +49,8 @@ class GameDashboard(Gtk.Box):
 
         if self.downloads_path and os.path.exists(self.downloads_path):
             self.setup_folder_monitor()
+            
+        self.set_title(f"NOMM - {game_name}")
 
         # Per game accent colour theming
         if self.user_config.get("enable_per_game_accent_colour") and self.game_config.get("accent_colour"):
@@ -69,6 +71,13 @@ class GameDashboard(Gtk.Box):
                 style_provider,
                 Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION
             )
+            
+            # Window configuration
+            if self.user_config.get("enable_fullscreen"):
+                self.maximize()
+                self.fullscreen()
+            else:
+                self.set_default_size(1280, 720)
 
         monitor = Gdk.Display.get_default().get_monitors().get_item(0)
         win_height = monitor.get_geometry().height
@@ -185,9 +194,10 @@ class GameDashboard(Gtk.Box):
         self.update_indicators()
 
         footer = Gtk.CenterBox(margin_start=40, margin_end=40, margin_top=10)
+        # footer.set_start_widget(back_btn) commented because causing an error
 
         main_layout.append(footer)
-        self.append(main_layout)
+        self.set_content(main_layout)
 
     def delete_download_package(self, btn, file_name):
         """Deletes the mod zip and associated data in downloads.nomm.yaml file if it exists."""
@@ -1490,9 +1500,7 @@ class GameDashboard(Gtk.Box):
         user_config = self.load_yaml_config(self.user_config_path)
         user_config["last_selected_game"] = "dashboard"
         self.write_yaml(user_config, self.user_config_path)
-        
-        # Nouvelle méthode que nous allons créer dans launcher.py
-        self.app.return_to_library()
+        self.app.do_activate(); self.close()
 
     def on_launch_clicked(self, btn):
         if self.app_id:
