@@ -11,7 +11,7 @@ import rarfile # for rar extraction
 import subprocess # for bundled 7z
 
 # Specific imports
-from gi.repository import Gtk, Adw, Gdk, Gio, GLib, Pango
+from gi.repository import Gtk, Adw, Gdk, Gio, GLib, Pango, GdkPixbuf
 from pathlib import Path
 from datetime import datetime
 from utils import download_heroic_assets
@@ -112,7 +112,7 @@ class GameDashboard(Gtk.Box):
         self.mods_tab_btn.set_cursor_from_name("pointer")
         
         # add the back button (change game)
-        back_btn = Gtk.Button(icon_name="draw-arrow-back", css_classes=["flat"])
+        back_btn = Gtk.Button(icon_name="go-previous-symbolic", css_classes=["flat"])
         back_btn.set_halign(Gtk.Align.START)
         back_btn.set_cursor_from_name("pointer")
         back_btn.connect("clicked", self.on_back_clicked)
@@ -185,7 +185,7 @@ class GameDashboard(Gtk.Box):
         self.update_indicators()
 
         footer = Gtk.CenterBox(margin_start=40, margin_end=40, margin_top=10)
-        footer.set_start_widget(back_btn)
+        # footer.set_start_widget(back_btn)
 
         main_layout.append(footer)
         self.append(main_layout)
