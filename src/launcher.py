@@ -951,11 +951,6 @@ Feel free to contact me on Discord or Github for more help!"),
 
     def on_game_clicked(self, gesture, n_press, x, y, game_data):
 
-        config = self.load_config()
-        # Check if Nomm is supposed to launch as Fullscreen app
-        if config.get('enable_fullscreen'):
-            self.win.fullscreen()
-
         # Get the base path from user_config
         download_base = ""
         try:

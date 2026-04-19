@@ -73,11 +73,11 @@ class GameDashboard(Adw.Window):
             )
             
             # Window configuration
-            if self.user_config.get("enable_fullscreen"):
-                self.maximize()
-                self.fullscreen()
-            else:
-                self.set_default_size(1280, 720)
+        if self.user_config.get("enable_fullscreen"):
+            self.maximize()
+            self.fullscreen()
+        else:
+            self.set_default_size(1280, 720)
 
         monitor = Gdk.Display.get_default().get_monitors().get_item(0)
         win_height = monitor.get_geometry().height
