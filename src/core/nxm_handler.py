@@ -8,7 +8,7 @@ from urllib.parse import urlsplit, urlunsplit
 from pathlib import Path
 from gui.notifications import send_download_notification
 from core.downloader import download_mod
-from core.config import load_user_config
+from core.config import load_user_config, load_yaml, write_yaml
 from gi.repository import GLib
 
 def handle_nexus_link(nxm_link):
@@ -66,6 +66,94 @@ def handle_nexus_link(nxm_link):
         print("Downloading single mod")
         download_nexus_mod(nxm_link, headers, final_download_dir, nexus_game_id, game_folder_name)
 
+def download_nexus_mod(nxm_link: str, headers: dict, final_download_dir: str, nexus_game_id: str, game_folder_name: str):
+    """
+    Downloads a mod into a game-specific subfolder found by matching nexus_game_id.
+    """
+    try:
+        # 2. Parse the NXM link
+        splitted_nxm = urlsplit(nxm_link)
+        nxm_path = splitted_nxm.path.split('/')
+        nxm_query = dict(item.split('=') for item in splitted_nxm.query.split('&'))
+
+        mod_id = nxm_path[2]
+        file_id = nxm_path[4] 
+
+        # 4. Get the Download URI from Nexus API
+
+        params = {
+            'key': nxm_query.get("key"),
+            'expires': nxm_query.get("expires")
+        }
+        
+        download_api_url = f"https://api.nexusmods.com/v1/games/{nexus_game_id}/mods/{mod_id}/files/{file_id}/download_link.json"
+
+        response = requests.get(download_api_url, headers=headers, params=params)
+        if response.status_code == 403:
+            print(f"Nexus API Error: {response.json()}") # This will tell you if it's 'Key Expired' or 'Forbidden'
+        response.raise_for_status()
+
+        download_data = response.json()
+        if not download_data:
+            print("No download mirrors available.")
+            return False
+
+        uri = download_data[0].get('URI')
+        splitted_uri = urlsplit(uri)
+        file_url = urlunsplit(splitted_uri)
+        file_name = splitted_uri.path.split('/')[-1]
+        
+        full_file_path = final_download_dir / file_name
+
+        # 6. Download the actual mod file
+        print(f"Downloading {file_name} to {game_folder_name}...")
+        download_mod(file_url, final_download_dir)
+
+        # 7. Obtain mod file info and save metadata
+        try:
+            info_api_url = f"https://api.nexusmods.com/v1/games/{nexus_game_id}/mods/{mod_id}/files/{file_id}.json"
+            info_response = requests.get(info_api_url, headers=headers)
+            info_response.raise_for_status()
+            file_info_data = info_response.json()
+
+            # Extract name and version
+            mod_metadata = {
+                "name": file_info_data.get("name", "Unknown Mod"),
+                "version": file_info_data.get("version", "1.0"),
+                "changelog": file_info_data.get("changelog_html", ""),
+                "mod_id": mod_id,
+                "file_id": file_id,
+                "mod_link": f"https://www.nexusmods.com/{nexus_game_id}/mods/{mod_id}"  
+            }
+
+            # Define unique metadata file path .downloads.nomm.yaml:
+            downloads_metadata_filename = f".downloads.nomm.yaml"
+            downloads_metadata_path = final_download_dir / downloads_metadata_filename
+            downloads_metadata = {}
+            if os.path.exists(downloads_metadata_path):
+                with open(downloads_metadata_path, "r") as f:
+                    downloads_metadata = yaml.safe_load(f)
+            else:
+                # initialise file with important game info
+                downloads_metadata["info"] = {}
+                downloads_metadata["info"]["game"] = game_folder_name
+                downloads_metadata["info"]["nexus_id"] = nexus_game_id
+                downloads_metadata["mods"] = {}
+            downloads_metadata["mods"][file_name] = mod_metadata
+            with open(downloads_metadata_path, "w") as f:
+                yaml.safe_dump(downloads_metadata, f, default_flow_style=False)
+            
+            send_download_notification("success", file_name=file_name, game_name=game_folder_name, icon_path=None)
+        except Exception as e:
+            print(f"Warning: Could not retrieve mod metadata: {e}")
+            # We don't return False here because the actual mod download succeeded
+
+        print(f"Done! Saved to {full_file_path}")
+        return True
+
+    except Exception as e:
+        print(f"An error occurred: {e}")
+        return False
 
 def download_nexus_collection(nxm_link: str, headers: dict, final_download_dir: str):
     """
@@ -188,92 +276,3 @@ def get_files_from_collection(game_domain: str, collection_id: str, revision_id:
     except Exception as e:
         print(f"GraphQL Query Failed: {e}")
         return []
-
-def download_nexus_mod(nxm_link: str, headers: dict, final_download_dir: str, nexus_game_id: str, game_folder_name: str):
-    """
-    Downloads a mod into a game-specific subfolder found by matching nexus_game_id.
-    """
-    try:
-        # 2. Parse the NXM link
-        splitted_nxm = urlsplit(nxm_link)
-        nxm_path = splitted_nxm.path.split('/')
-        nxm_query = dict(item.split('=') for item in splitted_nxm.query.split('&'))
-
-        mod_id = nxm_path[2]
-        file_id = nxm_path[4] 
-
-        # 4. Get the Download URI from Nexus API
-
-        params = {
-            'key': nxm_query.get("key"),
-            'expires': nxm_query.get("expires")
-        }
-        
-        download_api_url = f"https://api.nexusmods.com/v1/games/{nexus_game_id}/mods/{mod_id}/files/{file_id}/download_link.json"
-
-        response = requests.get(download_api_url, headers=headers, params=params)
-        if response.status_code == 403:
-            print(f"Nexus API Error: {response.json()}") # This will tell you if it's 'Key Expired' or 'Forbidden'
-        response.raise_for_status()
-
-        download_data = response.json()
-        if not download_data:
-            print("No download mirrors available.")
-            return False
-
-        uri = download_data[0].get('URI')
-        splitted_uri = urlsplit(uri)
-        file_url = urlunsplit(splitted_uri)
-        file_name = splitted_uri.path.split('/')[-1]
-        
-        full_file_path = final_download_dir / file_name
-
-        # 6. Download the actual mod file
-        print(f"Downloading {file_name} to {game_folder_name}...")
-        download_mod(file_url, final_download_dir)
-
-        # 7. Obtain mod file info and save metadata
-        try:
-            info_api_url = f"https://api.nexusmods.com/v1/games/{nexus_game_id}/mods/{mod_id}/files/{file_id}.json"
-            info_response = requests.get(info_api_url, headers=headers)
-            info_response.raise_for_status()
-            file_info_data = info_response.json()
-
-            # Extract name and version
-            mod_metadata = {
-                "name": file_info_data.get("name", "Unknown Mod"),
-                "version": file_info_data.get("version", "1.0"),
-                "changelog": file_info_data.get("changelog_html", ""),
-                "mod_id": mod_id,
-                "file_id": file_id,
-                "mod_link": f"https://www.nexusmods.com/{nexus_game_id}/mods/{mod_id}"  
-            }
-
-            # Define unique metadata file path .downloads.nomm.yaml:
-            downloads_metadata_filename = f".downloads.nomm.yaml"
-            downloads_metadata_path = final_download_dir / downloads_metadata_filename
-            downloads_metadata = {}
-            if os.path.exists(downloads_metadata_path):
-                with open(downloads_metadata_path, "r") as f:
-                    downloads_metadata = yaml.safe_load(f)
-            else:
-                # initialise file with important game info
-                downloads_metadata["info"] = {}
-                downloads_metadata["info"]["game"] = game_folder_name
-                downloads_metadata["info"]["nexus_id"] = nexus_game_id
-                downloads_metadata["mods"] = {}
-            downloads_metadata["mods"][file_name] = mod_metadata
-            with open(downloads_metadata_path, "w") as f:
-                yaml.safe_dump(downloads_metadata, f, default_flow_style=False)
-            
-            send_download_notification("success", file_name=file_name, game_name=game_folder_name, icon_path=None)
-        except Exception as e:
-            print(f"Warning: Could not retrieve mod metadata: {e}")
-            # We don't return False here because the actual mod download succeeded
-
-        print(f"Done! Saved to {full_file_path}")
-        return True
-
-    except Exception as e:
-        print(f"An error occurred: {e}")
-        return False

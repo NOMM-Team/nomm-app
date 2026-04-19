@@ -5,7 +5,6 @@ import shutil # I use this sparingly to copy / delete folders
 import zipfile # for zip extraction
 import webbrowser # to launch web browser as needed
 import requests # various API calls
-import fomod_handler
 import gi # interface framework
 import rarfile # for rar extraction
 import subprocess # for bundled 7z
@@ -16,6 +15,8 @@ from pathlib import Path
 from datetime import datetime
 from core.heroic_asset import download_heroic_assets
 from core.config import load_yaml, write_yaml
+from core.fomod import parse_fomod_xml
+from gui.fomod_dialog import FomodSelectionDialog
 
 # Point rarfile to the bundled binary
 rarfile.UNRAR_TOOL = "/app/bin/unrar"
@@ -231,12 +232,6 @@ class GameDashboard(Gtk.Box):
         with open(self.staging_metadata_path, 'r') as f:
             return yaml.safe_load(f)
 
-    def write_yaml(self, yaml_content, yaml_path):
-        if not os.path.exists(yaml_path):
-            print(f"Creating new yaml file : ", yaml_path)
-        with open(yaml_path, 'w') as f:
-            return yaml.safe_dump(yaml_content, f)
-
     def get_contrast_color(self, hex_code):
         # Remove # if present
         hex_code = hex_code.lstrip('#')
@@ -252,17 +247,6 @@ class GameDashboard(Gtk.Box):
         # If luminance is > 0.5, the color is "bright", use black text
         # Otherwise, use white text
         return "#000000" if luminance > 0.5 else "#ffffff"
-
-    def load_yaml_config(self, path: str):
-        # TODO: Homogenise this config load with one in launcher.py and probably load_game_config
-        if os.path.exists(path):
-            try:
-                with open(path, 'r') as f:
-                    return yaml.safe_load(f) or {}
-            except Exception as e:
-                print(f"Error loading config: {e}")
-                return {}
-        return {}
 
     def check_for_conflicts(self):
         '''Check staging folder for any conflicts with staged files'''
@@ -1085,8 +1069,7 @@ class GameDashboard(Gtk.Box):
                         break
 
         if staging_metadata:
-            with open(self.staging_metadata_path, 'w') as f:
-                yaml.safe_dump(staging_metadata, f)
+            write_yaml(staging_metadata, self.staging_metadata_path)
 
         # update indicators & mods page
         self.update_indicators()
@@ -1156,11 +1139,11 @@ class GameDashboard(Gtk.Box):
                 with open(xml_path, 'rb') as f:
                     xml_data = f.read()
                 
-                module_name, options = fomod_handler.parse_fomod_xml(xml_data)
+                module_name, options = parse_fomod_xml(xml_data) # <-- Modifié ici
                 
                 if options:
-                    dialog = fomod_handler.FomodSelectionDialog(self, module_name, options)
-                    dialog.connect("response", self.on_fomod_dialog_response, archive_full_path, filename, None)
+                    dialog = FomodSelectionDialog(self.app.win, module_name, options) # <-- Modifié ici (on passe la fenêtre principale)
+                    dialog.connect("response", self.on_fomod_dialog_response, archive_full_path, filename)
                     dialog.present()
                     return
 
@@ -1405,8 +1388,7 @@ class GameDashboard(Gtk.Box):
         if staging_metadata:
             if mod_name in staging_metadata["mods"]:
                 del staging_metadata["mods"][mod_name]
-            with open(self.staging_metadata_path, 'w') as f:
-                yaml.safe_dump(staging_metadata, f)
+            write_yaml(staging_metadata, self.staging_metadata_path)
 
         self.create_mods_page()
         self.create_downloads_page()

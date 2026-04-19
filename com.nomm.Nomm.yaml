@@ -57,7 +57,12 @@ modules:
 
     build-commands:
       # Install entry point from the src folder to /app/bin
-      - install -D src/launcher.py /app/bin/nomm
+      - install -D src/main.py /app/bin/nomm
+      
+      # Autres fichiers racines de src
+      - cp src/fomod_handler.py /app/bin/
+      - cp src/*.css /app/bin/
+      - cp src/*.yaml /app/bin/
       
       # Install desktop file
       - install -D com.nomm.Nomm.desktop /app/share/applications/com.nomm.Nomm.desktop
@@ -70,9 +75,11 @@ modules:
 
       # Copy all other python files FROM src into the same /app/bin folder
       # This ensures 'nomm' and 'dashboard.py' are flat neighbors
-      - cp src/*.py /app/bin/
+      - cp -r src/core /app/bin/core
+      - cp -r src/gui /app/bin/gui
+      - cp -r src/styles /app/bin/styles
+
       - cp src/*.yaml /app/bin/
-      - cp src/*.css /app/bin/
       
       # Copy non-code folders
       - cp -r assets /app/bin/assets
