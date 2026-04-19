@@ -158,8 +158,8 @@ def download_with_progress(url, dest_folder):
             stack.set_visible_child_name(next_name)
             return True
 
-
         GLib.timeout_add(6000, rotate_tips) # Rotate every 6 seconds
+
         win.present()
         return win, progress_bar
 
