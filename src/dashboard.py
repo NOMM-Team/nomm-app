@@ -14,7 +14,7 @@ import subprocess # for bundled 7z
 from gi.repository import Gtk, Adw, Gdk, Gio, GLib, Pango
 from pathlib import Path
 from datetime import datetime
-from utils import download_heroic_assets
+from core.heroic_asset import download_heroic_assets
 
 # Point rarfile to the bundled binary
 rarfile.UNRAR_TOOL = "/app/bin/unrar"

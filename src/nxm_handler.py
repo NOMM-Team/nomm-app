@@ -6,7 +6,8 @@ import os, yaml, requests
 #Specific imports
 from urllib.parse import urlsplit, urlunsplit
 from pathlib import Path
-from utils import download_with_progress, send_download_notification
+from gui.notifications import send_download_notification
+from core.downloader import download_mod
 from gi.repository import GLib
 
 def handle_nexus_link(nxm_link):
@@ -113,7 +114,7 @@ def download_nexus_collection(nxm_link: str, headers: dict, final_download_dir: 
                 direct_url = links[0]['URI']
                 # Use your existing method!
                 # Ensure final_download_dir is set per game as in your previous logic
-                if download_with_progress(direct_url, final_download_dir):
+                if download_mod(direct_url, final_download_dir):
                     success_count += 1
         except Exception as e:
             print(f"Failed to download mod {mod_id}: {e}")
@@ -235,7 +236,7 @@ def download_nexus_mod(nxm_link: str, headers: dict, final_download_dir: str, ne
 
         # 6. Download the actual mod file
         print(f"Downloading {file_name} to {game_folder_name}...")
-        download_with_progress(file_url, final_download_dir)
+        download_mod(file_url, final_download_dir)
 
         # 7. Obtain mod file info and save metadata
         try:
