@@ -28,7 +28,7 @@ from core.config import (
 # Import tabs that are used for the view
 from gui.dashboard_views.mods_tab import ModsTab
 from gui.dashboard_views.downloads_tab import DownloadsTab
-from gui.dashboard_views.tools import ToolsTab
+from gui.dashboard_views.tools_tab import ToolsTab
 
 # Point rarfile to the bundled binary
 rarfile.UNRAR_TOOL = "/app/bin/unrar"
