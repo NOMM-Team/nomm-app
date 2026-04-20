@@ -14,9 +14,14 @@ from gi.repository import Gtk, Adw, Gdk, Gio, GLib, Pango
 from pathlib import Path
 from datetime import datetime
 from core.heroic_asset import download_heroic_assets
-from core.config import load_yaml, write_yaml
 from core.fomod import parse_fomod_xml
 from gui.fomod_dialog import FomodSelectionDialog
+from core.archive_manager import extract_archive, get_all_relative_files
+from core.config import (
+    load_yaml, write_yaml, 
+    get_metadata_path, load_metadata, save_metadata, remove_mod_from_metadata
+)
+from core.mod_manager import deploy_mod_files, remove_mod_files, completely_uninstall_mod
 
 # Point rarfile to the bundled binary
 rarfile.UNRAR_TOOL = "/app/bin/unrar"
@@ -38,8 +43,8 @@ class GameDashboard(Gtk.Box):
         self.staging_path = Path(os.path.join(Path(self.user_config.get("staging_path")), game_name))
         self.platform = self.game_config.get("platform")
         
-        self.staging_metadata_path = os.path.join(self.staging_path, ".staging.nomm.yaml")
-        self.downloads_metadata_path = os.path.join(self.downloads_path, ".downloads.nomm.yaml")
+        self.staging_metadata_path = get_metadata_path(self.staging_path, is_staging=True)
+        self.downloads_metadata_path = get_metadata_path(self.downloads_path, is_staging=False)
 
         self.parse_deployment_paths() # parse the deployment paths
 
@@ -198,39 +203,17 @@ class GameDashboard(Gtk.Box):
             zip_path = os.path.join(self.downloads_path, file_name)
             if os.path.exists(zip_path):
                 os.remove(zip_path)
-        except Exception as e:
-            self.show_message(
-                _("Error"),
-                _("Could not delete the file: {}").format(e)
-            )
+        except OSError as e: # Remplace Exception par OSError
+            self.show_message(_("Error"), _("Could not delete the file: {}").format(e))
 
         try:
-            # Delete Metadata (if it exists)
-            downloads_metadata = self.load_downloads_metadata()
-            if downloads_metadata:
-                if file_name in downloads_metadata["mods"]:
-                    del downloads_metadata["mods"][file_name]
-                    write_yaml(downloads_metadata, self.downloads_metadata_path)
-        except Exception as e:
-            self.show_message(
-                _("Error"),
-                _("Could not delete metadata for file: {}").format(e)
-            )
+            # Delete Metadata
+            remove_mod_from_metadata(self.downloads_metadata_path, file_name)
+        except OSError as e:
+            self.show_message(_("Error"), _("Could not delete metadata for file: {}").format(e))
 
         self.create_downloads_page()
         self.update_indicators()
-
-    def load_downloads_metadata(self):
-        if not os.path.exists(self.downloads_metadata_path):
-            return None
-        with open(self.downloads_metadata_path, 'r') as f:
-            return yaml.safe_load(f)
-
-    def load_staging_metadata(self):
-        if not os.path.exists(self.staging_metadata_path):
-            return None
-        with open(self.staging_metadata_path, 'r') as f:
-            return yaml.safe_load(f)
 
     def get_contrast_color(self, hex_code):
         # Remove # if present
@@ -251,7 +234,7 @@ class GameDashboard(Gtk.Box):
     def check_for_conflicts(self):
         '''Check staging folder for any conflicts with staged files'''
         path_registry = {}
-        staging_metadata = self.load_staging_metadata()
+        staging_metadata = load_metadata(self.staging_metadata_path)
 
         if not staging_metadata:
             return []
@@ -343,7 +326,7 @@ class GameDashboard(Gtk.Box):
     def update_indicators(self):
         # Update Mods Stats
         mods_inactive, mods_active = 0, 0
-        staging_metadata = self.load_staging_metadata()
+        staging_metadata = load_metadata(self.staging_metadata_path)
         if staging_metadata:
             for mod in staging_metadata["mods"]:
                 if staging_metadata["mods"][mod]["status"] == "enabled":
@@ -385,7 +368,7 @@ class GameDashboard(Gtk.Box):
         return search_text in getattr(row, 'mod_name', '')
 
     def check_for_updates(self, btn):
-        staging_metadata = self.load_staging_metadata()
+        staging_metadata = load_metadata(self.staging_metadata_path)
         if not staging_metadata: return
 
         game_id = staging_metadata.get("info", {}).get("nexus_id")
@@ -437,7 +420,7 @@ class GameDashboard(Gtk.Box):
 
         # 3. Save only if changes were actually made
         if mods_updated:
-            write_yaml(staging_metadata, self.staging_metadata_path)
+            save_metadata(staging_metadata, self.staging_metadata_path)
             print("Metadata updated with new version info and changelogs.")
             self.create_mods_page()
 
@@ -489,7 +472,7 @@ class GameDashboard(Gtk.Box):
         
         staging_path = self.staging_path
         
-        staging_metadata = self.load_staging_metadata()
+        staging_metadata = load_metadata(self.staging_metadata_path)
         if not staging_metadata:
             container.append(Gtk.Label(label=_("The staging metadata file could not be found, did you install any mods?"), css_classes=["dim-label"]))
             staging_metadata = {}
@@ -774,7 +757,7 @@ class GameDashboard(Gtk.Box):
                 # Installation Timestamp (Found by checking staging metadata)
                 if installed:
                     installation_timestamp_value = None
-                    staging_metadata = self.load_staging_metadata()
+                    staging_metadata = load_metadata(self.staging_metadata_path)
                     for mods in staging_metadata["mods"]:
                         if "archive_name" in staging_metadata["mods"][mods] and staging_metadata["mods"][mods]["archive_name"] == file_name:
                             installation_timestamp_value = staging_metadata["mods"][mods]["install_timestamp"]
@@ -944,7 +927,7 @@ class GameDashboard(Gtk.Box):
         msg = _("Warning: This process may be destructive to existing game files. Please ensure you have backed up your game directory before proceeding.")
         
         dialog = Adw.MessageDialog(
-            transient_for=self,
+            transient_for=self.app.win, # <-- CORRECTION
             heading=_("Confirm Installation"),
             body=msg
         )
@@ -1007,125 +990,57 @@ class GameDashboard(Gtk.Box):
 
     def on_mod_toggled(self, switch, state, mod_files: list, mod: str):
         '''User clicked the toggle on the mods page: need to either enable or disable the mod'''
-        print(f"Toggling mod: {mod}")
         deployment_targets = self.deployment_targets
-        staging_metadata = self.load_staging_metadata()
+        staging_metadata = load_metadata(self.staging_metadata_path)
 
         if not deployment_targets or not staging_metadata:
-            print("Cancelling toggle")
             return False
 
-        if not "deployment_target" in staging_metadata["mods"][mod]:
-            dest_dir = deployment_targets[0]["path"]
-        else:
-            for deployment_target in deployment_targets:
-                if deployment_target["name"] == staging_metadata["mods"][mod]["deployment_target"]:
-                    dest_dir = deployment_target["path"]
+        # Trouver le dossier de destination
+        dest_dir = deployment_targets[0]["path"]
+        if "deployment_target" in staging_metadata["mods"][mod]:
+            for target in deployment_targets:
+                if target["name"] == staging_metadata["mods"][mod]["deployment_target"]:
+                    dest_dir = target["path"]
+                    break
 
-        # deploy the files
-        for mod_file in mod_files:
-            staging_item = self.staging_path / mod / mod_file # staging path / mod name / actual mod file
-            link_path = Path(dest_dir) / mod_file
+        staging_mod_dir = os.path.join(self.staging_path, mod)
 
-            if state:
-                # 1. Recursive Directory Handling
-                # If the item in staging is a directory, merge it into the game folder
-                if staging_item.is_dir():
-                    link_path.mkdir(parents=True, exist_ok=True)
-                    continue
-                
-                # 2. File Handling
-                # Ensure the parent directory for the file exists
-                link_path.parent.mkdir(parents=True, exist_ok=True)
-
-                if not link_path.exists():
-                    try:
-                        os.symlink(staging_item, link_path)
-                        if staging_metadata:
-                            staging_metadata["mods"][mod]["status"] = "enabled"
-                            staging_metadata["mods"][mod]["enabled_timestamp"] = datetime.now().strftime("%c")
-
-                    except Exception as e:
-                        print(f"Failed to enable mod {e}")
-                        switch.set_active(False)
-                        # We stop here to prevent a flood of errors if it's a permission issue
-                        break 
-                else:
-                    # If it's not a symlink, it's a real game file. We don't overwrite.
-                    if not link_path.is_symlink():
-                        print(f"Conflict: {link_path} already exists as a real file, skipping.")
+        if state:
+            # Activer le mod
+            success = deploy_mod_files(staging_mod_dir, dest_dir, mod_files)
+            if success:
+                staging_metadata["mods"][mod]["status"] = "enabled"
+                staging_metadata["mods"][mod]["enabled_timestamp"] = datetime.now().strftime("%c")
             else:
-                # Disable Logic
-                if link_path.is_symlink():
-                    try:
-                        link_path.unlink()
-                        if staging_metadata:
-                            staging_metadata["mods"][mod]["status"] = "disabled"
-                            # Using .pop prevents a Crash if the key is missing
-                            staging_metadata["mods"][mod].pop("enabled_timestamp", None)
-                    except Exception as e:
-                        print(f"Failed to disable mod {e}")
-                        switch.set_active(True)
-                        break
+                switch.set_active(False) # On annule visuellement si ça a planté
+        else:
+            # Désactiver le mod
+            remove_mod_files(staging_mod_dir, dest_dir, mod_files)
+            staging_metadata["mods"][mod]["status"] = "disabled"
+            staging_metadata["mods"][mod].pop("enabled_timestamp", None)
 
-        if staging_metadata:
-            write_yaml(staging_metadata, self.staging_metadata_path)
-
-        # update indicators & mods page
+        save_metadata(staging_metadata, self.staging_metadata_path)
         self.update_indicators()
         self.create_mods_page()
 
         return False
 
     def on_install_clicked(self, btn, filename, display_name):
-        
-        # This is to ensure that all the files in staging are neatly arranged in their own folder
-        # ...and avoid loose files or files within directories to be merged together
         display_name = display_name.replace(".zip", "").replace(".rar", "").replace(".7z", "")
-        staging_path = os.path.join(self.staging_path, display_name)
+        mod_staging_dir = os.path.join(self.staging_path, display_name)
         archive_full_path = os.path.join(self.downloads_path, filename)
         
-        # Determine archive type
-        filename_lower = filename.lower()
-        is_rar = filename_lower.endswith(".rar")
-        is_7z = filename_lower.endswith(".7z")
-        is_zip = filename_lower.endswith(".zip")
-
         if not self.deployment_targets:
-            self.show_message(_("Error"), _("Installation failed: Your configuration YAML is missing a mods_path. Please check the readme on github for information on how to configure the yaml file."))
+            self.show_message(_("Error"), _("Installation failed: Your configuration YAML is missing a mods_path..."))
             return
 
         try:
-            # Extract and inspect based on type
-            all_files = []
-            if is_rar:
-                with rarfile.RarFile(archive_full_path) as rf:
-                    rf.extractall(staging_path)
-            elif is_7z:
-                # Use bundled 7z binary. 'x' = extract, '-o' = output, '-y' = yes to all
-                # Run and capture output
-                process = subprocess.run(
-                    ["7z", "x", archive_full_path, f"-o{staging_path}", "-y"],
-                    capture_output=True, 
-                    text=True
-                )
+            # 1. Extraction (Gérée par le core)
+            extract_archive(archive_full_path, mod_staging_dir)
 
-            elif is_zip:
-                with zipfile.ZipFile(archive_full_path, 'r') as zf:
-                    zf.extractall(staging_path)
-            else:
-                print(f"Archive type not recognised for {filename}")
-                return
-
-            # This runs once for ALL extraction types
-            all_files = []
-            for root, dirs, files in os.walk(staging_path):
-                for file in files:
-                    full_path = os.path.join(root, file)
-                    # Get path relative to staging_path (e.g., "bin/mod.dll")
-                    rel_path = os.path.relpath(full_path, staging_path)
-                    # Normalize to forward slashes for cross-platform consistency
-                    all_files.append(rel_path.replace('\\', '/'))
+            # 2. Récupération de la liste des fichiers
+            all_files = get_all_relative_files(mod_staging_dir)
 
             if not all_files:
                 self.show_message(_("Error"), _("No files were found in your mod archive."))
@@ -1135,68 +1050,70 @@ class GameDashboard(Gtk.Box):
             fomod_xml_path = next((f for f in all_files if f.lower().endswith("fomod/moduleconfig.xml")), None)
 
             if fomod_xml_path:
-                xml_path = os.path.join(staging_path, fomod_xml_path)
+                xml_path = os.path.join(mod_staging_dir, fomod_xml_path)
                 with open(xml_path, 'rb') as f:
                     xml_data = f.read()
                 
-                module_name, options = parse_fomod_xml(xml_data) # <-- Modifié ici
+                module_name, options = parse_fomod_xml(xml_data)
                 
                 if options:
-                    dialog = FomodSelectionDialog(self.app.win, module_name, options) # <-- Modifié ici (on passe la fenêtre principale)
-                    dialog.connect("response", self.on_fomod_dialog_response, archive_full_path, filename)
+                    dialog = FomodSelectionDialog(self.app.win, module_name, options)
+                    # ON PASSE LE DOSSIER D'EXTRACTION AU LIEU DU ZIP !
+                    dialog.connect("response", self.on_fomod_dialog_response, mod_staging_dir, filename)
                     dialog.present()
                     return
 
             # Standard Installation
-            # extracted_roots = list({name.split('/')[0] for name in all_files})
             self.resolve_deployment_path(filename, all_files)
 
         except Exception as e:
             self.show_message(_("Error"), _("Installation failed: {}").format(e))
 
-    def on_fomod_dialog_response(self, dialog, response, zip_path, filename):
-        #TODO: This method needs to be entirely reworked
+    def on_fomod_dialog_response(self, dialog, response, mod_staging_dir, filename):
         if response == Gtk.ResponseType.OK:
             source_folder_name = dialog.get_selected_source()
             if source_folder_name:
-                staging_path = self.staging_path
+                # 1. Normaliser le chemin (Windows '\' -> Linux '/')
+                normalized_source = source_folder_name.replace('\\', '/').strip('/')
                 
-                with zipfile.ZipFile(zip_path, 'r') as z:
-                    all_files = z.namelist()
-                    
-                    # Find where the source_folder actually lives in the ZIP
-                    # look for a directory entry that ends with our source_folder name
-                    actual_prefix = None
-                    for f in all_files:
-                        if f.endswith(f"{source_folder_name}/"):
-                            actual_prefix = f
-                            break
-                    
-                    # Fallback: if no directory entry, look for files contained within it
-                    if not actual_prefix:
-                        for f in all_files:
-                            if f"/{source_folder_name}/" in f or f.startswith(f"{source_folder_name}/"):
-                                actual_prefix = f.split(source_folder_name)[0] + source_folder_name + "/"
-                                break
-
-                    if actual_prefix:
-                        for member in all_files:
-                            if member.startswith(actual_prefix) and not member.endswith('/'):
-                                # 2. Flatten the path: 
-                                # Remove the prefix so it extracts directly into staging
-                                arcname = os.path.relpath(member, actual_prefix)
-                                target_path = os.path.join(staging_path, source_folder_name, arcname)
-                                
-                                os.makedirs(os.path.dirname(target_path), exist_ok=True)
-                                with z.open(member) as source_file, open(target_path, "wb") as target_file:
-                                    shutil.copyfileobj(source_file, target_file)
+                # 2. Chercher le vrai chemin sur le disque
+                source_path = None
+                
+                # Essai 1 : Accès direct (si l'archive a été extraite proprement à la racine)
+                direct_path = os.path.join(mod_staging_dir, normalized_source)
+                if os.path.isdir(direct_path):
+                    source_path = direct_path
+                else:
+                    # Essai 2 : Recherche en profondeur (si le mod est dans un sous-dossier comme "Mod_v1.0/...")
+                    for root, dirs, files in os.walk(mod_staging_dir):
+                        # On convertit le chemin actuel en chemin relatif avec des '/'
+                        rel_root = os.path.relpath(root, mod_staging_dir).replace('\\', '/')
                         
-                        #temporary fix to not break fomod support
-                        #TODO: handle FOMODs better
-                        source_folder_name = [source_folder_name]
-                        self.resolve_deployment_path(filename, source_folder_name)
-                    else:
-                        print(f"Could not find {source_folder_name} inside the ZIP.")
+                        # Si le chemin relatif correspond exactement, ou se termine par notre dossier cible
+                        if rel_root == normalized_source or rel_root.endswith('/' + normalized_source):
+                            source_path = root
+                            break
+
+                if source_path:
+                    # 1. Déplacer temporairement le contenu choisi dans un endroit sûr
+                    temp_safe_dir = f"{mod_staging_dir}_temp_fomod"
+                    shutil.move(source_path, temp_safe_dir)
+
+                    # 2. Supprimer tout le reste du mod original (qui contient les trucs non choisis)
+                    shutil.rmtree(mod_staging_dir)
+
+                    # 3. Renommer le dossier temporaire pour qu'il devienne le mod final
+                    os.rename(temp_safe_dir, mod_staging_dir)
+
+                    # 4. Finaliser l'installation
+                    from core.archive_manager import get_all_relative_files
+                    final_files = get_all_relative_files(mod_staging_dir)
+                    self.resolve_deployment_path(filename, final_files)
+                else:
+                    self.show_message(_("Error"), f"Could not find folder '{normalized_source}' in extracted mod.")
+        else:
+            # Si l'utilisateur annule, on nettoie le dossier extrait pour ne pas polluer
+            shutil.rmtree(mod_staging_dir, ignore_errors=True)
 
         dialog.destroy()
 
@@ -1206,7 +1123,7 @@ class GameDashboard(Gtk.Box):
 
         dialog = Gtk.Dialog(
             title=_("Select Deployment Path"),
-            transient_for=self,
+            transient_for=self.app.win, # <-- CORRECTION
             modal=True,
             decorated=False,
             default_width=450
@@ -1316,7 +1233,7 @@ class GameDashboard(Gtk.Box):
         metadata_source = self.downloads_metadata_path # get downloads metadata (need this data to update the data below)
 
         # if there is already a metadata file, go read the contents to make sure we don't overwrite anything.
-        current_staging_metadata = self.load_staging_metadata()
+        current_staging_metadata = load_metadata(self.staging_metadata_path)
         # if there isn't, instanciate it
         if not current_staging_metadata:
             current_staging_metadata = {}
@@ -1361,34 +1278,23 @@ class GameDashboard(Gtk.Box):
 
     def on_uninstall_item(self, btn, mod_files: list, mod_name: str):
         '''Uninstall a mod from the downloads page'''
-        # get the mod deployment path
-        staging_metadata = self.load_staging_metadata()
-        if len(self.deployment_targets) == 1 or "deployment_target" not in staging_metadata["mods"][mod_name]:
-            dest = self.deployment_targets[0]["path"]
-        else: # case when there are multiple paths defined for the game
-            for deployment_target in self.deployment_targets:
-                if deployment_target["name"] == staging_metadata["mods"][mod_name]["deployment_target"]:
-                    dest = deployment_target["path"]
+        staging_metadata = load_metadata(self.staging_metadata_path)
+        
+        # Trouver le dossier de destination
+        dest_dir = self.deployment_targets[0]["path"]
+        if mod_name in staging_metadata["mods"] and "deployment_target" in staging_metadata["mods"][mod_name]:
+            for target in self.deployment_targets:
+                if target["name"] == staging_metadata["mods"][mod_name]["deployment_target"]:
+                    dest_dir = target["path"]
+                    break
 
-        try: # Remove symlinks from game folders
-            staging_path = self.staging_path
-            dest = Path(dest)
-            for item_name in mod_files:
-                if dest and (dest / item_name).is_symlink(): 
-                    (dest / item_name).unlink()
-        except Exception as e:
-            self.show_message(_("Error while removing symlinks: "), str(e))
+        staging_mod_dir = os.path.join(self.staging_path, mod_name)
 
-        try: # Remove the mod files from staging
-            shutil.rmtree(staging_path / mod_name)
-        except Exception as e:
-            self.show_message(_("Error while removing mod from staging: "), str(e))
+        # 1. Utiliser notre Core Manager pour tout nettoyer (symlinks + staging)
+        completely_uninstall_mod(staging_mod_dir, dest_dir, mod_files)
 
-        # Cleanup corresponding metadata if it exists
-        if staging_metadata:
-            if mod_name in staging_metadata["mods"]:
-                del staging_metadata["mods"][mod_name]
-            write_yaml(staging_metadata, self.staging_metadata_path)
+        # 2. Nettoyer les métadonnées
+        remove_mod_from_metadata(self.staging_metadata_path, mod_name)
 
         self.create_mods_page()
         self.create_downloads_page()
@@ -1398,7 +1304,7 @@ class GameDashboard(Gtk.Box):
         staging = self.staging_path
         
         # 1. Metadata Check
-        staging_metadata = self.load_staging_metadata()
+        staging_metadata = load_metadata(self.staging_metadata_path)
 
         if staging_metadata:
             for mod in staging_metadata["mods"]:
@@ -1460,7 +1366,7 @@ class GameDashboard(Gtk.Box):
     def show_message(self, h, b):
         print(f"Error message displayed to user")
         print(b)
-        d = Adw.MessageDialog(transient_for=self, heading=h, body=b)
+        d = Adw.MessageDialog(transient_for=self.app.win, heading=h, body=b)
         d.add_response("ok", "OK"); d.connect("response", lambda d, r: d.close()); d.present()
 
     def on_tab_changed(self, btn, name):

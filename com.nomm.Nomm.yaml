@@ -60,8 +60,6 @@ modules:
       - install -D src/main.py /app/bin/nomm
       
       # Autres fichiers racines de src
-      - cp src/fomod_handler.py /app/bin/
-      - cp src/*.css /app/bin/
       - cp src/*.yaml /app/bin/
       
       # Install desktop file

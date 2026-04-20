@@ -8,7 +8,7 @@ from urllib.parse import urlsplit, urlunsplit
 from pathlib import Path
 from gui.notifications import send_download_notification
 from core.downloader import download_mod
-from core.config import load_user_config, load_yaml, write_yaml
+from core.config import load_user_config, load_yaml, write_yaml, get_metadata_path, load_metadata, save_metadata
 from gi.repository import GLib
 
 def handle_nexus_link(nxm_link):
@@ -34,6 +34,8 @@ def handle_nexus_link(nxm_link):
  
     nexus_game_id = splitted_nxm.netloc.lower() # e.g., 'skyrimspecialedition'
     print(nexus_game_id)
+    
+    game_configs_dir = os.path.join(GLib.get_user_data_dir(), "nomm", "game_configs")
 
     # 3. Determine Game-Specific Subfolder
     game_folder_name = ""
@@ -110,6 +112,7 @@ def download_nexus_mod(nxm_link: str, headers: dict, final_download_dir: str, ne
         download_mod(file_url, final_download_dir)
 
         # 7. Obtain mod file info and save metadata
+        # 7. Obtain mod file info and save metadata
         try:
             info_api_url = f"https://api.nexusmods.com/v1/games/{nexus_game_id}/mods/{mod_id}/files/{file_id}.json"
             info_response = requests.get(info_api_url, headers=headers)
@@ -126,27 +129,25 @@ def download_nexus_mod(nxm_link: str, headers: dict, final_download_dir: str, ne
                 "mod_link": f"https://www.nexusmods.com/{nexus_game_id}/mods/{mod_id}"  
             }
 
-            # Define unique metadata file path .downloads.nomm.yaml:
-            downloads_metadata_filename = f".downloads.nomm.yaml"
-            downloads_metadata_path = final_download_dir / downloads_metadata_filename
-            downloads_metadata = {}
-            if os.path.exists(downloads_metadata_path):
-                with open(downloads_metadata_path, "r") as f:
-                    downloads_metadata = yaml.safe_load(f)
-            else:
-                # initialise file with important game info
-                downloads_metadata["info"] = {}
-                downloads_metadata["info"]["game"] = game_folder_name
-                downloads_metadata["info"]["nexus_id"] = nexus_game_id
-                downloads_metadata["mods"] = {}
+            # --- NOUVELLE LOGIQUE DE MÉTADONNÉES PROPRE ---
+            # 1. On récupère le chemin dynamique via config.py (attention, final_download_dir est un objet Path)
+            downloads_metadata_path = get_metadata_path(str(final_download_dir), is_staging=False)
+            
+            # 2. On charge (ça garantit que "mods" et "info" existent toujours)
+            downloads_metadata = load_metadata(downloads_metadata_path)
+
+            # 3. On met à jour les infos
+            downloads_metadata["info"]["game"] = game_folder_name
+            downloads_metadata["info"]["nexus_id"] = nexus_game_id
             downloads_metadata["mods"][file_name] = mod_metadata
-            with open(downloads_metadata_path, "w") as f:
-                yaml.safe_dump(downloads_metadata, f, default_flow_style=False)
+
+            # 4. On sauvegarde
+            save_metadata(downloads_metadata, downloads_metadata_path)
+            # ----------------------------------------------
             
             send_download_notification("success", file_name=file_name, game_name=game_folder_name, icon_path=None)
         except Exception as e:
             print(f"Warning: Could not retrieve mod metadata: {e}")
-            # We don't return False here because the actual mod download succeeded
 
         print(f"Done! Saved to {full_file_path}")
         return True
