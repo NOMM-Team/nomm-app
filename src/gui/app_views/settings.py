@@ -1,5 +1,24 @@
 # src/gui/settings.py
 
+# Ce fichier fait partie de Yamm (Yet Another Mod Manager).
+# Yamm est un fork de Nomm, développé initialement par Allexio.
+#
+# Copyright (C) 2026 Emetros
+# Copyright (C) 2024 Allexio
+#
+# Ce programme est un logiciel libre : vous pouvez le redistribuer et/ou le modifier
+# selon les termes de la Licence Publique Générale GNU telle que publiée par la
+# Free Software Foundation, soit la version 3 de la Licence, soit (à votre
+# discrétion) toute version ultérieure.
+#
+# Ce programme est distribué dans l'espoir qu'il sera utile, mais SANS AUCUNE
+# GARANTIE ; sans même la garantie implicite de COMMERCIALISATION ou
+# d'ADÉQUATION À UN USAGE PARTICULIER. Voir la Licence Publique Générale GNU
+# pour plus de détails.
+#
+# Vous devriez avoir reçu une copie de la Licence Publique Générale GNU
+# avec ce programme. Sinon, voir <https://www.gnu.org/licenses/>.
+
 import os
 import requests
 import threading
@@ -20,7 +39,7 @@ class SettingsWindow(Adw.Window):
         self.set_content(content)
 
         # --- STORAGE SECTION ---
-        storage_group = Adw.PreferencesGroup(title=_("Storage"), description=_("Configure where NOMM manages your files."))
+        storage_group = Adw.PreferencesGroup(title=_("Storage"), description=_("Configure where Yamm manages your files."))
         content.append(storage_group)
 
         # Downloads Path Row
@@ -81,7 +100,7 @@ class SettingsWindow(Adw.Window):
         general_group.add(launcher_skip_row)
 
         # Fullscreen
-        fullscreen_row = Adw.SwitchRow(title=_("Fullscreen NOMM"))
+        fullscreen_row = Adw.SwitchRow(title=_("Fullscreen Yamm"))
         fullscreen_row.set_subtitle(_("App launches in full screen when you select a game"))
         fullscreen_row.set_active(load_user_config().get('enable_fullscreen', False))
         fullscreen_row.connect("notify::active", lambda row, pspec: self.toggle_setting('enable_fullscreen', row.get_active()))

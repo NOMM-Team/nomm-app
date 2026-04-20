@@ -1,3 +1,22 @@
+# Ce fichier fait partie de Yamm (Yet Another Mod Manager).
+# Yamm est un fork de Nomm, développé initialement par Allexio.
+#
+# Copyright (C) 2026 Emetros
+# Copyright (C) 2024 Allexio
+#
+# Ce programme est un logiciel libre : vous pouvez le redistribuer et/ou le modifier
+# selon les termes de la Licence Publique Générale GNU telle que publiée par la
+# Free Software Foundation, soit la version 3 de la Licence, soit (à votre
+# discrétion) toute version ultérieure.
+#
+# Ce programme est distribué dans l'espoir qu'il sera utile, mais SANS AUCUNE
+# GARANTIE ; sans même la garantie implicite de COMMERCIALISATION ou
+# d'ADÉQUATION À UN USAGE PARTICULIER. Voir la Licence Publique Générale GNU
+# pour plus de détails.
+#
+# Vous devriez avoir reçu une copie de la Licence Publique Générale GNU
+# avec ce programme. Sinon, voir <https://www.gnu.org/licenses/>.
+
 # Global imports
 import os # a shitton of stuff
 import yaml # yaml is how all my config files are stored
@@ -57,8 +76,8 @@ class GameDashboard(Gtk.Box):
 
         self.headers = {
             'apikey': self.user_config["nexus_api_key"],
-            'Application-Name': 'Nomm',
-            'Application-Version': '0.5.0'
+            'Application-Name': 'Yamm',
+            'Application-Version': '0.1'
         }
 
         # Per game accent colour theming
@@ -85,12 +104,19 @@ class GameDashboard(Gtk.Box):
         win_height = monitor.get_geometry().height
         banner_height = int(win_height * 0.15)
 
-        # Either get images from nomm cache (for gog and epic) or steam cache (for steam. duh.)
+        # Initialise hero_path à None par sécurité
+        hero_path = None
+
+        # Récupération des images selon la plateforme
         if self.platform == "steam":
             hero_path = self.find_hero_image(steam_base, app_id)
-        elif self.platform == "heroic-gog" or self.platform == "heroic-epic":
+        elif self.platform in ["heroic-gog", "heroic-epic"]:
             image_paths = download_heroic_assets(app_id, self.platform)
-            hero_path = image_paths["art_hero"]
+            # On vérifie si image_paths n'est pas None avant d'essayer de lire dedans
+            if image_paths:
+                hero_path = image_paths.get("art_hero")
+            else:
+                print(f"Warning: No Heroic assets found for {self.game_name}")
 
         main_layout = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
         header = Adw.HeaderBar()
@@ -261,9 +287,9 @@ class GameDashboard(Gtk.Box):
         
         for mod_install_path_dict in mod_install_path_dicts:
             deployment_path = mod_install_path_dict["path"]
-            if "}" not in deployment_path: # if this is the nomm 0.5 format
+            if "}" not in deployment_path: # if this is the yamm 0.5 format
                 deployment_path = Path(game_path) / deployment_path
-            else: # if this is in the nomm 0.6 format
+            else: # if this is in the yamm 0.6 format
                 deployment_path = deployment_path.replace("{game_path}", game_path)
                 deployment_path = deployment_path.replace("{user_data_path}", user_data_path)
             mod_install_path_dict["path"] = deployment_path
@@ -298,9 +324,9 @@ class GameDashboard(Gtk.Box):
         # parse the paths
         for deployment_dict in deployment_dicts:
             deployment_path = deployment_dict["path"]
-            if "}" not in deployment_path: # if this is the nomm 0.5 format
+            if "}" not in deployment_path: # if this is the yamm 0.5 format
                 deployment_path = game_path + "/" + deployment_path
-            else: # if this is in the nomm 0.6 format
+            else: # if this is in the yamm 0.6 format
                 deployment_path = deployment_path.replace("{game_path}", game_path)
                 deployment_path = deployment_path.replace("{user_data_path}", user_data_path)
             deployment_dict["path"] = deployment_path

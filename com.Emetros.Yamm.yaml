@@ -52,24 +52,24 @@ modules:
         sha256: d2788f892571058c08d27095c22154579dfefb807ebe357d145ab2ddddefb1a6
 
   # 2. Your Application
-  - name: nomm
+  - name: Yamm
     buildsystem: simple
 
     build-commands:
       # Install entry point from the src folder to /app/bin
-      - install -D src/main.py /app/bin/nomm
+      - install -D src/main.py /app/bin/yamm
       
       # Autres fichiers racines de src
       - cp src/*.yaml /app/bin/
       
       # Install desktop file
-      - install -D com.nomm.Nomm.desktop /app/share/applications/com.nomm.Nomm.desktop
+      - install -D com.Emetros.Yamm.desktop /app/share/applications/com.Emetros.Yamm.desktop
 
       # Install metainfo
-      - install -D com.nomm.Nomm.metainfo.xml /app/share/metainfo/com.nomm.Nomm.metainfo.xml
+      - install -D com.Emetros.Yamm.metainfo.xml /app/share/metainfo/com.Emetros.Yamm.metainfo.xml
 
       # Install icon
-      - install -D assets/nomm.png /app/share/icons/hicolor/64x64/apps/com.nomm.Nomm.png
+      - install -D assets/nomm.png /app/share/icons/hicolor/64x64/apps/com.Emetros.Yamm.png
 
       # Copy all other python files FROM src into the same /app/bin folder
       # This ensures 'nomm' and 'dashboard.py' are flat neighbors
@@ -85,7 +85,7 @@ modules:
 
       # Localisation
       - mkdir -p /app/share/locale/fr/LC_MESSAGES
-      - msgfmt locale/fr.po -o /app/share/locale/fr/LC_MESSAGES/com.nomm.Nomm.mo
+      - msgfmt locale/fr.po -o /app/share/locale/fr/LC_MESSAGES/com.Emetros.Yamm.mo
 
     sources:
       - type: dir

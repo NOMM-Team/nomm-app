@@ -1,4 +1,24 @@
 # src/gui/application.py
+
+# Ce fichier fait partie de Yamm (Yet Another Mod Manager).
+# Yamm est un fork de Nomm, développé initialement par Allexio.
+#
+# Copyright (C) 2026 Emetros
+# Copyright (C) 2024 Allexio
+#
+# Ce programme est un logiciel libre : vous pouvez le redistribuer et/ou le modifier
+# selon les termes de la Licence Publique Générale GNU telle que publiée par la
+# Free Software Foundation, soit la version 3 de la Licence, soit (à votre
+# discrétion) toute version ultérieure.
+#
+# Ce programme est distribué dans l'espoir qu'il sera utile, mais SANS AUCUNE
+# GARANTIE ; sans même la garantie implicite de COMMERCIALISATION ou
+# d'ADÉQUATION À UN USAGE PARTICULIER. Voir la Licence Publique Générale GNU
+# pour plus de détails.
+#
+# Vous devriez avoir reçu une copie de la Licence Publique Générale GNU
+# avec ce programme. Sinon, voir <https://www.gnu.org/licenses/>.
+
 import os
 import gi
 import gettext
@@ -17,19 +37,19 @@ from core.config import load_user_config, update_user_config, get_user_config_pa
 from gui.dashboard import GameDashboard
 from gui.app_views.library_view import LibraryView
 
-APP_NAME = 'com.nomm.Nomm'
+APP_NAME = 'com.Emetros.Yamm'
 
 # Configuration de la localisation
 translation_system = gettext.translation(APP_NAME, localedir='/app/share/locale', fallback=True)
 translation_system.install(names=['ngettext'])
 
-class Nomm(Adw.Application):
+class Yamm(Adw.Application):
     def __init__(self, **kwargs):
         super().__init__(application_id=APP_NAME, **kwargs)
         self.matches = []
         self.steam_base = get_steam_base_dir()
 
-        user_data_dir = os.path.join(GLib.get_user_data_dir(), "nomm")
+        user_data_dir = os.path.join(GLib.get_user_data_dir(), "yamm")
         self.user_config_path = get_user_config_path()
         self.game_config_path = os.path.join(user_data_dir, "game_configs")
 
@@ -84,7 +104,7 @@ class Nomm(Adw.Application):
             return
 
         self.win = Adw.ApplicationWindow(application=self)
-        self.win.set_title("NOMM")
+        self.win.set_title("Yamm")
         self.win.set_default_size(1230, 900)
 
         self.stack = Gtk.Stack()
@@ -106,7 +126,7 @@ class Nomm(Adw.Application):
     def show_welcome_screen(self):
         self.remove_stack_child("setup")
         status_page = Adw.StatusPage(
-            title=_("Welcome to the Native Open Mod Manager (NOMM) app!"),
+            title=_("Welcome to the Yet Another Mod Manager (Yamm) app!"),
             description=_("This app is still in early development..."),
         )
         status_page.add_css_class("setup-page")
@@ -215,7 +235,7 @@ class Nomm(Adw.Application):
         spinner = Gtk.Spinner()
         spinner.set_size_request(128, 128)
         spinner.start()
-        label = Gtk.Label(label=_("NOMM: Searching for games..."))
+        label = Gtk.Label(label=_("Yamm: Searching for games..."))
         label.add_css_class("title-1")
         box.append(spinner); box.append(label)
         self.stack.add_named(box, "loading"); self.stack.set_visible_child_name("loading")

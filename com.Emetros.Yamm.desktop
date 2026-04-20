@@ -1,0 +1,11 @@
+[Desktop Entry]
+Version=0.1
+Type=Application
+Name=Yamm
+Comment=Yet Another Mod Manager
+Exec=yamm %u
+Icon=com.Emetros.Yamm
+Terminal=false
+Categories=Utility;Game;
+StartupWMClass=yamm
+MimeType=x-scheme-handler/nxm;

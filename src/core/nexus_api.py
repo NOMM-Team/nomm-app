@@ -1,5 +1,24 @@
 # src/core/nexus_api.py
 
+# Ce fichier fait partie de Yamm (Yet Another Mod Manager).
+# Yamm est un fork de Nomm, développé initialement par Allexio.
+#
+# Copyright (C) 2026 Emetros
+# Copyright (C) 2024 Allexio
+#
+# Ce programme est un logiciel libre : vous pouvez le redistribuer et/ou le modifier
+# selon les termes de la Licence Publique Générale GNU telle que publiée par la
+# Free Software Foundation, soit la version 3 de la Licence, soit (à votre
+# discrétion) toute version ultérieure.
+#
+# Ce programme est distribué dans l'espoir qu'il sera utile, mais SANS AUCUNE
+# GARANTIE ; sans même la garantie implicite de COMMERCIALISATION ou
+# d'ADÉQUATION À UN USAGE PARTICULIER. Voir la Licence Publique Générale GNU
+# pour plus de détails.
+#
+# Vous devriez avoir reçu une copie de la Licence Publique Générale GNU
+# avec ce programme. Sinon, voir <https://www.gnu.org/licenses/>.
+
 import os
 import yaml
 import requests
@@ -80,16 +99,16 @@ def handle_nexus_link(nxm_link):
 
     headers = {
         'apikey': api_key,
-        'Application-Name': 'Nomm',
+        'Application-Name': 'Yamm',
         'Application-Version': '0.5.3',
-        'User-Agent': 'Nomm/0.5.3 (Linux; Flatpak) Requests/Python'
+        'User-Agent': 'Yamm/0.1 (Linux; Flatpak) Requests/Python'
     }
     
     splitted_nxm = urlsplit(nxm_link)
     nexus_game_id = splitted_nxm.netloc.lower()
     print(f"Nexus Game ID: {nexus_game_id}")
     
-    game_configs_dir = os.path.join(GLib.get_user_data_dir(), "nomm", "game_configs")
+    game_configs_dir = os.path.join(GLib.get_user_data_dir(), "yamm", "game_configs")
     game_folder_name = ""
     
     if os.path.exists(game_configs_dir):

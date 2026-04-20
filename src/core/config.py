@@ -1,3 +1,22 @@
+# Ce fichier fait partie de Yamm (Yet Another Mod Manager).
+# Yamm est un fork de Nomm, développé initialement par Allexio.
+#
+# Copyright (C) 2026 Emetros
+# Copyright (C) 2024 Allexio
+#
+# Ce programme est un logiciel libre : vous pouvez le redistribuer et/ou le modifier
+# selon les termes de la Licence Publique Générale GNU telle que publiée par la
+# Free Software Foundation, soit la version 3 de la Licence, soit (à votre
+# discrétion) toute version ultérieure.
+#
+# Ce programme est distribué dans l'espoir qu'il sera utile, mais SANS AUCUNE
+# GARANTIE ; sans même la garantie implicite de COMMERCIALISATION ou
+# d'ADÉQUATION À UN USAGE PARTICULIER. Voir la Licence Publique Générale GNU
+# pour plus de détails.
+#
+# Vous devriez avoir reçu une copie de la Licence Publique Générale GNU
+# avec ce programme. Sinon, voir <https://www.gnu.org/licenses/>.
+
 import os
 import yaml
 from gi.repository import GLib
@@ -25,8 +44,8 @@ def write_yaml(data: dict, path: str):
 
 # User personal data such as settings and mod folders are handled here
 def get_user_data_dir() -> str:
-    """Retourne le dossier de données de l'application (~/.var/app/.../data/nomm ou ~/.local/share/nomm)."""
-    return os.path.join(GLib.get_user_data_dir(), "nomm")
+    """Retourne le dossier de données de l'application (~/.var/app/.../data/yamm ou ~/.local/share/yamm)."""
+    return os.path.join(GLib.get_user_data_dir(), "yamm")
 
 def get_user_config_path() -> str:
     """Retourne le chemin complet vers user_config.yaml."""
@@ -74,7 +93,7 @@ def parse_deployment_paths(game_config: dict, platform: str, app_id: str) -> lis
 # Games YAML are handled here
 def get_metadata_path(base_folder: str, is_staging: bool = True) -> str:
     """Retourne le chemin du fichier de métadonnées selon le type de dossier."""
-    filename = ".staging.nomm.yaml" if is_staging else ".downloads.nomm.yaml"
+    filename = ".staging.yamm.yaml" if is_staging else ".downloads.yamm.yaml"
     return os.path.join(base_folder, filename)
 
 def load_metadata(path: str) -> dict:

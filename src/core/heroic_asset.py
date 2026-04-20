@@ -1,3 +1,22 @@
+# Ce fichier fait partie de Yamm (Yet Another Mod Manager).
+# Yamm est un fork de Nomm, développé initialement par Allexio.
+#
+# Copyright (C) 2026 Emetros
+# Copyright (C) 2024 Allexio
+#
+# Ce programme est un logiciel libre : vous pouvez le redistribuer et/ou le modifier
+# selon les termes de la Licence Publique Générale GNU telle que publiée par la
+# Free Software Foundation, soit la version 3 de la Licence, soit (à votre
+# discrétion) toute version ultérieure.
+#
+# Ce programme est distribué dans l'espoir qu'il sera utile, mais SANS AUCUNE
+# GARANTIE ; sans même la garantie implicite de COMMERCIALISATION ou
+# d'ADÉQUATION À UN USAGE PARTICULIER. Voir la Licence Publique Générale GNU
+# pour plus de détails.
+#
+# Vous devriez avoir reçu une copie de la Licence Publique Générale GNU
+# avec ce programme. Sinon, voir <https://www.gnu.org/licenses/>.
+
 import os
 import json
 import requests
@@ -12,7 +31,7 @@ def download_heroic_assets(appName: str, platform: str):
     if isinstance(appName, list):
         appName = appName[0]
     
-    cache_base = os.path.join(GLib.get_user_data_dir(), f"nomm/image-cache/{platform}/{appName}")
+    cache_base = os.path.join(GLib.get_user_data_dir(), f"yamm/image-cache/{platform}/{appName}")
     
     # 2. CACHE CHECK: If the directory exists, check for existing files
     if os.path.exists(cache_base):

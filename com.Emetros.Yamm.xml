@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>com.Emetros.Yamm</id>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>GPL-3.0</project_license>
+  <developer>
+    <name>Emetros</name>
+  </developer>
+  <name>Yamm</name>
+  <summary>Yet Another Mod Manager</summary>
+  <description>
+    <p>Copyright (C) 2024 Allexio</p>
+    <p>A Nomm 0.8 fork (Allexio) meant to help with maintenance and for personal development </p>
+  </description>
+  <launchable type="desktop-id">com.Emetros.Yamm.desktop</launchable>
+  <url type="homepage">https://github.com/Emetros/yamm</url>
+  <url type="bugtracker">https://github.com/Emetros/yamm/issues</url>
+</component>
