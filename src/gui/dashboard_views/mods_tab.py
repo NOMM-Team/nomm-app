@@ -205,36 +205,25 @@ class ModsTab(Gtk.Box):
         return search_text in getattr(row, 'mod_name', '')
 
     def on_mod_toggled(self, switch, state, mod_files: list, mod: str):
-        deployment_targets = self.dashboard.deployment_targets
-        staging_metadata = load_metadata(self.dashboard.staging_metadata_path)
+        # APPEL AU CORE
+        success = toggle_mod_state(
+            mod_name=mod,
+            mod_files=mod_files,
+            state=state,
+            staging_path=str(self.dashboard.staging_path),
+            deployment_targets=self.dashboard.deployment_targets,
+            metadata_path=self.dashboard.staging_metadata_path
+        )
 
-        if not deployment_targets or not staging_metadata:
+        # Gestion de l'UI si l'activation échoue
+        if state and not success:
+            switch.set_active(False) 
             return False
 
-        dest_dir = deployment_targets[0]["path"]
-        if "deployment_target" in staging_metadata["mods"][mod]:
-            for target in deployment_targets:
-                if target["name"] == staging_metadata["mods"][mod]["deployment_target"]:
-                    dest_dir = target["path"]
-                    break
-
-        staging_mod_dir = os.path.join(self.dashboard.staging_path, mod)
-
-        if state:
-            success = deploy_mod_files(staging_mod_dir, dest_dir, mod_files)
-            if success:
-                staging_metadata["mods"][mod]["status"] = "enabled"
-                staging_metadata["mods"][mod]["enabled_timestamp"] = datetime.now().strftime("%c")
-            else:
-                switch.set_active(False) 
-        else:
-            remove_mod_files(staging_mod_dir, dest_dir, mod_files)
-            staging_metadata["mods"][mod]["status"] = "disabled"
-            staging_metadata["mods"][mod].pop("enabled_timestamp", None)
-
-        save_metadata(staging_metadata, self.dashboard.staging_metadata_path)
+        # Rafraîchissement de l'interface
         self.dashboard.update_indicators()
         self.populate_list()
+        
         return False
 
     def check_for_updates(self, btn):

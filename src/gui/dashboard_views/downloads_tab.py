@@ -9,9 +9,9 @@ from pathlib import Path
 from datetime import datetime
 
 from gi.repository import Gtk, Adw, GLib, Gio, Pango
-from core.config import load_metadata, save_metadata, remove_mod_from_metadata
+from core.config import load_metadata, save_metadata, remove_mod_from_metadata, finalize_mod_metadata
 from core.archive_manager import extract_archive, get_all_relative_files
-from core.fomod import parse_fomod_xml
+from core.fomod_manager import parse_fomod_xml, apply_fomod_selection
 from gui.fomod_dialog import FomodSelectionDialog
 
 _ = gettext.gettext
@@ -240,30 +240,14 @@ class DownloadsTab(Gtk.Box):
         if response == Gtk.ResponseType.OK:
             source_folder_name = dialog.get_selected_source()
             if source_folder_name:
-                normalized_source = source_folder_name.replace('\\', '/').strip('/')
-                source_path = None
-                
-                direct_path = os.path.join(mod_staging_dir, normalized_source)
-                if os.path.isdir(direct_path):
-                    source_path = direct_path
-                else:
-                    for root, dirs, files in os.walk(mod_staging_dir):
-                        rel_root = os.path.relpath(root, mod_staging_dir).replace('\\', '/')
-                        if rel_root == normalized_source or rel_root.endswith('/' + normalized_source):
-                            source_path = root
-                            break
-
-                if source_path:
-                    temp_safe_dir = f"{mod_staging_dir}_temp_fomod"
-                    shutil.move(source_path, temp_safe_dir)
-                    shutil.rmtree(mod_staging_dir)
-                    os.rename(temp_safe_dir, mod_staging_dir)
-
-                    final_files = get_all_relative_files(mod_staging_dir)
+                try:
+                    # APPEL AU CORE
+                    final_files = apply_fomod_selection(mod_staging_dir, source_folder_name)
                     self.resolve_deployment_path(filename, final_files)
-                else:
-                    self.dashboard.show_message(_("Error"), f"Could not find folder '{normalized_source}' in extracted mod.")
+                except Exception as e:
+                    self.dashboard.show_message(_("Error"), str(e))
         else:
+            import shutil
             shutil.rmtree(mod_staging_dir, ignore_errors=True)
 
         dialog.destroy()
@@ -344,41 +328,20 @@ class DownloadsTab(Gtk.Box):
         dialog.present()
 
     def finalise_installation(self, filename, extracted_roots, deployment_target):
-        current_staging_metadata = load_metadata(self.dashboard.staging_metadata_path)
-        
         try:
-            if os.path.exists(self.dashboard.downloads_metadata_path):
-                with open(self.dashboard.downloads_metadata_path, 'r') as f:
-                    current_download_metadata = yaml.safe_load(f) or {}
-            else:
-                current_download_metadata = {}
-
-            if "info" not in current_staging_metadata and "info" in current_download_metadata:
-                current_staging_metadata["info"] = current_download_metadata["info"]
-            
-            mod_name = filename.replace(".zip", "").replace(".rar", "").replace(".7z", "")
-            
-            if filename in current_download_metadata.get("mods", {}):
-                mod_data = current_download_metadata["mods"][filename]
-                mod_name = mod_data.get("name", mod_name)
-                current_staging_metadata["mods"][mod_name] = mod_data
-            else:
-                current_staging_metadata["mods"][mod_name] = {}
-
-            current_staging_metadata["mods"][mod_name]["mod_files"] = extracted_roots
-            current_staging_metadata["mods"][mod_name]["status"] = "disabled"
-            current_staging_metadata["mods"][mod_name]["archive_name"] = filename
-            current_staging_metadata["mods"][mod_name]["install_timestamp"] = datetime.now().strftime("%c")
-            current_staging_metadata["mods"][mod_name]["deployment_target"] = deployment_target["name"]
-        
-            save_metadata(current_staging_metadata, self.dashboard.staging_metadata_path)
-
+            # APPEL AU CORE
+            finalize_mod_metadata(
+                filename, 
+                extracted_roots, 
+                deployment_target["name"], 
+                self.dashboard.staging_metadata_path, 
+                self.dashboard.downloads_metadata_path
+            )
         except Exception as e:
             self.dashboard.show_message("Error", f"Installation failed: There was an issue creating/updating the metadata file: {e}")
 
         self.populate_list()
         
-        # Rafraîchir l'onglet Mods vu qu'on vient d'installer un mod !
         if hasattr(self.dashboard, 'mods_tab'):
             self.dashboard.mods_tab.populate_list()
             

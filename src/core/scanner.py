@@ -71,6 +71,76 @@ def find_game_art(app_id, platform, steam_base):
         return paths.get("art_square") if paths else None
     return None
 
+# ==========================================
+# SOUS-FONCTIONS DE SCAN PAR PLATEFORME
+# ==========================================
+
+def _scan_steam_game(yaml_data, yaml_path, game_title, found_libs, steam_base):
+    yaml_game_name = yaml_data.get("steam_folder_name", game_title)
+    slug_yaml_name = slugify(yaml_game_name)
+    
+    for lib in found_libs:
+        if not os.path.exists(lib): continue
+        for folder in os.listdir(lib):
+            if slugify(folder) == slug_yaml_name:
+                game_path = os.path.join(lib, folder)
+                yaml_data["platform"] = "steam"
+                yaml_data["game_path"] = game_path
+                write_yaml(yaml_data, yaml_path)
+                
+                return {
+                    "name": game_title,
+                    "img": find_game_art(yaml_data.get("steam_id"), "steam", steam_base),
+                    "path": game_path,
+                    "app_id": yaml_data.get("steam_id"),
+                    "platform": "steam",
+                    "game_config_path": yaml_path
+                }
+    return None
+
+def _scan_heroic_epic_game(yaml_data, yaml_path, game_title, installed_epic, steam_base):
+    for app_id, game_info in installed_epic.items():
+        if slugify(game_info.get("title", "")) == slugify(game_title):
+            game_path = game_info.get("install_path", "")
+            yaml_data["platform"] = "heroic-epic"
+            yaml_data["game_path"] = game_path
+            write_yaml(yaml_data, yaml_path)
+            
+            return {
+                "name": game_title,
+                "img": find_game_art(app_id, "heroic-epic", steam_base),
+                "path": game_path,
+                "app_id": app_id,
+                "platform": "heroic-epic",
+                "game_config_path": yaml_path
+            }
+    return None
+
+def _scan_heroic_gog_game(yaml_data, yaml_path, game_title, installed_gog, steam_base):
+    if not yaml_data.get("gog_id"):
+        return None
+        
+    for game_info in installed_gog.get("installed", []):
+        if slugify(game_info.get("appName", "")) == slugify(str(yaml_data["gog_id"])):
+            game_path = game_info.get("install_path", "")
+            yaml_data["platform"] = "heroic-gog"
+            yaml_data["game_path"] = game_path
+            write_yaml(yaml_data, yaml_path)
+            
+            return {
+                "name": game_title,
+                "img": find_game_art(yaml_data["gog_id"], "heroic-gog", steam_base),
+                "path": game_path,
+                "app_id": yaml_data["gog_id"],
+                "platform": "heroic-gog",
+                "game_config_path": yaml_path
+            }
+    return None
+
+# ==========================================
+# FONCTION PRINCIPALE
+# ==========================================
+
 def scan_all_games(game_configs_dir):
     """Fonction principale qui scanne tout et retourne une liste de dictionnaires de jeux trouvés."""
     matches = []
@@ -85,8 +155,24 @@ def scan_all_games(game_configs_dir):
         if found_libs:
             update_user_config("library_paths", sorted(list(found_libs)))
 
-    # 2. Get Heroic Libraries
+    # 2. Pre-load Heroic Libraries (Optimisation : lu une seule fois, pas à chaque jeu)
     heroic_paths = get_heroic_library_paths()
+    installed_epic = {}
+    installed_gog = {}
+    
+    if heroic_paths["epic"]:
+        try:
+            with open(heroic_paths["epic"], 'r', encoding='utf-8') as f:
+                installed_epic = json.load(f)
+        except Exception as e:
+            print(f"Error loading Epic JSON: {e}")
+            
+    if heroic_paths["gog"]:
+        try:
+            with open(heroic_paths["gog"], 'r', encoding='utf-8') as f:
+                installed_gog = json.load(f)
+        except Exception as e:
+            print(f"Error loading GOG JSON: {e}")
 
     if not os.path.exists(game_configs_dir):
         print(f"Configs directory not found at {game_configs_dir}")
@@ -106,82 +192,27 @@ def scan_all_games(game_configs_dir):
                 continue
             
             game_title = yaml_data["name"]
-            match_found = False
 
             # --- SCAN STEAM ---
             if found_libs:
-                yaml_game_name = yaml_data.get("steam_folder_name", game_title)
-                slug_yaml_name = slugify(yaml_game_name)
-                
-                for lib in found_libs:
-                    if not os.path.exists(lib): continue
-                    for folder in os.listdir(lib):
-                        if slugify(folder) == slug_yaml_name:
-                            game_path = os.path.join(lib, folder)
-                            yaml_data["platform"] = "steam"
-                            yaml_data["game_path"] = game_path
-                            write_yaml(yaml_data, yaml_path)
-                            
-                            matches.append({
-                                "name": game_title,
-                                "img": find_game_art(yaml_data.get("steam_id"), "steam", steam_base),
-                                "path": game_path,
-                                "app_id": yaml_data.get("steam_id"),
-                                "platform": "steam",
-                                "game_config_path": yaml_path
-                            })
-                            match_found = True
-                            break
-                    if match_found: break
-            
-            if match_found: continue
+                match = _scan_steam_game(yaml_data, yaml_path, game_title, found_libs, steam_base)
+                if match:
+                    matches.append(match)
+                    continue
 
             # --- SCAN HEROIC EPIC ---
-            if heroic_paths["epic"]:
-                with open(heroic_paths["epic"], 'r', encoding='utf-8') as f:
-                    installed_epic = json.load(f)
-                
-                for app_id, game_info in installed_epic.items():
-                    if slugify(game_info.get("title", "")) == slugify(game_title):
-                        game_path = game_info.get("install_path", "")
-                        yaml_data["platform"] = "heroic-epic"
-                        yaml_data["game_path"] = game_path
-                        write_yaml(yaml_data, yaml_path)
-                        
-                        matches.append({
-                            "name": game_title,
-                            "img": find_game_art(app_id, "heroic-epic", steam_base),
-                            "path": game_path,
-                            "app_id": app_id,
-                            "platform": "heroic-epic",
-                            "game_config_path": yaml_path
-                        })
-                        match_found = True
-                        break
-            
-            if match_found: continue
+            if installed_epic:
+                match = _scan_heroic_epic_game(yaml_data, yaml_path, game_title, installed_epic, steam_base)
+                if match:
+                    matches.append(match)
+                    continue
 
             # --- SCAN HEROIC GOG ---
-            if heroic_paths["gog"] and yaml_data.get("gog_id"):
-                with open(heroic_paths["gog"], 'r', encoding='utf-8') as f:
-                    installed_gog = json.load(f)
-                
-                for game_info in installed_gog.get("installed", []):
-                    if slugify(game_info.get("appName", "")) == slugify(str(yaml_data["gog_id"])):
-                        game_path = game_info.get("install_path", "")
-                        yaml_data["platform"] = "heroic-gog"
-                        yaml_data["game_path"] = game_path
-                        write_yaml(yaml_data, yaml_path)
-                        
-                        matches.append({
-                            "name": game_title,
-                            "img": find_game_art(yaml_data["gog_id"], "heroic-gog", steam_base),
-                            "path": game_path,
-                            "app_id": yaml_data["gog_id"],
-                            "platform": "heroic-gog",
-                            "game_config_path": yaml_path
-                        })
-                        break
+            if installed_gog:
+                match = _scan_heroic_gog_game(yaml_data, yaml_path, game_title, installed_gog, steam_base)
+                if match:
+                    matches.append(match)
+                    continue
 
         except Exception as e:
             print(f"Error processing {filename} during scan: {e}")

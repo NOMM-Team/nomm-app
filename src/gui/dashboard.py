@@ -16,10 +16,10 @@ from datetime import datetime
 
 # Core imports, these are functions used by the process
 from core.heroic_asset import download_heroic_assets
-from core.fomod import parse_fomod_xml
 from core.archive_manager import extract_archive, get_all_relative_files
 from core.mod_manager import deploy_mod_files, remove_mod_files, completely_uninstall_mod
 from core.nexus_api import check_for_mod_updates_async
+from core.ui_tools import get_contrast_color
 from core.config import (
     load_yaml, write_yaml, 
     get_metadata_path, load_metadata, save_metadata, remove_mod_from_metadata
@@ -29,7 +29,6 @@ from core.config import (
 from gui.dashboard_views.mods_tab import ModsTab
 from gui.dashboard_views.downloads_tab import DownloadsTab
 from gui.dashboard_views.tools import ToolsTab
-from gui.fomod_dialog import FomodSelectionDialog
 
 # Point rarfile to the bundled binary
 rarfile.UNRAR_TOOL = "/app/bin/unrar"
@@ -421,10 +420,12 @@ class GameDashboard(Gtk.Box):
         return None
 
     def show_message(self, h, b):
-        print(f"Error message displayed to user")
-        print(b)
+        # Utilise le titre (h) pour différencier le log
+        print(f"[{h}] Message displayed to user: {b}") 
         d = Adw.MessageDialog(transient_for=self.app.win, heading=h, body=b)
-        d.add_response("ok", "OK"); d.connect("response", lambda d, r: d.close()); d.present()
+        d.add_response("ok", "OK")
+        d.connect("response", lambda d, r: d.close())
+        d.present()
 
     def on_tab_changed(self, btn, name):
         if btn.get_active(): 

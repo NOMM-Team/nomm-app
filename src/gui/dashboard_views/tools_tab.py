@@ -1,11 +1,12 @@
 # src/gui/tabs/tools_tab.py
 
 import os
-import zipfile
-import subprocess
 import webbrowser
 import threading
 import gettext
+
+from core.mod_manager import is_utility_installed, deploy_essential_utility
+
 from pathlib import Path
 
 from gi.repository import Gtk, Adw, GLib
@@ -70,13 +71,7 @@ class ToolsTab(Gtk.Box):
                 local_zip_path = util_dir / filename
                 target_dir = Path(self.dashboard.game_path) / util.get("utility_path", "")
 
-                is_installed = False
-                if local_zip_path.exists():
-                    try:
-                        with zipfile.ZipFile(local_zip_path, 'r') as z:
-                            is_installed = all((target_dir / name).exists() for name in z.namelist() if not name.endswith('/'))
-                    except: 
-                        is_installed = False
+                is_installed = is_utility_installed(local_zip_path, target_dir)
 
                 stack = Gtk.Stack(transition_type=Gtk.StackTransitionType.CROSSFADE)
                 
@@ -113,23 +108,22 @@ class ToolsTab(Gtk.Box):
 
     def on_utility_download_clicked(self, btn, util, stack):
         source_url = util.get("source")
-        if not source_url: return
+        if not source_url: 
+            return
 
-        util_dir = Path(self.dashboard.downloads_path) / "utilities"
-        util_dir.mkdir(parents=True, exist_ok=True)
-        
-        filename = source_url.split("/")[-1]
-        target_file = util_dir / filename
+        # On prépare le chemin du dossier
+        util_dir = os.path.join(self.dashboard.downloads_path, "utilities")
 
-        def download_thread():
-            try:
-                import urllib.request
-                urllib.request.urlretrieve(source_url, target_file)
-                GLib.idle_add(lambda: stack.set_visible_child_name("install"))
-            except Exception as e:
-                GLib.idle_add(self.dashboard.show_message, "Download Failed", str(e))
+        # 1. Ce qu'il faut faire en cas de succès
+        def on_success():
+            stack.set_visible_child_name("install")
 
-        threading.Thread(target=download_thread, daemon=True).start()
+        # 2. Ce qu'il faut faire en cas d'erreur
+        def on_error(error_msg):
+            self.dashboard.show_message(_("Download Failed"), error_msg)
+
+        # 3. On délègue tout le travail fastidieux au Core !
+        download_file_async(source_url, util_dir, on_success, on_error)
 
     def on_utility_install_clicked(self, btn, util):
         msg = _("Warning: This process may be destructive to existing game files. Please ensure you have backed up your game directory before proceeding.")
@@ -152,35 +146,11 @@ class ToolsTab(Gtk.Box):
         dialog.present()
 
     def execute_utility_install(self, util):
+        """Appelle la logique métier pour installer le framework, et gère les messages UI."""
         try:
-            source_url = util.get("source")
-            filename = source_url.split("/")[-1]
-            zip_path = Path(self.dashboard.downloads_path) / "utilities" / filename
+            # On appelle le core !
+            deploy_essential_utility(util, self.dashboard.downloads_path, self.dashboard.game_path)
             
-            game_root = Path(self.dashboard.game_path)
-            install_subpath = util.get("utility_path", "")
-            target_dir = game_root / install_subpath
-            target_dir.mkdir(parents=True, exist_ok=True)
-
-            whitelist = util.get("whitelist", [])
-            blacklist = util.get("blacklist", [])
-
-            with zipfile.ZipFile(zip_path, 'r') as z:
-                if not whitelist and not blacklist:
-                    z.extractall(target_dir)
-                else:
-                    for file_info in z.infolist():
-                        file_name = file_info.filename
-                        if whitelist and not any(allowed in file_name for allowed in whitelist):
-                            continue
-                        if blacklist and any(blocked in file_name for blocked in blacklist):
-                            continue
-                        z.extract(file_info, target_dir)
-
-            cmd = util.get("enable_command")
-            if cmd:
-                subprocess.run(cmd, shell=True, cwd=game_root)
-
             self.dashboard.show_message(
                 _("Success"),
                 _("{} has been installed.").format(util.get('name'))
