@@ -276,6 +276,6 @@ class Nomm(Adw.Application):
 
     # --- PARAMÈTRES ---
     def on_settings_clicked(self, button):
-        from gui.settings import SettingsWindow
+        from gui.app_views.settings import SettingsWindow
         settings_win = SettingsWindow(parent_window=self.win, assets_path=self.assets_path)
         settings_win.present()

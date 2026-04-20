@@ -12,7 +12,7 @@ from gi.repository import Gtk, Adw, GLib, Gio, Pango
 from core.config import load_metadata, save_metadata, remove_mod_from_metadata, finalize_mod_metadata
 from core.archive_manager import extract_archive, get_all_relative_files
 from core.fomod_manager import parse_fomod_xml, apply_fomod_selection
-from gui.fomod_dialog import FomodSelectionDialog
+from gui.dashboard_views.fomod_dialog import FomodSelectionDialog
 
 _ = gettext.gettext
 
