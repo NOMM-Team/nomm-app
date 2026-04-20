@@ -30,6 +30,9 @@ from core.config import load_metadata, save_metadata
 from core.mod_manager import deploy_mod_files, remove_mod_files, toggle_mod_state
 from core.nexus_api import check_for_mod_updates_async
 
+# ui imports
+from gui.app_views.loading_view import LoadingView
+
 _ = gettext.gettext
 ngettext = gettext.ngettext
 
