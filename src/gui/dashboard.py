@@ -39,6 +39,7 @@ from core.archive_manager import extract_archive, get_all_relative_files
 from core.mod_manager import deploy_mod_files, remove_mod_files, completely_uninstall_mod
 from core.nexus_api import check_for_mod_updates_async
 from core.ui_tools import get_contrast_color
+from core.index_manager import init_index, check_index
 from core.config import (
     load_yaml, write_yaml, 
     get_metadata_path, load_metadata, save_metadata, remove_mod_from_metadata
@@ -73,6 +74,9 @@ class GameDashboard(Gtk.Box):
         self.downloads_metadata_path = get_metadata_path(self.downloads_path, is_staging=False)
 
         self.parse_deployment_paths() # parse the deployment paths
+        
+        init_index(self.staging_path)
+        check_index(self.staging_path)
 
         self.headers = {
             'apikey': self.user_config["nexus_api_key"],

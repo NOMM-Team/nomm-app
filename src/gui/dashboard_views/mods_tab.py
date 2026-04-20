@@ -25,10 +25,11 @@ import gettext
 from pathlib import Path
 from datetime import datetime
 
-from gi.repository import Gtk, Adw, GLib
+from gi.repository import Gtk, Adw, GLib, Gdk, GObject
 from core.config import load_metadata, save_metadata
-from core.mod_manager import deploy_mod_files, remove_mod_files, toggle_mod_state
+from core.mod_manager import deploy_mod_files, remove_mod_files, toggle_mod_state, deploy_all_ordered_mods
 from core.nexus_api import check_for_mod_updates_async
+from core.index_manager import read_index, change_mod_index
 
 # ui imports
 from gui.app_views.loading_view import LoadingView
@@ -96,12 +97,19 @@ class ModsTab(Gtk.Box):
 
         conflicts = self.dashboard.check_for_conflicts()
         file_badge_sizegroup = Gtk.SizeGroup(mode=Gtk.SizeGroupMode.HORIZONTAL)
+        load_index_sizegroup = Gtk.SizeGroup(mode=Gtk.SizeGroupMode.HORIZONTAL)
         version_badge_sizegroup = Gtk.SizeGroup(mode=Gtk.SizeGroupMode.HORIZONTAL)
-
-        for mod in sorted(staging_metadata["mods"]):
+        
+        indexed_mods = read_index(self.dashboard.staging_path)
+        
+        for index, mod in enumerate(indexed_mods, start=1):
+            
+            if mod not in staging_metadata["mods"]:
+                continue
+            
             display_name = mod
             mod_metadata = staging_metadata["mods"][mod]
-
+            
             version_text = mod_metadata.get("version", "—")
             new_version = mod_metadata.get("new_version", "")
             changelog = mod_metadata.get("changelog", "")
@@ -109,6 +117,7 @@ class ModsTab(Gtk.Box):
             mod_files = mod_metadata.get("mod_files", [])
 
             row = Adw.ActionRow(title=display_name)
+            
             if len(mod_files) == 1:
                 row.set_subtitle(mod_files[0])
             row.mod_name = display_name.lower()
@@ -119,6 +128,15 @@ class ModsTab(Gtk.Box):
             mod_toggle_switch = Gtk.Switch(active=True if "enabled_timestamp" in mod_metadata else False, valign=Gtk.Align.CENTER, css_classes=["accent-switch"])
             mod_toggle_switch.connect("state-set", self.on_mod_toggled, mod_files, mod)
             row.add_prefix(mod_toggle_switch)
+            
+            # Drag for load order
+            drag_handle = Gtk.Image.new_from_icon_name("open-menu-symbolic")
+            drag_handle.set_cursor_from_name("grab")
+            drag_handle.set_margin_end(6)
+            drag_source = Gtk.DragSource(actions=Gdk.DragAction.MOVE)
+            drag_source.connect("prepare", self.on_drag_prepare, mod) # 'mod' est le nom du dossier
+            drag_handle.add_controller(drag_source)
+            row.add_prefix(drag_handle)
 
             # Nombre de fichiers
             number_of_files = len(mod_files)
@@ -132,7 +150,20 @@ class ModsTab(Gtk.Box):
                 file_list_badge.set_center_widget(Gtk.Label(label=label_text))
                 file_badge_sizegroup.add_widget(file_list_badge)
                 row.add_prefix(file_list_badge)
+                
+            # Load Index
+            index_label = Gtk.Label(label=f"{index}")
+            index_label.add_css_class("dim-label")
+            index_label.set_margin_end(6)
+            index_label.set_valign(Gtk.Align.CENTER)
+            load_index_sizegroup.add_widget(index_label)
+            row.add_prefix(index_label)
 
+            drop_target = Gtk.DropTarget(actions=Gdk.DragAction.MOVE)
+            drop_target.set_gtypes([GObject.TYPE_STRING])
+            drop_target.connect("drop", self.on_row_drop, mod)
+            row.add_controller(drop_target)
+            
             # Conflits
             conflicting_mods = []
             for conflict_list in conflicts:
@@ -150,7 +181,7 @@ class ModsTab(Gtk.Box):
                 conflict_icon = Gtk.Image.new_from_icon_name("vcs-merge-request-symbolic")
                 conflict_icon.set_pixel_size(18)
                 conflicts_badge.append(conflict_icon)
-                row.add_prefix(conflicts_badge)
+                row.add_suffix(conflicts_badge)
 
             # Text file (Readme)
             text_file = self.find_text_file(mod_metadata.get("mod_files", []))
@@ -246,6 +277,29 @@ class ModsTab(Gtk.Box):
         self.dashboard.update_indicators()
         self.populate_list()
         
+        return False
+    
+    def on_drag_prepare(self, source, x, y, mod_name):
+        value = GObject.Value(GObject.TYPE_STRING, mod_name)
+        return Gdk.ContentProvider.new_for_value(value)
+    
+    def on_row_drop(self, target, value, x, y, mod_name):
+        if value == mod_name:
+            return False
+        
+        current_mods = read_index(self.dashboard.staging_path)
+        
+        if mod_name in current_mods:
+            target_index = current_mods.index(mod_name)
+            change_mod_index(self.dashboard.staging_path, value, target_index)
+            GLib.idle_add(
+                deploy_all_ordered_mods,
+                self.dashboard.staging_path,
+                self.dashboard.game_path,
+                self.dashboard.staging_metadata_path
+            )
+            self.populate_list()
+            return True
         return False
 
     def check_for_updates(self, btn):

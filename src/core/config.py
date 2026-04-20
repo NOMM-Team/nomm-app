@@ -118,15 +118,15 @@ def save_metadata(data: dict, path: str) -> None:
     """Sauvegarde les métadonnées."""
     write_yaml(data, path)
 
-def remove_mod_from_metadata(path: str, mod_key: str) -> bool:
-    """
-    Supprime un mod spécifique des métadonnées s'il existe.
-    Retourne True si le fichier a été modifié, False sinon.
-    """
+def remove_mod_from_metadata(path: str, mod_name: str) -> bool:
     data = load_metadata(path)
-    if mod_key in data["mods"]:
-        del data["mods"][mod_key]
+    if mod_name in data["mods"]:
+        del data["mods"][mod_name]
         save_metadata(data, path)
+        
+        staging_path = os.path.dirname(path)
+        from core.index_manager import delete_mod_from_index
+        delete_mod_from_index(staging_path, mod_name)
         return True
     return False
 
@@ -159,5 +159,8 @@ def finalize_mod_metadata(filename: str, extracted_roots: list, deployment_targe
     current_staging_metadata["mods"][mod_name]["archive_name"] = filename
     current_staging_metadata["mods"][mod_name]["install_timestamp"] = datetime.now().strftime("%c")
     current_staging_metadata["mods"][mod_name]["deployment_target"] = deployment_target_name
-
+    
+    staging_path = os.path.dirname(staging_meta_path)
+    from core.index_manager import add_mod_to_index
+    add_mod_to_index(staging_path, mod_name)
     save_metadata(current_staging_metadata, staging_meta_path)
