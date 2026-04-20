@@ -112,11 +112,12 @@ class GameDashboard(Gtk.Box):
             hero_path = self.find_hero_image(steam_base, app_id)
         elif self.platform in ["heroic-gog", "heroic-epic"]:
             image_paths = download_heroic_assets(app_id, self.platform)
-            # On vérifie si image_paths n'est pas None avant d'essayer de lire dedans
-            if image_paths:
+            # Ajoute cette vérification de sécurité
+            if image_paths is not None:
                 hero_path = image_paths.get("art_hero")
             else:
-                print(f"Warning: No Heroic assets found for {self.game_name}")
+                print(f"Warning: Could not retrieve Heroic assets for {self.game_name}")
+                hero_path = None # Repli sur aucune image au lieu de crash
 
         main_layout = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
         header = Adw.HeaderBar()

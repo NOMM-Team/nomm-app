@@ -23,6 +23,13 @@ import requests
 from gi.repository import GLib
 
 def download_heroic_assets(appName: str, platform: str):
+    # --- AJOUT: Forcer la conversion en string pour éviter les erreurs de comparaison
+    if isinstance(appName, list):
+        appName = str(appName[0])
+    else:
+        appName = str(appName)
+    # ---
+    
     # 1. Define Paths
     json_path = os.path.expanduser("~/.var/app/com.heroicgameslauncher.hgl/config/heroic/store/download-manager.json") # flatpak
     if not os.path.exists(json_path):

@@ -27,7 +27,7 @@ from datetime import datetime
 
 from gi.repository import Gtk, Adw, GLib
 from core.config import load_metadata, save_metadata
-from core.mod_manager import deploy_mod_files, remove_mod_files
+from core.mod_manager import deploy_mod_files, remove_mod_files, toggle_mod_state
 from core.nexus_api import check_for_mod_updates_async
 
 _ = gettext.gettext
