@@ -15,6 +15,7 @@ from gi.repository import Gtk, Adw, GLib, Gdk, Gio, GdkPixbuf
 from core.scanner import scan_all_games, get_steam_base_dir
 from core.config import load_user_config, update_user_config, get_user_config_path
 from gui.dashboard import GameDashboard
+from gui.app_views.library_view import LibraryView
 
 APP_NAME = 'com.nomm.Nomm'
 
@@ -238,130 +239,11 @@ class Nomm(Adw.Application):
                 self.open_dashboard(game_info)
                 return
 
-        view = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
-        view.append(Adw.HeaderBar())
-        overlay = Gtk.Overlay()
-        scroll = Gtk.ScrolledWindow(vexpand=True)
+        # On instancie notre nouvelle vue et on l'ajoute au Stack
+        library_view = LibraryView(self, self.matches)
         
-        flow = Gtk.FlowBox(
-            valign=Gtk.Align.START, halign=Gtk.Align.START,
-            selection_mode=Gtk.SelectionMode.NONE,
-            margin_top=40, margin_bottom=40, margin_start=40, margin_end=40,
-            column_spacing=30, row_spacing=30, homogeneous=True
-        )
-
-        if self.matches:
-            for game in self.matches:
-                flow.append(self.create_game_card(game))
-            scroll.set_child(flow)
-            overlay.set_child(scroll)
-        else:
-            status_page = Adw.StatusPage(
-                title=_("No games detected"),
-                description=_("We couldn't find any Steam or Heroic games..."),
-                icon_name="input-gaming-symbolic"
-            )
-            overlay.set_child(status_page)
-
-        # Boutons flottants
-        self.add_fab_buttons(overlay)
-        view.append(overlay)
-        self.stack.add_named(view, "library")
+        self.stack.add_named(library_view, "library")
         self.stack.set_visible_child_name("library")
-
-    def create_game_card(self, game):
-        card = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
-        card.set_size_request(200, 300)
-        card.set_halign(Gtk.Align.START)
-        card.set_hexpand(False)
-        card.add_css_class("game-card")
-        
-        # LE SECRET POUR LES BORDS ARRONDIS EST ICI :
-        card.set_overflow(Gtk.Overflow.HIDDEN) 
-        
-        card.set_tooltip_text(f"{game['name']}\n{game['path']}")
-        
-        gesture = Gtk.GestureClick()
-        gesture.connect("released", lambda g, n, x, y: self.on_game_clicked(game))
-        card.add_controller(gesture)
-
-        img_overlay = Gtk.Overlay()
-        poster = self.get_placeholder_game_poster()
-        
-        if game['img'] and os.path.exists(game['img']):
-            try:
-                pb = GdkPixbuf.Pixbuf.new_from_file_at_scale(game['img'], 200, 300, False)
-                poster = Gtk.Picture.new_for_paintable(Gdk.Texture.new_for_pixbuf(pb))
-                poster.set_can_shrink(True)
-            except: pass
-            
-        img_overlay.set_child(poster)
-        
-        # --- 1. BADGE PLATEFORME ---
-        platform = game['platform']
-        icon_path = ""
-        if platform == "steam":
-            icon_path = os.path.join(self.assets_path, "steam_logo.svg")
-        elif platform == "heroic-epic":
-            icon_path = os.path.join(self.assets_path, "epic_logo.svg")
-        elif platform == "heroic-gog":
-            icon_path = os.path.join(self.assets_path, "gog_logo.svg")
-
-        if os.path.exists(icon_path):
-            try:
-                platform_badge_pb = GdkPixbuf.Pixbuf.new_from_file_at_scale(icon_path, 32, 32, True)
-                platform_badge = Gtk.Picture.new_for_paintable(Gdk.Texture.new_for_pixbuf(platform_badge_pb))
-                
-                platform_badge.set_halign(Gtk.Align.END)
-                platform_badge.set_valign(Gtk.Align.END)
-                platform_badge.set_margin_end(10)
-                platform_badge.set_margin_bottom(10)
-                platform_badge.add_css_class("platform-badge")
-                
-                img_overlay.add_overlay(platform_badge)
-            except Exception as e:
-                print(f"Error rendering SVG badge: {e}")
-
-        # --- 2. BADGE COMPTEUR DE MODS ---
-        mod_total_badge = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=4)
-        mod_total_badge.set_halign(Gtk.Align.START)
-        mod_total_badge.set_valign(Gtk.Align.END)
-        mod_total_badge.set_margin_start(10)
-        mod_total_badge.set_margin_bottom(10)
-        mod_total_badge.add_css_class("platform-badge")
-            
-        count = 0
-        try:
-            user_config = load_user_config()
-            base_dl_path = user_config.get("download_path")
-            if base_dl_path:
-                game_dl_path = os.path.join(base_dl_path, game["name"])
-                if os.path.exists(game_dl_path):
-                    exts = (".zip", ".rar", ".7z")
-                    count = sum(1 for f in os.scandir(game_dl_path) if f.is_file() and f.name.lower().endswith(exts))
-        except: pass
-        
-        mod_total_badge_label = Gtk.Label(label=str(count))
-        mod_total_badge_label.add_css_class("badge-accent")
-        mod_total_badge.append(mod_total_badge_label)
-        
-        img_overlay.add_overlay(mod_total_badge)
-
-        card.append(img_overlay)
-        return card
-
-    def add_fab_buttons(self, overlay):
-        # Rafraîchir
-        refresh_btn = Gtk.Button(icon_name="view-refresh-symbolic", halign=Gtk.Align.END, valign=Gtk.Align.START, margin_top=30, margin_end=30)
-        refresh_btn.set_size_request(64, 64)
-        refresh_btn.add_css_class("refresh-fab")
-        refresh_btn.connect("clicked", lambda b: self.show_loading_and_scan())
-
-        settings_btn = Gtk.Button(icon_name="settings-configure-symbolic", halign=Gtk.Align.END, valign=Gtk.Align.START, margin_top=30, margin_end=120)
-        settings_btn.set_size_request(64, 64)
-        settings_btn.add_css_class("refresh-fab")
-        settings_btn.connect("clicked", self.on_settings_clicked)
-        overlay.add_overlay(settings_btn); overlay.add_overlay(refresh_btn)
 
     def on_game_clicked(self, game_data):
         config = load_user_config()
@@ -391,13 +273,6 @@ class Nomm(Adw.Application):
     def return_to_library(self):
         if load_user_config().get('enable_fullscreen'): self.win.unfullscreen()
         self.stack.set_visible_child_name("library")
-
-    def get_placeholder_game_poster(self):
-        b = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, valign=Gtk.Align.CENTER)
-        img = Gtk.Image.new_from_icon_name("input-gaming-symbolic")
-        img.set_pixel_size(128)
-        b.append(img)
-        return b
 
     # --- PARAMÈTRES ---
     def on_settings_clicked(self, button):
