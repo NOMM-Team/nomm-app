@@ -45,7 +45,7 @@ from core.config import (
     get_metadata_path, load_metadata, save_metadata, remove_mod_from_metadata
 )
 
-# Import tabs that are used for the view
+# Import tabs that are used for the GUI
 from gui.dashboard_views.mods_tab import ModsTab
 from gui.dashboard_views.downloads_tab import DownloadsTab
 from gui.dashboard_views.tools_tab import ToolsTab
@@ -60,8 +60,8 @@ class GameDashboard(Gtk.Box):
         self.game_name = game_name
         self.game_path = game_path
         self.app_id = app_id
-        self.current_filter = "all" # default filter is all
-        self.active_tab = "mods" # default tab is mods
+        self.current_filter = "all"
+        self.active_tab = "mods"
 
         self.game_config = load_yaml(game_config_path)
         self.user_config = load_yaml(user_config_path)
@@ -73,7 +73,7 @@ class GameDashboard(Gtk.Box):
         self.staging_metadata_path = get_metadata_path(self.staging_path, is_staging=True)
         self.downloads_metadata_path = get_metadata_path(self.downloads_path, is_staging=False)
 
-        self.parse_deployment_paths() # parse the deployment paths
+        self.parse_deployment_paths()
         
         init_index(self.staging_path)
         check_index(self.staging_path)
@@ -108,15 +108,14 @@ class GameDashboard(Gtk.Box):
         win_height = monitor.get_geometry().height
         banner_height = int(win_height * 0.15)
 
-        # Initialise hero_path à None par sécurité
         hero_path = None
 
-        # Récupération des images selon la plateforme
+        # Assets management
         if self.platform == "steam":
             hero_path = self.find_hero_image(steam_base, app_id)
         elif self.platform in ["heroic-gog", "heroic-epic"]:
             image_paths = download_heroic_assets(app_id, self.platform)
-            # Ajoute cette vérification de sécurité
+            
             if image_paths is not None:
                 hero_path = image_paths.get("art_hero")
             else:
@@ -153,38 +152,42 @@ class GameDashboard(Gtk.Box):
         self.mods_tab_btn = Gtk.ToggleButton(label=_("MODS"), css_classes=["overlay-tab"])
         self.mods_tab_btn.set_cursor_from_name("pointer")
         
-        # add the back button (change game)
+        # Add the back button (change game)
         back_btn = Gtk.Button(icon_name="go-previous-symbolic", css_classes=["flat"])
         back_btn.set_halign(Gtk.Align.START)
         back_btn.set_cursor_from_name("pointer")
         back_btn.connect("clicked", self.on_back_clicked)
-
+        
+        # Mod count box -- Need a CSS
         mods_badge_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=4)
         mods_badge_box.set_halign(Gtk.Align.END)
         mods_badge_box.set_valign(Gtk.Align.END)
         mods_badge_box.set_margin_bottom(8); mods_badge_box.set_margin_end(8)
         
+        # Active mod count box
         self.mods_inactive_label = Gtk.Label(label="0", css_classes=["badge-accent"])
         self.mods_active_label = Gtk.Label(label="0", css_classes=["badge-grey"])
         mods_badge_box.append(self.mods_inactive_label)
         mods_badge_box.append(self.mods_active_label)
         
-        
+        # Mods tab overlay append
         mods_tab_overlay.set_child(self.mods_tab_btn)
         mods_tab_overlay.add_overlay(mods_badge_box)
         mods_tab_overlay.add_overlay(back_btn)
         main_tabs_box.append(mods_tab_overlay)
 
-        # 2. DOWNLOADS TAB OVERLAY
+        # Downloads tab overlay append
         dl_tab_overlay = Gtk.Overlay()
         self.dl_tab_btn = Gtk.ToggleButton(label=_("DOWNLOADS"), css_classes=["overlay-tab"])
         self.dl_tab_btn.set_cursor_from_name("pointer")
         
+        # Mod count box
         dl_badge_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=4)
         dl_badge_box.set_halign(Gtk.Align.END)
         dl_badge_box.set_valign(Gtk.Align.END)
         dl_badge_box.set_margin_bottom(8); dl_badge_box.set_margin_end(8)
         
+        # Active mod count box
         self.dl_avail_label = Gtk.Label(label="0", css_classes=["badge-accent"])
         self.dl_inst_label = Gtk.Label(label="0", css_classes=["badge-grey"])
         dl_badge_box.append(self.dl_avail_label)
@@ -196,7 +199,7 @@ class GameDashboard(Gtk.Box):
 
         tab_container.append(main_tabs_box)
 
-        # 3. TOOLS TAB
+        # Utilities tab
         self.tools_tab_btn = Gtk.ToggleButton(css_classes=["overlay-tab"])
         wrench_icon = Gtk.Image.new_from_icon_name("emblem-system-symbolic")
         wrench_icon.set_pixel_size(48) 
@@ -210,6 +213,7 @@ class GameDashboard(Gtk.Box):
         self.tools_tab_btn.set_group(self.mods_tab_btn)
         self.mods_tab_btn.set_active(True)
         
+        # Banner
         banner_overlay.add_overlay(tab_container)
         main_layout.append(banner_overlay)
 
@@ -248,7 +252,6 @@ class GameDashboard(Gtk.Box):
         return "#000000" if luminance > 0.5 else "#ffffff"
 
     def check_for_conflicts(self):
-        '''Check staging folder for any conflicts with staged files'''
         path_registry = {}
         staging_metadata = load_metadata(self.staging_metadata_path)
 
@@ -303,7 +306,6 @@ class GameDashboard(Gtk.Box):
         return mod_install_path_dicts
 
     def parse_deployment_paths(self):
-        '''Parse game paths from {xxx} to proper paths'''
         game_path = self.game_config.get("game_path")
         deployment_dicts = self.game_config.get("mods_path", "")
 
@@ -409,7 +411,6 @@ class GameDashboard(Gtk.Box):
             )
 
     def on_uninstall_item(self, btn, mod_files: list, mod_name: str):
-        '''Uninstall a mod from the downloads page'''
         staging_metadata = load_metadata(self.staging_metadata_path)
         
         # Trouver le dossier de destination
