@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 # Ce fichier fait partie de Yamm (Yet Another Mod Manager).
 # Yamm est un fork de Nomm, développé initialement par Allexio.
 #

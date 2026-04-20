@@ -2,7 +2,10 @@ __pycache__/
 # build directory
 repo/
 
-/nomm.flatpak
 /flatpak-pip-generator.py
+/.flatpak-builder
 /python3-modules.json
 /.vscode
+/build-dir
+
+Yamm.flatpak

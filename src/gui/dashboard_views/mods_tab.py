@@ -119,7 +119,7 @@ class ModsTab(Gtk.Box):
 
             # Nombre de fichiers
             number_of_files = len(mod_files)
-            if number_of_files > 1:
+            if number_of_files >= 0:
                 file_list_badge = Gtk.CenterBox(orientation=Gtk.Orientation.HORIZONTAL)
                 file_list_badge.set_tooltip_text("\n".join(mod_files))
                 file_list_badge.add_css_class("badge-action-row")
