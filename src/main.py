@@ -3,7 +3,7 @@
 
 import sys
 from gui.application import Nomm
-from core.nxm_handler import handle_nexus_link
+from core.nexus_api import handle_nexus_link
 
 if __name__ == "__main__":
     # 1. Gestion du protocole NXM (Nexus Mods)
