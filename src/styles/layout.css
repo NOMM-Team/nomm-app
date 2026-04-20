@@ -99,7 +99,6 @@ togglebutton {
     /* Clearer background so the banner image is visible */
     background-color: rgba(0, 0, 0, 0.1); 
     color: white;
-    
     /* Bottom accent line to show focus */
     border-bottom: 6px solid var(--accent-bg-color);
     text-shadow: 0 2px 10px rgba(0,0,0,0.5);
