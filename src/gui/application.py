@@ -33,7 +33,7 @@ from gi.repository import Gtk, Adw, GLib, Gdk, Gio, GdkPixbuf
 
 # On importe nos composants backend et les autres vues
 from core.scanner import scan_all_games, get_steam_base_dir
-from core.config import load_user_config, update_user_config, get_user_config_path
+from core.config import load_user_config, update_user_config, get_user_config_path, get_user_data_dir
 from gui.dashboard import GameDashboard
 from gui.app_views.library_view import LibraryView
 
@@ -49,7 +49,7 @@ class Yamm(Adw.Application):
         self.matches = []
         self.steam_base = get_steam_base_dir()
 
-        user_data_dir = os.path.join(GLib.get_user_data_dir(), "yamm")
+        user_data_dir = get_user_data_dir()
         self.user_config_path = get_user_config_path()
         self.game_config_path = os.path.join(user_data_dir, "game_configs")
 

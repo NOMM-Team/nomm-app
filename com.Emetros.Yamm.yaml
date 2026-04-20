@@ -1,8 +1,8 @@
-id: com.nomm.Nomm
+id: com.Emetros.Yamm
 runtime: org.gnome.Platform
 runtime-version: '49' # Matching the latest stable GNOME runtime
 sdk: org.gnome.Sdk
-command: nomm # The name of your entry-point script
+command: yamm # The name of your entry-point script
 finish-args:
   # Network access for downloading images and Nexus mods
   - --share=network
@@ -10,7 +10,7 @@ finish-args:
   - --socket=fallback-x11
   - --socket=wayland
   - --device=dri
-  - --own-name=com.nomm.Nomm
+  - --own-name=com.Emetros.Yamm
   # Heroic
   - --filesystem=~/.config/heroic:ro # Standard
   - --filesystem=~/.var/app/com.heroicgameslauncher.hgl/config/heroic:ro # Flatpak
