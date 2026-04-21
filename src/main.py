@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 import sys
-from gui.application import Yamm
+from gui.application import Nomm
 from core.nexus_api import handle_nexus_link
 
 if __name__ == "__main__":
@@ -14,5 +14,5 @@ if __name__ == "__main__":
     # APP LAUNCH
     else:
         print("Launching NOMM Application")
-        app = Yamm()
+        app = Nomm()
         app.run(None)

@@ -1,18 +1,20 @@
-# src/core/nexus_api.py
-
 import os
-import yaml
-import requests
 import threading
-from urllib.parse import urlsplit, urlunsplit
 from pathlib import Path
+from urllib.parse import urlsplit, urlunsplit
 
+import requests
+import yaml
 from gi.repository import GLib
-from gui.notifications import send_download_notification
-from core.downloader import download_mod
-from core.config import load_user_config, get_metadata_path, load_metadata, save_metadata
 
-def check_for_mod_updates_async(staging_metadata: dict, headers: dict, game_id: str, on_complete_callback: Optional[callable]) -> None:
+from core.config import (get_metadata_path, load_metadata, load_user_config,
+                         save_metadata)
+from core.downloader import download_mod
+from gui.notifications import send_download_notification
+from typing import Optional, Callable
+
+
+def check_for_mod_updates_async(staging_metadata: dict, headers: dict, game_id: str, on_complete_callback: Optional[Callable]) -> None:
     def worker():
         print("Checking for updates in background...")
         mods_updated = False
@@ -66,16 +68,16 @@ def handle_nexus_link(nxm_link: str) -> bool:
 
     headers = {
         'apikey': api_key,
-        'Application-Name': 'Yamm',
+        'Application-Name': 'NOMM',
         'Application-Version': '0.5.3',
-        'User-Agent': 'Yamm/0.1 (Linux; Flatpak) Requests/Python'
+        'User-Agent': 'NOMM/0.1 (Linux; Flatpak) Requests/Python'
     }
     
     splitted_nxm = urlsplit(nxm_link)
     nexus_game_id = splitted_nxm.netloc.lower()
     print(f"Nexus Game ID: {nexus_game_id}")
     
-    game_configs_dir = os.path.join(GLib.get_user_data_dir(), "yamm", "game_configs")
+    game_configs_dir = os.path.join(GLib.get_user_data_dir(), "nomm", "game_configs")
     game_folder_name = ""
     
     if os.path.exists(game_configs_dir):

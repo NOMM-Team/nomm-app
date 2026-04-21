@@ -1,15 +1,12 @@
-# src/gui/tabs/tools_tab.py
-
-import os
-import webbrowser
-import threading
 import gettext
-
-from core.mod_manager import is_utility_installed, deploy_essential_utility
-
+import os
+import threading
+import webbrowser
 from pathlib import Path
 
-from gi.repository import Gtk, Adw, GLib
+from gi.repository import Adw, GLib, Gtk
+
+from core.mod_manager import deploy_essential_utility, is_utility_installed
 
 _ = gettext.gettext
 

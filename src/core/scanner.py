@@ -1,12 +1,14 @@
-# src/core/scanner.py
-
-import os
 import json
-import yaml
-import vdf
+import os
 import re
+
+import vdf
+import yaml
+
 from core.config import load_user_config, update_user_config, write_yaml
 from core.heroic_asset import download_heroic_assets
+from typing import List, Dict, Optional, Any
+
 
 def slugify(text: str) -> str:
     return re.sub(r'[^a-z0-9]', '', text.lower())

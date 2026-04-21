@@ -1,10 +1,12 @@
-#src/core/downloader.py
-
 import os
-import requests
 import threading
+
+import requests
 from gi.repository import GLib
+
 from gui.notifications import send_download_notification
+from typing import Optional, Callable
+
 
 def download_mod(url: str, dest_folder: str) -> bool:
     filename = url.split('/')[-1].split('?')[0] or "download"

@@ -1,14 +1,14 @@
-#src/gui/notifications.py
-
 import os
+
 import gi
+
 gi.require_version('Notify', '0.7')
-from gi.repository import Notify, GdkPixbuf, GLib
+from gi.repository import GdkPixbuf, GLib, Notify
 
 
 # This function handle notifications when downloading mods from Nexusmods
 def send_download_notification(status, file_name="", game_name=None, icon_path=None):
-    Notify.init("Yamm")
+    Notify.init("NOMM")
     
     if status == "success":
         title = "Download Successful"
@@ -31,9 +31,9 @@ def send_download_notification(status, file_name="", game_name=None, icon_path=N
             notification.set_icon_from_pixbuf(pixbuf)
         except Exception as e:
             print(f"Error loading notification pixbuf: {e}")
-            notification.set_hint("desktop-entry", GLib.Variant.new_string("yamm"))
+            notification.set_hint("desktop-entry", GLib.Variant.new_string("nomm"))
     else:
-        notification.set_hint("desktop-entry", GLib.Variant.new_string("yamm"))
+        notification.set_hint("desktop-entry", GLib.Variant.new_string("nomm"))
 
     try:
         notification.show()

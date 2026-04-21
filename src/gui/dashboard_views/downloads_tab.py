@@ -1,17 +1,18 @@
-# src/gui/tabs/downloads_tab.py
-
+import gettext
 import os
-import yaml
 import shutil
 import webbrowser
-import gettext
-from pathlib import Path
 from datetime import datetime
+from pathlib import Path
 
-from gi.repository import Gtk, Gdk, Adw, GLib, Gio, Pango
-from core.config import load_metadata, save_metadata, remove_mod_from_metadata, finalize_mod_metadata
-from core.archive_manager import extract_archive, get_all_relative_files, delete_downloaded_archive
-from core.fomod_manager import parse_fomod_xml, apply_fomod_selection
+import yaml
+from gi.repository import Adw, Gdk, Gio, GLib, Gtk, Pango
+
+from core.archive_manager import (delete_downloaded_archive, extract_archive,
+                                  get_all_relative_files)
+from core.config import (finalize_mod_metadata, load_metadata,
+                         remove_mod_from_metadata)
+from core.fomod_manager import apply_fomod_selection, parse_fomod_xml
 from core.mod_manager import is_mod_installed
 from gui.dashboard_views.fomod_dialog import FomodSelectionDialog
 
@@ -83,7 +84,7 @@ class DownloadsTab(Gtk.Box):
         staging_metadata = load_metadata(self.dashboard.staging_metadata_path)
         
         for file_name in files:
-            installed = is_mod_installed(self, file_name, staging_metadata)
+            installed = is_mod_installed(file_name, staging_metadata)
             
             display_name, version_text, changelog = file_name, "—", ""
             meta_path = self.dashboard.downloads_metadata_path
@@ -144,7 +145,7 @@ class DownloadsTab(Gtk.Box):
             b_btn = Gtk.Button(icon_name="user-trash-symbolic", valign=Gtk.Align.CENTER, css_classes=["flat"])
             b_btn.set_cursor_from_name("pointer")
             c_btn = Gtk.Button(label=_("Are you sure?"), valign=Gtk.Align.CENTER, css_classes=["destructive-action"])
-            c_btn.connect("clicked", delete_downloaded_archive, file_name)
+            c_btn.connect("clicked", self.on_delete_downloaded_archive, file_name)
             
             b_btn.connect("clicked", lambda b, s=d_stack: [
                 s.set_visible_child_name("c"),
@@ -167,6 +168,20 @@ class DownloadsTab(Gtk.Box):
         if btn.get_active():
             self.current_filter = f_name
             self.list_box.invalidate_filter()
+
+    def on_delete_downloaded_archive(self, btn, file_name):
+        try:
+            delete_downloaded_archive(self.dashboard.downloads_path, file_name)
+        except OSError as e:
+            self.dashboard.show_message(_("Error"), _("Could not delete the file: {}").format(e))
+
+        try:
+            remove_mod_from_metadata(self.dashboard.downloads_metadata_path, file_name)
+        except OSError as e:
+            self.dashboard.show_message(_("Error"), _("Could not delete metadata for file: {}").format(e))
+
+        self.populate_list()
+        self.dashboard.update_indicators()
 
     def setup_folder_monitor(self):
         f = Gio.File.new_for_path(self.dashboard.downloads_path)

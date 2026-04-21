@@ -1,12 +1,11 @@
-#src/core/index_manager.py
-
 import os
 
-from core.config import write_yaml, load_yaml
+from core.config import load_yaml, write_yaml
+from typing import List
 
-INDEX_FILE = ".index_manager.yamm.yaml"
+INDEX_FILE = ".index_manager.nomm.yaml"
 
-# Creates an index_manager.Yamm.yaml in the mod folder
+# Creates an index_manager.nomm.yaml in the mod folder
 def init_index(staging_path: str) -> List[str]:
     index_path = os.path.join(staging_path, INDEX_FILE)
     

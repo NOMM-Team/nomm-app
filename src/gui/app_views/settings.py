@@ -1,10 +1,9 @@
-# src/gui/settings.py
-
-import os
-import requests
-import threading
 import gettext
-from gi.repository import Gtk, Adw, GLib, Gio
+import os
+import threading
+
+import requests
+from gi.repository import Adw, Gio, GLib, Gtk
 
 from core.config import load_user_config, update_user_config
 
@@ -20,7 +19,7 @@ class SettingsWindow(Adw.Window):
         self.set_content(content)
 
         # --- STORAGE SECTION ---
-        storage_group = Adw.PreferencesGroup(title=_("Storage"), description=_("Configure where Yamm manages your files."))
+        storage_group = Adw.PreferencesGroup(title=_("Storage"), description=_("Configure where NOMM manages your files."))
         content.append(storage_group)
 
         # Downloads Path Row
@@ -81,7 +80,7 @@ class SettingsWindow(Adw.Window):
         general_group.add(launcher_skip_row)
 
         # Fullscreen
-        fullscreen_row = Adw.SwitchRow(title=_("Fullscreen Yamm"))
+        fullscreen_row = Adw.SwitchRow(title=_("Fullscreen NOMM"))
         fullscreen_row.set_subtitle(_("App launches in full screen when you select a game"))
         fullscreen_row.set_active(load_user_config().get('enable_fullscreen', False))
         fullscreen_row.connect("notify::active", lambda row, pspec: self.toggle_setting('enable_fullscreen', row.get_active()))

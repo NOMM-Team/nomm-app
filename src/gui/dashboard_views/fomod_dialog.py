@@ -1,5 +1,3 @@
-# src/gui/dialogs.py
-
 from gi.repository import Gtk
 
 class FomodSelectionDialog(Gtk.Dialog):

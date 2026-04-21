@@ -1,9 +1,9 @@
-# src/core/fomod_manager.py
-
 import os
 import shutil
 import xml.etree.ElementTree as ET
+
 from core.archive_manager import get_all_relative_files
+
 
 def parse_fomod_xml(xml_data):
     try:

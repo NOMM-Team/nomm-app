@@ -1,36 +1,27 @@
-#src/gui/dashboard.py
-
 import os
-import yaml
 import shutil
-import zipfile
+import subprocess
 import webbrowser
-import requests
+import zipfile
+from datetime import datetime
+from pathlib import Path
+
 import gi
 import rarfile
-import subprocess
+import requests
+import yaml
+from gi.repository import Adw, Gdk, Gio, Gtk
 
-from gi.repository import Gtk, Adw, Gdk, Gio, GLib, Pango
-from pathlib import Path
-from datetime import datetime
-
+from core.config import (get_metadata_path, load_metadata, load_yaml,
+                         parse_deployment_paths, remove_mod_from_metadata,
+                         write_yaml)
 from core.heroic_asset import download_heroic_assets
-from core.archive_manager import extract_archive, get_all_relative_files
-from core.nexus_api import check_for_mod_updates_async
-from core.ui_tools import get_contrast_color
-from core.index_manager import init_index, check_index
+from core.index_manager import check_index, init_index
+from core.mod_manager import completely_uninstall_mod, get_mod_statistics
 from core.scanner import find_game_art
-from core.mod_manager import (
-    deploy_mod_files, remove_mod_files, 
-    completely_uninstall_mod, check_for_conflicts, get_mod_statistics
-)
-from core.config import (
-    load_yaml, write_yaml, get_metadata_path, load_metadata, 
-    save_metadata, remove_mod_from_metadata, parse_deployment_paths
-)
-
-from gui.dashboard_views.mods_tab import ModsTab
+from core.ui_tools import get_contrast_color
 from gui.dashboard_views.downloads_tab import DownloadsTab
+from gui.dashboard_views.mods_tab import ModsTab
 from gui.dashboard_views.tools_tab import ToolsTab
 
 rarfile.UNRAR_TOOL = "/app/bin/unrar"
@@ -62,7 +53,7 @@ class GameDashboard(Gtk.Box):
 
         self.headers = {
             'apikey': self.user_config["nexus_api_key"],
-            'Application-Name': 'Yamm',
+            'Application-Name': 'NOMM',
             'Application-Version': '0.1'
         }
 

@@ -1,5 +1,3 @@
-#src/core/ui_tools.py
-
 def get_contrast_color(hex_code: str) -> str:
     hex_code = hex_code.lstrip('#')
     

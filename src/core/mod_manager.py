@@ -1,14 +1,14 @@
-# src/core/mod_manager.py
-
 import os
 import shutil
-import zipfile
 import subprocess
-from pathlib import Path
+import zipfile
 from datetime import datetime
+from pathlib import Path
 
 from core.config import load_metadata, save_metadata
 from core.index_manager import read_index
+from typing import List, Dict, Optional, Any, Callable
+
 
 def deploy_mod_files(staging_dir: str, dest_dir: str, mod_files: list[str]) -> bool:
     dest_path = Path(dest_dir)
@@ -39,19 +39,12 @@ def deploy_mod_files(staging_dir: str, dest_dir: str, mod_files: list[str]) -> b
         # Linking files
         if not link_item.exists():
             try:
-                # First attempts -> Hard link because it seems like it could be more efficient for proton somehow?
-                os.link(source_item, link_item)
-            except OSError as e:
-                # Catching error if files are not on the same disk
-                print(f"Can't create a hardlink for {link_item}. Erreur: {e}")
-                try:
-                    # TENTATIVE 2 : Symlink classique
-                    os.symlink(source_item, link_item)
-                    print(f"successfully created a symlink as a fallback for {link_item}: {sym_e}")
-                except Exception as sym_e:
-                    print(f"Error creating a Symlink {link_item}: {sym_e}")
-                    success = False
-                
+                # symlink
+                os.symlink(source_item, link_item)
+                print(f"successfully created a symlink as a fallback for {link_item}")
+            except Exception as sym_e:
+                print(f"Error creating a Symlink {link_item}: {sym_e}")
+                success = False                
     return success
 
 def deploy_all_ordered_mods(staging_path: str, game_path: str, staging_metadata_path: str):
@@ -104,7 +97,7 @@ def get_mod_statistics(staging_metadata_path: str, downloads_path: str) -> dict:
                 
     return stats
 
-def is_mod_installed(self, archive_filename, staging_metadata):
+def is_mod_installed(archive_filename, staging_metadata):
     if staging_metadata:
         for mod_val in staging_metadata.get("mods", {}).values():
             if mod_val.get("archive_name") == archive_filename:

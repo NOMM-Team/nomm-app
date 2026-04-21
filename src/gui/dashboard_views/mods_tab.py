@@ -1,19 +1,15 @@
-# src/gui/tabs/mods_tab.py
-
+import gettext
 import os
 import webbrowser
-import gettext
-from pathlib import Path
 from datetime import datetime
+from pathlib import Path
 
-from gi.repository import Gtk, Adw, GLib, Gdk, GObject
+from gi.repository import Adw, Gdk, GLib, GObject, Gtk
+
 from core.config import load_metadata, save_metadata
-from core.mod_manager import deploy_mod_files, remove_mod_files, toggle_mod_state, deploy_all_ordered_mods, check_for_conflicts
+from core.index_manager import change_mod_index, read_index
+from core.mod_manager import check_for_conflicts, deploy_all_ordered_mods, toggle_mod_state
 from core.nexus_api import check_for_mod_updates_async
-from core.index_manager import read_index, change_mod_index
-
-# ui imports
-from gui.app_views.loading_view import LoadingView
 
 _ = gettext.gettext
 ngettext = gettext.ngettext
@@ -65,7 +61,6 @@ class ModsTab(Gtk.Box):
         self.append(sc)
 
     def populate_list(self):
-        # Vider la liste existante
         while child := self.mods_list_box.get_first_child():
             self.mods_list_box.remove(child)
 

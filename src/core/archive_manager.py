@@ -1,8 +1,7 @@
-# src/core/archive_manager.py
-
 import os
 import subprocess
 import zipfile
+
 import rarfile
 
 # Point rarfile to the bundled binary
@@ -16,20 +15,9 @@ def get_archive_type(file_path: str) -> str:
     return 'unknown'
 
 def delete_downloaded_archive(self, btn, file_name):
-        try:
-            zip_path = os.path.join(self.dashboard.downloads_path, file_name)
-            if os.path.exists(zip_path):
-                os.remove(zip_path)
-        except OSError as e:
-            self.dashboard.show_message(_("Error"), _("Could not delete the file: {}").format(e))
-
-        try:
-            remove_mod_from_metadata(self.dashboard.downloads_metadata_path, file_name)
-        except OSError as e:
-            self.dashboard.show_message(_("Error"), _("Could not delete metadata for file: {}").format(e))
-
-        self.populate_list()
-        self.dashboard.update_indicators()
+    zip_path = os.path.join(self.dashboard.downloads_path, file_name)
+    if os.path.exists(zip_path):
+        os.remove(zip_path)
 
 def extract_archive(archive_path: str, destination_path: str) -> bool:
     arc_type = get_archive_type(archive_path)

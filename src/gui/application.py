@@ -1,26 +1,26 @@
-# src/gui/application.py
-
-import os
-import gi
 import gettext
+import os
+
+import gi
 
 gi.require_version('Gtk', '4.0')
 gi.require_version('Adw', '1')
 gi.require_version('Notify', '0.7')
 
-from gi.repository import Gtk, Adw, GLib, Gdk, Gio, GdkPixbuf
+from gi.repository import Adw, Gdk, GdkPixbuf, GLib, Gtk
 
-from core.scanner import scan_all_games, get_steam_base_dir
-from core.config import load_user_config, update_user_config, get_user_config_path, get_user_data_dir
-from gui.dashboard import GameDashboard
+from core.config import (get_user_config_path, get_user_data_dir,
+                         load_user_config, update_user_config)
+from core.scanner import get_steam_base_dir, scan_all_games
 from gui.app_views.library_view import LibraryView
+from gui.dashboard import GameDashboard
 
 APP_NAME = 'com.nomm.Nomm'
 
 translation_system = gettext.translation(APP_NAME, localedir='/app/share/locale', fallback=True)
 translation_system.install(names=['ngettext'])
 
-class Yamm(Adw.Application):
+class Nomm(Adw.Application):
     def __init__(self, **kwargs):
         super().__init__(application_id=APP_NAME, **kwargs)
         self.matches = []
@@ -77,7 +77,7 @@ class Yamm(Adw.Application):
             return
 
         self.win = Adw.ApplicationWindow(application=self)
-        self.win.set_title("Yamm")
+        self.win.set_title("Nomm")
         self.win.set_default_size(1230, 900)
 
         self.stack = Gtk.Stack()

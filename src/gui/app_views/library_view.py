@@ -1,8 +1,7 @@
-# src/gui/views/library_view.py
-
-import os
 import gettext
-from gi.repository import Gtk, Adw, GdkPixbuf, Gdk
+import os
+
+from gi.repository import Adw, Gdk, GdkPixbuf, Gtk
 
 from core.config import load_user_config
 

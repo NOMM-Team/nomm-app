@@ -1,9 +1,9 @@
-#src/core/heroic_assets.py
-
-import os
 import json
+import os
+
 import requests
 from gi.repository import GLib
+
 
 def download_heroic_assets(appName: str, platform: str):
     if isinstance(appName, list):
@@ -18,7 +18,7 @@ def download_heroic_assets(appName: str, platform: str):
     if isinstance(appName, list):
         appName = appName[0]
     
-    cache_base = os.path.join(GLib.get_user_data_dir(), f"yamm/image-cache/{platform}/{appName}")
+    cache_base = os.path.join(GLib.get_user_data_dir(), f"nomm/image-cache/{platform}/{appName}")
     
     if os.path.exists(cache_base):
         existing_files = {}

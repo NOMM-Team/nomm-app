@@ -1,5 +1,5 @@
-# src/gui/app_views/loading_view.py
 import gettext
+
 from gi.repository import Gtk
 
 _ = gettext.gettext

@@ -1,9 +1,9 @@
-#src/core/config.py
-
 import os
+from datetime import datetime
+
 import yaml
 from gi.repository import GLib
-from datetime import datetime
+from typing import List, Dict, Any
 
 # Yaml write and load functions are handled here
 def load_yaml(path: str) -> dict:
@@ -25,7 +25,7 @@ def write_yaml(data: dict, path: str):
 
 # User personal data such as settings and mod folders are handled here
 def get_user_data_dir() -> str:
-    return os.path.join(GLib.get_user_data_dir(), "yamm")
+    return os.path.join(GLib.get_user_data_dir(), "nomm")
 
 def get_user_config_path() -> str:
     return os.path.join(get_user_data_dir(), "user_config.yaml")
@@ -68,7 +68,7 @@ def parse_deployment_paths(game_config: dict, platform: str, app_id: str) -> Lis
 # Games YAML are handled here
 def get_metadata_path(base_folder: str, is_staging: bool = True) -> str:
     """Retourne le chemin du fichier de métadonnées selon le type de dossier."""
-    filename = ".staging.yamm.yaml" if is_staging else ".downloads.yamm.yaml"
+    filename = ".staging.nomm.yaml" if is_staging else ".downloads.nomm.yaml"
     return os.path.join(base_folder, filename)
 
 def load_metadata(path: str) -> dict:
@@ -100,6 +100,7 @@ def remove_mod_from_metadata(path: str, mod_name: str) -> bool:
 
 def finalize_mod_metadata(filename: str, extracted_roots: list, deployment_target_name: str, staging_meta_path: str, downloads_meta_path: str):
     from datetime import datetime
+
     import yaml
     
     current_staging_metadata = load_metadata(staging_meta_path)

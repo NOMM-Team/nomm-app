@@ -1,11 +1,7 @@
-# src/core/drag_drop_file.py 
-
 import os
 import shutil
-from urllib.parse import unquote
 from pathlib import Path
-
-from gi.repository import Gtk, Gdk, GObject
+from urllib.parse import unquote
 
 def process_dropped_files(uri_list: list[str], destination_path: str) -> list[str]:
     copied_files = []
