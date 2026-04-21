@@ -2,7 +2,7 @@
 Version=0.8
 Type=Application
 Name=NOMM
-Comment=Yet Another Mod Manager
+Comment=Native Open Mod Manager
 Exec=nomm %u
 Icon=com.nomm.Nomm
 Terminal=false
