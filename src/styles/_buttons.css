@@ -1,0 +1,19 @@
+/* Launcher buttons */
+
+.refresh-fab {
+    box-shadow: 0 6px 16px rgba(0,0,0,0.5);
+    background-color: var(--accent-bg-color, #3584e4);
+    color: var(--accent-fg-color);
+    border: none;
+    border-radius: 99px;
+    opacity: 1;
+}
+
+.refresh-fab:hover {
+    filter: brightness(1.2);
+    box-shadow: 0 0 20px var(--accent-bg-color, #3584e4);
+}
+
+.refresh-fab image {
+    -gtk-icon-size: 32px;
+}

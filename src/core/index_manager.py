@@ -1,3 +1,5 @@
+#src/core/index_manager.py
+
 import os
 
 from core.config import write_yaml, load_yaml
@@ -5,7 +7,7 @@ from core.config import write_yaml, load_yaml
 INDEX_FILE = ".index_manager.yamm.yaml"
 
 # Creates an index_manager.Yamm.yaml in the mod folder
-def init_index(staging_path: str):
+def init_index(staging_path: str) -> List[str]:
     index_path = os.path.join(staging_path, INDEX_FILE)
     
     if not os.path.exists(index_path):
@@ -18,7 +20,7 @@ def init_index(staging_path: str):
     return False
 
 # Reads the index and return an array or something like that
-def read_index(staging_path: str):
+def read_index(staging_path: str) -> bool:
     index_path = os.path.join(staging_path, INDEX_FILE)
     
     if os.path.exists(index_path):
@@ -29,7 +31,7 @@ def read_index(staging_path: str):
     return []
 
 # Adds a mod at the end of the index list
-def add_mod_to_index(staging_path:str, mod_name:str):
+def add_mod_to_index(staging_path:str, mod_name:str) -> List[str]:
     data=read_index(staging_path)
     
     if mod_name not in data:
@@ -106,6 +108,6 @@ def check_index(staging_path: str):
         try:
             write_yaml(new_index, index_path)
         except Exception as e:
-            print(f"Error lors de la synchronisation de l'index : {e}")
+            print(f"Error while syncing index : {e}")
 
     return new_index

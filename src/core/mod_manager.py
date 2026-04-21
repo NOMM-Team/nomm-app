@@ -1,24 +1,5 @@
 # src/core/mod_manager.py
 
-# Ce fichier fait partie de Yamm (Yet Another Mod Manager).
-# Yamm est un fork de Nomm, développé initialement par Allexio.
-#
-# Copyright (C) 2026 Emetros
-# Copyright (C) 2024 Allexio
-#
-# Ce programme est un logiciel libre : vous pouvez le redistribuer et/ou le modifier
-# selon les termes de la Licence Publique Générale GNU telle que publiée par la
-# Free Software Foundation, soit la version 3 de la Licence, soit (à votre
-# discrétion) toute version ultérieure.
-#
-# Ce programme est distribué dans l'espoir qu'il sera utile, mais SANS AUCUNE
-# GARANTIE ; sans même la garantie implicite de COMMERCIALISATION ou
-# d'ADÉQUATION À UN USAGE PARTICULIER. Voir la Licence Publique Générale GNU
-# pour plus de détails.
-#
-# Vous devriez avoir reçu une copie de la Licence Publique Générale GNU
-# avec ce programme. Sinon, voir <https://www.gnu.org/licenses/>.
-
 import os
 import shutil
 import zipfile
@@ -89,6 +70,48 @@ def deploy_all_ordered_mods(staging_path: str, game_path: str, staging_metadata_
                     mod_info.get("files", [])
                 )
 
+def get_mod_statistics(staging_metadata_path: str, downloads_path: str) -> dict:
+    stats = {
+        "mods_inactive": 0,
+        "mods_active": 0,
+        "downloads_available": 0,
+        "downloads_installed": 0
+    }
+
+    staging_metadata = load_metadata(staging_metadata_path)    
+    if staging_metadata:
+        for mod_val in staging_metadata.get("mods", {}).values():
+            if mod_val.get("status") == "enabled":
+                stats["mods_active"] += 1
+            elif mod_val.get("status") == "disabled":
+                stats["mods_inactive"] += 1
+    
+    if downloads_path and os.path.exists(downloads_path):
+        archives = [f for f in os.listdir(downloads_path) if f.lower().endswith(('.zip', '.rar', '.7z'))]
+        
+        installed_archives = set()
+        if staging_metadata:
+            for mod_val in staging_metadata.get("mods", {}).values():
+                arch = mod_val.get("archive_name")
+                if arch:
+                    installed_archives.add(arch)
+        
+        for f in archives:
+            if f in installed_archives:
+                stats["downloads_installed"] += 1
+            else:
+                stats["downloads_available"] += 1
+                
+    return stats
+
+def is_mod_installed(self, archive_filename, staging_metadata):
+    if staging_metadata:
+        for mod_val in staging_metadata.get("mods", {}).values():
+            if mod_val.get("archive_name") == archive_filename:
+                return True
+    return False
+
+
 def remove_mod_files(staging_dir: str, dest_dir: str, mod_files: list[str]):
     dest_path = Path(dest_dir)
     staging_path = Path(staging_dir)
@@ -99,14 +122,11 @@ def remove_mod_files(staging_dir: str, dest_dir: str, mod_files: list[str]):
 
         if link_item.exists() or link_item.is_symlink():
             try:
-                # SÉCURITÉ MAXIMALE : On supprime UNIQUEMENT si le fichier cible 
-                # pointe vers les mêmes données que notre fichier staging
                 if os.path.samefile(source_item, link_item):
                     link_item.unlink()
             except Exception as e:
                 print(f"Erreur lors de la suppression de {link_item}: {e}")
 
-        # Nettoyer les dossiers parents laissés vides
         current_dir = link_item.parent
         while current_dir != dest_path:
             try:
@@ -193,7 +213,6 @@ def toggle_mod_state(mod_name: str, mod_files: list, state: bool, staging_path: 
     if not deployment_targets or not staging_metadata or mod_name not in staging_metadata.get("mods", {}):
         return False
 
-    # 1. Trouver le répertoire de destination correct
     dest_dir = deployment_targets[0]["path"]
     mod_meta = staging_metadata["mods"][mod_name]
     
@@ -205,7 +224,6 @@ def toggle_mod_state(mod_name: str, mod_files: list, state: bool, staging_path: 
 
     staging_mod_dir = os.path.join(staging_path, mod_name)
 
-    # Apply activation status
     if state:
         success = deploy_mod_files(staging_mod_dir, dest_dir, mod_files)
         if success:
@@ -215,7 +233,6 @@ def toggle_mod_state(mod_name: str, mod_files: list, state: bool, staging_path: 
             return True
         return False
     else:
-        # Retirer les fichiers
         remove_mod_files(staging_mod_dir, dest_dir, mod_files)
         mod_meta["status"] = "disabled"
         mod_meta.pop("enabled_timestamp", None)

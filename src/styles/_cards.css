@@ -1,0 +1,9 @@
+.game-card {
+    border-radius: 12px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+}
+
+.game-card:hover {
+    filter: brightness(1.1) contrast(1.05);
+    box-shadow: 0 0 15px rgba(255, 255, 255, 0.1), 0 12px 30px rgba(0,0,0,0.6);
+}

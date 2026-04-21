@@ -1,24 +1,5 @@
 # src/gui/settings.py
 
-# Ce fichier fait partie de Yamm (Yet Another Mod Manager).
-# Yamm est un fork de Nomm, développé initialement par Allexio.
-#
-# Copyright (C) 2026 Emetros
-# Copyright (C) 2024 Allexio
-#
-# Ce programme est un logiciel libre : vous pouvez le redistribuer et/ou le modifier
-# selon les termes de la Licence Publique Générale GNU telle que publiée par la
-# Free Software Foundation, soit la version 3 de la Licence, soit (à votre
-# discrétion) toute version ultérieure.
-#
-# Ce programme est distribué dans l'espoir qu'il sera utile, mais SANS AUCUNE
-# GARANTIE ; sans même la garantie implicite de COMMERCIALISATION ou
-# d'ADÉQUATION À UN USAGE PARTICULIER. Voir la Licence Publique Générale GNU
-# pour plus de détails.
-#
-# Vous devriez avoir reçu une copie de la Licence Publique Générale GNU
-# avec ce programme. Sinon, voir <https://www.gnu.org/licenses/>.
-
 import os
 import requests
 import threading
@@ -125,7 +106,6 @@ class SettingsWindow(Adw.Window):
         content.append(save_btn)
 
     def pick_folder(self, row, config_key):
-        """Ouvre un dialogue de sélection de dossier et met à jour la configuration."""
         dialog = Gtk.FileDialog(title=f"Select {row.get_title()}")
 
         def callback(dialog, result):
@@ -141,7 +121,6 @@ class SettingsWindow(Adw.Window):
         dialog.select_folder(self, None, callback)
 
     def on_validate_clicked(self, btn):
-        """Vérifie la validité de l'API Key Nexus."""
         key = self.api_entry.get_text()
         if not key: return
 
@@ -178,12 +157,10 @@ class SettingsWindow(Adw.Window):
         threading.Thread(target=check_api, daemon=True).start()
 
     def toggle_setting(self, key, state):
-        """Met à jour un paramètre booléen dans la configuration."""
         print(f"{key} is now: {state}")
         update_user_config(key, state)
 
     def create_social_button(self, icon_filename, url):
-        """Crée un bouton social avec icône."""
         btn_content = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
         icon_path = os.path.join(self.assets_path, icon_filename)
         
@@ -200,6 +177,5 @@ class SettingsWindow(Adw.Window):
         return button
 
     def close_settings(self):
-        """Sauvegarde l'API Key en cours avant de fermer."""
         update_user_config('nexus_api_key', self.api_entry.get_text())
         self.destroy()

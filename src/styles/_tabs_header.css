@@ -1,0 +1,41 @@
+/* Dashboard Tab Styling */
+togglebutton {
+    font-size: 1.2rem;
+    font-weight: bold;
+    border-radius: 0;
+}
+
+.overlay-tab {
+    /* 1. Remove Rounded Corners */
+    border-radius: 0;
+    border: none;
+
+    /* 2. Remove native background image for GTK3 users */
+    background-image: none;
+    
+    /* 3. Bigger Font */
+    font-size: 1.8rem;
+    font-weight: 800;
+    letter-spacing: 2px;
+
+    /* 4. Darker Unselected State */
+    background-color: rgba(0, 0, 0, 0.85); 
+    color: rgba(255, 255, 255, 0.6);
+    
+    transition: all 0.3s ease;
+}
+
+.overlay-tab:hover {
+    background-color: rgba(0, 0, 0, 0.7);
+    color: white;
+}
+
+/* 4. Selected (Checked) Tab State */
+.overlay-tab:checked {
+    /* Clearer background so the banner image is visible */
+    background-color: rgba(0, 0, 0, 0.1); 
+    color: white;
+    /* Bottom accent line to show focus */
+    border-bottom: 6px solid var(--accent-bg-color);
+    text-shadow: 0 2px 10px rgba(0,0,0,0.5);
+}

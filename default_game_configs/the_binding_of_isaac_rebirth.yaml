@@ -1,0 +1,9 @@
+name: 'The Binding of Isaac: Rebirth'
+steam_id: 250900
+steam_folder_name: "The Binding Of Isaac Rebirth"
+nexus_id: "thebindingofisaacrebirth"
+
+mods_path:
+- path: mods/
+  name: Default
+  description: Regular mods that go in the ~mods folder

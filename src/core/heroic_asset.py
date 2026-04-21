@@ -1,21 +1,4 @@
-# Ce fichier fait partie de Yamm (Yet Another Mod Manager).
-# Yamm est un fork de Nomm, développé initialement par Allexio.
-#
-# Copyright (C) 2026 Emetros
-# Copyright (C) 2024 Allexio
-#
-# Ce programme est un logiciel libre : vous pouvez le redistribuer et/ou le modifier
-# selon les termes de la Licence Publique Générale GNU telle que publiée par la
-# Free Software Foundation, soit la version 3 de la Licence, soit (à votre
-# discrétion) toute version ultérieure.
-#
-# Ce programme est distribué dans l'espoir qu'il sera utile, mais SANS AUCUNE
-# GARANTIE ; sans même la garantie implicite de COMMERCIALISATION ou
-# d'ADÉQUATION À UN USAGE PARTICULIER. Voir la Licence Publique Générale GNU
-# pour plus de détails.
-#
-# Vous devriez avoir reçu une copie de la Licence Publique Générale GNU
-# avec ce programme. Sinon, voir <https://www.gnu.org/licenses/>.
+#src/core/heroic_assets.py
 
 import os
 import json
@@ -23,14 +6,11 @@ import requests
 from gi.repository import GLib
 
 def download_heroic_assets(appName: str, platform: str):
-    # --- AJOUT: Forcer la conversion en string pour éviter les erreurs de comparaison
     if isinstance(appName, list):
         appName = str(appName[0])
     else:
         appName = str(appName)
-    # ---
-    
-    # 1. Define Paths
+
     json_path = os.path.expanduser("~/.var/app/com.heroicgameslauncher.hgl/config/heroic/store/download-manager.json") # flatpak
     if not os.path.exists(json_path):
         json_path = os.path.expanduser("~/.config/heroic/store/download-manager.json") # not flatpak
@@ -40,7 +20,6 @@ def download_heroic_assets(appName: str, platform: str):
     
     cache_base = os.path.join(GLib.get_user_data_dir(), f"yamm/image-cache/{platform}/{appName}")
     
-    # 2. CACHE CHECK: If the directory exists, check for existing files
     if os.path.exists(cache_base):
         existing_files = {}
         for entry in os.listdir(cache_base):
@@ -53,7 +32,6 @@ def download_heroic_assets(appName: str, platform: str):
             print(f"Using cached assets for {appName}")
             return existing_files
 
-    # 3. If not cached, proceed to JSON parsing
     if not os.path.exists(json_path):
         print(f"Heroic config not found at {json_path}")
         return None
@@ -76,7 +54,6 @@ def download_heroic_assets(appName: str, platform: str):
         if not target_info:
             return None
 
-        # 4. Extraction Logic
         urls = {
             "art_square": target_info.get("art_square"),
             "art_hero": target_info.get("art_background") or target_info.get("art_cover")

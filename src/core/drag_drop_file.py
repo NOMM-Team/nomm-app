@@ -1,4 +1,4 @@
-# src/core/mod_manager.py (ou un nouveau fichier core/drag_drop.py)
+# src/core/drag_drop_file.py 
 
 import os
 import shutil

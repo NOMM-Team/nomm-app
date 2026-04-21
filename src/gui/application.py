@@ -1,45 +1,22 @@
 # src/gui/application.py
 
-# Ce fichier fait partie de Yamm (Yet Another Mod Manager).
-# Yamm est un fork de Nomm, développé initialement par Allexio.
-#
-# Copyright (C) 2026 Emetros
-# Copyright (C) 2024 Allexio
-#
-# Ce programme est un logiciel libre : vous pouvez le redistribuer et/ou le modifier
-# selon les termes de la Licence Publique Générale GNU telle que publiée par la
-# Free Software Foundation, soit la version 3 de la Licence, soit (à votre
-# discrétion) toute version ultérieure.
-#
-# Ce programme est distribué dans l'espoir qu'il sera utile, mais SANS AUCUNE
-# GARANTIE ; sans même la garantie implicite de COMMERCIALISATION ou
-# d'ADÉQUATION À UN USAGE PARTICULIER. Voir la Licence Publique Générale GNU
-# pour plus de détails.
-#
-# Vous devriez avoir reçu une copie de la Licence Publique Générale GNU
-# avec ce programme. Sinon, voir <https://www.gnu.org/licenses/>.
-
 import os
 import gi
 import gettext
 
-# ---- AJOUTER CES LIGNES ICI ----
 gi.require_version('Gtk', '4.0')
 gi.require_version('Adw', '1')
 gi.require_version('Notify', '0.7')
-# --------------------------------
 
 from gi.repository import Gtk, Adw, GLib, Gdk, Gio, GdkPixbuf
 
-# On importe nos composants backend et les autres vues
 from core.scanner import scan_all_games, get_steam_base_dir
 from core.config import load_user_config, update_user_config, get_user_config_path, get_user_data_dir
 from gui.dashboard import GameDashboard
 from gui.app_views.library_view import LibraryView
 
-APP_NAME = 'com.Emetros.Yamm'
+APP_NAME = 'com.nomm.Nomm'
 
-# Configuration de la localisation
 translation_system = gettext.translation(APP_NAME, localedir='/app/share/locale', fallback=True)
 translation_system.install(names=['ngettext'])
 
@@ -52,12 +29,9 @@ class Yamm(Adw.Application):
         user_data_dir = get_user_data_dir()
         self.user_config_path = get_user_config_path()
         self.game_config_path = os.path.join(user_data_dir, "game_configs")
-
-        # Ajustement des chemins car nous sommes dans src/gui/
-        base_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
         
-        # En développement, les assets sont à la racine du projet
-        # En Flatpak, ils sont généralement dans /app/bin/assets
+        base_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
         if os.path.exists(os.path.join(os.path.dirname(base_path), "assets")):
             self.assets_path = os.path.join(os.path.dirname(base_path), "assets")
             self.default_game_config_path = os.path.join(os.path.dirname(base_path), "default_game_configs")
@@ -80,7 +54,6 @@ class Yamm(Adw.Application):
     
     def styles_application(self):
         css_provider = Gtk.CssProvider()
-        # Le CSS est dans src/gui/styles/ ou src/gui/
         base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
         css_path = os.path.join(base_dir, "styles", "layout.css")
             
@@ -122,11 +95,10 @@ class Yamm(Adw.Application):
         child = self.stack.get_child_by_name(name)
         if child: self.stack.remove(child)
 
-    # --- ÉCRANS DE SETUP ---
     def show_welcome_screen(self):
         self.remove_stack_child("setup")
         status_page = Adw.StatusPage(
-            title=_("Welcome to the Yet Another Mod Manager (Yamm) app!"),
+            title=_("Welcome to the Native Open Mod Manager (NOMM) app!"),
             description=_("This app is still in early development..."),
         )
         status_page.add_css_class("setup-page")
@@ -235,7 +207,7 @@ class Yamm(Adw.Application):
         spinner = Gtk.Spinner()
         spinner.set_size_request(128, 128)
         spinner.start()
-        label = Gtk.Label(label=_("Yamm: Searching for games..."))
+        label = Gtk.Label(label=_("NOMM: Searching for games..."))
         label.add_css_class("title-1")
         box.append(spinner); box.append(label)
         self.stack.add_named(box, "loading"); self.stack.set_visible_child_name("loading")
@@ -243,15 +215,12 @@ class Yamm(Adw.Application):
         threading.Thread(target=self.run_background_workflow, daemon=True).start()
 
     def run_background_workflow(self):
-        # Utilisation du scanner extrait dans core/
         self.matches = scan_all_games(self.game_config_path)
         GLib.idle_add(self.show_library_ui)
 
-    # --- UI BIBLIOTHÈQUE ---
     def show_library_ui(self):
         self.remove_stack_child("library")
         
-        # Logique Skip Launcher
         user_config = load_user_config()
         if user_config.get('enable_launcher_skip') and user_config.get("last_selected_game"):
             game_info = next((m for m in self.matches if m["name"] == user_config.get("last_selected_game")), None)
@@ -259,7 +228,6 @@ class Yamm(Adw.Application):
                 self.open_dashboard(game_info)
                 return
 
-        # On instancie notre nouvelle vue et on l'ajoute au Stack
         library_view = LibraryView(self, self.matches)
         
         self.stack.add_named(library_view, "library")
@@ -269,7 +237,6 @@ class Yamm(Adw.Application):
         config = load_user_config()
         if config.get('enable_fullscreen'): self.win.fullscreen()
         
-        # Création du dossier de download si besoin
         if config.get("download_path"):
             os.makedirs(os.path.join(config.get("download_path"), game_data['name']), exist_ok=True)
 
@@ -294,7 +261,6 @@ class Yamm(Adw.Application):
         if load_user_config().get('enable_fullscreen'): self.win.unfullscreen()
         self.stack.set_visible_child_name("library")
 
-    # --- PARAMÈTRES ---
     def on_settings_clicked(self, button):
         from gui.app_views.settings import SettingsWindow
         settings_win = SettingsWindow(parent_window=self.win, assets_path=self.assets_path)

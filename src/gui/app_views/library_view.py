@@ -1,24 +1,5 @@
 # src/gui/views/library_view.py
 
-# Ce fichier fait partie de Yamm (Yet Another Mod Manager).
-# Yamm est un fork de Nomm, développé initialement par Allexio.
-#
-# Copyright (C) 2026 Emetros
-# Copyright (C) 2024 Allexio
-#
-# Ce programme est un logiciel libre : vous pouvez le redistribuer et/ou le modifier
-# selon les termes de la Licence Publique Générale GNU telle que publiée par la
-# Free Software Foundation, soit la version 3 de la Licence, soit (à votre
-# discrétion) toute version ultérieure.
-#
-# Ce programme est distribué dans l'espoir qu'il sera utile, mais SANS AUCUNE
-# GARANTIE ; sans même la garantie implicite de COMMERCIALISATION ou
-# d'ADÉQUATION À UN USAGE PARTICULIER. Voir la Licence Publique Générale GNU
-# pour plus de détails.
-#
-# Vous devriez avoir reçu une copie de la Licence Publique Générale GNU
-# avec ce programme. Sinon, voir <https://www.gnu.org/licenses/>.
-
 import os
 import gettext
 from gi.repository import Gtk, Adw, GdkPixbuf, Gdk
@@ -70,7 +51,6 @@ class LibraryView(Gtk.Box):
         card.set_overflow(Gtk.Overflow.HIDDEN) 
         card.set_tooltip_text(f"{game['name']}\n{game['path']}")
         
-        # Le clic sur la carte renvoie vers la méthode de l'application principale
         gesture = Gtk.GestureClick()
         gesture.connect("released", lambda g, n, x, y: self.app.on_game_clicked(game))
         card.add_controller(gesture)

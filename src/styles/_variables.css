@@ -1,0 +1,15 @@
+.success {
+    color: #2ec27e; /* GNOME Green */
+}
+
+.error {
+    color: #e01b24; /* GNOME Red */
+}
+
+.setup-page {
+    opacity: 0;
+}
+
+.setup-page.visible {
+    opacity: 1;
+}

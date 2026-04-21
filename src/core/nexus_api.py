@@ -1,24 +1,5 @@
 # src/core/nexus_api.py
 
-# Ce fichier fait partie de Yamm (Yet Another Mod Manager).
-# Yamm est un fork de Nomm, développé initialement par Allexio.
-#
-# Copyright (C) 2026 Emetros
-# Copyright (C) 2024 Allexio
-#
-# Ce programme est un logiciel libre : vous pouvez le redistribuer et/ou le modifier
-# selon les termes de la Licence Publique Générale GNU telle que publiée par la
-# Free Software Foundation, soit la version 3 de la Licence, soit (à votre
-# discrétion) toute version ultérieure.
-#
-# Ce programme est distribué dans l'espoir qu'il sera utile, mais SANS AUCUNE
-# GARANTIE ; sans même la garantie implicite de COMMERCIALISATION ou
-# d'ADÉQUATION À UN USAGE PARTICULIER. Voir la Licence Publique Générale GNU
-# pour plus de détails.
-#
-# Vous devriez avoir reçu une copie de la Licence Publique Générale GNU
-# avec ce programme. Sinon, voir <https://www.gnu.org/licenses/>.
-
 import os
 import yaml
 import requests
@@ -31,15 +12,7 @@ from gui.notifications import send_download_notification
 from core.downloader import download_mod
 from core.config import load_user_config, get_metadata_path, load_metadata, save_metadata
 
-# ==========================================
-# VÉRIFICATION DES MISES À JOUR
-# ==========================================
-
-def check_for_mod_updates_async(staging_metadata: dict, headers: dict, game_id: str, on_complete_callback):
-    """
-    Vérifie les mises à jour des mods en arrière-plan sans figer l'interface.
-    Appelle `on_complete_callback(mods_updated, staging_metadata)` quand c'est fini.
-    """
+def check_for_mod_updates_async(staging_metadata: dict, headers: dict, game_id: str, on_complete_callback: Optional[callable]) -> None:
     def worker():
         print("Checking for updates in background...")
         mods_updated = False
@@ -82,13 +55,7 @@ def check_for_mod_updates_async(staging_metadata: dict, headers: dict, game_id: 
 
     threading.Thread(target=worker, daemon=True).start()
 
-
-# ==========================================
-# GESTION DES LIENS NXM (TÉLÉCHARGEMENTS)
-# ==========================================
-
-def handle_nexus_link(nxm_link):
-    """Point d'entrée principal interceptant un lien nxm:// depuis le système d'exploitation."""
+def handle_nexus_link(nxm_link: str) -> bool:
     user_config = load_user_config()
     api_key = user_config.get("nexus_api_key")
     base_download_path = user_config.get("download_path")

@@ -1,21 +1,4 @@
-# Ce fichier fait partie de Yamm (Yet Another Mod Manager).
-# Yamm est un fork de Nomm, développé initialement par Allexio.
-#
-# Copyright (C) 2026 Emetros
-# Copyright (C) 2024 Allexio
-#
-# Ce programme est un logiciel libre : vous pouvez le redistribuer et/ou le modifier
-# selon les termes de la Licence Publique Générale GNU telle que publiée par la
-# Free Software Foundation, soit la version 3 de la Licence, soit (à votre
-# discrétion) toute version ultérieure.
-#
-# Ce programme est distribué dans l'espoir qu'il sera utile, mais SANS AUCUNE
-# GARANTIE ; sans même la garantie implicite de COMMERCIALISATION ou
-# d'ADÉQUATION À UN USAGE PARTICULIER. Voir la Licence Publique Générale GNU
-# pour plus de détails.
-#
-# Vous devriez avoir reçu une copie de la Licence Publique Générale GNU
-# avec ce programme. Sinon, voir <https://www.gnu.org/licenses/>.
+#src/core/config.py
 
 import os
 import yaml
@@ -24,46 +7,38 @@ from datetime import datetime
 
 # Yaml write and load functions are handled here
 def load_yaml(path: str) -> dict:
-    """Charge un fichier YAML et retourne un dictionnaire."""
     if os.path.exists(path):
         try:
             with open(path, 'r', encoding='utf-8') as f:
                 return yaml.safe_load(f) or {}
         except Exception as e:
-            print(f"Erreur lors du chargement du fichier {path}: {e}")
+            print(f"Error while loading {path}: {e}")
     return {}
 
 def write_yaml(data: dict, path: str):
-    """Écrit un dictionnaire dans un fichier YAML et crée les dossiers parents si besoin."""
     os.makedirs(os.path.dirname(path), exist_ok=True)
     try:
         with open(path, 'w', encoding='utf-8') as f:
             yaml.safe_dump(data, f, default_flow_style=False)
     except Exception as e:
-        print(f"Erreur lors de l'écriture dans {path}: {e}")
+        print(f"Error while writing in {path}: {e}")
 
 # User personal data such as settings and mod folders are handled here
 def get_user_data_dir() -> str:
-    """Retourne le dossier de données de l'application (~/.var/app/.../data/yamm ou ~/.local/share/yamm)."""
     return os.path.join(GLib.get_user_data_dir(), "yamm")
 
 def get_user_config_path() -> str:
-    """Retourne le chemin complet vers user_config.yaml."""
     return os.path.join(get_user_data_dir(), "user_config.yaml")
 
 def load_user_config() -> dict:
-    """Charge spécifiquement la configuration de l'utilisateur."""
     return load_yaml(get_user_config_path())
 
-def update_user_config(key: str, value):
-    """Met à jour une clé spécifique dans la configuration utilisateur."""
+def update_user_config(key: str, value: Any) -> None:
     config = load_user_config()
     config[key] = value
     write_yaml(config, get_user_config_path())
 
-
-def parse_deployment_paths(game_config: dict, platform: str, app_id: str) -> list:
-    """Parse les chemins de jeu avec les variables {game_path} et {user_data_path}."""
+def parse_deployment_paths(game_config: dict, platform: str, app_id: str) -> List[Dict[str, str]]:
     game_path = game_config.get("game_path")
     deployment_dicts = game_config.get("mods_path", "")
 
@@ -97,14 +72,8 @@ def get_metadata_path(base_folder: str, is_staging: bool = True) -> str:
     return os.path.join(base_folder, filename)
 
 def load_metadata(path: str) -> dict:
-    """
-    Charge un fichier de métadonnées. 
-    Garantit que la structure de base (mods et info) existe toujours, 
-    évitant ainsi les KeyError et les vérifications constantes dans l'UI.
-    """
     data = load_yaml(path)
     
-    # On garantit toujours la présence de ces clés
     if not isinstance(data, dict):
         data = {}
     if "mods" not in data:
@@ -115,7 +84,6 @@ def load_metadata(path: str) -> dict:
     return data
 
 def save_metadata(data: dict, path: str) -> None:
-    """Sauvegarde les métadonnées."""
     write_yaml(data, path)
 
 def remove_mod_from_metadata(path: str, mod_name: str) -> bool:
@@ -131,7 +99,6 @@ def remove_mod_from_metadata(path: str, mod_name: str) -> bool:
     return False
 
 def finalize_mod_metadata(filename: str, extracted_roots: list, deployment_target_name: str, staging_meta_path: str, downloads_meta_path: str):
-    """Met à jour les fichiers de métadonnées après une installation réussie."""
     from datetime import datetime
     import yaml
     

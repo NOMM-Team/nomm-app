@@ -1,24 +1,5 @@
 # src/core/scanner.py
 
-# Ce fichier fait partie de Yamm (Yet Another Mod Manager).
-# Yamm est un fork de Nomm, développé initialement par Allexio.
-#
-# Copyright (C) 2026 Emetros
-# Copyright (C) 2024 Allexio
-#
-# Ce programme est un logiciel libre : vous pouvez le redistribuer et/ou le modifier
-# selon les termes de la Licence Publique Générale GNU telle que publiée par la
-# Free Software Foundation, soit la version 3 de la Licence, soit (à votre
-# discrétion) toute version ultérieure.
-#
-# Ce programme est distribué dans l'espoir qu'il sera utile, mais SANS AUCUNE
-# GARANTIE ; sans même la garantie implicite de COMMERCIALISATION ou
-# d'ADÉQUATION À UN USAGE PARTICULIER. Voir la Licence Publique Générale GNU
-# pour plus de détails.
-#
-# Vous devriez avoir reçu une copie de la Licence Publique Générale GNU
-# avec ce programme. Sinon, voir <https://www.gnu.org/licenses/>.
-
 import os
 import json
 import yaml
@@ -27,10 +8,10 @@ import re
 from core.config import load_user_config, update_user_config, write_yaml
 from core.heroic_asset import download_heroic_assets
 
-def slugify(text):
+def slugify(text: str) -> str:
     return re.sub(r'[^a-z0-9]', '', text.lower())
 
-def get_steam_base_dir():
+def get_steam_base_dir() -> Optional[str]:
     paths = [
         os.path.expanduser("~/.steam/debian-installation/"),
         os.path.expanduser("~/.var/app/com.valvesoftware.Steam/.local/share/Steam/"),
@@ -42,7 +23,7 @@ def get_steam_base_dir():
             return p
     return None
 
-def get_steam_library_paths(vdf_path):
+def get_steam_library_paths(vdf_path) -> List[str]:
     libraries = []
     try:
         with open(vdf_path, 'r', encoding='utf-8') as f:
@@ -57,7 +38,7 @@ def get_steam_library_paths(vdf_path):
         print(f"Error parsing VDF at {vdf_path}: {e}")
     return libraries
 
-def get_heroic_library_paths():
+def get_heroic_library_paths() -> Dict[str, Optional[str]]:
     paths = {"epic": None, "gog": None}
     
     # Epic
@@ -72,7 +53,7 @@ def get_heroic_library_paths():
 
     return paths
 
-def find_game_art(app_id, platform, steam_base):
+def find_game_art(app_id: str | int, platform: str, steam_base: Optional[str]) -> Optional[str]:
     if not app_id: return None
     if platform == "steam" and steam_base:
         path = os.path.join(steam_base, "appcache/librarycache", str(app_id))
@@ -90,11 +71,7 @@ def find_game_art(app_id, platform, steam_base):
         return paths.get("art_square") if paths else None
     return None
 
-# ==========================================
-# SOUS-FONCTIONS DE SCAN PAR PLATEFORME
-# ==========================================
-
-def _scan_steam_game(yaml_data, yaml_path, game_title, found_libs, steam_base):
+def _scan_steam_game(yaml_data, yaml_path, game_title, found_libs, steam_base) -> List[Dict[str, Any]]:
     yaml_game_name = yaml_data.get("steam_folder_name", game_title)
     slug_yaml_name = slugify(yaml_game_name)
     
@@ -156,10 +133,6 @@ def _scan_heroic_gog_game(yaml_data, yaml_path, game_title, installed_gog, steam
             }
     return None
 
-# ==========================================
-# FONCTION PRINCIPALE
-# ==========================================
-
 def scan_all_games(game_configs_dir):
     """Fonction principale qui scanne tout et retourne une liste de dictionnaires de jeux trouvés."""
     matches = []
@@ -168,13 +141,13 @@ def scan_all_games(game_configs_dir):
     user_config = load_user_config()
     found_libs = set(user_config.get("library_paths", []))
 
-    # 1. Update Steam Libraries if empty
+    # Update Steam Libraries if empty
     if not found_libs and steam_base:
         found_libs = set(get_steam_library_paths(os.path.join(steam_base, "config/libraryfolders.vdf")))
         if found_libs:
             update_user_config("library_paths", sorted(list(found_libs)))
 
-    # 2. Pre-load Heroic Libraries (Optimisation : lu une seule fois, pas à chaque jeu)
+    # Pre-load Heroic Libraries (Optimisation : lu une seule fois, pas à chaque jeu)
     heroic_paths = get_heroic_library_paths()
     installed_epic = {}
     installed_gog = {}
@@ -197,7 +170,7 @@ def scan_all_games(game_configs_dir):
         print(f"Configs directory not found at {game_configs_dir}")
         return matches
 
-    # 3. Scan each config
+    # Scan each config
     for filename in os.listdir(game_configs_dir):
         if not filename.lower().endswith((".yaml", ".yml")):
             continue
