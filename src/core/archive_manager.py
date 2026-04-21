@@ -14,7 +14,7 @@ def get_archive_type(file_path: str) -> str:
     if lower_path.endswith('.7z'): return '7z'
     return 'unknown'
 
-def delete_downloaded_archive(self, btn, file_name):
+def delete_downloaded_archive(btn, file_name):
     zip_path = os.path.join(self.dashboard.downloads_path, file_name)
     if os.path.exists(zip_path):
         os.remove(zip_path)

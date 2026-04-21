@@ -4,6 +4,6 @@ steam_folder_name: "The Binding Of Isaac Rebirth"
 nexus_id: "thebindingofisaacrebirth"
 
 mods_path:
-- path: mods/
+- path: ""
   name: Default
   description: Regular mods that go in the ~mods folder
