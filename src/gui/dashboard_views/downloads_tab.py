@@ -171,7 +171,7 @@ class DownloadsTab(Gtk.Box):
 
     def on_delete_downloaded_archive(self, btn, file_name):
         try:
-            delete_downloaded_archive(self.dashboard.downloads_path, file_name)
+            delete_downloaded_archive(self.dashboard, self.dashboard.downloads_path, file_name)
         except OSError as e:
             self.dashboard.show_message(_("Error"), _("Could not delete the file: {}").format(e))
 
