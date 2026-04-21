@@ -44,7 +44,7 @@ def deploy_mod_files(staging_dir: str, dest_dir: str, mod_files: list[str]) -> b
         if not source_item.exists():
             continue
 
-        # 2. Créer les dossiers parents dans le dossier du jeu si besoin
+        # Creates parent folder
         link_item.parent.mkdir(parents=True, exist_ok=True)
         
         # (Override) Delete file if there is conflict
@@ -73,7 +73,7 @@ def deploy_mod_files(staging_dir: str, dest_dir: str, mod_files: list[str]) -> b
                 
     return success
 
-def deploy_all_ordered_mods(staging_path, game_path, staging_metadata_path):
+def deploy_all_ordered_mods(staging_path: str, game_path: str, staging_metadata_path: str):
 
     indexed_mods = read_index(staging_path)
     metadata = load_metadata(staging_metadata_path)
@@ -205,9 +205,8 @@ def toggle_mod_state(mod_name: str, mod_files: list, state: bool, staging_path: 
 
     staging_mod_dir = os.path.join(staging_path, mod_name)
 
-    # 2. Appliquer l'état (Activation ou Désactivation)
+    # Apply activation status
     if state:
-        # Tenter de déployer
         success = deploy_mod_files(staging_mod_dir, dest_dir, mod_files)
         if success:
             mod_meta["status"] = "enabled"

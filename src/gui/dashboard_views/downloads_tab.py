@@ -27,7 +27,7 @@ import gettext
 from pathlib import Path
 from datetime import datetime
 
-from gi.repository import Gtk, Adw, GLib, Gio, Pango
+from gi.repository import Gtk, Gdk, Adw, GLib, Gio, Pango
 from core.config import load_metadata, save_metadata, remove_mod_from_metadata, finalize_mod_metadata
 from core.archive_manager import extract_archive, get_all_relative_files
 from core.fomod_manager import parse_fomod_xml, apply_fomod_selection
@@ -44,7 +44,7 @@ class DownloadsTab(Gtk.Box):
         
         self.dashboard = dashboard
         self.current_filter = "all"
-        
+
         # --- ACTION BAR ---
         action_bar = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
         filter_group = Gtk.Box(css_classes=["linked"])
@@ -71,6 +71,13 @@ class DownloadsTab(Gtk.Box):
         # --- LISTE DES TÉLÉCHARGEMENTS ---
         self.list_box = Gtk.ListBox(css_classes=["boxed-list"])
         self.list_box.set_filter_func(self.filter_list_rows)
+
+        drop_target = Gtk.DropTarget.new(Gdk.FileList, Gdk.DragAction.COPY)
+        drop_target.connect("drop", self.on_file_drop)
+        drop_target.connect("enter", self.on_drag_enter)
+        drop_target.connect("leave", self.on_drag_leave)
+        
+        self.add_controller(drop_target)
         
         scrolled = Gtk.ScrolledWindow(vexpand=True)
         scrolled.set_child(self.list_box)
@@ -167,7 +174,7 @@ class DownloadsTab(Gtk.Box):
             
             self.list_box.append(row)
 
-    # --- MÉTHODES UTILITAIRES ---
+    # --- CORE FUNCTIONS ---
     def filter_list_rows(self, row):
         if self.current_filter == "all": return True
         if hasattr(row, 'is_installed'):
@@ -254,6 +261,25 @@ class DownloadsTab(Gtk.Box):
 
         except Exception as e:
             self.dashboard.show_message(_("Error"), _("Installation failed: {}").format(e))
+
+    def on_file_drop(self, _targer, value, _x, _y):
+        if isinstance(value, Gdk.FileList):
+            files = value.get_files()
+            uris = [f.get_uri() for f in files]
+
+            from core.drag_drop_file import process_dropped_files
+            mods = process_dropped_files(uris, self.dashboard.downloads_path)
+
+            if mods:
+                return True
+        return False
+
+    def on_drag_enter(self, _target, _x, _y):
+        self.list_box.add_css_class("drop-active")
+        return Gdk.DragAction.COPY
+
+    def on_drag_leave(self, _target):
+        self.list_box.remove_css_class("drop-active")
 
     def on_fomod_dialog_response(self, dialog, response, mod_staging_dir, filename):
         if response == Gtk.ResponseType.OK:

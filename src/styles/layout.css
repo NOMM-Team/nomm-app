@@ -160,3 +160,16 @@ switch.accent-switch:checked {
 background-color: var(--accent-bg-color, #3584e4);
 }
 
+*:drop(active),
+.boxed-list:drop(active) {
+    outline: none;
+    box-shadow: none; /* C'est ici que se cache le contour par défaut ! */
+}
+
+.drop-active {
+    outline:none;
+    box-shadow:none;
+    border: 2px solid var(--accent-bg-color, #3584e4);
+    background-color: alpha(white, 0.2);
+    transition: all 200ms ease-in-out;
+}

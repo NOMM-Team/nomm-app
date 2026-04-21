@@ -5,7 +5,7 @@ from core.config import write_yaml, load_yaml
 INDEX_FILE = ".index_manager.yamm.yaml"
 
 # Creates an index_manager.Yamm.yaml in the mod folder
-def init_index(staging_path):
+def init_index(staging_path: str):
     index_path = os.path.join(staging_path, INDEX_FILE)
     
     if not os.path.exists(index_path):
@@ -18,7 +18,7 @@ def init_index(staging_path):
     return False
 
 # Reads the index and return an array or something like that
-def read_index(staging_path):
+def read_index(staging_path: str):
     index_path = os.path.join(staging_path, INDEX_FILE)
     
     if os.path.exists(index_path):
@@ -29,7 +29,7 @@ def read_index(staging_path):
     return []
 
 # Adds a mod at the end of the index list
-def add_mod_to_index(staging_path, mod_name):
+def add_mod_to_index(staging_path:str, mod_name:str):
     data=read_index(staging_path)
     
     if mod_name not in data:
@@ -46,7 +46,7 @@ def add_mod_to_index(staging_path, mod_name):
 
 
 # Removes a mod from the index list
-def delete_mod_from_index(staging_path, mod_name):
+def delete_mod_from_index(staging_path: str, mod_name: str):
     data=read_index(staging_path)
     
     if mod_name in data:
@@ -62,7 +62,7 @@ def delete_mod_from_index(staging_path, mod_name):
     return False
 
 # Change the mod index from the index list
-def change_mod_index(staging_path, mod_name, index):
+def change_mod_index(staging_path: str, mod_name: str, index: int):
     data=read_index(staging_path)
     
     if mod_name in data:
@@ -80,7 +80,7 @@ def change_mod_index(staging_path, mod_name, index):
     return False
 
 # Check if the mod_index mods are also present from the mod folder and vice versa
-def check_index(staging_path):
+def check_index(staging_path: str):
     if not os.path.exists(staging_path):
         return []
         
