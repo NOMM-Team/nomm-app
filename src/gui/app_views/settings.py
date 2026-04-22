@@ -5,7 +5,7 @@ import threading
 import requests
 from gi.repository import Adw, Gio, GLib, Gtk
 
-from core.config import load_user_config, update_user_config
+from core.config import update_user_config, load_yaml
 
 _ = gettext.gettext
 
@@ -14,6 +14,8 @@ class SettingsWindow(Adw.Window):
         super().__init__(title=_("Settings"), transient_for=parent_window, modal=True, **kwargs)
         self.set_default_size(500, -1)
         self.assets_path = assets_path
+
+        self.user_config_dir = os.path.join(GLib.get_user_config_dir(), "nomm", "user_config.yaml")
 
         content = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=20, margin_top=24, margin_bottom=24, margin_start=24, margin_end=24)
         self.set_content(content)
@@ -24,7 +26,7 @@ class SettingsWindow(Adw.Window):
 
         # Downloads Path Row
         self.path_row = Adw.ActionRow(title=_("Mod Downloads Path"))
-        current_path = load_user_config().get('download_path', 'Not set')
+        current_path = load_yaml(self.user_config_dir).get('download_path', 'Not set')
         self.path_row.set_subtitle(current_path)
 
         folder_btn = Gtk.Button(icon_name="folder-open-symbolic", valign=Gtk.Align.CENTER, css_classes=["flat"])
@@ -34,7 +36,7 @@ class SettingsWindow(Adw.Window):
 
         # Staging Path Row
         self.staging_row = Adw.ActionRow(title=_("Mod Staging Path"))
-        current_staging = load_user_config().get('staging_path', 'Not set')
+        current_staging = load_yaml(self.user_config_dir).get('staging_path', 'Not set')
         self.staging_row.set_subtitle(current_staging)
 
         staging_btn = Gtk.Button(icon_name="folder-open-symbolic", valign=Gtk.Align.CENTER, css_classes=["flat"])
@@ -48,7 +50,7 @@ class SettingsWindow(Adw.Window):
 
         self.api_entry = Gtk.PasswordEntry(hexpand=True, valign=Gtk.Align.CENTER)
         self.api_entry.set_property("placeholder-text", _("Paste API Key..."))
-        self.api_entry.set_text(load_user_config().get('nexus_api_key', ''))
+        self.api_entry.set_text(load_yaml(self.user_config_dir).get('nexus_api_key', ''))
 
         self.check_btn = Gtk.Button(icon_name="view-refresh-symbolic", valign=Gtk.Align.CENTER, css_classes=["flat"])
         self.spinner = Gtk.Spinner(valign=Gtk.Align.CENTER)
@@ -68,21 +70,21 @@ class SettingsWindow(Adw.Window):
         # Per-game accent colours
         accent_row = Adw.SwitchRow(title=_("Per-Game Accent Colour"))
         accent_row.set_subtitle(_("Accent colour will change for each game depending on configuration"))
-        accent_row.set_active(load_user_config().get('enable_per_game_accent_colour', False))
+        accent_row.set_active(load_yaml(self.user_config_dir).get('enable_per_game_accent_colour', False))
         accent_row.connect("notify::active", lambda row, pspec: self.toggle_setting('enable_per_game_accent_colour', row.get_active()))
         general_group.add(accent_row)
 
         # Skip launcher
         launcher_skip_row = Adw.SwitchRow(title=_("Skip Launcher"))
         launcher_skip_row.set_subtitle(_("App launches last used game profile instead of starting up launcher"))
-        launcher_skip_row.set_active(load_user_config().get('enable_launcher_skip', False))
+        launcher_skip_row.set_active(load_yaml(self.user_config_dir).get('enable_launcher_skip', False))
         launcher_skip_row.connect("notify::active", lambda row, pspec: self.toggle_setting('enable_launcher_skip', row.get_active()))
         general_group.add(launcher_skip_row)
 
         # Fullscreen
         fullscreen_row = Adw.SwitchRow(title=_("Fullscreen NOMM"))
         fullscreen_row.set_subtitle(_("App launches in full screen when you select a game"))
-        fullscreen_row.set_active(load_user_config().get('enable_fullscreen', False))
+        fullscreen_row.set_active(load_yaml(self.user_config_dir).get('enable_fullscreen', False))
         fullscreen_row.connect("notify::active", lambda row, pspec: self.toggle_setting('enable_fullscreen', row.get_active()))
         general_group.add(fullscreen_row)
 

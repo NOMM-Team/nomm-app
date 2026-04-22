@@ -16,7 +16,6 @@ from core.config import (get_metadata_path, load_metadata, load_yaml,
                          parse_deployment_paths, remove_mod_from_metadata,
                          write_yaml)
 from core.heroic_asset import download_heroic_assets
-from core.index_manager import check_index, init_index
 from core.mod_manager import completely_uninstall_mod, get_mod_statistics
 from core.scanner import find_game_art
 from core.ui_tools import get_contrast_color
@@ -48,8 +47,8 @@ class GameDashboard(Gtk.Box):
 
         self.deployment_targets = parse_deployment_paths(self.game_config, self.platform, str(self.app_id))
         
-        init_index(self.staging_path)
-        check_index(self.staging_path)
+        temp_path_ft = os.path.join(self.staging_path, "staging.nomm.yaml")
+        #check_index(self.staging_path)
 
         self.headers = {
             'apikey': self.user_config["nexus_api_key"],

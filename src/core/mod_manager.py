@@ -5,8 +5,7 @@ import zipfile
 from datetime import datetime
 from pathlib import Path
 
-from core.config import load_metadata, save_metadata
-from core.index_manager import read_index
+from core.config import load_metadata, read_index
 from typing import List, Dict, Optional, Any, Callable
 
 
@@ -49,7 +48,7 @@ def deploy_mod_files(staging_dir: str, dest_dir: str, mod_files: list[str]) -> b
 
 def deploy_all_ordered_mods(staging_path: str, game_path: str, staging_metadata_path: str):
 
-    indexed_mods = read_index(staging_path)
+    indexed_mods = read_index(staging_metadata_path)
     metadata = load_metadata(staging_metadata_path)
     
     for mod_name in indexed_mods:
@@ -222,12 +221,12 @@ def toggle_mod_state(mod_name: str, mod_files: list, state: bool, staging_path: 
         if success:
             mod_meta["status"] = "enabled"
             mod_meta["enabled_timestamp"] = datetime.now().strftime("%c")
-            save_metadata(staging_metadata, metadata_path)
+            write_yaml(staging_metadata, metadata_path)
             return True
         return False
     else:
         remove_mod_files(staging_mod_dir, dest_dir, mod_files)
         mod_meta["status"] = "disabled"
         mod_meta.pop("enabled_timestamp", None)
-        save_metadata(staging_metadata, metadata_path)
+        write_yaml(staging_metadata, metadata_path)
         return True

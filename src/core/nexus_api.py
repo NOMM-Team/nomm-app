@@ -7,8 +7,7 @@ import requests
 import yaml
 from gi.repository import GLib
 
-from core.config import (get_metadata_path, load_metadata, load_user_config,
-                         save_metadata)
+from core.config import get_metadata_path, load_metadata
 from core.downloader import download_mod
 from gui.notifications import send_download_notification
 from typing import Optional, Callable
@@ -58,7 +57,10 @@ def check_for_mod_updates_async(staging_metadata: dict, headers: dict, game_id: 
     threading.Thread(target=worker, daemon=True).start()
 
 def handle_nexus_link(nxm_link: str) -> bool:
-    user_config = load_user_config()
+
+    app_dir = os.path.join(GLib.get_user_data_dir(), "nomm")
+    user_config_dir = os.path.join(app_dir, "user_config.yaml")
+    user_config = load_yaml(user_config_dir)
     api_key = user_config.get("nexus_api_key")
     base_download_path = user_config.get("download_path")
     
@@ -76,8 +78,8 @@ def handle_nexus_link(nxm_link: str) -> bool:
     splitted_nxm = urlsplit(nxm_link)
     nexus_game_id = splitted_nxm.netloc.lower()
     print(f"Nexus Game ID: {nexus_game_id}")
-    
-    game_configs_dir = os.path.join(GLib.get_user_data_dir(), "nomm", "game_configs")
+
+    game_configs_dir = os.path.join(app_dir, "game_configs")
     game_folder_name = ""
     
     if os.path.exists(game_configs_dir):
@@ -166,7 +168,7 @@ def _download_nexus_mod(nxm_link: str, headers: dict, final_download_dir: Path, 
             downloads_metadata["info"]["nexus_id"] = nexus_game_id
             downloads_metadata["mods"][file_name] = mod_metadata
 
-            save_metadata(downloads_metadata, downloads_metadata_path)
+            write_yaml(downloads_metadata, downloads_metadata_path)
             
             send_download_notification("success", file_name=file_name, game_name=game_folder_name, icon_path=None)
         except Exception as e:

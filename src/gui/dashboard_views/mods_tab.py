@@ -6,8 +6,7 @@ from pathlib import Path
 
 from gi.repository import Adw, Gdk, GLib, GObject, Gtk
 
-from core.config import load_metadata, save_metadata
-from core.index_manager import change_mod_index, read_index
+from core.config import load_metadata, read_index, change_mod_index
 from core.mod_manager import check_for_conflicts, deploy_all_ordered_mods, toggle_mod_state
 from core.nexus_api import check_for_mod_updates_async
 
@@ -76,7 +75,7 @@ class ModsTab(Gtk.Box):
         load_index_sizegroup = Gtk.SizeGroup(mode=Gtk.SizeGroupMode.HORIZONTAL)
         version_badge_sizegroup = Gtk.SizeGroup(mode=Gtk.SizeGroupMode.HORIZONTAL)
         
-        indexed_mods = read_index(self.dashboard.staging_path)
+        indexed_mods = read_index(self.dashboard.staging_metadata_path)
         
         for index, mod in enumerate(indexed_mods, start=1):
             
@@ -282,11 +281,11 @@ class ModsTab(Gtk.Box):
         if value == mod_name:
             return False
         
-        current_mods = read_index(self.dashboard.staging_path)
+        current_mods = read_index(self.dashboard.staging_metadata_path)
         
         if mod_name in current_mods:
             target_index = current_mods.index(mod_name)
-            change_mod_index(self.dashboard.staging_path, value, target_index)
+            change_mod_index(self.dashboard.staging_metadata_path, value, target_index)
             GLib.idle_add(
                 deploy_all_ordered_mods,
                 self.dashboard.staging_path,
@@ -307,7 +306,7 @@ class ModsTab(Gtk.Box):
 
         def on_updates_checked(mods_updated, updated_metadata):
             if mods_updated:
-                save_metadata(updated_metadata, self.dashboard.staging_metadata_path)
+                write_yaml(updated_metadata, self.dashboard.staging_metadata_path)
                 self.populate_list()
             btn.set_sensitive(True)
 

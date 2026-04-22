@@ -197,7 +197,7 @@ class DownloadsTab(Gtk.Box):
     def get_download_timestamp(self, f):
         return datetime.fromtimestamp(os.path.getmtime(os.path.join(self.dashboard.downloads_path, f))).strftime('%c')
 
-    # --- LOGIQUE D'INSTALLATION ---
+    # Install
     def on_install_clicked(self, btn, filename, display_name):
         display_name = display_name.replace(".zip", "").replace(".rar", "").replace(".7z", "")
         mod_staging_dir = os.path.join(self.dashboard.staging_path, display_name)

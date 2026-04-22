@@ -5,7 +5,9 @@ import re
 import vdf
 import yaml
 
-from core.config import load_user_config, update_user_config, write_yaml
+from gi.repository import GLib
+
+from core.config import update_user_config, write_yaml, load_yaml
 from core.heroic_asset import download_heroic_assets
 from typing import List, Dict, Optional, Any
 
@@ -145,7 +147,8 @@ def scan_all_games(game_configs_dir):
     matches = []
     steam_base = get_steam_base_dir()
     
-    user_config = load_user_config()
+    user_config_dir = os.path.join(GLib.get_user_config_dir(), 'nomm', 'user_config.yaml')
+    user_config = load_yaml(user_config_dir)
     found_libs = set(user_config.get("library_paths", []))
 
     # Update Steam Libraries if empty

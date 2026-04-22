@@ -9,8 +9,7 @@ gi.require_version('Notify', '0.7')
 
 from gi.repository import Adw, Gdk, GdkPixbuf, GLib, Gtk
 
-from core.config import (get_user_config_path, get_user_data_dir,
-                         load_user_config, update_user_config)
+from core.config import update_user_config, load_yaml
 from core.scanner import get_steam_base_dir, scan_all_games
 from gui.app_views.library_view import LibraryView
 from gui.dashboard import GameDashboard
@@ -26,8 +25,9 @@ class Nomm(Adw.Application):
         self.matches = []
         self.steam_base = get_steam_base_dir()
 
-        user_data_dir = get_user_data_dir()
-        self.user_config_path = get_user_config_path()
+        user_data_dir = os.path.join(GLib.get_user_data_dir(), 'nomm')
+        #TODO: reduce the use of these functions
+        self.user_config_path = os.path.join(user_data_dir, "user_config.yaml")
         self.game_config_path = os.path.join(user_data_dir, "game_configs")
         
         base_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -221,7 +221,7 @@ class Nomm(Adw.Application):
     def show_library_ui(self):
         self.remove_stack_child("library")
         
-        user_config = load_user_config()
+        user_config = load_yaml(self.user_config_path)
         if user_config.get('enable_launcher_skip') and user_config.get("last_selected_game"):
             game_info = next((m for m in self.matches if m["name"] == user_config.get("last_selected_game")), None)
             if game_info:
@@ -234,7 +234,7 @@ class Nomm(Adw.Application):
         self.stack.set_visible_child_name("library")
 
     def on_game_clicked(self, game_data):
-        config = load_user_config()
+        config = load_yaml(self.user_config_path)
         if config.get('enable_fullscreen'): self.win.fullscreen()
         
         if config.get("download_path"):
@@ -258,7 +258,7 @@ class Nomm(Adw.Application):
         self.stack.set_visible_child_name("dashboard")
 
     def return_to_library(self):
-        if load_user_config().get('enable_fullscreen'): self.win.unfullscreen()
+        if load_yaml(self.user_config_path).get('enable_fullscreen'): self.win.unfullscreen()
         self.stack.set_visible_child_name("library")
 
     def on_settings_clicked(self, button):

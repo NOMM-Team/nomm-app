@@ -3,8 +3,6 @@ import os
 
 from gi.repository import Adw, Gdk, GdkPixbuf, Gtk
 
-from core.config import load_user_config
-
 _ = gettext.gettext
 
 class LibraryView(Gtk.Box):
@@ -53,6 +51,8 @@ class LibraryView(Gtk.Box):
         gesture = Gtk.GestureClick()
         gesture.connect("released", lambda g, n, x, y: self.app.on_game_clicked(game))
         card.add_controller(gesture)
+
+        poster = self.get_placeholder_game_poster()
 
         img_overlay = Gtk.Overlay()
         img_data = game.get('img')
@@ -133,3 +133,10 @@ class LibraryView(Gtk.Box):
         
         overlay.add_overlay(settings_btn)
         overlay.add_overlay(refresh_btn)
+
+    def get_placeholder_game_poster(self):
+        b = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, valign=Gtk.Align.CENTER)
+        img = Gtk.Image.new_from_icon_name("input-gaming-symbolic")
+        img.set_pixel_size(128)
+        b.append(img)
+        return b
