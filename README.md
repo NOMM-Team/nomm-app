@@ -1,11 +1,3 @@
-# Caution: This repository is a fork of Nomm (developped and maintained by Allexio)
-
-> [!WARNING]
-> This fork mostly aims to refactor Allexio's work. This could allow easier maintenance and is very much a wip refactor. Do not share and prioritize Allexio's work. This is for personal use and as it is a fork, I can't make it private. Please consider supporting his project first no matter what.
-> If this project has been sent to you, please warn me and redirect to Allexio's work
-
-
-
 [![Watch the video](https://i.imgur.com/Qdn83As.png)](https://www.youtube.com/watch?v=3UWBQxQY9kk)
 <div align="center">
   <a href="https://discord.gg/WFRePSjEQY"><img src="https://img.shields.io/discord/1472479817512521772?color=0098DB&label=Discord&logo=discord&logoColor=0098DB"></a>
@@ -29,7 +21,7 @@ Instead, think of NOMM as more of a general purpose tool for most games that jus
 > If you hate AI, that makes two of us, _however_, I would never have been able to make something like this without it (simply because of the amount of work and research it would have required).
 > <br>I want to be clear that even if coding is not my job, I _do_ have a computer science background and understand all of the code that Gemini has created. 
 
-### Author's (Allexio) Guiding Principles
+### My Guiding Principles
 
 - No Ads
 - No Telemetry
@@ -137,7 +129,7 @@ Phase 2 Development Progress:
 - [x] Let user skip launcher and go straight to game
 - [x] Figure out how to create a flatpak for the app
 - [x] Add language-specific strings
-- [ ] Let user define load orders
+- [X] Let user define load orders
 - [x] Add support for GOG libraries / games (through Heroic)
 - [x] Add support for Epic libraries / games (through Heroic)
 - [x] Detect conflicts
