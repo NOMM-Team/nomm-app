@@ -6,8 +6,9 @@ from pathlib import Path
 
 from gi.repository import Adw, Gdk, GLib, GObject, Gtk
 
-from core.config import load_metadata, read_index, change_mod_index
-from core.mod_manager import check_for_conflicts, deploy_all_ordered_mods, toggle_mod_state
+from core.mod_manager import (change_mod_index, check_for_conflicts,
+                              deploy_all_ordered_mods, load_metadata,
+                              read_index, toggle_mod_state)
 from core.nexus_api import check_for_mod_updates_async
 
 _ = gettext.gettext

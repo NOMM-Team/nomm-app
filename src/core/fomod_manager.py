@@ -4,7 +4,7 @@ import xml.etree.ElementTree as ET
 
 from core.archive_manager import get_all_relative_files
 
-
+# Just a copy paste
 def parse_fomod_xml(xml_data):
     try:
         root = ET.fromstring(xml_data)
@@ -26,7 +26,8 @@ def parse_fomod_xml(xml_data):
     except Exception as e:
         print(f"Failed to parse FOMOD XML: {e}")
         return None, []
-    
+
+# To check, really different
 def apply_fomod_selection(mod_staging_dir: str, source_folder_name: str) -> list:
     normalized_source = source_folder_name.replace('\\', '/').strip('/')
     source_path = None

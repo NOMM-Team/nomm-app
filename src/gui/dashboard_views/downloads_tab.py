@@ -9,11 +9,10 @@ import yaml
 from gi.repository import Adw, Gdk, Gio, GLib, Gtk, Pango
 
 from core.archive_manager import (delete_downloaded_archive, extract_archive,
-                                  get_all_relative_files)
-from core.config import (finalize_mod_metadata, load_metadata,
-                         remove_mod_from_metadata)
+                                  get_all_relative_files, process_dropped_files)
 from core.fomod_manager import apply_fomod_selection, parse_fomod_xml
-from core.mod_manager import is_mod_installed
+from core.mod_manager import (finalize_mod_metadata, is_mod_installed,
+                              load_metadata, remove_mod_from_metadata)
 from gui.dashboard_views.fomod_dialog import FomodSelectionDialog
 
 _ = gettext.gettext
@@ -240,7 +239,6 @@ class DownloadsTab(Gtk.Box):
             files = value.get_files()
             uris = [f.get_uri() for f in files]
 
-            from core.drag_drop_file import process_dropped_files
             mods = process_dropped_files(uris, self.dashboard.downloads_path)
 
             if mods:

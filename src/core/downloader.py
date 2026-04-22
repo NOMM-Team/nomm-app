@@ -7,7 +7,6 @@ from gi.repository import GLib
 from gui.notifications import send_download_notification
 from typing import Optional, Callable
 
-
 def download_mod(url: str, dest_folder: str) -> bool:
     filename = url.split('/')[-1].split('?')[0] or "download"
     dest_path = os.path.join(dest_folder, filename)
@@ -31,6 +30,7 @@ def download_mod(url: str, dest_folder: str) -> bool:
 
     return success
 
+# To check -- really different
 def download_file_async(url: str, dest_folder: str, on_success_callback: Optional[Callable], on_error_callback: Optional[callable]) -> None:
     def worker():
         # Extract game name
@@ -40,7 +40,7 @@ def download_file_async(url: str, dest_folder: str, on_success_callback: Optiona
 
         try:
             response = requests.get(url, stream=True, timeout=15)
-            response.raise_for_status() # Lève une erreur si le téléchargement échoue (ex: 404, 403)
+            response.raise_for_status()
             
             with open(dest_path, 'wb') as f:
                 for data in response.iter_content(chunk_size=4096):

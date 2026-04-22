@@ -1,6 +1,9 @@
 import os
+import shutil
 import subprocess
 import zipfile
+from pathlib import Path
+from urllib.parse import unquote
 
 import rarfile
 
@@ -53,3 +56,31 @@ def get_all_relative_files(directory_path: str) -> list[str]:
             rel_path = os.path.relpath(full_path, directory_path)
             all_files.append(rel_path.replace('\\', '/'))
     return all_files
+
+# Drop file on the download tab to import mods
+def process_dropped_files(uri_list: list[str], destination_path: str) -> list[str]:
+    # Init var
+    copied_files = []
+    dest_path = Path(destination_path)
+    dest_path.mkdir(parents=True, exist_ok=True)
+    
+    # For each file/archive dropped
+    for uri in uri_list:
+        if not uri.strip():
+            continue
+        
+        file_path = unquote(uri.replace('file://', '').strip())
+        file_path = file_path.replace('\r', '').replace('\n', '')
+
+        src_file = Path(file_path)
+
+        if src_file.is_file():
+            try:
+                target_file = dest_path / src_file.name
+                #Copy 2 is like shutil.copy but keeps metadata
+                shutil.copy2(src_file, target_file)
+                copied_files.append(src_file.name)
+            except Exception as e:
+                print(f"Error while copying  {src_file.name}: {e}")
+
+    return copied_files

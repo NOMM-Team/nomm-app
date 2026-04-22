@@ -108,18 +108,13 @@ class ToolsTab(Gtk.Box):
         if not source_url: 
             return
 
-        # On prépare le chemin du dossier
         util_dir = os.path.join(self.dashboard.downloads_path, "utilities")
 
-        # 1. Ce qu'il faut faire en cas de succès
         def on_success():
             stack.set_visible_child_name("install")
-
-        # 2. Ce qu'il faut faire en cas d'erreur
         def on_error(error_msg):
             self.dashboard.show_message(_("Download Failed"), error_msg)
 
-        # 3. On délègue tout le travail fastidieux au Core !
         download_file_async(source_url, util_dir, on_success, on_error)
 
     def on_utility_install_clicked(self, btn, util):

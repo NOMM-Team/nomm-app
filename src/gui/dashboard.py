@@ -12,11 +12,10 @@ import requests
 import yaml
 from gi.repository import Adw, Gdk, Gio, Gtk
 
-from core.config import (get_metadata_path, load_metadata, load_yaml,
-                         parse_deployment_paths, remove_mod_from_metadata,
-                         write_yaml)
-from core.heroic_asset import download_heroic_assets
-from core.mod_manager import completely_uninstall_mod, get_mod_statistics
+from core.config import load_yaml, write_yaml, parse_deployment_paths
+from core.mod_manager import (completely_uninstall_mod, get_metadata_path,
+                              get_mod_statistics, load_metadata,
+                              remove_mod_from_metadata)
 from core.scanner import find_game_art
 from core.ui_tools import get_contrast_color
 from gui.dashboard_views.downloads_tab import DownloadsTab

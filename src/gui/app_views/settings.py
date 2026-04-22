@@ -158,7 +158,6 @@ class SettingsWindow(Adw.Window):
         threading.Thread(target=check_api, daemon=True).start()
 
     def toggle_setting(self, key, state):
-        print(f"{key} is now: {state}")
         update_user_config(key, state)
 
     def create_social_button(self, icon_filename, url):
