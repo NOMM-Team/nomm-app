@@ -75,7 +75,7 @@ def load_metadata(path: str) -> dict:
         data["info"] = {}
     #WIP putting index here
     if "index" not in data:
-        data["index"] = {}
+        data["index"] = []
         
     return data
 
@@ -124,10 +124,11 @@ def finalize_mod_metadata(filename: str, extracted_roots: list, deployment_targe
     current_staging_metadata["mods"][mod_name]["deployment_target"] = deployment_target_name
    
    #Adding index for load order
-    if "index" in current_staging_metadata:
+    if "index" not in current_staging_metadata:
+        current_staging_metadata["index"] = []
+
+    if mod_name not in current_staging_metadata["index"]:
         current_staging_metadata["index"].append(mod_name)
-    else:
-        current_staging_metadata["index"] = mod_name
     
     staging_path = os.path.dirname(staging_meta_path)
 
@@ -147,7 +148,7 @@ def change_mod_index(staging_meta_path: str, mod_name: str, index: int):
         current_staging_metadata["index"].insert(index, mod)
         
         try:
-            write_yaml(current_staging_metadata["index"], staging_meta_path)
+            write_yaml(current_staging_metadata, staging_meta_path)
             return True
         except Exception as e:
             print(f"Error while changing mod index: {e}")
