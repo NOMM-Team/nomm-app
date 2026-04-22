@@ -55,14 +55,20 @@ def get_heroic_library_paths() -> Dict[str, Optional[str]]:
 
     return paths
 
-def find_game_art(app_id: str | int, platform: str, steam_base: Optional[str]) -> Optional[str]:
+# Image type 1 = game image ; Image type 2 = banner
+def find_game_art(app_id: str | int, platform: str, steam_base: Optional[str]) -> dict:
+    art = {"hero": None, "poster": None}
     if not app_id: return None
     if platform == "steam" and steam_base:
         path = os.path.join(steam_base, "appcache/librarycache", str(app_id))
         if not os.path.exists(path): return None
         for root, _, files in os.walk(path):
+            if "library_hero.jpg" in files:
+                art["hero"] = os.path.join(root, "library_hero.jpg")
             for t in ["library_capsule.jpg", "library_600x900.jpg"]:
-                if t in files: return os.path.join(root, t)
+                if t in files:
+                    art["poster"] = os.path.join(root, t)
+                    break
     elif platform == "heroic-epic":
         paths = download_heroic_assets(app_id, platform)
         return paths.get("art_square") if paths else None
@@ -71,7 +77,7 @@ def find_game_art(app_id: str | int, platform: str, steam_base: Optional[str]) -
             app_id = app_id[0]
         paths = download_heroic_assets(app_id, platform)
         return paths.get("art_square") if paths else None
-    return None
+    return art
 
 def _scan_steam_game(yaml_data, yaml_path, game_title, found_libs, steam_base) -> List[Dict[str, Any]]:
     yaml_game_name = yaml_data.get("steam_folder_name", game_title)
@@ -136,7 +142,6 @@ def _scan_heroic_gog_game(yaml_data, yaml_path, game_title, installed_gog, steam
     return None
 
 def scan_all_games(game_configs_dir):
-    """Fonction principale qui scanne tout et retourne une liste de dictionnaires de jeux trouvés."""
     matches = []
     steam_base = get_steam_base_dir()
     
@@ -149,7 +154,7 @@ def scan_all_games(game_configs_dir):
         if found_libs:
             update_user_config("library_paths", sorted(list(found_libs)))
 
-    # Pre-load Heroic Libraries (Optimisation : lu une seule fois, pas à chaque jeu)
+    # Pre-load Heroic Libraries
     heroic_paths = get_heroic_library_paths()
     installed_epic = {}
     installed_gog = {}

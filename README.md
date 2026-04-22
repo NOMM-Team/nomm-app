@@ -3,7 +3,7 @@
   <a href="https://discord.gg/WFRePSjEQY"><img src="https://img.shields.io/discord/1472479817512521772?color=0098DB&label=Discord&logo=discord&logoColor=0098DB"></a>
 </div>
 
-# About NOMM (Native Open Mod Manager)
+# NOMM (Native Open Mod Manager)
 
 ## The project
 

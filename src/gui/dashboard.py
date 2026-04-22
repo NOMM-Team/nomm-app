@@ -84,16 +84,8 @@ class GameDashboard(Gtk.Box):
         hero_path = None
 
         # Assets management
-        if self.platform == "steam":
-            hero_path = find_game_art(app_id, self.platform, steam_base)
-        elif self.platform in ["heroic-gog", "heroic-epic"]:
-            image_paths = download_heroic_assets(app_id, self.platform)
-            
-            if image_paths is not None:
-                hero_path = image_paths.get("art_hero")
-            else:
-                print(f"Warning: Could not retrieve Heroic assets for {self.game_name}")
-                hero_path = None
+        art = find_game_art(app_id, self.platform, steam_base)
+        hero_path = art.get("hero")
 
         main_layout = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
         header = Adw.HeaderBar()

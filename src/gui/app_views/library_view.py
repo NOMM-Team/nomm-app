@@ -55,11 +55,12 @@ class LibraryView(Gtk.Box):
         card.add_controller(gesture)
 
         img_overlay = Gtk.Overlay()
-        poster = self.get_placeholder_game_poster()
+        img_data = game.get('img')
+        poster_path = img_data.get('poster') if isinstance(img_data, dict) else None
         
-        if game.get('img') and os.path.exists(game['img']):
+        if poster_path and os.path.exists(poster_path):
             try:
-                pb = GdkPixbuf.Pixbuf.new_from_file_at_scale(game['img'], 200, 300, False)
+                pb = GdkPixbuf.Pixbuf.new_from_file_at_scale(poster_path, 200, 300, False)
                 poster = Gtk.Picture.new_for_paintable(Gdk.Texture.new_for_pixbuf(pb))
                 poster.set_can_shrink(True)
             except: pass
@@ -91,7 +92,7 @@ class LibraryView(Gtk.Box):
             except Exception as e:
                 print(f"Error rendering SVG badge: {e}")
 
-        # --- 2. BADGE COMPTEUR DE MODS ---
+        # Version badge
         mod_total_badge = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=4)
         mod_total_badge.set_halign(Gtk.Align.START)
         mod_total_badge.set_valign(Gtk.Align.END)
@@ -123,7 +124,6 @@ class LibraryView(Gtk.Box):
         refresh_btn = Gtk.Button(icon_name="view-refresh-symbolic", halign=Gtk.Align.END, valign=Gtk.Align.START, margin_top=30, margin_end=30)
         refresh_btn.set_size_request(64, 64)
         refresh_btn.add_css_class("refresh-fab")
-        # Appelle la méthode de rafraîchissement de l'app principale
         refresh_btn.connect("clicked", lambda b: self.app.show_loading_and_scan())
 
         settings_btn = Gtk.Button(icon_name="settings-configure-symbolic", halign=Gtk.Align.END, valign=Gtk.Align.START, margin_top=30, margin_end=120)
@@ -133,10 +133,3 @@ class LibraryView(Gtk.Box):
         
         overlay.add_overlay(settings_btn)
         overlay.add_overlay(refresh_btn)
-
-    def get_placeholder_game_poster(self):
-        b = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, valign=Gtk.Align.CENTER)
-        img = Gtk.Image.new_from_icon_name("input-gaming-symbolic")
-        img.set_pixel_size(128)
-        b.append(img)
-        return b
