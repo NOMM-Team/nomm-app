@@ -10,6 +10,7 @@ import rarfile
 # Point rarfile to the bundled binary
 rarfile.UNRAR_TOOL = "/app/bin/unrar"
 
+# dashboard.py/on_install_clicked
 def get_archive_type(file_path: str) -> str:
     lower_path = file_path.lower()
     if lower_path.endswith('.zip'): return 'zip'
@@ -18,11 +19,13 @@ def get_archive_type(file_path: str) -> str:
     return 'unknown'
 
 # Cleaning method after extracting the archive
+# Dashboard.py/delete_download_package + downloads tab for the try/catch
 def delete_downloaded_archive(widget, btn, file_name):
     zip_path = os.path.join(widget.downloads_path, file_name)
     if os.path.exists(zip_path):
         os.remove(zip_path)
 
+# dashboard.py/on_install_clicked
 def extract_archive(archive_path: str, destination_path: str) -> bool:
     arc_type = get_archive_type(archive_path)
     os.makedirs(destination_path, exist_ok=True)
@@ -48,6 +51,7 @@ def extract_archive(archive_path: str, destination_path: str) -> bool:
         raise Exception(f"Error while extracting {arc_type} : {e}")
 
 # Builds path toward the desired file by returning the files one by one in a list of string
+# dashboard.py/on_install_clicked
 def get_all_relative_files(directory_path: str) -> list[str]:
     all_files = []
     for root, _, files in os.walk(directory_path):
@@ -58,6 +62,7 @@ def get_all_relative_files(directory_path: str) -> list[str]:
     return all_files
 
 # Drop file on the download tab to import mods
+# new
 def process_dropped_files(uri_list: list[str], destination_path: str) -> list[str]:
     # Init var
     copied_files = []

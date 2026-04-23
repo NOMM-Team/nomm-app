@@ -5,6 +5,7 @@ import xml.etree.ElementTree as ET
 from core.archive_manager import get_all_relative_files
 
 # Parsing the fomod from the XML
+# fomod_handler.py/parse_fomod_xml
 def parse_fomod_xml(xml_data):
     try:
         root = ET.fromstring(xml_data)

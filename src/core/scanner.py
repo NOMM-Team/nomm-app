@@ -10,9 +10,11 @@ from gi.repository import GLib
 from core.config import update_user_config, write_yaml, load_yaml
 from typing import List, Dict, Optional, Any
 
+# Launcher.py/slugify
 def slugify(text: str) -> str:
     return re.sub(r'[^a-z0-9]', '', text.lower())
 
+# launcher.py/get_steam_base_dir
 def get_steam_base_dir() -> Optional[str]:
     paths = [
         os.path.expanduser("~/.steam/debian-installation/"),
@@ -25,6 +27,7 @@ def get_steam_base_dir() -> Optional[str]:
             return p
     return None
 
+# launcher.py/get_steam_library_paths
 def get_steam_library_paths(vdf_path) -> List[str]:
     libraries = []
     try:
@@ -40,22 +43,28 @@ def get_steam_library_paths(vdf_path) -> List[str]:
         print(f"Error parsing VDF at {vdf_path}: {e}")
     return libraries
 
+# launcher.py/get_heroic_library_paths
 def get_heroic_library_paths() -> Dict[str, Optional[str]]:
     paths = {"epic": None, "gog": None}
     
     # Epic
     epic_flatpak = os.path.expanduser("~/.var/app/com.heroicgameslauncher.hgl/config/heroic/legendaryConfig/legendary/installed.json")
     epic_native = os.path.expanduser("~/.config/heroic/legendaryConfig/legendary/installed.json")
+    # Gives to "epic" key either flatpak path or native path
     paths["epic"] = epic_flatpak if os.path.exists(epic_flatpak) else (epic_native if os.path.exists(epic_native) else None)
 
     # GOG
     gog_flatpak = os.path.expanduser("~/.var/app/com.heroicgameslauncher.hgl/config/heroic/gog_store/installed.json")
     gog_native = os.path.expanduser("~/.config/heroic/gog_store/installed.json")
+    # Gives to "gog" key either flatpak path or native path
     paths["gog"] = gog_flatpak if os.path.exists(gog_flatpak) else (gog_native if os.path.exists(gog_native) else None)
 
+    # Returns the paths in a dictionary
     return paths
 
 # Now returns a dictionary so you don't need two methods to get 2 images
+# launcher.py/find_game_art + edition to return a dictionnary with 
+# both the banner and the game poster
 def find_game_art(app_id: str | int, platform: str, steam_base: Optional[str]) -> dict:
     art = {"hero": None, "poster": None}
     if not app_id: return None
@@ -79,6 +88,7 @@ def find_game_art(app_id: str | int, platform: str, steam_base: Optional[str]) -
         return paths.get("art_square") if paths else None
     return art
 
+# launcher.py/game_title_matcher (l:320)
 def _scan_steam_game(yaml_data, yaml_path, game_title, found_libs, steam_base) -> List[Dict[str, Any]]:
     yaml_game_name = yaml_data.get("steam_folder_name", game_title)
     slug_yaml_name = slugify(yaml_game_name)
@@ -102,6 +112,8 @@ def _scan_steam_game(yaml_data, yaml_path, game_title, found_libs, steam_base) -
                 }
     return None
 
+# Same as previous one but for heroic epic
+# launcher.py/game_title_matcher
 def _scan_heroic_epic_game(yaml_data, yaml_path, game_title, installed_epic, steam_base):
     for app_id, game_info in installed_epic.items():
         if slugify(game_info.get("title", "")) == slugify(game_title):
@@ -120,6 +132,8 @@ def _scan_heroic_epic_game(yaml_data, yaml_path, game_title, installed_epic, ste
             }
     return None
 
+# Same as previous one but for heroic epic
+# launcher.py/game_title_matcher
 def _scan_heroic_gog_game(yaml_data, yaml_path, game_title, installed_gog, steam_base):
     if not yaml_data.get("gog_id"):
         return None
@@ -141,6 +155,7 @@ def _scan_heroic_gog_game(yaml_data, yaml_path, game_title, installed_gog, steam
             }
     return None
 
+# launcher.py/run_background_workflow
 def scan_all_games(game_configs_dir):
     matches = []
     steam_base = get_steam_base_dir()
@@ -219,7 +234,7 @@ def scan_all_games(game_configs_dir):
 
     return matches
 
-    # Grabs the assets from heroic games launcher such as banner and game image
+# Grabs the assets from heroic games launcher such as banner and game image
 def download_heroic_assets(appName: str, platform: str):
     if isinstance(appName, list):
         appName = str(appName[0])
@@ -282,6 +297,7 @@ def download_heroic_assets(appName: str, platform: str):
                 continue
                 
             ext = os.path.splitext(url)[1] if "." in url.split("/")[-1] else ".jpg"
+            # Ensure extensions like .jpg?foo=bar are cleaned
             if "?" in ext: ext = ext.split("?")[0]
             
             local_path = os.path.join(cache_base, f"{key}{ext}")

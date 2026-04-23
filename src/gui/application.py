@@ -9,7 +9,7 @@ gi.require_version('Notify', '0.7')
 
 from gi.repository import Adw, Gdk, GdkPixbuf, GLib, Gtk
 
-from core.config import update_user_config, load_yaml
+from core.config import update_user_config, load_yaml, write_yaml
 from core.scanner import get_steam_base_dir, scan_all_games
 from gui.app_views.library_view import LibraryView
 from gui.dashboard import GameDashboard
@@ -26,7 +26,6 @@ class Nomm(Adw.Application):
         self.steam_base = get_steam_base_dir()
 
         user_data_dir = os.path.join(GLib.get_user_data_dir(), 'nomm')
-        #TODO: reduce the use of these functions
         self.user_config_path = os.path.join(user_data_dir, "user_config.yaml")
         self.game_config_path = os.path.join(user_data_dir, "game_configs")
         
@@ -109,7 +108,9 @@ class Nomm(Adw.Application):
             texture = Gdk.Texture.new_for_pixbuf(pixbuf)
             status_page.set_paintable(texture)
 
-        btn = Gtk.Button(label="Let's go!", halign=Gtk.Align.CENTER, margin_top=24)
+        btn = Gtk.Button(label="Let's go!")
+        btn.set_halign(Gtk.Align.CENTER)
+        btn.set_margin_top(24)
         btn.add_css_class("suggested-action")
         btn.connect("clicked", self.show_downloads_folder_select_screen)
         
@@ -126,9 +127,13 @@ class Nomm(Adw.Application):
             icon_name="folder-download-symbolic"
         )
         status_page.add_css_class("setup-page")
-        btn = Gtk.Button(label=_("Set Mod Download Path"), halign=Gtk.Align.CENTER, margin_top=24)
+
+        btn = Gtk.Button(label=_("Set Mod Download Path"))
+        btn.set_halign(Gtk.Align.CENTER)
         btn.add_css_class("suggested-action")
+        btn.set_margin_top(24)
         btn.connect("clicked", self.on_select_downloads_folder_clicked)
+        
         status_page.set_child(btn)
         self.stack.add_named(status_page, "setup")
         self.stack.set_visible_child_name("setup")
@@ -185,8 +190,11 @@ class Nomm(Adw.Application):
             description=_("If you want to download mods from Nexus Mods..."),
             icon_name="dialog-password-symbolic"
         )
-        entry_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12, halign=Gtk.Align.CENTER, margin_top=24)
+        entry_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12, halign=Gtk.Align.CENTER)
+        entry_box.set_margin_top(24)
+
         self.api_entry = Gtk.Entry(placeholder_text=_("Enter API Key..."), width_request=400, visibility=False)
+        
         cont_btn = Gtk.Button(label=_("Continue"))
         cont_btn.add_css_class("suggested-action")
         cont_btn.connect("clicked", lambda b: self.finalize_setup(self.api_entry.get_text()))
@@ -196,11 +204,10 @@ class Nomm(Adw.Application):
 
     def finalize_setup(self, api_key):
         self.temp_config["nexus_api_key"] = api_key
-        from core.config import write_yaml
         write_yaml(self.temp_config, self.user_config_path)
         self.show_loading_and_scan()
 
-    # --- LOGIQUE DE SCAN ---
+    # Scan logic
     def show_loading_and_scan(self):
         self.remove_stack_child("loading")
         box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=30, valign=Gtk.Align.CENTER)
@@ -221,6 +228,7 @@ class Nomm(Adw.Application):
     def show_library_ui(self):
         self.remove_stack_child("library")
         
+        # If user has selected launcher skip option, launch game profile directly
         user_config = load_yaml(self.user_config_path)
         if user_config.get('enable_launcher_skip') and user_config.get("last_selected_game"):
             game_info = next((m for m in self.matches if m["name"] == user_config.get("last_selected_game")), None)

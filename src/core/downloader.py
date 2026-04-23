@@ -7,6 +7,7 @@ from gi.repository import GLib
 from gui.notifications import send_download_notification
 from typing import Optional, Callable
 
+#used when making a thread is not useful
 def download_mod(url: str, dest_folder: str) -> bool:
     filename = url.split('/')[-1].split('?')[0] or "download"
     dest_path = os.path.join(dest_folder, filename)
@@ -30,7 +31,8 @@ def download_mod(url: str, dest_folder: str) -> bool:
 
     return success
 
-# Used for download_utility
+# Used for download_utility, same as download_mods but provides callbacks and does not return anything
+# dashboard.py (l:432)
 def download_file_async(url: str, dest_folder: str, on_success_callback: Optional[Callable], on_error_callback: Optional[callable]) -> None:
     # Downloader function
     def worker():
@@ -40,8 +42,8 @@ def download_file_async(url: str, dest_folder: str, on_success_callback: Optiona
         os.makedirs(dest_folder, exist_ok=True)
 
         try:
-            # Stream=true loads headers so you can get the response and keep the connexion open instead of directly download the whole body of the request
-            # Request is processed with response.itter_content()
+            # Stream=true loads headers and keeps the connexion open instead of directly download the whole body of the request
+            # Request is processed with response.itter_content() later
             response = requests.get(url, stream=True, timeout=15)
             # Identical to is_valid = response.status_code == 200, personal preferences only matters here
             response.raise_for_status()

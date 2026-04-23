@@ -13,6 +13,7 @@ from gui.notifications import send_download_notification
 from typing import Optional, Callable
 
 # Same code as check_for_mod_update but with a worker and a thread for async
+# Dashboard/check_for_update() but in a thread
 def check_for_mod_updates_async(staging_metadata: dict, headers: dict, game_id: str, on_complete_callback: Optional[Callable]) -> None:
     def worker():
         print("Checking for updates in background...")
@@ -43,8 +44,11 @@ def check_for_mod_updates_async(staging_metadata: dict, headers: dict, game_id: 
                         
                         if changelog_resp.status_code == 200:
                             logs = changelog_resp.json()
+                            # Nexus returns a dict where keys are version numbers
+                            # We grab the log for the specific remote version found
                             new_log = logs.get(remote_version)
                             if new_log:
+                                # Join list of changes into a single string if necessary
                                 details["changelog"] = "\n".join(new_log) if isinstance(new_log, list) else new_log
                 else:
                     print(f"Error getting update info for {mod_name}: {resp.status_code}")
@@ -57,6 +61,7 @@ def check_for_mod_updates_async(staging_metadata: dict, headers: dict, game_id: 
     threading.Thread(target=worker, daemon=True).start()
 
 # Interprets nxm links and launchs notification
+# nxm_handler.py/handle_nexus_link
 def handle_nexus_link(nxm_link: str) -> bool:
 
     app_dir = os.path.join(GLib.get_user_data_dir(), "nomm")
@@ -65,6 +70,7 @@ def handle_nexus_link(nxm_link: str) -> bool:
     api_key = user_config.get("nexus_api_key")
     base_download_path = user_config.get("download_path")
     
+    # Api_key checked here to prevent from storing useless data (compared to where it was)
     if not api_key or not base_download_path:
         print("Error: Missing API key or download path in user_config.yaml")
         return False
@@ -111,6 +117,7 @@ def handle_nexus_link(nxm_link: str) -> bool:
         _download_nexus_mod(nxm_link, headers, final_download_dir, nexus_game_id, game_folder_name)
 
 # Download the mods from nexus and is used in nxm_handler
+# nxm_handler/download_nexus_mod
 def _download_nexus_mod(nxm_link: str, headers: dict, final_download_dir: Path, nexus_game_id: str, game_folder_name: str):
     try:
         splitted_nxm = urlsplit(nxm_link)
@@ -163,6 +170,7 @@ def _download_nexus_mod(nxm_link: str, headers: dict, final_download_dir: Path, 
             }
 
             downloads_metadata_path = get_metadata_path(str(final_download_dir), is_staging=False)
+            #Load_metadata generates the downloads_metadata["info"] and ["mods"] in case it is needed
             downloads_metadata = load_metadata(downloads_metadata_path)
 
             downloads_metadata["info"]["game"] = game_folder_name
@@ -182,7 +190,7 @@ def _download_nexus_mod(nxm_link: str, headers: dict, final_download_dir: Path, 
         print(f"An error occurred: {e}")
         return False
 
-
+# nxm_handler/download_nexus_collection
 def _download_nexus_collection(nxm_link: str, headers: dict, final_download_dir: Path):
     parts = nxm_link.replace("nxm://", "").split("/")
     game_domain = parts[0]
@@ -221,6 +229,7 @@ def _download_nexus_collection(nxm_link: str, headers: dict, final_download_dir:
     return True
 
 # Get files from collexion and returns a dict if it manages to get the list
+# nxm_handler/get_files_from_collection.py
 def _get_files_from_collection(game_domain: str, collection_id: str, revision_id: str, headers: dict):
     graphql_url = "https://graphql.nexusmods.com"
     

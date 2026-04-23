@@ -163,6 +163,7 @@ class DownloadsTab(Gtk.Box):
             if self.current_filter == "uninstalled": return not row.is_installed
         return True
 
+# def dashboard.py/on_filter_toggled
     def on_filter_toggled(self, btn, f_name):
         if btn.get_active():
             self.current_filter = f_name
@@ -182,14 +183,16 @@ class DownloadsTab(Gtk.Box):
         self.populate_list()
         self.dashboard.update_indicators()
 
+# dashboard.py/setup_folder_monitor
     def setup_folder_monitor(self):
         f = Gio.File.new_for_path(self.dashboard.downloads_path)
         self.monitor = f.monitor_directory(Gio.FileMonitorFlags.NONE, None)
         self.monitor.connect("changed", self.on_downloads_folder_changed)
-
+# dashboard.py/on_downloads_folder_changed
     def on_downloads_folder_changed(self, monitor, file, other_file, event_type):
         relevant_events = [Gio.FileMonitorEvent.CREATED, Gio.FileMonitorEvent.DELETED]
         if event_type in relevant_events:
+            #idle_add makes it refresh once there is no priority task ongoing such as file pasting
             GLib.idle_add(self.populate_list)
             GLib.idle_add(self.dashboard.update_indicators)
 
@@ -257,7 +260,6 @@ class DownloadsTab(Gtk.Box):
             source_folder_name = dialog.get_selected_source()
             if source_folder_name:
                 try:
-                    # APPEL AU CORE
                     final_files = apply_fomod_selection(mod_staging_dir, source_folder_name)
                     self.resolve_deployment_path(filename, final_files)
                 except Exception as e:

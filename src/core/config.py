@@ -6,6 +6,7 @@ from gi.repository import GLib
 from typing import List, Dict, Any
 
 # Grabs the required yaml, load it and return a dictionary -- no changes
+# dashboard.py/load_yaml.py
 def load_yaml(path: str) -> dict:
     if os.path.exists(path):
         try:
@@ -16,7 +17,9 @@ def load_yaml(path: str) -> dict:
     return {}
 
 # Pushs a dictionary into the yaml --- same as finalize setup, safe_dump is standard security measure but it would work with dump
+# dashboard.py/write_yaml
 def write_yaml(data: dict, path: str):
+    # difference here: creates the path if needed
     os.makedirs(os.path.dirname(path), exist_ok=True)
     try:
         with open(path, 'w', encoding='utf-8') as f:
@@ -25,6 +28,7 @@ def write_yaml(data: dict, path: str):
         print(f"Error while writing in {path}: {e}")
 
 # changes user setting by changing/writing the value for an associated key string
+# new useful method for the future if we need to add another setting
 def update_user_config(key: str, value: Any) -> None:
     user_config_path = os.path.join(GLib.get_user_data_dir (), 'nomm', 'user_config.yaml') 
     config = load_yaml(user_config_path)
@@ -32,12 +36,13 @@ def update_user_config(key: str, value: Any) -> None:
     write_yaml(config, user_config_path)
 
 # Returns both game path and steam/heroic(WIP) user data path
+# dashboard.py/parse_deployment_paths
 def parse_deployment_paths(game_config: dict, platform: str, app_id: str) -> List[Dict[str, str]]:
     game_path = game_config.get("game_path")
     deployment_dicts = game_config.get("mods_path", "")
 
     if not game_path:
-        return []
+        return {}
 
     user_data_path = ""
     if platform == "steam":
@@ -48,7 +53,7 @@ def parse_deployment_paths(game_config: dict, platform: str, app_id: str) -> Lis
         print("WARNING: User data folder not supported yet for heroic installations")
     else:
             print("unrecognised platform")
-            return []
+            return {}
     
     # Handle case where there is only one path provided, and it's not a list of dicts
     if not isinstance(deployment_dicts, list):

@@ -240,6 +240,7 @@ class GameDashboard(Gtk.Box):
     def on_uninstall_item(self, btn, mod_files: list, mod_name: str):
         staging_metadata = load_metadata(self.staging_metadata_path)
         
+        # get the mod deployment path
         dest_dir = self.deployment_targets[0]["path"]
         if mod_name in staging_metadata["mods"] and "deployment_target" in staging_metadata["mods"][mod_name]:
             for target in self.deployment_targets:
@@ -257,8 +258,8 @@ class GameDashboard(Gtk.Box):
         self.create_downloads_page()
         self.update_indicators()
 
+    # Replaced errorbox by MessageDialog
     def show_message(self, h, b):
-        print(f"[{h}] Message displayed to user: {b}") 
         d = Adw.MessageDialog(transient_for=self.app.win, heading=h, body=b)
         d.add_response("ok", "OK")
         d.connect("response", lambda d, r: d.close())

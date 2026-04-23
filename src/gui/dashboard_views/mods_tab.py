@@ -50,7 +50,7 @@ class ModsTab(Gtk.Box):
 
         self.append(action_bar)
 
-        # --- LISTE DES MODS ---
+        # Mod list
         self.mods_list_box = Gtk.ListBox(css_classes=["boxed-list"])
         self.mods_list_box.set_filter_func(self.filter_mods_rows)
         
@@ -237,7 +237,7 @@ class ModsTab(Gtk.Box):
 
             self.mods_list_box.append(row)
 
-    # --- MÉTHODES MÉTIER DU TAB ---
+    # functions
     def find_text_file(self, mod_files):
         for file_path in mod_files:
             if ".txt" in file_path:
@@ -253,7 +253,6 @@ class ModsTab(Gtk.Box):
         return search_text in getattr(row, 'mod_name', '')
 
     def on_mod_toggled(self, switch, state, mod_files: list, mod: str):
-        # APPEL AU CORE
         success = toggle_mod_state(
             mod_name=mod,
             mod_files=mod_files,
@@ -263,12 +262,12 @@ class ModsTab(Gtk.Box):
             metadata_path=self.dashboard.staging_metadata_path
         )
 
-        # Gestion de l'UI si l'activation échoue
+        # UI Fallback if toggle fail
         if state and not success:
             switch.set_active(False) 
             return False
 
-        # Rafraîchissement de l'interface
+        # UI Refresh
         self.dashboard.update_indicators()
         self.populate_list()
         
