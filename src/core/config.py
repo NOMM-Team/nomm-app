@@ -15,7 +15,7 @@ def load_yaml(path: str) -> dict:
             print(f"Error while loading {path}: {e}")
     return {}
 
-# Pushs a dictionary into the yaml --- has to be checked, really different
+# Pushs a dictionary into the yaml --- same as finalize setup, safe_dump is standard security measure but it would work with dump
 def write_yaml(data: dict, path: str):
     os.makedirs(os.path.dirname(path), exist_ok=True)
     try:
@@ -31,7 +31,7 @@ def update_user_config(key: str, value: Any) -> None:
     config[key] = value
     write_yaml(config, user_config_path)
 
-# Almost 100% identical to original version
+# Returns both game path and steam/heroic(WIP) user data path
 def parse_deployment_paths(game_config: dict, platform: str, app_id: str) -> List[Dict[str, str]]:
     game_path = game_config.get("game_path")
     deployment_dicts = game_config.get("mods_path", "")
@@ -48,7 +48,7 @@ def parse_deployment_paths(game_config: dict, platform: str, app_id: str) -> Lis
         print("WARNING: User data folder not supported yet for heroic installations")
     else:
             print("unrecognised platform")
-            return
+            return []
     
     # Handle case where there is only one path provided, and it's not a list of dicts
     if not isinstance(deployment_dicts, list):

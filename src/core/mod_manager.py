@@ -272,7 +272,7 @@ def remove_mod_from_metadata(path: str, mod_name: str) -> bool:
         return True
     return False
 
-# OK
+# Writing the metadata with needed fields
 def finalize_mod_metadata(filename: str, extracted_roots: list, deployment_target_name: str, staging_meta_path: str, downloads_meta_path: str):
     current_staging_metadata = load_metadata(staging_meta_path)
     current_download_metadata = {}

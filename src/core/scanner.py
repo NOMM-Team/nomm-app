@@ -219,7 +219,7 @@ def scan_all_games(game_configs_dir):
 
     return matches
 
-    # 100% identical
+    # Grabs the assets from heroic games launcher such as banner and game image
 def download_heroic_assets(appName: str, platform: str):
     if isinstance(appName, list):
         appName = str(appName[0])
