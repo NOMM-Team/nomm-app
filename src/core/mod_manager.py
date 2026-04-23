@@ -5,6 +5,7 @@ import zipfile
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional
+from datetime import datetime
 
 from core.config import load_yaml, write_yaml
 
@@ -273,9 +274,7 @@ def remove_mod_from_metadata(path: str, mod_name: str) -> bool:
 
 # OK
 def finalize_mod_metadata(filename: str, extracted_roots: list, deployment_target_name: str, staging_meta_path: str, downloads_meta_path: str):
-    from datetime import datetime
-    
-    current_staging_metadata = load_metadata(staging_meta_path)
+     current_staging_metadata = load_metadata(staging_meta_path)
     current_download_metadata = {}
 
     #This request should only fail if all previous files were manually added --> can be fixed with a rework of check_index
@@ -313,7 +312,7 @@ def finalize_mod_metadata(filename: str, extracted_roots: list, deployment_targe
     write_yaml(current_staging_metadata, staging_meta_path)
 
 # Mostly returns index, will very likely disappear in the future
-def read_index(staging_meta_path: str) -> bool:
+def read_index(staging_meta_path: str) -> List[str]:
     current_staging_metadata = load_metadata(staging_meta_path)
     return current_staging_metadata["index"]
 

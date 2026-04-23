@@ -70,12 +70,12 @@ def find_game_art(app_id: str | int, platform: str, steam_base: Optional[str]) -
                     art["poster"] = os.path.join(root, t)
                     break
     elif platform == "heroic-epic":
-        paths = self.download_heroic_assets(app_id, platform)
+        paths = download_heroic_assets(app_id, platform)
         return paths.get("art_square") if paths else None
     elif platform == "heroic-gog":
         if isinstance(app_id, list):
             app_id = app_id[0]
-        paths = self.download_heroic_assets(app_id, platform)
+        paths = download_heroic_assets(app_id, platform)
         return paths.get("art_square") if paths else None
     return art
 
