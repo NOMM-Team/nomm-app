@@ -33,12 +33,18 @@ def apply_fomod_selection(mod_staging_dir: str, source_folder_name: str) -> list
     normalized_source = source_folder_name.replace('\\', '/').strip('/')
     source_path = None
     
+    
     direct_path = os.path.join(mod_staging_dir, normalized_source)
+    # checks if file exists
     if os.path.isdir(direct_path):
+        # checks if direct path is the same as source_path, which means all we have to do is copy the files as it is once extracted
         source_path = direct_path
     else:
+        #Explore the folder to find normalized source from the root
         for root, _, _ in os.walk(mod_staging_dir):
+            # Calculates relative root and replaces \\ for compatibility
             rel_root = os.path.relpath(root, mod_staging_dir).replace('\\', '/')
+            #If we find the folder, then we break
             if rel_root == normalized_source or rel_root.endswith('/' + normalized_source):
                 source_path = root
                 break
@@ -47,6 +53,7 @@ def apply_fomod_selection(mod_staging_dir: str, source_folder_name: str) -> list
         raise FileNotFoundError(f"Could not find folder '{normalized_source}' in extracted mod.")
 
     temp_safe_dir = f"{mod_staging_dir}_temp_fomod"
+    # Moves the folder to a temporary direction before installing it
     shutil.move(source_path, temp_safe_dir)
     shutil.rmtree(mod_staging_dir)
     os.rename(temp_safe_dir, mod_staging_dir)
