@@ -267,6 +267,12 @@ class Nomm(Adw.Application):
 
     def return_to_library(self):
         if load_yaml(self.user_config_path).get('enable_fullscreen'): self.win.unfullscreen()
+        
+        # Creates the library_view if it has not been set before
+        if not self.stack.get_child_by_name("library"):
+            library_view = LibraryView(self, self.matches)
+            self.stack.add_named(library_view, "library")
+        
         self.stack.set_visible_child_name("library")
 
     def on_settings_clicked(self, button):
