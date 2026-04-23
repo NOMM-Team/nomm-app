@@ -274,7 +274,7 @@ def remove_mod_from_metadata(path: str, mod_name: str) -> bool:
 
 # OK
 def finalize_mod_metadata(filename: str, extracted_roots: list, deployment_target_name: str, staging_meta_path: str, downloads_meta_path: str):
-     current_staging_metadata = load_metadata(staging_meta_path)
+    current_staging_metadata = load_metadata(staging_meta_path)
     current_download_metadata = {}
 
     #This request should only fail if all previous files were manually added --> can be fixed with a rework of check_index

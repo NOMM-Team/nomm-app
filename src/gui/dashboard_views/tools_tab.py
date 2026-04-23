@@ -7,6 +7,7 @@ from pathlib import Path
 from gi.repository import Adw, GLib, Gtk
 
 from core.mod_manager import deploy_essential_utility, is_utility_installed
+from core.downloader import download_file_async
 
 _ = gettext.gettext
 
@@ -19,7 +20,6 @@ class ToolsTab(Gtk.Box):
         
         self.dashboard = dashboard
         
-        # Récupération de la config des utilitaires
         utilities_cfg = self.dashboard.game_config.get("essential-utilities", {})
         
         if not utilities_cfg or not isinstance(utilities_cfg, dict):
@@ -98,7 +98,6 @@ class ToolsTab(Gtk.Box):
             load_order_btn = Gtk.Button(label=_("Edit Load Order"), css_classes=["pill"])
             load_order_btn.set_size_request(200, 40)
             load_order_btn.set_cursor_from_name("pointer")
-            # Appel à load_text_file qui reste sur le dashboard principal
             load_order_btn.connect("clicked", self.dashboard.load_text_file, Path(self.dashboard.game_path) / load_order_rel)
             btn_container.set_center_widget(load_order_btn)
             self.append(btn_container)
@@ -138,9 +137,7 @@ class ToolsTab(Gtk.Box):
         dialog.present()
 
     def execute_utility_install(self, util):
-        """Appelle la logique métier pour installer le framework, et gère les messages UI."""
         try:
-            # On appelle le core !
             deploy_essential_utility(util, self.dashboard.downloads_path, self.dashboard.game_path)
             
             self.dashboard.show_message(

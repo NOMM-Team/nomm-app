@@ -1,7 +1,8 @@
 import gettext
 import os
 
-from gi.repository import Adw, Gdk, GdkPixbuf, Gtk
+from gi.repository import Adw, Gdk, GdkPixbuf, Gtk, GLib
+from code.config import load_yaml
 
 _ = gettext.gettext
 
@@ -102,14 +103,16 @@ class LibraryView(Gtk.Box):
             
         count = 0
         try:
-            user_config = load_user_config()
+            user_config_path = os.path.join(GLib.get_user_data_dir (), 'nomm', 'user_config.yaml') 
+            user_config = load_yaml(user_config_path)
             base_dl_path = user_config.get("download_path")
             if base_dl_path:
                 game_dl_path = os.path.join(base_dl_path, game["name"])
                 if os.path.exists(game_dl_path):
                     exts = (".zip", ".rar", ".7z")
                     count = sum(1 for f in os.scandir(game_dl_path) if f.is_file() and f.name.lower().endswith(exts))
-        except: pass
+        except Exception as e:
+            print(f"Error loading user_config : {e}")
         
         mod_total_badge_label = Gtk.Label(label=str(count))
         mod_total_badge_label.add_css_class("badge-accent")
