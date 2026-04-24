@@ -269,7 +269,9 @@ class ModsTab(Gtk.Box):
 
         # UI Refresh
         self.dashboard.update_indicators()
-        self.populate_list()
+        
+        # Refresh causes the window to list jump to the beginning of the container
+        # self.populate_list()
         
         return False
     
