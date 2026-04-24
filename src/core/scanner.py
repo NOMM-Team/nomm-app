@@ -80,12 +80,16 @@ def find_game_art(app_id: str | int, platform: str, steam_base: Optional[str]) -
                     break
     elif platform == "heroic-epic":
         paths = download_heroic_assets(app_id, platform)
-        return paths.get("art_square") if paths else None
+        art["poster"] = paths.get("art_square")
+        art["hero"] = paths.get("art_hero")
+        return art if art else None
     elif platform == "heroic-gog":
         if isinstance(app_id, list):
             app_id = app_id[0]
         paths = download_heroic_assets(app_id, platform)
-        return paths.get("art_square") if paths else None
+        art["poster"] = paths.get("art_square")
+        art["hero"] = paths.get("art_hero")
+        return art if art else None
     return art
 
 # launcher.py/game_title_matcher (l:320)
