@@ -164,7 +164,7 @@ def scan_all_games(game_configs_dir):
     matches = []
     steam_base = get_steam_base_dir()
     
-    user_config_dir = os.path.join(GLib.get_user_config_dir(), 'nomm', 'user_config.yaml')
+    user_config_dir = os.path.join(GLib.get_user_data_dir(), 'nomm', 'user_config.yaml')
     user_config = load_yaml(user_config_dir)
     found_libs = set(user_config.get("library_paths", []))
 

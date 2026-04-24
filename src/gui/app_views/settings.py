@@ -15,7 +15,7 @@ class SettingsWindow(Adw.Window):
         self.set_default_size(500, -1)
         self.assets_path = assets_path
 
-        self.user_config_dir = os.path.join(GLib.get_user_config_dir(), "nomm", "user_config.yaml")
+        self.user_config_dir = os.path.join(GLib.get_user_data_dir(), "nomm", "user_config.yaml")
 
         content = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=20, margin_top=24, margin_bottom=24, margin_start=24, margin_end=24)
         self.set_content(content)
