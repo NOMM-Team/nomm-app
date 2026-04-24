@@ -140,6 +140,25 @@ class ModsTab(Gtk.Box):
             drop_target.connect("drop", self.on_row_drop, mod)
             row.add_controller(drop_target)
             
+            # Suffix: Missing Files
+            missing_files = []
+            for mod_file in mod_files:    
+                if not os.path.exists(staging_path/display_name/mod_file):
+                    missing_files.append(mod_file)
+            if missing_files:
+                missing_file_badge = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
+                missing_file_badge.add_css_class("warning-badge")
+                missing_file_badge.set_valign(Gtk.Align.CENTER)
+                missing_file_badge.set_margin_end(row_element_margin)
+                label_text = ngettext(
+                    "Missing {} file",
+                    "Missing {} files",
+                    len(missing_files)
+                ).format(len(missing_files))
+                missing_file_badge.set_tooltip_text(_("Missing Files:")+"\n\n".join(missing_files))
+                missing_file_badge.append(Gtk.Label(label=label_text))
+                row.add_prefix(missing_file_badge)
+            
             # Conflits
             conflicting_mods = []
             for conflict_list in conflicts:

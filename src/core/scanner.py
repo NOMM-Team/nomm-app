@@ -8,7 +8,8 @@ import yaml
 
 from gi.repository import GLib
 
-from core.config import update_user_config, write_yaml, load_yaml
+from core.config import update_user_config
+from core.tools import  write_yaml, load_yaml
 from typing import List, Dict, Optional, Any
 
 # Launcher.py/slugify

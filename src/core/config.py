@@ -1,31 +1,9 @@
 import os
 from datetime import datetime
 
-import yaml
 from gi.repository import GLib
+from core.tools import load_yaml, write_yaml
 from typing import List, Dict, Any
-
-# Grabs the required yaml, load it and return a dictionary -- no changes
-# dashboard.py/load_yaml.py
-def load_yaml(path: str) -> dict:
-    if os.path.exists(path):
-        try:
-            with open(path, 'r', encoding='utf-8') as f:
-                return yaml.safe_load(f)
-        except Exception as e:
-            print(f"Error while loading {path}: {e}")
-    return {}
-
-# Pushs a dictionary into the yaml --- same as finalize setup, safe_dump is standard security measure but it would work with dump
-# dashboard.py/write_yaml
-def write_yaml(data: dict, path: str):
-    # difference here: creates the path if needed
-    os.makedirs(os.path.dirname(path), exist_ok=True)
-    try:
-        with open(path, 'w', encoding='utf-8') as f:
-            yaml.safe_dump(data, f, default_flow_style=False)
-    except Exception as e:
-        print(f"Error while writing in {path}: {e}")
 
 # changes user setting by changing/writing the value for an associated key string
 # new useful method for the future if we need to add another setting

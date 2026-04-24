@@ -9,7 +9,8 @@ gi.require_version('Notify', '0.7')
 
 from gi.repository import Adw, Gdk, GdkPixbuf, GLib, Gtk
 
-from core.config import update_user_config, load_yaml, write_yaml
+from core.config import update_user_config
+from core.tools import load_yaml, write_yaml
 from core.scanner import get_steam_base_dir, scan_all_games
 from gui.app_views.library_view import LibraryView
 from gui.dashboard import GameDashboard
