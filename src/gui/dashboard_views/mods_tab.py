@@ -266,6 +266,8 @@ class ModsTab(Gtk.Box):
         if state and not success:
             switch.set_active(False) 
             return False
+        
+        deploy_all_ordered_mods
 
         # UI Refresh
         self.dashboard.update_indicators()
