@@ -56,7 +56,7 @@ def deploy_mod_files(staging_dir: str, dest_dir: str, mod_name: str) -> bool:
             try:
                 # symlink
                 os.symlink(source_item, link_item)
-                print(f"successfully created a symlink for {link_item}")
+                print(f"Successfully created a symlink for {link_item}")
             except Exception as sym_e:
                 print(f"Error creating a Symlink {link_item}: {sym_e}")
                 success = False
@@ -79,7 +79,8 @@ def deploy_all_ordered_mods(staging_path: str, dest_dir: str) -> bool:
     
     for mod_name in metadata["mods"]:
         if metadata["mods"][mod_name]["status"] == "enabled":
-            unlink_mod_files(staging_path, dest_dir, metadata["mods"][mod_name].get("mod_files"))
+            mod_staging_dir = os.path.join(staging_path, mod_name)
+            unlink_mod_files(mod_staging_dir, dest_dir, metadata["mods"][mod_name].get("mod_files"))
     
     # Loop from item in index metadata, first on the list is deployed first etc...
     error_count = 0
@@ -283,12 +284,13 @@ def toggle_mod_state(mod_name: str, mod_files: list, state: bool, staging_path: 
             mod_info["status"] = "enabled"
             mod_info["enabled_timestamp"] = datetime.now().strftime("%c")
             write_yaml(staging_metadata, staging_metadata_path)
-            print(f"Successfully deployed mod: {mod_name}")
+            # As we unlink every enabled mod before installing 
             success = deploy_all_ordered_mods(staging_path, dest_dir)
         else:
             success = deploy_mod_files(staging_path, dest_dir, mod_name)
         if success:
         ## #TODO: Remove status data
+            print(f"Successfully deployed mod: {mod_name}")
             return True
         return False
     # state is false, deleting the datas and ensure metadata are set to proper value
