@@ -5,7 +5,8 @@ import threading
 import requests
 from gi.repository import Adw, Gio, GLib, Gtk
 
-from core.config import update_user_config, load_yaml
+from core.config import update_user_config
+from core.tools import load_yaml
 
 _ = gettext.gettext
 

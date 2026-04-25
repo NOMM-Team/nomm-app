@@ -2,7 +2,7 @@ import gettext
 import os
 
 from gi.repository import Adw, Gdk, GdkPixbuf, Gtk, GLib
-from core.config import load_yaml
+from core.tools import load_yaml
 
 _ = gettext.gettext
 
