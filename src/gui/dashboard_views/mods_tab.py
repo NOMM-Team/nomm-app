@@ -105,14 +105,15 @@ class ModsTab(Gtk.Box):
             mod_toggle_switch.connect("state-set", self.on_mod_toggled, mod_files, mod)
             row.add_prefix(mod_toggle_switch)
             
-            # Drag for load order
-            drag_handle = Gtk.Image.new_from_icon_name("open-menu-symbolic")
-            drag_handle.set_cursor_from_name("grab")
-            drag_handle.set_margin_end(6)
-            drag_source = Gtk.DragSource(actions=Gdk.DragAction.MOVE)
-            drag_source.connect("prepare", self.on_drag_prepare, mod) # 'mod' est le nom du dossier
-            drag_handle.add_controller(drag_source)
-            row.add_prefix(drag_handle)
+            if check_for_conflicts(os.path.join(staging_path, ".staging.nomm.yaml")):
+                # Drag for load order
+                drag_handle = Gtk.Image.new_from_icon_name("open-menu-symbolic")
+                drag_handle.set_cursor_from_name("grab")
+                drag_handle.set_margin_end(6)
+                drag_source = Gtk.DragSource(actions=Gdk.DragAction.MOVE)
+                drag_source.connect("prepare", self.on_drag_prepare, mod) # 'mod' est le nom du dossier
+                drag_handle.add_controller(drag_source)
+                row.add_prefix(drag_handle)
 
             # File count
             number_of_files = len(mod_files)
@@ -127,13 +128,14 @@ class ModsTab(Gtk.Box):
                 file_badge_sizegroup.add_widget(file_list_badge)
                 row.add_prefix(file_list_badge)
                 
-            # Load Index
-            index_label = Gtk.Label(label=f"{index}")
-            index_label.add_css_class("dim-label")
-            index_label.set_margin_end(6)
-            index_label.set_valign(Gtk.Align.CENTER)
-            load_index_sizegroup.add_widget(index_label)
-            row.add_prefix(index_label)
+            if check_for_conflicts(os.path.join(staging_path, ".staging.nomm.yaml")):
+                # Load Index
+                index_label = Gtk.Label(label=f"{index}")
+                index_label.add_css_class("dim-label")
+                index_label.set_margin_end(6)
+                index_label.set_valign(Gtk.Align.CENTER)
+                load_index_sizegroup.add_widget(index_label)
+                row.add_prefix(index_label)
 
             drop_target = Gtk.DropTarget(actions=Gdk.DragAction.MOVE)
             drop_target.set_gtypes([GObject.TYPE_STRING])
@@ -277,16 +279,13 @@ class ModsTab(Gtk.Box):
             mod_files=mod_files,
             state=state,
             staging_path=str(self.dashboard.staging_path),
-            deployment_targets=self.dashboard.deployment_targets,
-            metadata_path=self.dashboard.staging_metadata_path
+            deployment_targets=self.dashboard.deployment_targets
         )
 
         # UI Fallback if toggle fail
         if state and not success:
             switch.set_active(False) 
             return False
-        
-        deploy_all_ordered_mods
 
         # UI Refresh
         self.dashboard.update_indicators()
@@ -305,16 +304,20 @@ class ModsTab(Gtk.Box):
             return False
         
         current_mods = read_index(self.dashboard.staging_metadata_path)
+        staging_metadata = load_metadata(self.dashboard.staging_metadata_path)
+        
+        # get the mod deployment path
+        dest_dir = self.dashboard.deployment_targets[0]["path"]
+        if mod_name in staging_metadata["mods"] and "deployment_target" in staging_metadata["mods"][mod_name]:
+            for target in self.dashboard.deployment_targets:
+                if target["name"] == staging_metadata["mods"][mod_name]["deployment_target"]:
+                    dest_dir = target["path"]
+                    break
         
         if mod_name in current_mods:
             target_index = current_mods.index(mod_name)
             change_mod_index(self.dashboard.staging_metadata_path, value, target_index)
-            GLib.idle_add(
-                deploy_all_ordered_mods,
-                self.dashboard.staging_path,
-                self.dashboard.game_path,
-                self.dashboard.staging_metadata_path
-            )
+            deploy_all_ordered_mods(self.dashboard.staging_path, dest_dir)
             self.populate_list()
             return True
         return False

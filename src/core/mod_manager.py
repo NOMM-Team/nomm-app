@@ -11,23 +11,30 @@ from core.tools import show_message
 from core.tools import load_yaml, write_yaml
 
 #TODO:Change the logic to deploy last mods from the index first
-def deploy_mod_files(staging_dir: str, dest_dir: str, mod_files: list[str]) -> bool:
+def deploy_mod_files(staging_dir: str, dest_dir: str, mod_name: str) -> bool:
     dest_path = Path(dest_dir)
-    staging_path = Path(staging_dir)
+    staging_mod_path = os.path.join(Path(staging_dir), mod_name)
+    
+    staging_metadata_path = os.path.join(Path(staging_dir), ".staging.nomm.yaml")
+    staging_metadata = load_metadata(staging_metadata_path)
+    
+    mod_info = staging_metadata["mods"][mod_name]
+    mod_files = mod_info.get("mod_files", [])
+    
     success = True
 
     for mod_file in mod_files:
-        
-        source_item = Path(staging_path) / mod_file
+        source_item = Path(staging_mod_path) / mod_file
         link_item = Path(dest_path) / mod_file
 
         if not source_item.exists():
-            print(f"Mod file could not be found while deploying mod : {source_item.resolve}")
+            print(f"Mod file could not be found while deploying mod : {source_item}")
             continue
         
-        if os.path.isfile(link_item.resolve):
-            print(f"Failed to install file: did not override standard file: {link_item.resolve}")
-            return False
+        # Resolve function was not working so link_item.resolve has been reversed to link_item temporarily
+        # if os.path.isfile(link_item):
+        #     print(f"Failed to install file: did not override standard file: {link_item}")
+        #     return False
         
         # Creates parent folder
         link_item.parent.mkdir(parents=True, exist_ok=True)
@@ -36,7 +43,10 @@ def deploy_mod_files(staging_dir: str, dest_dir: str, mod_files: list[str]) -> b
         if link_item.is_symlink():
             try:
                 if not os.path.samefile(source_item, link_item):
+                    print(f"Override: replaced {link_item} by {source_item}")
                     link_item.unlink()
+                else:
+                    print(f"File ignored: {mod_file} was already present in {dest_path}")
             #TODO: Check error use case
             except OSError:
                 link_item.unlink()
@@ -51,9 +61,11 @@ def deploy_mod_files(staging_dir: str, dest_dir: str, mod_files: list[str]) -> b
                 print(f"Error creating a Symlink {link_item}: {sym_e}")
                 success = False
     
-    if success:
-        mod_info["status"] = "enabled"
-        mod_info["enabled_timestamp"] = datetime.now().strftime("%c")
+    # Update game status
+    if not success:
+        unlink_mod_files(staging_mod_path, dest_dir, mod_files)
+        staging_metadata["mods"][mod_name]["status"] = "disabled"
+        mod_info.pop("enabled_timestamp", None)
         write_yaml(staging_metadata, staging_metadata_path)
         
     return success
@@ -61,9 +73,13 @@ def deploy_mod_files(staging_dir: str, dest_dir: str, mod_files: list[str]) -> b
 # Just a loop that deploy mods following the index list
 # new
 def deploy_all_ordered_mods(staging_path: str, dest_dir: str) -> bool:
-    indexed_mods = read_index(staging_metadata_path)
     staging_metadata_path = os.path.join(staging_path, ".staging.nomm.yaml")
+    indexed_mods = read_index(staging_metadata_path)
     metadata = load_metadata(staging_metadata_path)
+    
+    for mod_name in metadata["mods"]:
+        if metadata["mods"][mod_name]["status"] == "enabled":
+            unlink_mod_files(staging_path, dest_dir, metadata["mods"][mod_name].get("mod_files"))
     
     # Loop from item in index metadata, first on the list is deployed first etc...
     error_count = 0
@@ -71,11 +87,10 @@ def deploy_all_ordered_mods(staging_path: str, dest_dir: str) -> bool:
         if mod_name in metadata.get("mods", {}):
             mod_info = metadata["mods"][mod_name]
             if mod_info.get("status") == "enabled":
-                source_dir = os.path.join(staging_path, mod_name)
                 if not deploy_mod_files(
-                    source_dir, 
-                    dest_dir, 
-                    mod_info.get("files", [])
+                    staging_path,
+                    dest_dir,
+                    mod_name
                 ):
                     error_count += 1
     if error_count:
@@ -115,7 +130,7 @@ def get_mod_statistics(staging_metadata_path: str, downloads_path: str) -> dict:
             for mod_val in staging_metadata.get("mods", {}).values():
                 if mod_val.get("archive_name"):
                     stats["downloads_installed"] += 1
-                    installed_archives.add(arch)
+                    installed_archives.add(mod_val.get("archive_name"))
         #  Loop to count downloads installed and available
         total_downloads = 0
         for f in archives:
@@ -242,7 +257,8 @@ def deploy_essential_utility(util_config: dict, downloads_path: str, game_path: 
         subprocess.run(cmd, shell=True, cwd=game_root)
 
 # 
-def toggle_mod_state(mod_name: str, mod_files: list, state: bool, staging_path: str, deployment_targets: list, staging_metadata_path: str) -> bool:
+def toggle_mod_state(mod_name: str, mod_files: list, state: bool, staging_path: str, deployment_targets: list) -> bool:
+    staging_metadata_path = os.path.join(staging_path, ".staging.nomm.yaml")
     staging_metadata = load_metadata(staging_metadata_path)
     
     if not deployment_targets or not staging_metadata or mod_name not in staging_metadata.get("mods", {}):
@@ -264,14 +280,15 @@ def toggle_mod_state(mod_name: str, mod_files: list, state: bool, staging_path: 
     if state:
         # deploy_mod_files return true if it worked, false if it doesn't
         if check_for_conflicts(staging_metadata_path):
-            success = deploy_all_ordered_mods(staging_mod_dir, dest_dir)
-        else:
-            success = deploy_mod_files(staging_mod_dir, dest_dir, mod_info.get("files", []))
-        if success:
-        #TODO: Remove status data
             mod_info["status"] = "enabled"
             mod_info["enabled_timestamp"] = datetime.now().strftime("%c")
             write_yaml(staging_metadata, staging_metadata_path)
+            print(f"Successfully deployed mod: {mod_name}")
+            success = deploy_all_ordered_mods(staging_path, dest_dir)
+        else:
+            success = deploy_mod_files(staging_path, dest_dir, mod_name)
+        if success:
+        ## #TODO: Remove status data
             return True
         return False
     # state is false, deleting the datas and ensure metadata are set to proper value
@@ -281,6 +298,8 @@ def toggle_mod_state(mod_name: str, mod_files: list, state: bool, staging_path: 
         # Pop is a safety measure to prevent a crash for a missing key
         mod_info.pop("enabled_timestamp", None)
         write_yaml(staging_metadata, staging_metadata_path)
+        if check_for_conflicts(staging_metadata_path):
+            success = deploy_all_ordered_mods(staging_path, dest_dir)
         return True
 
 # method to get the metadata path that is used everywhere in the app
