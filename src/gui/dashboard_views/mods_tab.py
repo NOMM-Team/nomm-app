@@ -278,7 +278,7 @@ class ModsTab(Gtk.Box):
             mod_name=mod,
             mod_files=mod_files,
             state=state,
-            staging_path=str(self.dashboard.staging_path),
+            staging_dir=str(self.dashboard.staging_path),
             deployment_targets=self.dashboard.deployment_targets
         )
 
