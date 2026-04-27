@@ -11,12 +11,6 @@ def get_contrast_color(hex_code: str) -> str:
     luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255
     
     return "#000000" if luminance > 0.5 else "#ffffff"
-
-def show_message(self, h, b):
-        print(f"Error message displayed to user")
-        print(b)
-        d = Adw.MessageDialog(transient_for=self, heading=h, body=b)
-        d.add_response("ok", "OK"); d.connect("response", lambda d, r: d.close()); d.present()
         
 def load_yaml(path: str) -> dict:
     if os.path.exists(path):

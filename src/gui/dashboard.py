@@ -48,7 +48,6 @@ class GameDashboard(Gtk.Box):
         self.deployment_targets = parse_deployment_paths(self.game_config, self.platform, str(self.app_id))
         
         temp_path_ft = os.path.join(self.staging_path, "staging.nomm.yaml")
-        #check_index(self.staging_path)
 
         self.headers = {
             'apikey': self.user_config["nexus_api_key"],
@@ -107,7 +106,7 @@ class GameDashboard(Gtk.Box):
             except Exception as e:
                 print(f"Error loading hero: {e}")
 
-        # --- TAB BUTTONS WITH INTEGRATED BADGES ---
+        # Tab buttons
         tab_container = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, homogeneous=False)
         main_tabs_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, homogeneous=True, hexpand=True)
 
