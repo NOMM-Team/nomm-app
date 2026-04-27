@@ -27,7 +27,7 @@ class DownloadsTab(Gtk.Box):
         self.dashboard = dashboard
         self.current_filter = "all"
 
-        # --- ACTION BAR ---
+        # Action Bar
         action_bar = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
         filter_group = Gtk.Box(css_classes=["linked"])
         
@@ -50,10 +50,11 @@ class DownloadsTab(Gtk.Box):
         
         self.append(action_bar)
 
-        # --- LISTE DES TÉLÉCHARGEMENTS ---
+        # Downloads
         self.list_box = Gtk.ListBox(css_classes=["boxed-list"])
         self.list_box.set_filter_func(self.filter_list_rows)
 
+        # Drag and drop files into the download box
         drop_target = Gtk.DropTarget.new(Gdk.FileList, Gdk.DragAction.COPY)
         drop_target.connect("drop", self.on_file_drop)
         drop_target.connect("enter", self.on_drag_enter)
@@ -80,7 +81,7 @@ class DownloadsTab(Gtk.Box):
         files = [f for f in os.listdir(self.dashboard.downloads_path) if f.lower().endswith(('.zip', '.rar', '.7z'))]
         files.sort(key=lambda f: os.path.getmtime(os.path.join(self.dashboard.downloads_path, f)), reverse=True)
 
-        staging_metadata = load_metadata(self.dashboard.staging_metadata_path)
+        staging_metadata = load_staging_metadata(self.dashboard.staging_metadata_path)
         
         for file_name in files:
             installed = is_mod_installed(file_name, staging_metadata)
@@ -155,7 +156,7 @@ class DownloadsTab(Gtk.Box):
             
             self.list_box.append(row)
 
-    # --- CORE FUNCTIONS ---
+    # Filter lists
     def filter_list_rows(self, row):
         if self.current_filter == "all": return True
         if hasattr(row, 'is_installed'):
@@ -347,7 +348,6 @@ class DownloadsTab(Gtk.Box):
 
     def finalise_installation(self, filename, extracted_roots, deployment_target):
         try:
-            # APPEL AU CORE
             finalize_mod_metadata(
                 filename, 
                 extracted_roots, 

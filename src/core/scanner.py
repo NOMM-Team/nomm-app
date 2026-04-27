@@ -76,10 +76,12 @@ def find_game_art(app_id: str | int, platform: str, steam_base: Optional[str]) -
         for root, _, files in os.walk(path):
             if "library_hero.jpg" in files:
                 art["hero"] = os.path.join(root, "library_hero.jpg")
-            for t in ["library_capsule.jpg", "library_600x900.jpg"]:
-                if t in files:
-                    art["poster"] = os.path.join(root, t)
+            for target in ["library_capsule.jpg", "library_600x900.jpg"]:
+                if target in files:
+                    art["poster"] = os.path.join(root, target)
                     break
+            if art["hero"] and art["poster"]:
+                break
     elif platform == "heroic-epic":
         paths = download_heroic_assets(app_id, platform)
         art["poster"] = paths.get("art_square")
@@ -241,6 +243,7 @@ def scan_all_games(game_configs_dir):
     return matches
 
 # Grabs the assets from heroic games launcher such as banner and game image
+#TODO: Needs to be cleaned
 # utils.py download_heroic_assets
 def download_heroic_assets(appName: str, platform: str):
     if isinstance(appName, list):

@@ -13,7 +13,7 @@ from gui.notifications import send_download_notification, download_with_progress
 from core.tools import load_yaml, write_yaml
 from typing import Optional, Callable
 
-# Same code as check_for_mod_update but with a worker and a thread for async
+# Same code as check_for_update but with a worker and a thread for async
 # Dashboard/check_for_update() but in a thread
 def check_for_mod_updates_async(staging_metadata: dict, headers: dict, game_id: str, on_complete_callback: Optional[Callable]) -> None:
     def worker():
@@ -126,7 +126,7 @@ def _download_nexus_mod(nxm_link: str, headers: dict, final_download_dir: Path, 
         nxm_query = dict(item.split('=') for item in splitted_nxm.query.split('&'))
 
         mod_id = nxm_path[2]
-        file_id = nxm_path[4] 
+        file_id = nxm_path[4]
 
         params = {
             'key': nxm_query.get("key"),
@@ -159,7 +159,6 @@ def _download_nexus_mod(nxm_link: str, headers: dict, final_download_dir: Path, 
         # on notifications.py should bring back old fashion shenanigans
             download_with_progress(file_url, final_download_dir)
         else:
-            print("no popup")
             download_mod(file_url, str(final_download_dir))
         
         try:
@@ -178,9 +177,10 @@ def _download_nexus_mod(nxm_link: str, headers: dict, final_download_dir: Path, 
             }
 
             downloads_metadata_path = get_metadata_path(str(final_download_dir), is_staging=False)
-            #Load_metadata generates the downloads_metadata["info"] and ["mods"] in case it is needed
-            downloads_metadata = load_metadata(downloads_metadata_path)
+            downloads_metadata = load_yaml(downloads_metadata_path)
 
+            downloads_metadata["mods"] = {}
+            downloads_metadata["info"] = {}
             downloads_metadata["info"]["game"] = game_folder_name
             downloads_metadata["info"]["nexus_id"] = nexus_game_id
             downloads_metadata["mods"][file_name] = mod_metadata

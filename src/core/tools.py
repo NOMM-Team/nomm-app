@@ -27,13 +27,14 @@ def load_yaml(path: str) -> dict:
             print(f"Error while loading {path}: {e}")
     return {}
 
-# Pushs a dictionary into the yaml --- same as finalize setup, safe_dump is standard security measure but it would work with dump
-# dashboard.py/write_yaml
-def write_yaml(data: dict, path: str):
+def write_yaml(data: dict, path: str) -> bool:
     # difference here: creates the path if needed
     os.makedirs(os.path.dirname(path), exist_ok=True)
     try:
         with open(path, 'w', encoding='utf-8') as f:
             yaml.safe_dump(data, f, default_flow_style=False)
+            return True
     except Exception as e:
         print(f"Error while writing in {path}: {e}")
+        return False
+    return False

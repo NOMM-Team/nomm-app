@@ -23,7 +23,7 @@ class ModsTab(Gtk.Box):
         
         self.dashboard = dashboard
         
-        # --- ACTION BAR ---
+        # Action bar top right
         action_bar = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
         self.mod_search_entry = Gtk.SearchEntry(placeholder_text=_("Search mods..."))
         self.mod_search_entry.set_size_request(300, -1) 
@@ -65,7 +65,7 @@ class ModsTab(Gtk.Box):
             self.mods_list_box.remove(child)
 
         staging_path = self.dashboard.staging_path
-        staging_metadata = load_metadata(self.dashboard.staging_metadata_path)
+        staging_metadata = load_staging_metadata(self.dashboard.staging_metadata_path)
         
         if not staging_metadata or not staging_metadata.get("mods"):
             self.append(Gtk.Label(label=_("The staging metadata file could not be found, did you install any mods?"), css_classes=["dim-label"]))
@@ -77,6 +77,12 @@ class ModsTab(Gtk.Box):
         version_badge_sizegroup = Gtk.SizeGroup(mode=Gtk.SizeGroupMode.HORIZONTAL)
         
         indexed_mods = read_index(self.dashboard.staging_metadata_path)
+
+        enable_file_counter = false
+        for mod in mods:
+            if mod["mod_files"] > 1:
+                enable_file_counter = true
+                break
         
         for index, mod in enumerate(indexed_mods, start=1):
             
@@ -111,13 +117,11 @@ class ModsTab(Gtk.Box):
                 drag_handle.set_cursor_from_name("grab")
                 drag_handle.set_margin_end(6)
                 drag_source = Gtk.DragSource(actions=Gdk.DragAction.MOVE)
-                drag_source.connect("prepare", self.on_drag_prepare, mod) # 'mod' est le nom du dossier
+                drag_source.connect("prepare", self.on_drag_prepare, mod)
                 drag_handle.add_controller(drag_source)
                 row.add_prefix(drag_handle)
-
-            # File count
-            number_of_files = len(mod_files)
-            if number_of_files >= 0:
+            
+            if enable_file_counter:
                 file_list_badge = Gtk.CenterBox(orientation=Gtk.Orientation.HORIZONTAL)
                 file_list_badge.set_tooltip_text("\n".join(mod_files))
                 file_list_badge.add_css_class("badge-action-row")
@@ -196,7 +200,6 @@ class ModsTab(Gtk.Box):
                 info_text_badge.set_valign(Gtk.Align.CENTER)
                 info_text_badge.set_margin_end(row_element_margin)
                 row.add_suffix(info_text_badge)
-            
 
             # Timestamps
             if "install_timestamp" in mod_metadata or "enabled_timestamp" in mod_metadata:
@@ -239,11 +242,11 @@ class ModsTab(Gtk.Box):
             if mod_link: 
                 version_badge.connect("clicked", lambda b, l=mod_link: webbrowser.open(l))
             
-            if len(version_text) < 10:
+            if len(version_text) < 8:
                 version_badge_sizegroup.add_widget(version_badge)
             row.add_suffix(version_badge)
 
-            # Poubelle
+            # Trash
             u_stack = Gtk.Stack(transition_type=Gtk.StackTransitionType.CROSSFADE, hhomogeneous=False, interpolate_size=True)
             bin_btn = Gtk.Button(icon_name="user-trash-symbolic", valign=Gtk.Align.CENTER, css_classes=["flat"])
             conf_del_btn = Gtk.Button(label=_("Are you sure?"), valign=Gtk.Align.CENTER, css_classes=["destructive-action"])
@@ -258,7 +261,6 @@ class ModsTab(Gtk.Box):
 
             self.mods_list_box.append(row)
 
-    # functions
     def find_text_file(self, mod_files):
         for file_path in mod_files:
             if ".txt" in file_path:
@@ -289,9 +291,7 @@ class ModsTab(Gtk.Box):
 
         # UI Refresh
         self.dashboard.update_indicators()
-        
-        # Refresh causes the window to list jump to the beginning of the container
-        # self.populate_list()
+        self.populate_list()
         
         return False
     
@@ -299,12 +299,12 @@ class ModsTab(Gtk.Box):
         value = GObject.Value(GObject.TYPE_STRING, mod_name)
         return Gdk.ContentProvider.new_for_value(value)
     
-    def on_row_drop(self, target, value, x, y, mod_name):
+    def on_row_drop(self, target, _value, _x, _y, mod_name):
         if value == mod_name:
             return False
         
         current_mods = read_index(self.dashboard.staging_metadata_path)
-        staging_metadata = load_metadata(self.dashboard.staging_metadata_path)
+        staging_metadata = load_staging_metadata(self.dashboard.staging_metadata_path)
         
         # get the mod deployment path
         dest_dir = self.dashboard.deployment_targets[0]["path"]
@@ -323,7 +323,7 @@ class ModsTab(Gtk.Box):
         return False
 
     def check_for_updates(self, btn):
-        staging_metadata = load_metadata(self.dashboard.staging_metadata_path)
+        staging_metadata = load_staging_metadata(self.dashboard.staging_metadata_path)
         if not staging_metadata: return
         game_id = staging_metadata.get("info", {}).get("nexus_id")
         if not game_id: return

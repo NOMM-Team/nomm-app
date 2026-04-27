@@ -239,7 +239,7 @@ class GameDashboard(Gtk.Box):
             )
 
     def on_uninstall_item(self, btn, mod_files: list, mod_name: str):
-        staging_metadata = load_metadata(self.staging_metadata_path)
+        staging_metadata = load_staging_metadata(self.staging_metadata_path)
         
         # get the mod deployment path
         dest_dir = self.deployment_targets[0]["path"]

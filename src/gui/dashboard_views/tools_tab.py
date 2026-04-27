@@ -31,7 +31,6 @@ class ToolsTab(Gtk.Box):
             for util_id, util in utilities_cfg.items():
                 row = Adw.ActionRow(title=util.get("name", util_id))
                 
-                # --- CREATOR BADGE (Prefix) ---
                 creator = util.get("creator", "Unknown")
                 link = util.get("creator-link", "#")
                 
@@ -48,7 +47,7 @@ class ToolsTab(Gtk.Box):
                 creator_box.append(creator_btn)
                 row.add_prefix(creator_box)
 
-                # --- VERSION BADGE (Suffix) ---
+                # Version badge
                 util_version = util.get("version", "—")
                 
                 version_badge = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
@@ -61,7 +60,6 @@ class ToolsTab(Gtk.Box):
                 version_badge.append(v_label)
                 row.add_suffix(version_badge)
 
-                # --- Path & Installation Logic ---
                 source = util.get("source", "")
                 filename = source.split("/")[-1] if "/" in source else f"{util_id}.zip"
                 util_dir = Path(self.dashboard.downloads_path) / "utilities"
@@ -91,7 +89,7 @@ class ToolsTab(Gtk.Box):
             scrolled.set_child(list_box)
             self.append(scrolled)
 
-        # --- Load Order Button ---
+        # Load Order Button
         load_order_rel = self.dashboard.game_config.get("load_order_path")
         if load_order_rel:
             btn_container = Gtk.CenterBox(margin_top=20, margin_bottom=20)

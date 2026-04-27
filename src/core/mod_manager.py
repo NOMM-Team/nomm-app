@@ -15,7 +15,7 @@ def deploy_mod_files(staging_dir: str, dest_dir: str, mod_name: str) -> bool:
     staging_mod_path = os.path.join(Path(staging_dir), mod_name)
     
     staging_meta_path = os.path.join(Path(staging_dir), ".staging.nomm.yaml")
-    staging_metadata = load_metadata(staging_meta_path)
+    staging_metadata = load_staging_metadata(staging_meta_path)
     
     mod_info = staging_metadata["mods"][mod_name]
     mod_files = mod_info.get("mod_files", [])
@@ -68,7 +68,7 @@ def deploy_mod_files(staging_dir: str, dest_dir: str, mod_name: str) -> bool:
 def deploy_all_ordered_mods(staging_dir: str, dest_dir: str) -> bool:
     staging_meta_path = os.path.join(staging_dir, ".staging.nomm.yaml")
     indexed_mods = read_index(staging_meta_path)
-    staging_metadata = load_metadata(staging_meta_path)
+    staging_metadata = load_staging_metadata(staging_meta_path)
     
     for mod_name in staging_metadata["mods"]:
         if staging_metadata["mods"][mod_name]["status"] == "enabled":
@@ -88,12 +88,12 @@ def deploy_all_ordered_mods(staging_dir: str, dest_dir: str) -> bool:
                 ):
                     error_count += 1
     if error_count:
-        show_message(_("Error"), _("Installation failed: {}").format(e))
+        show_message(_("Error"), _("Installation failed: {}"))
         show_message(_("Error"), ngettext(
                     "{} installation failed, see logs for more details",
                     "{} installations failed, see logs for more details",
                     error_count)
-                ).format(error_count)
+                )
         return False
     return True
 
@@ -107,7 +107,7 @@ def get_mod_statistics(staging_meta_path: str, downloads_path: str) -> dict:
         "downloads_installed": 0
     }
 
-    staging_metadata = load_metadata(staging_meta_path)    
+    staging_metadata = load_staging_metadata(staging_meta_path)    
     if staging_metadata:
         # Loop to count mods active and inactive
         for mod_val in staging_metadata.get("mods", {}).values():
@@ -179,7 +179,7 @@ def completely_uninstall_mod(staging_dir: str, dest_dir: str, mod_files: list[st
 # dashboard.py/check_for_comflicts
 def check_for_conflicts(staging_meta_path: str) -> list:
     path_registry = {}
-    staging_metadata = load_metadata(staging_meta_path)
+    staging_metadata = load_staging_metadata(staging_meta_path)
 
     if not staging_metadata:
         return []
@@ -253,7 +253,7 @@ def deploy_essential_utility(util_config: dict, downloads_path: str, game_path: 
 # 
 def toggle_mod_state(mod_name: str, mod_files: list, state: bool, staging_dir: str, deployment_targets: list) -> bool:
     staging_meta_path = os.path.join(staging_dir, ".staging.nomm.yaml")
-    staging_metadata = load_metadata(staging_meta_path)
+    staging_metadata = load_staging_metadata(staging_meta_path)
     
     if not deployment_targets or not staging_metadata or mod_name not in staging_metadata.get("mods", {}):
         return False
@@ -301,7 +301,7 @@ def get_metadata_path(base_folder: str, is_staging: bool = True) -> str:
     filename = ".staging.nomm.yaml" if is_staging else ".downloads.nomm.yaml"
     return os.path.join(base_folder, filename)
 
-def load_metadata(path: str) -> dict:
+def load_staging_metadata(path: str) -> dict:
     data = load_yaml(path)
     
     # load metadata also initialize the staging_metadata as a safety measure
@@ -320,7 +320,7 @@ def load_metadata(path: str) -> dict:
 # Removes the mod from the staging metadata -- metadata allows to list mods that are installed
 # Dashboard.py (l:216)
 def remove_mod_from_metadata(path: str, mod_name: str) -> bool:
-    data = load_metadata(path)
+    data = load_staging_metadata(path)
 
     if mod_name in data["mods"]:
         del data["mods"][mod_name]
@@ -336,8 +336,8 @@ def remove_mod_from_metadata(path: str, mod_name: str) -> bool:
 
 # Writing the metadata with needed fields
 # dashboard.py/create_downloads_page (l:1339)
-def finalize_mod_metadata(filename: str, extracted_roots: list, deployment_target_name: str, staging_meta_path: str, downloads_meta_path: str):
-    current_staging_metadata = load_metadata(staging_meta_path)
+def finalise_mod_metadata(filename: str, mod_files: list, deployment_target_name: str, staging_meta_path: str, downloads_meta_path: str):
+    current_staging_metadata = load_staging_metadata(staging_meta_path)
     current_download_metadata = {}
 
     #This request should only fail if all previous files were manually added --> can be fixed with a rework of check_index
@@ -345,58 +345,46 @@ def finalize_mod_metadata(filename: str, extracted_roots: list, deployment_targe
         with open(downloads_meta_path, 'r') as f:
             current_download_metadata = yaml.safe_load(f) or {}
 
-    if "info" not in current_staging_metadata and "info" in current_download_metadata:
+    if "info" in current_download_metadata:
         current_staging_metadata["info"] = current_download_metadata["info"]
     
     mod_name = filename.replace(".zip", "").replace(".rar", "").replace(".7z", "")
     
-    if filename in current_download_metadata.get("mods", {}):
+    if filename in current_download_metadata.get("mods"):
         mod_data = current_download_metadata["mods"][filename]
         mod_name = mod_data.get("name", mod_name)
         current_staging_metadata["mods"][mod_name] = mod_data
     else:
         current_staging_metadata["mods"][mod_name] = {}
 
-    current_staging_metadata["mods"][mod_name]["mod_files"] = extracted_roots
+    current_staging_metadata["mods"][mod_name]["mod_files"] = mod_files
     current_staging_metadata["mods"][mod_name]["status"] = "disabled"
     current_staging_metadata["mods"][mod_name]["archive_name"] = filename
     current_staging_metadata["mods"][mod_name]["install_timestamp"] = datetime.now().strftime("%c")
     current_staging_metadata["mods"][mod_name]["deployment_target"] = deployment_target_name
    
-   # Adding index for load order
-   # This first condition should be removed after some test because index is already initialized in load_metadata
-    if "index" not in current_staging_metadata:
-        current_staging_metadata["index"] = []
-
     if mod_name not in current_staging_metadata["index"]:
         current_staging_metadata["index"].append(mod_name)
-    
-    staging_path = os.path.dirname(staging_meta_path)
 
     write_yaml(current_staging_metadata, staging_meta_path)
 
 # Mostly returns index, will very likely disappear in the future
 # New
 def read_index(staging_meta_path: str) -> List[str]:
-    current_staging_metadata = load_metadata(staging_meta_path)
+    current_staging_metadata = load_staging_metadata(staging_meta_path)
     return current_staging_metadata["index"]
 
 # Change the mod index from the index list
 # New
 def change_mod_index(staging_meta_path: str, mod_name: str, index: int):
-    current_staging_metadata=load_metadata(staging_meta_path)
+    current_staging_metadata=load_staging_metadata(staging_meta_path)
     
     if mod_name in current_staging_metadata["index"]:
         pos = current_staging_metadata["index"].index(mod_name)
         mod = current_staging_metadata["index"].pop(pos)
         current_staging_metadata["index"].insert(index, mod)
         
-        try:
-            write_yaml(current_staging_metadata, staging_meta_path)
-            return True
-        except Exception as e:
-            print(f"Error while changing mod index: {e}")
-            return False
+        return   write_yaml(current_staging_metadata, staging_meta_path) 
     return False
 
 # Implement a check file method to resync mod metadata if needed
