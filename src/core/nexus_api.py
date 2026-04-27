@@ -154,7 +154,10 @@ def _download_nexus_mod(nxm_link: str, headers: dict, final_download_dir: Path, 
 
         print(f"Downloading {file_name} to {game_folder_name}...")
         download_mod(file_url, str(final_download_dir))
-
+        # Uncommenting the line below and the associated function 
+        # on notifications.py should bring back old fashion shenanigans
+        #download_with_progress(file_url, final_download_dir)
+        
         try:
             info_api_url = f"https://api.nexusmods.com/v1/games/{nexus_game_id}/mods/{mod_id}/files/{file_id}.json"
             info_response = requests.get(info_api_url, headers=headers)

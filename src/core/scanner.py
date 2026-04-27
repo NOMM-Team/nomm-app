@@ -95,7 +95,7 @@ def find_game_art(app_id: str | int, platform: str, steam_base: Optional[str]) -
     return art
 
 # launcher.py/game_title_matcher (l:320)
-def _scan_steam_game(yaml_data, yaml_path, game_title, found_libs, steam_base) -> List[Dict[str, Any]]:
+def scan_steam_game(yaml_data, yaml_path, game_title, found_libs, steam_base) -> List[Dict[str, Any]]:
     yaml_game_name = yaml_data.get("steam_folder_name", game_title)
     slug_yaml_name = slugify(yaml_game_name)
     
@@ -120,7 +120,7 @@ def _scan_steam_game(yaml_data, yaml_path, game_title, found_libs, steam_base) -
 
 # Same as previous one but for heroic epic
 # launcher.py/game_title_matcher
-def _scan_heroic_epic_game(yaml_data, yaml_path, game_title, installed_epic, steam_base):
+def scan_heroic_epic_game(yaml_data, yaml_path, game_title, installed_epic, steam_base):
     for app_id, game_info in installed_epic.items():
         if slugify(game_info.get("title", "")) == slugify(game_title):
             game_path = game_info.get("install_path", "")
@@ -140,7 +140,7 @@ def _scan_heroic_epic_game(yaml_data, yaml_path, game_title, installed_epic, ste
 
 # Same as previous one but for heroic epic
 # launcher.py/game_title_matcher
-def _scan_heroic_gog_game(yaml_data, yaml_path, game_title, installed_gog, steam_base):
+def scan_heroic_gog_game(yaml_data, yaml_path, game_title, installed_gog, steam_base):
     if not yaml_data.get("gog_id"):
         return None
         
@@ -216,21 +216,21 @@ def scan_all_games(game_configs_dir):
 
             # --- SCAN STEAM ---
             if found_libs:
-                match = _scan_steam_game(yaml_data, yaml_path, game_title, found_libs, steam_base)
+                match = scan_steam_game(yaml_data, yaml_path, game_title, found_libs, steam_base)
                 if match:
                     matches.append(match)
                     continue
 
             # --- SCAN HEROIC EPIC ---
             if installed_epic:
-                match = _scan_heroic_epic_game(yaml_data, yaml_path, game_title, installed_epic, steam_base)
+                match = scan_heroic_epic_game(yaml_data, yaml_path, game_title, installed_epic, steam_base)
                 if match:
                     matches.append(match)
                     continue
 
             # --- SCAN HEROIC GOG ---
             if installed_gog:
-                match = _scan_heroic_gog_game(yaml_data, yaml_path, game_title, installed_gog, steam_base)
+                match = scan_heroic_gog_game(yaml_data, yaml_path, game_title, installed_gog, steam_base)
                 if match:
                     matches.append(match)
                     continue
@@ -241,6 +241,7 @@ def scan_all_games(game_configs_dir):
     return matches
 
 # Grabs the assets from heroic games launcher such as banner and game image
+# utils.py download_heroic_assets
 def download_heroic_assets(appName: str, platform: str):
     if isinstance(appName, list):
         appName = str(appName[0])
@@ -283,6 +284,7 @@ def download_heroic_assets(appName: str, platform: str):
             params = entry.get("params", {})
             game_info = params.get("gameInfo", {})
             
+            # Match by internal appName (e.g., 'Curry') or title (e.g., 'ABZÛ')
             if params.get("appName") == appName or game_info.get("title") == appName:
                 target_info = game_info
                 break
