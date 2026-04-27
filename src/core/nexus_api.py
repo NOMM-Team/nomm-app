@@ -10,6 +10,7 @@ from gi.repository import GLib
 from core.mod_manager import get_metadata_path, load_metadata
 from core.downloader import download_mod
 from gui.notifications import send_download_notification
+from core.tools import load_yaml, write_yaml
 from typing import Optional, Callable
 
 # Same code as check_for_mod_update but with a worker and a thread for async
