@@ -363,7 +363,8 @@ def finalize_mod_metadata(filename: str, extracted_roots: list, deployment_targe
     current_staging_metadata["mods"][mod_name]["install_timestamp"] = datetime.now().strftime("%c")
     current_staging_metadata["mods"][mod_name]["deployment_target"] = deployment_target_name
    
-   #Adding index for load order
+   # Adding index for load order
+   # This first condition should be removed after some test because index is already initialized in load_metadata
     if "index" not in current_staging_metadata:
         current_staging_metadata["index"] = []
 

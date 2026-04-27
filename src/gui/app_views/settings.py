@@ -81,6 +81,13 @@ class SettingsWindow(Adw.Window):
         launcher_skip_row.set_active(load_yaml(self.user_config_dir).get('enable_launcher_skip', False))
         launcher_skip_row.connect("notify::active", lambda row, pspec: self.toggle_setting('enable_launcher_skip', row.get_active()))
         general_group.add(launcher_skip_row)
+        
+        # Skip launcher
+        download_popup = Adw.SwitchRow(title=_("Enable Download Pop-up"))
+        download_popup.set_subtitle(_("Downloads appear in a popup, allowing you to track the download progress"))
+        download_popup.set_active(load_yaml(self.user_config_dir).get('enable_download_popup', False))
+        download_popup.connect("notify::active", lambda row, pspec: self.toggle_setting('enable_download_popup', row.get_active()))
+        general_group.add(download_popup)
 
         # Fullscreen
         fullscreen_row = Adw.SwitchRow(title=_("Fullscreen NOMM"))

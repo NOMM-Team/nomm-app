@@ -9,7 +9,7 @@ from gi.repository import GLib
 
 from core.mod_manager import get_metadata_path, load_metadata
 from core.downloader import download_mod
-from gui.notifications import send_download_notification
+from gui.notifications import send_download_notification, download_with_progress
 from core.tools import load_yaml, write_yaml
 from typing import Optional, Callable
 
@@ -115,11 +115,11 @@ def handle_nexus_link(nxm_link: str) -> bool:
         _download_nexus_collection(nxm_link, headers, final_download_dir)
     else:
         print("Downloading single mod")
-        _download_nexus_mod(nxm_link, headers, final_download_dir, nexus_game_id, game_folder_name)
+        _download_nexus_mod(nxm_link, headers, final_download_dir, nexus_game_id, game_folder_name, user_config_dir)
 
 # Download the mods from nexus and is used in nxm_handler
 # nxm_handler/download_nexus_mod
-def _download_nexus_mod(nxm_link: str, headers: dict, final_download_dir: Path, nexus_game_id: str, game_folder_name: str):
+def _download_nexus_mod(nxm_link: str, headers: dict, final_download_dir: Path, nexus_game_id: str, game_folder_name: str, user_config_dir):
     try:
         splitted_nxm = urlsplit(nxm_link)
         nxm_path = splitted_nxm.path.split('/')
@@ -153,8 +153,15 @@ def _download_nexus_mod(nxm_link: str, headers: dict, final_download_dir: Path, 
         full_file_path = final_download_dir / file_name
 
         print(f"Downloading {file_name} to {game_folder_name}...")
-        download_mod(file_url, str(final_download_dir))
-
+        user_meta = load_yaml(user_config_dir)
+        if user_meta.get('enable_download_popup'):
+        # Uncommenting the line below and the associated function 
+        # on notifications.py should bring back old fashion shenanigans
+            download_with_progress(file_url, final_download_dir)
+        else:
+            print("no popup")
+            download_mod(file_url, str(final_download_dir))
+        
         try:
             info_api_url = f"https://api.nexusmods.com/v1/games/{nexus_game_id}/mods/{mod_id}/files/{file_id}.json"
             info_response = requests.get(info_api_url, headers=headers)
