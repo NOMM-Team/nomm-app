@@ -13,6 +13,7 @@ from core.archive_manager import (delete_downloaded_archive, extract_archive,
 from core.fomod_manager import apply_fomod_selection, parse_fomod_xml
 from core.mod_manager import (finalise_mod_metadata, is_mod_installed,
                               load_staging_metadata, remove_mod_from_metadata)
+from core.tools import timestamp_converter
 from gui.dashboard_views.fomod_dialog import FomodSelectionDialog
 
 _ = gettext.gettext
@@ -124,9 +125,10 @@ class DownloadsTab(Gtk.Box):
 
             if installed:
                 inst_ts = None
+                #TODO: check if this for loop and break can be cleaned
                 for mod_key, mod_val in staging_metadata.get("mods", {}).items():
                     if mod_val.get("archive_name") == file_name:
-                        inst_ts = mod_val.get("install_timestamp")
+                        inst_ts = timestamp_converter(mod_val.get("install_timestamp"))
                         break
                 if inst_ts:
                     inst_text = _("Installed: {}").format(inst_ts)
@@ -198,7 +200,7 @@ class DownloadsTab(Gtk.Box):
             GLib.idle_add(self.dashboard.update_indicators)
 
     def get_download_timestamp(self, f):
-        return datetime.fromtimestamp(os.path.getmtime(os.path.join(self.dashboard.downloads_path, f))).strftime('%c')
+        return timestamp_converter(datetime.fromtimestamp(os.path.getmtime(os.path.join(self.dashboard.downloads_path, f))))
 
     # Install
     def on_install_clicked(self, btn, filename, display_name):

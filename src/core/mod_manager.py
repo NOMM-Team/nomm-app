@@ -273,7 +273,7 @@ def toggle_mod_state(mod_name: str, mod_files: list, state: bool, staging_dir: s
     if state:
         # deploy_mod_files return true if it worked, false if it doesn't
         mod_info["status"] = "enabled"
-        mod_info["enabled_timestamp"] = datetime.now().strftime("%c")
+        mod_info["enabled_timestamp"] = datetime.now()
         write_yaml(staging_metadata, staging_meta_path)
         if check_for_conflicts(staging_meta_path):
             success = deploy_all_ordered_mods(staging_dir, dest_dir)
@@ -360,7 +360,7 @@ def finalise_mod_metadata(filename: str, mod_files: list, deployment_target_name
     current_staging_metadata["mods"][mod_name]["mod_files"] = mod_files
     current_staging_metadata["mods"][mod_name]["status"] = "disabled"
     current_staging_metadata["mods"][mod_name]["archive_name"] = filename
-    current_staging_metadata["mods"][mod_name]["install_timestamp"] = datetime.now().strftime("%c")
+    current_staging_metadata["mods"][mod_name]["install_timestamp"] = datetime.now()
     current_staging_metadata["mods"][mod_name]["deployment_target"] = deployment_target_name
    
     if mod_name not in current_staging_metadata["index"]:

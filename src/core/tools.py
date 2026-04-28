@@ -32,3 +32,13 @@ def write_yaml(data: dict, path: str) -> bool:
         print(f"Error while writing in {path}: {e}")
         return False
     return False
+
+def timestamp_converter(timestamp: int) -> str:
+    """Converts unix time timestamps into localised text"""
+    #TODO: review this method to produce a nicer timestamp format
+    legible_timestamp = timestamp
+    try:
+        legible_timestamp = timestamp.strftime("%c")
+    except:
+        print(f"Could not translate timestamp: {str(timestamp)}")
+    return legible_timestamp

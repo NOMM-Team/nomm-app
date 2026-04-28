@@ -10,6 +10,7 @@ from core.mod_manager import (change_mod_index, check_for_conflicts,
                               deploy_all_ordered_mods, load_staging_metadata,
                               read_index, toggle_mod_state)
 from core.nexus_api import check_for_mod_updates_async
+from core.tools import timestamp_converter
 
 _ = gettext.gettext
 ngettext = gettext.ngettext
@@ -207,13 +208,13 @@ class ModsTab(Gtk.Box):
                 timestamp_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=2, valign=Gtk.Align.CENTER, margin_end=15)
                 # Enabled Timestamp
                 if "enabled_timestamp" in mod_metadata:
-                    enabled_timestamp_label = _("Enabled: {}").format(mod_metadata["enabled_timestamp"])
+                    enabled_timestamp_label = _("Enabled: {}").format(timestamp_converter(mod_metadata["enabled_timestamp"]))
                     enabled_timestamp = Gtk.Label(label=enabled_timestamp_label, xalign=1, css_classes=["dim-label", "caption"])
                     timestamp_box.append(enabled_timestamp)
 
                 # Installed Timestamp
                 if "install_timestamp" in mod_metadata:
-                    installed_timestamp_label = _("Installed: {}").format(mod_metadata["install_timestamp"])
+                    installed_timestamp_label = _("Installed: {}").format(timestamp_converter(mod_metadata["install_timestamp"]))
                     installed_timestamp = Gtk.Label(label=installed_timestamp_label, xalign=1, css_classes=["dim-label", "caption"])
                     timestamp_box.append(installed_timestamp)
                 
