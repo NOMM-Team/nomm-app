@@ -1,6 +1,7 @@
 name: 'Monster Hunter Wilds'
 steam_id: 2246340
 mods_path: ""
+accent_colour: "#910324"
 nexus_id: "monsterhunterwilds"
 
 essential-utilities:

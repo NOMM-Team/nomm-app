@@ -1,8 +1,8 @@
 [Desktop Entry]
-Version=1.0
+Version=0.8
 Type=Application
-Name=Nomm
-Comment=Modern Linux-First Mod Manager
+Name=NOMM
+Comment=Native Open Mod Manager
 Exec=nomm %u
 Icon=com.nomm.Nomm
 Terminal=false

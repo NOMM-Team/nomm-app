@@ -129,7 +129,7 @@ Phase 2 Development Progress:
 - [x] Let user skip launcher and go straight to game
 - [x] Figure out how to create a flatpak for the app
 - [x] Add language-specific strings
-- [ ] Let user define load orders
+- [X] Let user define load orders
 - [x] Add support for GOG libraries / games (through Heroic)
 - [x] Add support for Epic libraries / games (through Heroic)
 - [x] Detect conflicts

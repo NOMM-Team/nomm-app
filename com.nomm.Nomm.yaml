@@ -15,11 +15,13 @@ finish-args:
   - --filesystem=~/.config/heroic:ro # Standard
   - --filesystem=~/.var/app/com.heroicgameslauncher.hgl/config/heroic:ro # Flatpak
   # Steam
-  - --filesystem=~/.local/share/Steam:ro # Standard
+  - --filesystem=~/.local/share/Steam:rw # Standard
   - --filesystem=~/.var/app/com.valvesoftware.Steam:ro # Flatpak
   # Mounting points (to install mods in games)
   - --filesystem=/run/media:rw
   - --filesystem=/mnt:rw
+  #to allow to read and write files from home folder
+  - --filesystem=home
 
 modules:
   # 1. Python dependencies (generated via flatpak-pip-generator)
@@ -50,12 +52,15 @@ modules:
         sha256: d2788f892571058c08d27095c22154579dfefb807ebe357d145ab2ddddefb1a6
 
   # 2. Your Application
-  - name: nomm
+  - name: NOMM
     buildsystem: simple
 
     build-commands:
       # Install entry point from the src folder to /app/bin
-      - install -D src/launcher.py /app/bin/nomm
+      - install -D src/main.py /app/bin/nomm
+      
+      # Autres fichiers racines de src
+      - cp src/*.yaml /app/bin/
       
       # Install desktop file
       - install -D com.nomm.Nomm.desktop /app/share/applications/com.nomm.Nomm.desktop
@@ -68,9 +73,11 @@ modules:
 
       # Copy all other python files FROM src into the same /app/bin folder
       # This ensures 'nomm' and 'dashboard.py' are flat neighbors
-      - cp src/*.py /app/bin/
+      - cp -r src/core /app/bin/core
+      - cp -r src/gui /app/bin/gui
+      - cp -r src/styles /app/bin/styles
+
       - cp src/*.yaml /app/bin/
-      - cp src/*.css /app/bin/
       
       # Copy non-code folders
       - cp -r assets /app/bin/assets

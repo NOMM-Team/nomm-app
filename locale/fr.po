@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: 0.7.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-04-19 11:39+0200\n"
+"POT-Creation-Date: 2026-04-28 13:05+0200\n"
 "PO-Revision-Date: 2026-04-13 18:51+0200\n"
 "Last-Translator: Allexio <contact@allexio.eu>\n"
 "Language: fr_FR \n"
@@ -16,192 +16,31 @@ msgstr ""
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: src/dashboard.py:120
-msgid "MODS"
-msgstr ""
-
-#: src/dashboard.py:147
-msgid "DOWNLOADS"
-msgstr "TÉLÉCHARGEMENTS"
-
-#: src/dashboard.py:211 src/dashboard.py:224 src/dashboard.py:1107
-#: src/dashboard.py:1143 src/dashboard.py:1167
+#: src/core/mod_manager.py:91 src/core/mod_manager.py:92
+#: src/gui/dashboard_views/downloads_tab.py:177
+#: src/gui/dashboard_views/downloads_tab.py:182
+#: src/gui/dashboard_views/downloads_tab.py:210
+#: src/gui/dashboard_views/downloads_tab.py:218
+#: src/gui/dashboard_views/downloads_tab.py:239
+#: src/gui/dashboard_views/downloads_tab.py:267
 msgid "Error"
 msgstr "Erreur"
 
-#: src/dashboard.py:212
-msgid "Could not delete the file: {}"
-msgstr "Le fichier {} n'a pas pu être effacé"
-
-#: src/dashboard.py:225
-msgid "Could not delete metadata for file: {}"
-msgstr "Les métadonnées du fichier {} n'ont pas pu être effacées"
-
-#: src/dashboard.py:482
-msgid "Search mods..."
-msgstr "Faire une recherche..."
-
-#: src/dashboard.py:518
-msgid "The staging metadata file could not be found, did you install any mods?"
-msgstr ""
-"Le fichier de métadonnées de staging n'a pas été trouvé, as-tu installé des "
-"mods?"
-
-#: src/dashboard.py:558
-msgid "{} file"
-msgid_plural "{} files"
-msgstr[0] "{} fichier"
-msgstr[1] "{} fichiers"
-
-#: src/dashboard.py:576
-msgid "Missing {} file"
-msgid_plural "Missing {} files"
-msgstr[0] "{} fichier manquant"
-msgstr[1] "{} fichiers manquants"
-
-#: src/dashboard.py:580
-msgid "Missing Files:"
-msgstr "Fichiers Manquants :"
-
-#: src/dashboard.py:598
-msgid "Conflicting mod: {}"
-msgid_plural "Conflicting mods: {}"
-msgstr[0] "Mods en conflit {}"
-msgstr[1] "Mod en conflit {}"
-
-#: src/dashboard.py:619
-msgid "This mod contains a text file, click to view."
-msgstr ""
-
-#: src/dashboard.py:676
-msgid "Enabled: {}"
-msgstr "Activé : {}"
-
-#: src/dashboard.py:682 src/dashboard.py:794
-msgid "Installed: {}"
-msgstr "Installé : {}"
-
-#: src/dashboard.py:691 src/dashboard.py:811
-msgid "Are you sure?"
-msgstr "Es-tu certain ?"
-
-#: src/dashboard.py:717
-msgid "All"
-msgstr "Tous"
-
-#: src/dashboard.py:720
-msgid "Uninstalled"
-msgstr "Non-Installés"
-
-#: src/dashboard.py:720
-msgid "Installed"
-msgstr "Installés"
-
-#: src/dashboard.py:781
-msgid "Downloaded: {}"
-msgstr "Téléchargé : {}"
-
-#: src/dashboard.py:801 src/dashboard.py:894
-msgid "Reinstall"
-msgstr "Réinstaller"
-
-#: src/dashboard.py:801
-msgid "Install"
-msgstr "Installer"
-
-#: src/dashboard.py:836
-msgid "No utilities defined."
-msgstr "Aucun outil utilitaire n'a été défini"
-
-#: src/dashboard.py:891
-msgid "Download"
-msgstr "Télécharger"
-
-#: src/dashboard.py:913
-msgid "Edit Load Order"
-msgstr "Modifier l'ordre de chargement"
-
-#: src/dashboard.py:928
-msgid "Error when attempting to load text file"
-msgstr ""
-
-#: src/dashboard.py:929
-msgid ""
-"File not found at:\n"
-" {}"
-msgstr "Fichier non trouvé : {}"
-
-#: src/dashboard.py:955
-msgid ""
-"Warning: This process may be destructive to existing game files. Please "
-"ensure you have backed up your game directory before proceeding."
-msgstr ""
-"Attention : Ce procédé peut modifier sans retour les fichiers de jeu "
-"existants. Assurez-vous d'avoir fait une sauvegarde de vos fichier de jeu "
-"avant de procéder."
-
-#: src/dashboard.py:959
-msgid "Confirm Installation"
-msgstr "Confirmation de l'installation d'un outil de modding"
-
-#: src/dashboard.py:962
-msgid "Cancel"
-msgstr "Annuler"
-
-#: src/dashboard.py:963
-msgid "Install Anyway"
-msgstr "Continuer l'installation"
-
-#: src/dashboard.py:1013
-msgid "Success"
-msgstr "Succès"
-
-#: src/dashboard.py:1014
-msgid "{} has been installed."
-msgstr "{} a été installé avec succès."
-
-#: src/dashboard.py:1017
-msgid "Installation Error"
-msgstr "Erreur lors de l'installation"
-
-#: src/dashboard.py:1107
-msgid ""
-"Installation failed: Your configuration YAML is missing a mods_path. Please "
-"check the readme on github for information on how to configure the yaml file."
-msgstr ""
-"Installation échouée : Il manque un 'mods_path' dans votre configuration "
-"YAML. Regardez le readme sur Github pour plus d'informations sur comment "
-"configurer un YAML pour NOMM."
-
-#: src/dashboard.py:1143
-msgid "No files were found in your mod archive."
-msgstr "Aucun fichier n'a été trouvé dans votre archive."
-
-#: src/dashboard.py:1167
+#: src/core/mod_manager.py:91 src/gui/dashboard_views/downloads_tab.py:239
 msgid "Installation failed: {}"
 msgstr "Installation échouée : {}"
 
-#: src/dashboard.py:1220
-msgid "Select Deployment Path"
-msgstr "Selection du chemin de déploiement"
+#: src/core/mod_manager.py:93
+msgid "{} installation failed, see logs for more details"
+msgid_plural "{} installations failed, see logs for more details"
+msgstr[0] ""
+msgstr[1] ""
 
-#: src/dashboard.py:1238
-msgid "Multiple deployment locations available:"
-msgstr "Multiples options de déploiement disponibles : "
-
-#: src/dashboard.py:1388
-msgid "Error while removing symlinks: "
-msgstr "Erreur lors de la suppression des symlinks : "
-
-#: src/dashboard.py:1393
-msgid "Error while removing mod from staging: "
-msgstr "Erreur lors de la suppression du mod du dossier staging : "
-
-#: src/launcher.py:140
+#: src/gui/application.py:101
 msgid "Welcome to the Native Open Mod Manager (NOMM) app!"
 msgstr "Bienvenue sur l'application NOMM (Native Open Mod Manager) !"
 
-#: src/launcher.py:141
+#: src/gui/application.py:102
 msgid ""
 "This app is still in early development, so expect some bugs and missing "
 "features.\n"
@@ -214,15 +53,15 @@ msgstr ""
 "actuellement et surtout n'oubliez pas que vous pouvez allez sur Github pour "
 "soumettre des bugs ou des nouvelles idées!"
 
-#: src/launcher.py:173
+#: src/gui/application.py:126
 msgid "Select your mods download folder"
 msgstr "Selectionnez votre dossier de téléchargements"
 
-#: src/launcher.py:174
+#: src/gui/application.py:127
 msgid ""
-"Please select the folder where mod downloads will be stored.\n"
+"Please select the folder where mod archives will be downloaded.\n"
 "Mod downloads will be categorised by game name.\n"
-"I recommend you create a nomm directory at the end of your target path."
+"I recommend you create a nomm directory at the end of your target path"
 msgstr ""
 "Selectionnez le dossier dans lequel les mods téléchargées vont être "
 "stockées.\n"
@@ -230,15 +69,15 @@ msgstr ""
 "Je recommande que vous crééiez un dossier \"nomm\" et que vous pointiez vers "
 "celui-ci"
 
-#: src/launcher.py:179
+#: src/gui/application.py:132
 msgid "Set Mod Download Path"
 msgstr "Choisir le dossier de téléchargements"
 
-#: src/launcher.py:191
+#: src/gui/application.py:144
 msgid "Select Mod Downloads Folder"
 msgstr "Sélection du dossier de téléchargements"
 
-#: src/launcher.py:221
+#: src/gui/application.py:165
 msgid ""
 "<b>Important:</b> If using Steam Flatpak, ensure it has permission to access "
 "this folder (you can do this via command line or Flatseal)."
@@ -247,19 +86,19 @@ msgstr ""
 "que celle-ci a les accès nécessaires pour accéder à ce dossier (vous pouvez "
 "faire ceci via Flatseal ou ligne de commande)"
 
-#: src/launcher.py:231
+#: src/gui/application.py:167
 msgid "Set Mod Staging Path"
 msgstr "Choisir le dossier de staging"
 
-#: src/launcher.py:247
+#: src/gui/application.py:176
 msgid "Select Mod Staging Folder"
 msgstr "Sélection du dossier de Staging"
 
-#: src/launcher.py:264 src/launcher.py:817
+#: src/gui/application.py:190 src/gui/app_views/settings.py:59
 msgid "Nexus API Key"
 msgstr "Clef API Nexus"
 
-#: src/launcher.py:265
+#: src/gui/application.py:191
 msgid ""
 "If you want to download mods from Nexus Mods, enter your API Key (Site "
 "Preferences > API Keys > scroll all the way down)"
@@ -267,23 +106,41 @@ msgstr ""
 "Si vous voulez télécharger des mods de Nexus Mods, collez votre clef API "
 "(préférences du site > Clefs API > scrollez tout en bas)"
 
-#: src/launcher.py:272
+#: src/gui/application.py:197
 msgid "Enter API Key..."
 msgstr "Collez votre clef API"
 
-#: src/launcher.py:276
+#: src/gui/application.py:199
 msgid "Continue"
 msgstr "Continuer"
 
-#: src/launcher.py:303
+#: src/gui/application.py:218
 msgid "NOMM: Searching for games..."
 msgstr "NOMM: Recherche des jeux..."
 
-#: src/launcher.py:696
+#: src/gui/dashboard.py:115
+msgid "MODS"
+msgstr ""
+
+#: src/gui/dashboard.py:144
+msgid "DOWNLOADS"
+msgstr "TÉLÉCHARGEMENTS"
+
+#: src/gui/dashboard.py:236
+msgid "Error when attempting to load text file"
+msgstr "Erreur en essayant de charger le fichier texte"
+
+#: src/gui/dashboard.py:237
+msgid ""
+"File not found at:\n"
+" {}"
+msgstr "Fichier non trouvé : {}"
+
+#: src/gui/app_views/library_view.py:34
 msgid "No games detected"
 msgstr "Aucun jeu trouvé"
 
-#: src/launcher.py:697
+#: src/gui/app_views/library_view.py:35
 msgid ""
 "We couldn't find any Steam or Heroic games. This could be due to\n"
 " - You not having any supported games installed\n"
@@ -299,63 +156,234 @@ msgstr ""
 "N'hésitez pas à me contacter sur Discord ou Github pour obtenir de l'aide ou "
 "plus d'infos!"
 
-#: src/launcher.py:781
+#: src/gui/app_views/settings.py:15
+msgid "Settings"
+msgstr "Configuration Générale"
+
+#: src/gui/app_views/settings.py:25
 msgid "Storage"
 msgstr "Stockage"
 
-#: src/launcher.py:781
+#: src/gui/app_views/settings.py:25
 msgid "Configure where NOMM manages your files."
 msgstr "Configurez où NOMM stocke vos fichiers"
 
-#: src/launcher.py:785
+#: src/gui/app_views/settings.py:29
 msgid "Mod Downloads Path"
 msgstr "Chemin du dossier de téléchargements"
 
-#: src/launcher.py:796
+#: src/gui/app_views/settings.py:39
 msgid "Mod Staging Path"
 msgstr "Chemin du dossier de staging"
 
-#: src/launcher.py:807
+#: src/gui/app_views/settings.py:49
 msgid "Nexus Mods Integration"
 msgstr "Intégration Nexus Mods"
 
-#: src/launcher.py:811
+#: src/gui/app_views/settings.py:53
 msgid "Paste API Key..."
 msgstr "Collez votre clef API..."
 
-#: src/launcher.py:864
+#: src/gui/app_views/settings.py:68
 msgid "General Settings"
 msgstr "Configuration Générale"
 
-#: src/launcher.py:868
+#: src/gui/app_views/settings.py:72
 msgid "Per-Game Accent Colour"
 msgstr "Couleurs d'accent par jeu"
 
-#: src/launcher.py:869
+#: src/gui/app_views/settings.py:73
 msgid "Accent colour will change for each game depending on configuration"
 msgstr ""
 "Les couleurs d'accent vont changer automatiquement dépendant de la "
 "configuration des jeux"
 
-#: src/launcher.py:875
+#: src/gui/app_views/settings.py:79
 msgid "Skip Launcher"
 msgstr "Passer le Launcher"
 
-#: src/launcher.py:876
+#: src/gui/app_views/settings.py:80
 msgid "App launches last used game profile instead of starting up launcher"
 msgstr ""
 "L'application va lancer directement le profil du dernier jeu que vous aviez "
 "selectionné"
 
-#: src/launcher.py:882
+#: src/gui/app_views/settings.py:86
+msgid "Disable Download Window"
+msgstr "Désactiver la fenêtre de téléchargements"
+
+#: src/gui/app_views/settings.py:87
+msgid "Disables mod downloads spawning a separate window."
+msgstr "Désactive l'affichage de la fenêtre lors d'un téléchargement."
+
+#: src/gui/app_views/settings.py:93
 msgid "Fullscreen NOMM"
 msgstr "NOMM Plein Écran"
 
-#: src/launcher.py:883
+#: src/gui/app_views/settings.py:94
 msgid "App launches in full screen when you select a game"
 msgstr ""
 "L'application va se lancer en plein écran quand vous selectionnez un jeu"
 
-#: src/launcher.py:924
+#: src/gui/app_views/settings.py:113
 msgid "Close"
 msgstr "Fermer"
+
+#: src/gui/dashboard_views/downloads_tab.py:34
+msgid "All"
+msgstr "Tous"
+
+#: src/gui/dashboard_views/downloads_tab.py:38
+msgid "Uninstalled"
+msgstr "Non-Installés"
+
+#: src/gui/dashboard_views/downloads_tab.py:38
+msgid "Installed"
+msgstr "Installés"
+
+#: src/gui/dashboard_views/downloads_tab.py:122
+msgid "Downloaded: {}"
+msgstr "Téléchargé : {}"
+
+#: src/gui/dashboard_views/downloads_tab.py:132
+#: src/gui/dashboard_views/mods_tab.py:216
+msgid "Installed: {}"
+msgstr "Installé : {}"
+
+#: src/gui/dashboard_views/downloads_tab.py:137
+#: src/gui/dashboard_views/tools_tab.py:76
+msgid "Reinstall"
+msgstr "Réinstaller"
+
+#: src/gui/dashboard_views/downloads_tab.py:137
+msgid "Install"
+msgstr "Installer"
+
+#: src/gui/dashboard_views/downloads_tab.py:147
+#: src/gui/dashboard_views/mods_tab.py:253
+msgid "Are you sure?"
+msgstr "Es-tu certain ?"
+
+#: src/gui/dashboard_views/downloads_tab.py:177
+msgid "Could not delete the file: {}"
+msgstr "Le fichier {} n'a pas pu être effacé"
+
+#: src/gui/dashboard_views/downloads_tab.py:182
+msgid "Could not delete metadata for file: {}"
+msgstr "Les métadonnées du fichier {} n'ont pas pu être effacées"
+
+#: src/gui/dashboard_views/downloads_tab.py:210
+msgid ""
+"Installation failed: Your configuration YAML is missing a mods_path. Check "
+"Github for more information on how to configure a YAML for NOMM"
+msgstr ""
+"Installation échouée : Il manque un 'mods_path' dans votre configuration "
+"YAML. Regardez le readme sur Github pour plus d'informations sur comment "
+"configurer un YAML pour NOMM."
+
+#: src/gui/dashboard_views/downloads_tab.py:218
+msgid "No files were found in your mod archive."
+msgstr "Aucun fichier n'a été trouvé dans votre archive."
+
+#: src/gui/dashboard_views/downloads_tab.py:287
+msgid "Select Deployment Path"
+msgstr "Selection du chemin de déploiement"
+
+#: src/gui/dashboard_views/downloads_tab.py:299
+msgid "Multiple deployment locations available:"
+msgstr "Multiples options de déploiement disponibles : "
+
+#: src/gui/dashboard_views/mods_tab.py:28
+msgid "Search mods..."
+msgstr "Faire une recherche..."
+
+#: src/gui/dashboard_views/mods_tab.py:71
+msgid "The staging metadata file could not be found, did you install any mods?"
+msgstr ""
+"Le fichier de métadonnées de staging n'a pas été trouvé, as-tu installé des "
+"mods?"
+
+#: src/gui/dashboard_views/mods_tab.py:131
+msgid "{} file"
+msgid_plural "{} files"
+msgstr[0] "{} fichier"
+msgstr[1] "{} fichiers"
+
+#: src/gui/dashboard_views/mods_tab.py:161
+msgid "Missing {} file"
+msgid_plural "Missing {} files"
+msgstr[0] "{} fichier manquant"
+msgstr[1] "{} fichiers manquants"
+
+#: src/gui/dashboard_views/mods_tab.py:165
+msgid "Missing Files:"
+msgstr "Fichiers Manquants :"
+
+#: src/gui/dashboard_views/mods_tab.py:181
+msgid "Conflicting mod: {}"
+msgid_plural "Conflicting mods: {}"
+msgstr[0] "Mods en conflit {}"
+msgstr[1] "Mod en conflit {}"
+
+#: src/gui/dashboard_views/mods_tab.py:197
+msgid "This mod contains a text file, click to view."
+msgstr "Ce mod contient un fichier texte, cliquez pour visionner le contenu."
+
+#: src/gui/dashboard_views/mods_tab.py:210
+msgid "Enabled: {}"
+msgstr "Activé : {}"
+
+#: src/gui/dashboard_views/tools_tab.py:26
+msgid "No utilities defined."
+msgstr "Aucun outil utilitaire n'a été défini"
+
+#: src/gui/dashboard_views/tools_tab.py:73
+msgid "Download"
+msgstr "Télécharger"
+
+#: src/gui/dashboard_views/tools_tab.py:96
+msgid "Edit Load Order"
+msgstr "Modifier l'ordre de chargement"
+
+#: src/gui/dashboard_views/tools_tab.py:113
+msgid "Download Failed"
+msgstr "Téléchargement échoué"
+
+#: src/gui/dashboard_views/tools_tab.py:118
+msgid ""
+"Warning: This process may be destructive to existing game files. Please "
+"ensure you have backed up your game directory before proceeding."
+msgstr ""
+"Attention : Ce procédé peut modifier sans retour les fichiers de jeu "
+"existants. Assurez-vous d'avoir fait une sauvegarde de vos fichier de jeu "
+"avant de procéder."
+
+#: src/gui/dashboard_views/tools_tab.py:122
+msgid "Confirm Installation"
+msgstr "Confirmation de l'installation d'un outil de modding"
+
+#: src/gui/dashboard_views/tools_tab.py:125
+msgid "Cancel"
+msgstr "Annuler"
+
+#: src/gui/dashboard_views/tools_tab.py:126
+msgid "Install Anyway"
+msgstr "Continuer l'installation"
+
+#: src/gui/dashboard_views/tools_tab.py:142
+msgid "Success"
+msgstr "Succès"
+
+#: src/gui/dashboard_views/tools_tab.py:143
+msgid "{} has been installed."
+msgstr "{} a été installé avec succès."
+
+#: src/gui/dashboard_views/tools_tab.py:146
+msgid "Installation Error"
+msgstr "Erreur lors de l'installation"
+
+#~ msgid "Error while removing symlinks: "
+#~ msgstr "Erreur lors de la suppression des symlinks : "
+
+#~ msgid "Error while removing mod from staging: "
+#~ msgstr "Erreur lors de la suppression du mod du dossier staging : "
