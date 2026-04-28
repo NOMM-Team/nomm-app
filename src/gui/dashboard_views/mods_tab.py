@@ -190,9 +190,9 @@ class ModsTab(Gtk.Box):
             text_file = self.find_text_file(mod_metadata.get("mod_files", []))
             if text_file:
                 info_text_badge = Gtk.Button()
-                button_content = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
-                info_icon = Gtk.Image.new_from_icon_name("help-about-symbolic")
-                info_icon.set_pixel_size(14)
+                button_content = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=2)
+                info_icon = Gtk.Image.new_from_file(os.path.join(self.dashboard.assets_path, "ui_icons", "breaking_news.svg"))
+                info_icon.set_pixel_size(22)
                 button_content.append(info_icon)
                 info_text_badge.add_css_class("help-about-symbolic")
                 info_text_badge.set_tooltip_text(_("This mod contains a text file, click to view."))
@@ -206,19 +206,39 @@ class ModsTab(Gtk.Box):
             # Timestamps
             if "install_timestamp" in mod_metadata or "enabled_timestamp" in mod_metadata:
                 timestamp_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=2, valign=Gtk.Align.CENTER, margin_end=15)
+
+                def create_timestamp_row(text, tooltip, icon_filename):
+                    row_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6, halign=Gtk.Align.END)
+                    
+                    # Icon Setup
+                    icon_path = os.path.join(self.dashboard.assets_path, "ui_icons", icon_filename)
+                    icon = Gtk.Image.new_from_file(icon_path)
+                    icon.set_pixel_size(14)
+                    icon.add_css_class("dim-label")
+                    
+                    # Label Setup
+                    label = Gtk.Label(label=text, xalign=0, css_classes=["dim-label", "caption"])
+                    label.set_tooltip_text(tooltip)
+                    
+                    row_box.append(icon)
+                    row_box.append(label)
+                    return row_box
+
                 # Enabled Timestamp
                 if "enabled_timestamp" in mod_metadata:
-                    enabled_timestamp_label = _("Enab: {}").format(timestamp_converter(mod_metadata["enabled_timestamp"]))
-                    enabled_timestamp = Gtk.Label(label=enabled_timestamp_label, xalign=1, css_classes=["dim-label", "caption"])
-                    enabled_timestamp.set_tooltip_text(_("Enabled: {}").format(timestamp_converter(mod_metadata["enabled_timestamp"], "long")))
-                    timestamp_box.append(enabled_timestamp)
+                    enabled_timestamp_label = timestamp_converter(mod_metadata["enabled_timestamp"])
+                    enabled_tooltip = _("Enabled: {}").format(timestamp_converter(mod_metadata["enabled_timestamp"], "long"))
+                    
+                    enabled_row = create_timestamp_row(enabled_timestamp_label, enabled_tooltip, "enabled.svg")
+                    timestamp_box.append(enabled_row)
 
                 # Installed Timestamp
                 if "install_timestamp" in mod_metadata:
-                    installed_timestamp_label = _("Inst: {}").format(timestamp_converter(mod_metadata["install_timestamp"]))
-                    installed_timestamp = Gtk.Label(label=installed_timestamp_label, xalign=1, css_classes=["dim-label", "caption"])
-                    installed_timestamp.set_tooltip_text(_("Installed: {}").format(timestamp_converter(mod_metadata["install_timestamp"], "long")))
-                    timestamp_box.append(installed_timestamp)
+                    installed_timestamp_label = timestamp_converter(mod_metadata["install_timestamp"])
+                    installed_tooltip = _("Installed: {}").format(timestamp_converter(mod_metadata["install_timestamp"], "long"))
+                    
+                    installed_row = create_timestamp_row(installed_timestamp_label, installed_tooltip, "installed.svg")
+                    timestamp_box.append(installed_row)
                 
                 row.add_suffix(timestamp_box)
 

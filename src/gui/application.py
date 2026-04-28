@@ -260,6 +260,7 @@ class Nomm(Adw.Application):
             app_id=game_info.get('app_id'),
             user_config_path=self.user_config_path,
             game_config_path=game_info["game_config_path"],
+            assets_path=self.assets_path
         )
         update_user_config("last_selected_game", game_info["name"])
         self.remove_stack_child("dashboard")

@@ -26,7 +26,7 @@ from gui.dashboard_views.tools_tab import ToolsTab
 rarfile.UNRAR_TOOL = "/app/bin/unrar"
 
 class GameDashboard(Gtk.Box):
-    def __init__(self, game_name, game_path, application, steam_base=None, app_id=None, user_config_path=None, game_config_path=None, **kwargs):
+    def __init__(self, game_name, game_path, application, steam_base=None, app_id=None, user_config_path=None, game_config_path=None, assets_path=None, **kwargs):
         super().__init__(orientation=Gtk.Orientation.VERTICAL, **kwargs)
         self.app = application
         self.game_name = game_name
@@ -34,7 +34,7 @@ class GameDashboard(Gtk.Box):
         self.app_id = app_id
         self.current_filter = "all"
         self.active_tab = "mods"
-
+        self.assets_path = assets_path
         self.game_config = load_yaml(game_config_path)
         self.user_config = load_yaml(user_config_path)
         self.user_config_path = user_config_path
