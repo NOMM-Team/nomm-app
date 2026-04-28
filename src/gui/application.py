@@ -99,7 +99,7 @@ class Nomm(Adw.Application):
         self.remove_stack_child("setup")
         status_page = Adw.StatusPage(
             title=_("Welcome to the Native Open Mod Manager (NOMM) app!"),
-            description=_("This app is still in early development..."),
+            description=_("This app is still in early development, so expect some bugs and missing features.\nI hope you can still enjoy what the app currently offers and please don't forget that you can report any bugs or request features on the Github!"),
         )
         status_page.add_css_class("setup-page")
         
@@ -124,7 +124,7 @@ class Nomm(Adw.Application):
         self.remove_stack_child("setup")
         status_page = Adw.StatusPage(
             title=_("Select your mods download folder"),
-            description=_("Please select the folder where mod downloads will be stored..."),
+            description=_("Please select the folder where mod archives will be downloaded.\nMod downloads will be categorised by game name.\nI recommend you create a nomm directory at the end of your target path"),
             icon_name="folder-download-symbolic"
         )
         status_page.add_css_class("setup-page")
@@ -162,7 +162,7 @@ class Nomm(Adw.Application):
         status_page.add_css_class("setup-page")
         vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12, halign=Gtk.Align.CENTER)
         warning_label = Gtk.Label(wrap=True, max_width_chars=50, justify=Gtk.Justification.CENTER)
-        warning_label.set_markup(_("<b>Important:</b> If using Steam Flatpak, ensure it has permission..."))
+        warning_label.set_markup(_("<b>Important:</b> If using Steam Flatpak, ensure it has permission to access this folder (you can do this via command line or Flatseal)."))
         warning_label.add_css_class("error")
         btn = Gtk.Button(label=_("Set Mod Staging Path"), margin_top=12)
         btn.add_css_class("suggested-action")
@@ -188,7 +188,7 @@ class Nomm(Adw.Application):
         self.remove_stack_child("api_key")
         status_page = Adw.StatusPage(
             title=_("Nexus API Key"),
-            description=_("If you want to download mods from Nexus Mods..."),
+            description=_("If you want to download mods from Nexus Mods, enter your API Key (Site Preferences > API Keys > scroll all the way down)"),
             icon_name="dialog-password-symbolic"
         )
         entry_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12, halign=Gtk.Align.CENTER)

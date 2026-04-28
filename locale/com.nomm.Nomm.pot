@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-04-19 11:39+0200\n"
+"POT-Creation-Date: 2026-04-28 12:39+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -18,184 +18,25 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=INTEGER; plural=EXPRESSION;\n"
 
-#: src/dashboard.py:120
-msgid "MODS"
-msgstr ""
-
-#: src/dashboard.py:147
-msgid "DOWNLOADS"
-msgstr ""
-
-#: src/dashboard.py:211 src/dashboard.py:224 src/dashboard.py:1107
-#: src/dashboard.py:1143 src/dashboard.py:1167
+#: src/core/mod_manager.py:91 src/core/mod_manager.py:92
 msgid "Error"
 msgstr ""
 
-#: src/dashboard.py:212
-msgid "Could not delete the file: {}"
-msgstr ""
-
-#: src/dashboard.py:225
-msgid "Could not delete metadata for file: {}"
-msgstr ""
-
-#: src/dashboard.py:482
-msgid "Search mods..."
-msgstr ""
-
-#: src/dashboard.py:518
-msgid "The staging metadata file could not be found, did you install any mods?"
-msgstr ""
-
-#: src/dashboard.py:558
-msgid "{} file"
-msgid_plural "{} files"
-msgstr[0] ""
-msgstr[1] ""
-
-#: src/dashboard.py:576
-msgid "Missing {} file"
-msgid_plural "Missing {} files"
-msgstr[0] ""
-msgstr[1] ""
-
-#: src/dashboard.py:580
-msgid "Missing Files:"
-msgstr ""
-
-#: src/dashboard.py:598
-msgid "Conflicting mod: {}"
-msgid_plural "Conflicting mods: {}"
-msgstr[0] ""
-msgstr[1] ""
-
-#: src/dashboard.py:619
-msgid "This mod contains a text file, click to view."
-msgstr ""
-
-#: src/dashboard.py:676
-msgid "Enabled: {}"
-msgstr ""
-
-#: src/dashboard.py:682 src/dashboard.py:794
-msgid "Installed: {}"
-msgstr ""
-
-#: src/dashboard.py:691 src/dashboard.py:811
-msgid "Are you sure?"
-msgstr ""
-
-#: src/dashboard.py:717
-msgid "All"
-msgstr ""
-
-#: src/dashboard.py:720
-msgid "Uninstalled"
-msgstr ""
-
-#: src/dashboard.py:720
-msgid "Installed"
-msgstr ""
-
-#: src/dashboard.py:781
-msgid "Downloaded: {}"
-msgstr ""
-
-#: src/dashboard.py:801 src/dashboard.py:894
-msgid "Reinstall"
-msgstr ""
-
-#: src/dashboard.py:801
-msgid "Install"
-msgstr ""
-
-#: src/dashboard.py:836
-msgid "No utilities defined."
-msgstr ""
-
-#: src/dashboard.py:891
-msgid "Download"
-msgstr ""
-
-#: src/dashboard.py:913
-msgid "Edit Load Order"
-msgstr ""
-
-#: src/dashboard.py:928
-msgid "Error when attempting to load text file"
-msgstr ""
-
-#: src/dashboard.py:929
-msgid ""
-"File not found at:\n"
-" {}"
-msgstr ""
-
-#: src/dashboard.py:955
-msgid ""
-"Warning: This process may be destructive to existing game files. Please "
-"ensure you have backed up your game directory before proceeding."
-msgstr ""
-
-#: src/dashboard.py:959
-msgid "Confirm Installation"
-msgstr ""
-
-#: src/dashboard.py:962
-msgid "Cancel"
-msgstr ""
-
-#: src/dashboard.py:963
-msgid "Install Anyway"
-msgstr ""
-
-#: src/dashboard.py:1013
-msgid "Success"
-msgstr ""
-
-#: src/dashboard.py:1014
-msgid "{} has been installed."
-msgstr ""
-
-#: src/dashboard.py:1017
-msgid "Installation Error"
-msgstr ""
-
-#: src/dashboard.py:1107
-msgid ""
-"Installation failed: Your configuration YAML is missing a mods_path. Please "
-"check the readme on github for information on how to configure the yaml file."
-msgstr ""
-
-#: src/dashboard.py:1143
-msgid "No files were found in your mod archive."
-msgstr ""
-
-#: src/dashboard.py:1167
+#: src/core/mod_manager.py:91
 msgid "Installation failed: {}"
 msgstr ""
 
-#: src/dashboard.py:1220
-msgid "Select Deployment Path"
-msgstr ""
+#: src/core/mod_manager.py:93
+msgid "{} installation failed, see logs for more details"
+msgid_plural "{} installations failed, see logs for more details"
+msgstr[0] ""
+msgstr[1] ""
 
-#: src/dashboard.py:1238
-msgid "Multiple deployment locations available:"
-msgstr ""
-
-#: src/dashboard.py:1388
-msgid "Error while removing symlinks: "
-msgstr ""
-
-#: src/dashboard.py:1393
-msgid "Error while removing mod from staging: "
-msgstr ""
-
-#: src/launcher.py:140
+#: src/gui/application.py:101
 msgid "Welcome to the Native Open Mod Manager (NOMM) app!"
 msgstr ""
 
-#: src/launcher.py:141
+#: src/gui/application.py:102
 msgid ""
 "This app is still in early development, so expect some bugs and missing "
 "features.\n"
@@ -203,126 +44,75 @@ msgid ""
 "forget that you can report any bugs or request features on the Github!"
 msgstr ""
 
-#: src/launcher.py:173
+#: src/gui/application.py:126
 msgid "Select your mods download folder"
 msgstr ""
 
-#: src/launcher.py:174
+#: src/gui/application.py:127
 msgid ""
-"Please select the folder where mod downloads will be stored.\n"
+"Please select the folder where mod archives will be downloaded.\n"
 "Mod downloads will be categorised by game name.\n"
-"I recommend you create a nomm directory at the end of your target path."
+"I recommend you create a nomm directory at the end of your target path"
 msgstr ""
 
-#: src/launcher.py:179
+#: src/gui/application.py:132
 msgid "Set Mod Download Path"
 msgstr ""
 
-#: src/launcher.py:191
+#: src/gui/application.py:144
 msgid "Select Mod Downloads Folder"
 msgstr ""
 
-#: src/launcher.py:221
+#: src/gui/application.py:165
 msgid ""
 "<b>Important:</b> If using Steam Flatpak, ensure it has permission to access "
 "this folder (you can do this via command line or Flatseal)."
 msgstr ""
 
-#: src/launcher.py:231
+#: src/gui/application.py:167
 msgid "Set Mod Staging Path"
 msgstr ""
 
-#: src/launcher.py:247
+#: src/gui/application.py:176
 msgid "Select Mod Staging Folder"
 msgstr ""
 
-#: src/launcher.py:264 src/launcher.py:817
+#: src/gui/application.py:190
 msgid "Nexus API Key"
 msgstr ""
 
-#: src/launcher.py:265
+#: src/gui/application.py:191
 msgid ""
 "If you want to download mods from Nexus Mods, enter your API Key (Site "
 "Preferences > API Keys > scroll all the way down)"
 msgstr ""
 
-#: src/launcher.py:272
+#: src/gui/application.py:197
 msgid "Enter API Key..."
 msgstr ""
 
-#: src/launcher.py:276
+#: src/gui/application.py:199
 msgid "Continue"
 msgstr ""
 
-#: src/launcher.py:303
+#: src/gui/application.py:218
 msgid "NOMM: Searching for games..."
 msgstr ""
 
-#: src/launcher.py:696
-msgid "No games detected"
+#: src/gui/dashboard.py:115
+msgid "MODS"
 msgstr ""
 
-#: src/launcher.py:697
+#: src/gui/dashboard.py:144
+msgid "DOWNLOADS"
+msgstr ""
+
+#: src/gui/dashboard.py:236
+msgid "Error when attempting to load text file"
+msgstr ""
+
+#: src/gui/dashboard.py:237
 msgid ""
-"We couldn't find any Steam or Heroic games. This could be due to\n"
-" - You not having any supported games installed\n"
-" - Your Steam/Heroic installation type not being handled\n"
-"\n"
-" Feel free to contact me on Discord or Github for more help!"
-msgstr ""
-
-#: src/launcher.py:781
-msgid "Storage"
-msgstr ""
-
-#: src/launcher.py:781
-msgid "Configure where NOMM manages your files."
-msgstr ""
-
-#: src/launcher.py:785
-msgid "Mod Downloads Path"
-msgstr ""
-
-#: src/launcher.py:796
-msgid "Mod Staging Path"
-msgstr ""
-
-#: src/launcher.py:807
-msgid "Nexus Mods Integration"
-msgstr ""
-
-#: src/launcher.py:811
-msgid "Paste API Key..."
-msgstr ""
-
-#: src/launcher.py:864
-msgid "General Settings"
-msgstr ""
-
-#: src/launcher.py:868
-msgid "Per-Game Accent Colour"
-msgstr ""
-
-#: src/launcher.py:869
-msgid "Accent colour will change for each game depending on configuration"
-msgstr ""
-
-#: src/launcher.py:875
-msgid "Skip Launcher"
-msgstr ""
-
-#: src/launcher.py:876
-msgid "App launches last used game profile instead of starting up launcher"
-msgstr ""
-
-#: src/launcher.py:882
-msgid "Fullscreen NOMM"
-msgstr ""
-
-#: src/launcher.py:883
-msgid "App launches in full screen when you select a game"
-msgstr ""
-
-#: src/launcher.py:924
-msgid "Close"
+"File not found at:\n"
+" {}"
 msgstr ""
