@@ -8,5 +8,4 @@ repo/
 /.vscode
 /build-dir
 
-NOMM.flatpak
-Yamm.flatpak
+nomm.flatpak
