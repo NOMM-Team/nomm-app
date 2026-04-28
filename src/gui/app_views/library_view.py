@@ -72,11 +72,11 @@ class LibraryView(Gtk.Box):
         platform = game.get('platform')
         icon_path = ""
         if platform == "steam":
-            icon_path = os.path.join(self.app.assets_path, "steam_logo.svg")
+            icon_path = os.path.join(self.app.assets_path, "platform_logos", "steam_logo.svg")
         elif platform == "heroic-epic":
-            icon_path = os.path.join(self.app.assets_path, "epic_logo.svg")
+            icon_path = os.path.join(self.app.assets_path, "platform_logos", "epic_logo.svg")
         elif platform == "heroic-gog":
-            icon_path = os.path.join(self.app.assets_path, "gog_logo.svg")
+            icon_path = os.path.join(self.app.assets_path, "platform_logos", "gog_logo.svg")
 
         if os.path.exists(icon_path):
             try:

@@ -170,7 +170,7 @@ class SettingsWindow(Adw.Window):
 
     def create_social_button(self, icon_filename, url):
         btn_content = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
-        icon_path = os.path.join(self.assets_path, icon_filename)
+        icon_path = os.path.join(self.assets_path, "platform_logos", icon_filename)
         
         if os.path.exists(icon_path):
             img = Gtk.Picture.new_for_filename(icon_path)
