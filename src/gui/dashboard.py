@@ -237,6 +237,21 @@ class GameDashboard(Gtk.Box):
                 _("File not found at:\n {}").format(path)
             )
 
+    def create_timestamp_row(self, text: str, tooltip: str, icon_filename: str) -> Gtk.Box:
+        row_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6, halign=Gtk.Align.END)
+        
+        icon_path = os.path.join(self.assets_path, "ui_icons", icon_filename)
+        icon = Gtk.Image.new_from_file(icon_path)
+        icon.set_pixel_size(14)
+        icon.add_css_class("dim-label")
+        
+        label = Gtk.Label(label=text, xalign=0, css_classes=["dim-label", "caption"])
+        label.set_tooltip_text(tooltip)
+        
+        row_box.append(icon)
+        row_box.append(label)
+        return row_box
+
     def on_uninstall_item(self, btn, mod_files: list, mod_name: str):
         staging_metadata = load_staging_metadata(self.staging_metadata_path)
         

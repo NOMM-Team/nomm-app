@@ -120,22 +120,20 @@ class DownloadsTab(Gtk.Box):
 
             # Timestamps
             timestamp_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=2, valign=Gtk.Align.CENTER, margin_end=15)
-            download_timestamp_label = _("Down: {}").format(timestamp_converter(self.get_download_timestamp(file_name)))
-            download_timestamp = Gtk.Label(label=download_timestamp_label, xalign=1, css_classes=["dim-label", "caption"])
-            download_timestamp.set_tooltip_text(_("Downloaded: {}").format(timestamp_converter(self.get_download_timestamp(file_name), "long")))
-            timestamp_box.append(download_timestamp)
+            download_timestamp_label = timestamp_converter(self.get_download_timestamp(file_name))
+            download_timestamp_tooltip = _("Downloaded: {}").format(timestamp_converter(self.get_download_timestamp(file_name), "long"))
+            download_timestamp_row = self.dashboard.create_timestamp_row(download_timestamp_label, download_timestamp_tooltip, "downloaded.svg")
+            timestamp_box.append(download_timestamp_row)
 
             if installed:
-                installed_timestamp = None
                 for mod_key, mod_val in staging_metadata.get("mods", {}).items():
                     if mod_val.get("archive_name") == file_name:
-                        installed_timestamp = timestamp_converter(mod_val.get("install_timestamp"))
-                        installed_timestamp_label = _("Inst: {}").format(installed_timestamp)
-                        installed_timestamp = Gtk.Label(label=installed_timestamp_label, xalign=1, css_classes=["dim-label", "caption"])
-                        installed_timestamp.set_tooltip_text(_("Installed: {}").format(timestamp_converter(mod_val.get("install_timestamp"), "long")))
-                        timestamp_box.append(installed_timestamp)
+                        installed_timestamp_label = timestamp_converter(mod_val.get("install_timestamp"))
+                        installed_timestamp_tooltip = _("Installed: {}").format(timestamp_converter(mod_val.get("install_timestamp"), "long"))
+                        installed_timestamp_row = self.dashboard.create_timestamp_row(installed_timestamp_label, installed_timestamp_tooltip, "installed.svg")
+                        timestamp_box.append(installed_timestamp_row)
                         break
-                    
+            
             row.add_suffix(timestamp_box)
 
             # Install Button
