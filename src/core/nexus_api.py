@@ -7,7 +7,7 @@ import requests
 import yaml
 from gi.repository import GLib
 
-from core.mod_manager import get_metadata_path, load_metadata
+from core.mod_manager import get_metadata_path, load_staging_metadata
 from core.downloader import download_mod
 from gui.notifications import send_download_notification, download_with_progress
 from core.tools import load_yaml, write_yaml

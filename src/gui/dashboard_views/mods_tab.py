@@ -7,7 +7,7 @@ from pathlib import Path
 from gi.repository import Adw, Gdk, GLib, GObject, Gtk
 
 from core.mod_manager import (change_mod_index, check_for_conflicts,
-                              deploy_all_ordered_mods, load_metadata,
+                              deploy_all_ordered_mods, load_staging_metadata,
                               read_index, toggle_mod_state)
 from core.nexus_api import check_for_mod_updates_async
 
@@ -78,10 +78,10 @@ class ModsTab(Gtk.Box):
         
         indexed_mods = read_index(self.dashboard.staging_metadata_path)
 
-        enable_file_counter = false
-        for mod in mods:
-            if mod["mod_files"] > 1:
-                enable_file_counter = true
+        enable_file_counter = False
+        for mod in staging_metadata.get("mods"):
+            if len(staging_metadata["mods"][mod]["mod_files"]) > 1:
+                enable_file_counter = True
                 break
         
         for index, mod in enumerate(indexed_mods, start=1):
@@ -122,6 +122,7 @@ class ModsTab(Gtk.Box):
                 row.add_prefix(drag_handle)
             
             if enable_file_counter:
+                number_of_files = len(mod_files)
                 file_list_badge = Gtk.CenterBox(orientation=Gtk.Orientation.HORIZONTAL)
                 file_list_badge.set_tooltip_text("\n".join(mod_files))
                 file_list_badge.add_css_class("badge-action-row")
