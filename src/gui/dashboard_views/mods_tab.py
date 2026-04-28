@@ -246,7 +246,7 @@ class ModsTab(Gtk.Box):
             if mod_link: 
                 version_badge.connect("clicked", lambda b, l=mod_link: webbrowser.open(l))
             
-            if len(version_text) < 8:
+            if len(version_text) < 10:
                 version_badge_sizegroup.add_widget(version_badge)
             row.add_suffix(version_badge)
 
