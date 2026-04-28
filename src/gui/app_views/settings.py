@@ -83,10 +83,10 @@ class SettingsWindow(Adw.Window):
         general_group.add(launcher_skip_row)
         
         # Skip launcher
-        download_popup = Adw.SwitchRow(title=_("Enable Download Pop-up"))
-        download_popup.set_subtitle(_("Downloads appear in a popup, allowing you to track the download progress"))
-        download_popup.set_active(load_yaml(self.user_config_dir).get('enable_download_popup', False))
-        download_popup.connect("notify::active", lambda row, pspec: self.toggle_setting('enable_download_popup', row.get_active()))
+        download_popup = Adw.SwitchRow(title=_("Disable Download Window"))
+        download_popup.set_subtitle(_("Disables mod downloads spawning a separate window"))
+        download_popup.set_active(load_yaml(self.user_config_dir).get('disable_download_window', False))
+        download_popup.connect("notify::active", lambda row, pspec: self.toggle_setting('disable_download_window', row.get_active()))
         general_group.add(download_popup)
 
         # Fullscreen

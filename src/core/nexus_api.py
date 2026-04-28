@@ -154,12 +154,10 @@ def _download_nexus_mod(nxm_link: str, headers: dict, final_download_dir: Path, 
 
         print(f"Downloading {file_name} to {game_folder_name}...")
         user_meta = load_yaml(user_config_dir)
-        if user_meta.get('enable_download_popup'):
-        # Uncommenting the line below and the associated function 
-        # on notifications.py should bring back old fashion shenanigans
-            download_with_progress(file_url, final_download_dir)
+        if user_meta.get('disable_download_window'):
+            download_mod(file_url, str(final_download_dir)) # silent download
         else:
-            download_mod(file_url, str(final_download_dir))
+            download_with_progress(file_url, final_download_dir) # windowed download
         
         try:
             info_api_url = f"https://api.nexusmods.com/v1/games/{nexus_game_id}/mods/{mod_id}/files/{file_id}.json"

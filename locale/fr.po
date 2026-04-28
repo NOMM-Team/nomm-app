@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: 0.7.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-04-28 12:47+0200\n"
+"POT-Creation-Date: 2026-04-28 13:05+0200\n"
 "PO-Revision-Date: 2026-04-13 18:51+0200\n"
 "Last-Translator: Allexio <contact@allexio.eu>\n"
 "Language: fr_FR \n"
@@ -209,13 +209,12 @@ msgstr ""
 "selectionné"
 
 #: src/gui/app_views/settings.py:86
-msgid "Enable Download Pop-up"
-msgstr ""
+msgid "Disable Download Window"
+msgstr "Désactiver la fenêtre de téléchargements"
 
 #: src/gui/app_views/settings.py:87
-msgid ""
-"Downloads appear in a popup, allowing you to track the download progress"
-msgstr ""
+msgid "Disables mod downloads spawning a separate window."
+msgstr "Désactive l'affichage de la fenêtre lors d'un téléchargement."
 
 #: src/gui/app_views/settings.py:93
 msgid "Fullscreen NOMM"
@@ -274,7 +273,9 @@ msgid "Could not delete metadata for file: {}"
 msgstr "Les métadonnées du fichier {} n'ont pas pu être effacées"
 
 #: src/gui/dashboard_views/downloads_tab.py:210
-msgid "Installation failed: Your configuration YAML is missing a mods_path. Check Github for more information on how to configure a YAML for NOMM"
+msgid ""
+"Installation failed: Your configuration YAML is missing a mods_path. Check "
+"Github for more information on how to configure a YAML for NOMM"
 msgstr ""
 "Installation échouée : Il manque un 'mods_path' dans votre configuration "
 "YAML. Regardez le readme sur Github pour plus d'informations sur comment "
@@ -326,7 +327,7 @@ msgstr[1] "Mod en conflit {}"
 
 #: src/gui/dashboard_views/mods_tab.py:197
 msgid "This mod contains a text file, click to view."
-msgstr ""
+msgstr "Ce mod contient un fichier texte, cliquez pour visionner le contenu."
 
 #: src/gui/dashboard_views/mods_tab.py:210
 msgid "Enabled: {}"

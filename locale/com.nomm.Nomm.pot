@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-04-28 12:54+0200\n"
+"POT-Creation-Date: 2026-04-28 13:05+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -185,12 +185,11 @@ msgid "App launches last used game profile instead of starting up launcher"
 msgstr ""
 
 #: src/gui/app_views/settings.py:86
-msgid "Enable Download Pop-up"
+msgid "Disable Download Window"
 msgstr ""
 
 #: src/gui/app_views/settings.py:87
-msgid ""
-"Downloads appear in a popup, allowing you to track the download progress"
+msgid "Disables mod downloads spawning a separate window."
 msgstr ""
 
 #: src/gui/app_views/settings.py:93
