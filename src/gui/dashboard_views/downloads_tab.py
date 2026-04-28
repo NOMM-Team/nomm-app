@@ -119,21 +119,24 @@ class DownloadsTab(Gtk.Box):
             row.add_suffix(version_badge)
 
             # Timestamps
-            ts_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=2, valign=Gtk.Align.CENTER, margin_end=15)
-            dl_ts_text = _("Downloaded: {}").format(self.get_download_timestamp(file_name))
-            ts_box.append(Gtk.Label(label=dl_ts_text, xalign=1, css_classes=["dim-label", "caption"]))
+            timestamp_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=2, valign=Gtk.Align.CENTER, margin_end=15)
+            download_timestamp_label = _("Down: {}").format(timestamp_converter(self.get_download_timestamp(file_name)))
+            download_timestamp = Gtk.Label(label=download_timestamp_label, xalign=1, css_classes=["dim-label", "caption"])
+            download_timestamp.set_tooltip_text(_("Downloaded: {}").format(timestamp_converter(self.get_download_timestamp(file_name), "long")))
+            timestamp_box.append(download_timestamp)
 
             if installed:
-                inst_ts = None
-                #TODO: check if this for loop and break can be cleaned
+                installed_timestamp = None
                 for mod_key, mod_val in staging_metadata.get("mods", {}).items():
                     if mod_val.get("archive_name") == file_name:
-                        inst_ts = timestamp_converter(mod_val.get("install_timestamp"))
+                        installed_timestamp = timestamp_converter(mod_val.get("install_timestamp"))
+                        installed_timestamp_label = _("Inst: {}").format(installed_timestamp)
+                        installed_timestamp = Gtk.Label(label=installed_timestamp_label, xalign=1, css_classes=["dim-label", "caption"])
+                        installed_timestamp.set_tooltip_text(_("Installed: {}").format(timestamp_converter(mod_val.get("install_timestamp"), "long")))
+                        timestamp_box.append(installed_timestamp)
                         break
-                if inst_ts:
-                    inst_text = _("Installed: {}").format(inst_ts)
-                    ts_box.append(Gtk.Label(label=inst_text, xalign=1, css_classes=["dim-label", "caption"]))
-            row.add_suffix(ts_box)
+                    
+            row.add_suffix(timestamp_box)
 
             # Install Button
             install_btn = Gtk.Button(label=_("Reinstall") if installed else _("Install"), valign=Gtk.Align.CENTER)
@@ -200,7 +203,7 @@ class DownloadsTab(Gtk.Box):
             GLib.idle_add(self.dashboard.update_indicators)
 
     def get_download_timestamp(self, f):
-        return timestamp_converter(datetime.fromtimestamp(os.path.getmtime(os.path.join(self.dashboard.downloads_path, f))))
+        return datetime.fromtimestamp(os.path.getmtime(os.path.join(self.dashboard.downloads_path, f)))
 
     # Install
     def on_install_clicked(self, btn, filename, display_name):
