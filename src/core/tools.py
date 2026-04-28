@@ -46,6 +46,4 @@ def timestamp_converter(timestamp: str, timestamp_type="short") -> str:
         return timestamp.strftime("%c")
     if timestamp_type == "short": # used for the base UI
         return timestamp.strftime("%x %H:%M")
-
-    med_timestamp = time
     return legible_timestamp
