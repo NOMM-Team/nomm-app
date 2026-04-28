@@ -208,14 +208,16 @@ class ModsTab(Gtk.Box):
                 timestamp_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=2, valign=Gtk.Align.CENTER, margin_end=15)
                 # Enabled Timestamp
                 if "enabled_timestamp" in mod_metadata:
-                    enabled_timestamp_label = _("Enabled: {}").format(timestamp_converter(mod_metadata["enabled_timestamp"]))
+                    enabled_timestamp_label = _("Enab: {}").format(timestamp_converter(mod_metadata["enabled_timestamp"]))
                     enabled_timestamp = Gtk.Label(label=enabled_timestamp_label, xalign=1, css_classes=["dim-label", "caption"])
+                    enabled_timestamp.set_tooltip_text(_("Enabled: {}").format(timestamp_converter(mod_metadata["enabled_timestamp"], "long")))
                     timestamp_box.append(enabled_timestamp)
 
                 # Installed Timestamp
                 if "install_timestamp" in mod_metadata:
-                    installed_timestamp_label = _("Installed: {}").format(timestamp_converter(mod_metadata["install_timestamp"]))
+                    installed_timestamp_label = _("Inst: {}").format(timestamp_converter(mod_metadata["install_timestamp"]))
                     installed_timestamp = Gtk.Label(label=installed_timestamp_label, xalign=1, css_classes=["dim-label", "caption"])
+                    installed_timestamp.set_tooltip_text(_("Installed: {}").format(timestamp_converter(mod_metadata["install_timestamp"], "long")))
                     timestamp_box.append(installed_timestamp)
                 
                 row.add_suffix(timestamp_box)

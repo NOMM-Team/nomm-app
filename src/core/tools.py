@@ -33,12 +33,19 @@ def write_yaml(data: dict, path: str) -> bool:
         return False
     return False
 
-def timestamp_converter(timestamp: int) -> str:
-    """Converts unix time timestamps into localised text"""
+def timestamp_converter(timestamp: str, timestamp_type="short") -> str:
+    """Converts standard time timestamps (2026-04-28 15:52:14.249614) into localised text"""
     #TODO: review this method to produce a nicer timestamp format
     legible_timestamp = timestamp
     try:
-        legible_timestamp = timestamp.strftime("%c")
+        timestamp.strftime("%c")
     except:
-        print(f"Could not translate timestamp: {str(timestamp)}")
+        print(f"Could not translate timestamp: {timestamp}")
+        return timestamp
+    if timestamp_type == "long": # used for tooltips
+        return timestamp.strftime("%c")
+    if timestamp_type == "short": # used for the base UI
+        return timestamp.strftime("%x %H:%M")
+
+    med_timestamp = time
     return legible_timestamp
