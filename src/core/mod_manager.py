@@ -20,7 +20,7 @@ def deploy_mod_files(staging_dir: str, dest_dir: str, mod_name: str) -> bool:
     mod_info = staging_metadata["mods"][mod_name]
     mod_files = mod_info.get("mod_files", [])
     
-    success = True
+    is_success = True
 
     for mod_file in mod_files:
         source_item = Path(staging_mod_path) / mod_file
@@ -52,19 +52,19 @@ def deploy_mod_files(staging_dir: str, dest_dir: str, mod_name: str) -> bool:
                 os.symlink(source_item, link_item)
             except Exception as sym_e:
                 print(f"Error creating a Symlink {link_item}: {sym_e}")
-                success = False
+                is_success = False
     
     # Update game status
-    if not success:
+    if not is_success:
         unlink_mod_files(staging_mod_path, dest_dir, mod_files)
         staging_metadata["mods"][mod_name]["status"] = "disabled"
         mod_info.pop("enabled_timestamp", None)
         write_yaml(staging_metadata, staging_meta_path)
-        
-    return success
+        return is_success
+    
+    return is_success
 
 # Just a loop that deploy mods following the index list
-# new
 def deploy_all_ordered_mods(staging_dir: str, dest_dir: str) -> bool:
     staging_meta_path = os.path.join(staging_dir, ".staging.nomm.yaml")
     indexed_mods = read_index(staging_meta_path)
@@ -272,10 +272,10 @@ def toggle_mod_state(mod_name: str, mod_files: list, state: bool, staging_dir: s
     # state is true so the mod has to be installed/deployed
     if state:
         # deploy_mod_files return true if it worked, false if it doesn't
+        mod_info["status"] = "enabled"
+        mod_info["enabled_timestamp"] = datetime.now().strftime("%c")
+        write_yaml(staging_metadata, staging_meta_path)
         if check_for_conflicts(staging_meta_path):
-            mod_info["status"] = "enabled"
-            mod_info["enabled_timestamp"] = datetime.now().strftime("%c")
-            write_yaml(staging_metadata, staging_meta_path)
             success = deploy_all_ordered_mods(staging_dir, dest_dir)
         else:
             success = deploy_mod_files(staging_dir, dest_dir, mod_name)
