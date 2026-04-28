@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: 0.7.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-04-28 12:39+0200\n"
+"POT-Creation-Date: 2026-04-28 12:47+0200\n"
 "PO-Revision-Date: 2026-04-13 18:51+0200\n"
 "Last-Translator: Allexio <contact@allexio.eu>\n"
 "Language: fr_FR \n"
@@ -17,10 +17,16 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 
 #: src/core/mod_manager.py:91 src/core/mod_manager.py:92
+#: src/gui/dashboard_views/downloads_tab.py:177
+#: src/gui/dashboard_views/downloads_tab.py:182
+#: src/gui/dashboard_views/downloads_tab.py:210
+#: src/gui/dashboard_views/downloads_tab.py:218
+#: src/gui/dashboard_views/downloads_tab.py:239
+#: src/gui/dashboard_views/downloads_tab.py:267
 msgid "Error"
 msgstr "Erreur"
 
-#: src/core/mod_manager.py:91
+#: src/core/mod_manager.py:91 src/gui/dashboard_views/downloads_tab.py:239
 msgid "Installation failed: {}"
 msgstr "Installation échouée : {}"
 
@@ -88,7 +94,7 @@ msgstr "Choisir le dossier de staging"
 msgid "Select Mod Staging Folder"
 msgstr "Sélection du dossier de Staging"
 
-#: src/gui/application.py:190
+#: src/gui/application.py:190 src/gui/app_views/settings.py:59
 msgid "Nexus API Key"
 msgstr "Clef API Nexus"
 
@@ -130,186 +136,253 @@ msgid ""
 " {}"
 msgstr "Fichier non trouvé : {}"
 
-#~ msgid "Could not delete the file: {}"
-#~ msgstr "Le fichier {} n'a pas pu être effacé"
+#: src/gui/app_views/library_view.py:34
+msgid "No games detected"
+msgstr "Aucun jeu trouvé"
 
-#~ msgid "Could not delete metadata for file: {}"
-#~ msgstr "Les métadonnées du fichier {} n'ont pas pu être effacées"
+#: src/gui/app_views/library_view.py:35
+msgid ""
+"We couldn't find any Steam or Heroic games. This could be due to\n"
+" - You not having any supported games installed\n"
+" - Your Steam/Heroic installation type not being handled\n"
+"\n"
+" Feel free to contact me on Discord or Github for more help!"
+msgstr ""
+"NOMM n'a pas réussi a trouver de jeux Steam ou Heroic. Ceci peut être dû au "
+"fait que :\n"
+" - Vous n'avez pas de jeux compatibles\n"
+" - Votre installation Steam/Heroic n'est pas compatible\n"
+"\n"
+"N'hésitez pas à me contacter sur Discord ou Github pour obtenir de l'aide ou "
+"plus d'infos!"
 
-#~ msgid "Search mods..."
-#~ msgstr "Faire une recherche..."
+#: src/gui/app_views/settings.py:15
+msgid "Settings"
+msgstr "Configuration Générale"
 
-#~ msgid ""
-#~ "The staging metadata file could not be found, did you install any mods?"
-#~ msgstr ""
-#~ "Le fichier de métadonnées de staging n'a pas été trouvé, as-tu installé "
-#~ "des mods?"
+#: src/gui/app_views/settings.py:25
+msgid "Storage"
+msgstr "Stockage"
 
-#~ msgid "{} file"
-#~ msgid_plural "{} files"
-#~ msgstr[0] "{} fichier"
-#~ msgstr[1] "{} fichiers"
+#: src/gui/app_views/settings.py:25
+msgid "Configure where NOMM manages your files."
+msgstr "Configurez où NOMM stocke vos fichiers"
 
-#~ msgid "Missing {} file"
-#~ msgid_plural "Missing {} files"
-#~ msgstr[0] "{} fichier manquant"
-#~ msgstr[1] "{} fichiers manquants"
+#: src/gui/app_views/settings.py:29
+msgid "Mod Downloads Path"
+msgstr "Chemin du dossier de téléchargements"
 
-#~ msgid "Missing Files:"
-#~ msgstr "Fichiers Manquants :"
+#: src/gui/app_views/settings.py:39
+msgid "Mod Staging Path"
+msgstr "Chemin du dossier de staging"
 
-#~ msgid "Conflicting mod: {}"
-#~ msgid_plural "Conflicting mods: {}"
-#~ msgstr[0] "Mods en conflit {}"
-#~ msgstr[1] "Mod en conflit {}"
+#: src/gui/app_views/settings.py:49
+msgid "Nexus Mods Integration"
+msgstr "Intégration Nexus Mods"
 
-#~ msgid "Enabled: {}"
-#~ msgstr "Activé : {}"
+#: src/gui/app_views/settings.py:53
+msgid "Paste API Key..."
+msgstr "Collez votre clef API..."
 
-#~ msgid "Installed: {}"
-#~ msgstr "Installé : {}"
+#: src/gui/app_views/settings.py:68
+msgid "General Settings"
+msgstr "Configuration Générale"
 
-#~ msgid "Are you sure?"
-#~ msgstr "Es-tu certain ?"
+#: src/gui/app_views/settings.py:72
+msgid "Per-Game Accent Colour"
+msgstr "Couleurs d'accent par jeu"
 
-#~ msgid "All"
-#~ msgstr "Tous"
+#: src/gui/app_views/settings.py:73
+msgid "Accent colour will change for each game depending on configuration"
+msgstr ""
+"Les couleurs d'accent vont changer automatiquement dépendant de la "
+"configuration des jeux"
 
-#~ msgid "Uninstalled"
-#~ msgstr "Non-Installés"
+#: src/gui/app_views/settings.py:79
+msgid "Skip Launcher"
+msgstr "Passer le Launcher"
 
-#~ msgid "Installed"
-#~ msgstr "Installés"
+#: src/gui/app_views/settings.py:80
+msgid "App launches last used game profile instead of starting up launcher"
+msgstr ""
+"L'application va lancer directement le profil du dernier jeu que vous aviez "
+"selectionné"
 
-#~ msgid "Downloaded: {}"
-#~ msgstr "Téléchargé : {}"
+#: src/gui/app_views/settings.py:86
+msgid "Enable Download Pop-up"
+msgstr ""
 
-#~ msgid "Reinstall"
-#~ msgstr "Réinstaller"
+#: src/gui/app_views/settings.py:87
+msgid ""
+"Downloads appear in a popup, allowing you to track the download progress"
+msgstr ""
 
-#~ msgid "Install"
-#~ msgstr "Installer"
+#: src/gui/app_views/settings.py:93
+msgid "Fullscreen NOMM"
+msgstr "NOMM Plein Écran"
 
-#~ msgid "No utilities defined."
-#~ msgstr "Aucun outil utilitaire n'a été défini"
+#: src/gui/app_views/settings.py:94
+msgid "App launches in full screen when you select a game"
+msgstr ""
+"L'application va se lancer en plein écran quand vous selectionnez un jeu"
 
-#~ msgid "Download"
-#~ msgstr "Télécharger"
+#: src/gui/app_views/settings.py:113
+msgid "Close"
+msgstr "Fermer"
 
-#~ msgid "Edit Load Order"
-#~ msgstr "Modifier l'ordre de chargement"
+#: src/gui/dashboard_views/downloads_tab.py:34
+msgid "All"
+msgstr "Tous"
 
-#~ msgid ""
-#~ "Warning: This process may be destructive to existing game files. Please "
-#~ "ensure you have backed up your game directory before proceeding."
-#~ msgstr ""
-#~ "Attention : Ce procédé peut modifier sans retour les fichiers de jeu "
-#~ "existants. Assurez-vous d'avoir fait une sauvegarde de vos fichier de jeu "
-#~ "avant de procéder."
+#: src/gui/dashboard_views/downloads_tab.py:38
+msgid "Uninstalled"
+msgstr "Non-Installés"
 
-#~ msgid "Confirm Installation"
-#~ msgstr "Confirmation de l'installation d'un outil de modding"
+#: src/gui/dashboard_views/downloads_tab.py:38
+msgid "Installed"
+msgstr "Installés"
 
-#~ msgid "Cancel"
-#~ msgstr "Annuler"
+#: src/gui/dashboard_views/downloads_tab.py:122
+msgid "Downloaded: {}"
+msgstr "Téléchargé : {}"
 
-#~ msgid "Install Anyway"
-#~ msgstr "Continuer l'installation"
+#: src/gui/dashboard_views/downloads_tab.py:132
+#: src/gui/dashboard_views/mods_tab.py:216
+msgid "Installed: {}"
+msgstr "Installé : {}"
 
-#~ msgid "Success"
-#~ msgstr "Succès"
+#: src/gui/dashboard_views/downloads_tab.py:137
+#: src/gui/dashboard_views/tools_tab.py:76
+msgid "Reinstall"
+msgstr "Réinstaller"
 
-#~ msgid "{} has been installed."
-#~ msgstr "{} a été installé avec succès."
+#: src/gui/dashboard_views/downloads_tab.py:137
+msgid "Install"
+msgstr "Installer"
 
-#~ msgid "Installation Error"
-#~ msgstr "Erreur lors de l'installation"
+#: src/gui/dashboard_views/downloads_tab.py:147
+#: src/gui/dashboard_views/mods_tab.py:253
+msgid "Are you sure?"
+msgstr "Es-tu certain ?"
 
-#~ msgid ""
-#~ "Installation failed: Your configuration YAML is missing a mods_path. "
-#~ "Please check the readme on github for information on how to configure the "
-#~ "yaml file."
-#~ msgstr ""
-#~ "Installation échouée : Il manque un 'mods_path' dans votre configuration "
-#~ "YAML. Regardez le readme sur Github pour plus d'informations sur comment "
-#~ "configurer un YAML pour NOMM."
+#: src/gui/dashboard_views/downloads_tab.py:177
+msgid "Could not delete the file: {}"
+msgstr "Le fichier {} n'a pas pu être effacé"
 
-#~ msgid "No files were found in your mod archive."
-#~ msgstr "Aucun fichier n'a été trouvé dans votre archive."
+#: src/gui/dashboard_views/downloads_tab.py:182
+msgid "Could not delete metadata for file: {}"
+msgstr "Les métadonnées du fichier {} n'ont pas pu être effacées"
 
-#~ msgid "Select Deployment Path"
-#~ msgstr "Selection du chemin de déploiement"
+#: src/gui/dashboard_views/downloads_tab.py:210
+msgid "Installation failed: Your configuration YAML is missing a mods_path. Check Github for more information on how to configure a YAML for NOMM"
+msgstr ""
+"Installation échouée : Il manque un 'mods_path' dans votre configuration "
+"YAML. Regardez le readme sur Github pour plus d'informations sur comment "
+"configurer un YAML pour NOMM."
 
-#~ msgid "Multiple deployment locations available:"
-#~ msgstr "Multiples options de déploiement disponibles : "
+#: src/gui/dashboard_views/downloads_tab.py:218
+msgid "No files were found in your mod archive."
+msgstr "Aucun fichier n'a été trouvé dans votre archive."
+
+#: src/gui/dashboard_views/downloads_tab.py:287
+msgid "Select Deployment Path"
+msgstr "Selection du chemin de déploiement"
+
+#: src/gui/dashboard_views/downloads_tab.py:299
+msgid "Multiple deployment locations available:"
+msgstr "Multiples options de déploiement disponibles : "
+
+#: src/gui/dashboard_views/mods_tab.py:28
+msgid "Search mods..."
+msgstr "Faire une recherche..."
+
+#: src/gui/dashboard_views/mods_tab.py:71
+msgid "The staging metadata file could not be found, did you install any mods?"
+msgstr ""
+"Le fichier de métadonnées de staging n'a pas été trouvé, as-tu installé des "
+"mods?"
+
+#: src/gui/dashboard_views/mods_tab.py:131
+msgid "{} file"
+msgid_plural "{} files"
+msgstr[0] "{} fichier"
+msgstr[1] "{} fichiers"
+
+#: src/gui/dashboard_views/mods_tab.py:161
+msgid "Missing {} file"
+msgid_plural "Missing {} files"
+msgstr[0] "{} fichier manquant"
+msgstr[1] "{} fichiers manquants"
+
+#: src/gui/dashboard_views/mods_tab.py:165
+msgid "Missing Files:"
+msgstr "Fichiers Manquants :"
+
+#: src/gui/dashboard_views/mods_tab.py:181
+msgid "Conflicting mod: {}"
+msgid_plural "Conflicting mods: {}"
+msgstr[0] "Mods en conflit {}"
+msgstr[1] "Mod en conflit {}"
+
+#: src/gui/dashboard_views/mods_tab.py:197
+msgid "This mod contains a text file, click to view."
+msgstr ""
+
+#: src/gui/dashboard_views/mods_tab.py:210
+msgid "Enabled: {}"
+msgstr "Activé : {}"
+
+#: src/gui/dashboard_views/tools_tab.py:26
+msgid "No utilities defined."
+msgstr "Aucun outil utilitaire n'a été défini"
+
+#: src/gui/dashboard_views/tools_tab.py:73
+msgid "Download"
+msgstr "Télécharger"
+
+#: src/gui/dashboard_views/tools_tab.py:96
+msgid "Edit Load Order"
+msgstr "Modifier l'ordre de chargement"
+
+#: src/gui/dashboard_views/tools_tab.py:113
+msgid "Download Failed"
+msgstr "Téléchargement échoué"
+
+#: src/gui/dashboard_views/tools_tab.py:118
+msgid ""
+"Warning: This process may be destructive to existing game files. Please "
+"ensure you have backed up your game directory before proceeding."
+msgstr ""
+"Attention : Ce procédé peut modifier sans retour les fichiers de jeu "
+"existants. Assurez-vous d'avoir fait une sauvegarde de vos fichier de jeu "
+"avant de procéder."
+
+#: src/gui/dashboard_views/tools_tab.py:122
+msgid "Confirm Installation"
+msgstr "Confirmation de l'installation d'un outil de modding"
+
+#: src/gui/dashboard_views/tools_tab.py:125
+msgid "Cancel"
+msgstr "Annuler"
+
+#: src/gui/dashboard_views/tools_tab.py:126
+msgid "Install Anyway"
+msgstr "Continuer l'installation"
+
+#: src/gui/dashboard_views/tools_tab.py:142
+msgid "Success"
+msgstr "Succès"
+
+#: src/gui/dashboard_views/tools_tab.py:143
+msgid "{} has been installed."
+msgstr "{} a été installé avec succès."
+
+#: src/gui/dashboard_views/tools_tab.py:146
+msgid "Installation Error"
+msgstr "Erreur lors de l'installation"
 
 #~ msgid "Error while removing symlinks: "
 #~ msgstr "Erreur lors de la suppression des symlinks : "
 
 #~ msgid "Error while removing mod from staging: "
 #~ msgstr "Erreur lors de la suppression du mod du dossier staging : "
-
-#~ msgid "No games detected"
-#~ msgstr "Aucun jeu trouvé"
-
-#~ msgid ""
-#~ "We couldn't find any Steam or Heroic games. This could be due to\n"
-#~ " - You not having any supported games installed\n"
-#~ " - Your Steam/Heroic installation type not being handled\n"
-#~ "\n"
-#~ " Feel free to contact me on Discord or Github for more help!"
-#~ msgstr ""
-#~ "NOMM n'a pas réussi a trouver de jeux Steam ou Heroic. Ceci peut être dû "
-#~ "au fait que :\n"
-#~ " - Vous n'avez pas de jeux compatibles\n"
-#~ " - Votre installation Steam/Heroic n'est pas compatible\n"
-#~ "\n"
-#~ "N'hésitez pas à me contacter sur Discord ou Github pour obtenir de l'aide "
-#~ "ou plus d'infos!"
-
-#~ msgid "Storage"
-#~ msgstr "Stockage"
-
-#~ msgid "Configure where NOMM manages your files."
-#~ msgstr "Configurez où NOMM stocke vos fichiers"
-
-#~ msgid "Mod Downloads Path"
-#~ msgstr "Chemin du dossier de téléchargements"
-
-#~ msgid "Mod Staging Path"
-#~ msgstr "Chemin du dossier de staging"
-
-#~ msgid "Nexus Mods Integration"
-#~ msgstr "Intégration Nexus Mods"
-
-#~ msgid "Paste API Key..."
-#~ msgstr "Collez votre clef API..."
-
-#~ msgid "General Settings"
-#~ msgstr "Configuration Générale"
-
-#~ msgid "Per-Game Accent Colour"
-#~ msgstr "Couleurs d'accent par jeu"
-
-#~ msgid "Accent colour will change for each game depending on configuration"
-#~ msgstr ""
-#~ "Les couleurs d'accent vont changer automatiquement dépendant de la "
-#~ "configuration des jeux"
-
-#~ msgid "Skip Launcher"
-#~ msgstr "Passer le Launcher"
-
-#~ msgid "App launches last used game profile instead of starting up launcher"
-#~ msgstr ""
-#~ "L'application va lancer directement le profil du dernier jeu que vous "
-#~ "aviez selectionné"
-
-#~ msgid "Fullscreen NOMM"
-#~ msgstr "NOMM Plein Écran"
-
-#~ msgid "App launches in full screen when you select a game"
-#~ msgstr ""
-#~ "L'application va se lancer en plein écran quand vous selectionnez un jeu"
-
-#~ msgid "Close"
-#~ msgstr "Fermer"

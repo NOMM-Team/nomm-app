@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-04-28 12:39+0200\n"
+"POT-Creation-Date: 2026-04-28 12:54+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -19,10 +19,16 @@ msgstr ""
 "Plural-Forms: nplurals=INTEGER; plural=EXPRESSION;\n"
 
 #: src/core/mod_manager.py:91 src/core/mod_manager.py:92
+#: src/gui/dashboard_views/downloads_tab.py:177
+#: src/gui/dashboard_views/downloads_tab.py:182
+#: src/gui/dashboard_views/downloads_tab.py:210
+#: src/gui/dashboard_views/downloads_tab.py:218
+#: src/gui/dashboard_views/downloads_tab.py:239
+#: src/gui/dashboard_views/downloads_tab.py:267
 msgid "Error"
 msgstr ""
 
-#: src/core/mod_manager.py:91
+#: src/core/mod_manager.py:91 src/gui/dashboard_views/downloads_tab.py:239
 msgid "Installation failed: {}"
 msgstr ""
 
@@ -77,7 +83,7 @@ msgstr ""
 msgid "Select Mod Staging Folder"
 msgstr ""
 
-#: src/gui/application.py:190
+#: src/gui/application.py:190 src/gui/app_views/settings.py:59
 msgid "Nexus API Key"
 msgstr ""
 
@@ -115,4 +121,231 @@ msgstr ""
 msgid ""
 "File not found at:\n"
 " {}"
+msgstr ""
+
+#: src/gui/app_views/library_view.py:34
+msgid "No games detected"
+msgstr ""
+
+#: src/gui/app_views/library_view.py:35
+msgid ""
+"We couldn't find any Steam or Heroic games. This could be due to\n"
+" - You not having any supported games installed\n"
+" - Your Steam/Heroic installation type not being handled\n"
+"\n"
+" Feel free to contact me on Discord or Github for more help!"
+msgstr ""
+
+#: src/gui/app_views/settings.py:15
+msgid "Settings"
+msgstr ""
+
+#: src/gui/app_views/settings.py:25
+msgid "Storage"
+msgstr ""
+
+#: src/gui/app_views/settings.py:25
+msgid "Configure where NOMM manages your files."
+msgstr ""
+
+#: src/gui/app_views/settings.py:29
+msgid "Mod Downloads Path"
+msgstr ""
+
+#: src/gui/app_views/settings.py:39
+msgid "Mod Staging Path"
+msgstr ""
+
+#: src/gui/app_views/settings.py:49
+msgid "Nexus Mods Integration"
+msgstr ""
+
+#: src/gui/app_views/settings.py:53
+msgid "Paste API Key..."
+msgstr ""
+
+#: src/gui/app_views/settings.py:68
+msgid "General Settings"
+msgstr ""
+
+#: src/gui/app_views/settings.py:72
+msgid "Per-Game Accent Colour"
+msgstr ""
+
+#: src/gui/app_views/settings.py:73
+msgid "Accent colour will change for each game depending on configuration"
+msgstr ""
+
+#: src/gui/app_views/settings.py:79
+msgid "Skip Launcher"
+msgstr ""
+
+#: src/gui/app_views/settings.py:80
+msgid "App launches last used game profile instead of starting up launcher"
+msgstr ""
+
+#: src/gui/app_views/settings.py:86
+msgid "Enable Download Pop-up"
+msgstr ""
+
+#: src/gui/app_views/settings.py:87
+msgid ""
+"Downloads appear in a popup, allowing you to track the download progress"
+msgstr ""
+
+#: src/gui/app_views/settings.py:93
+msgid "Fullscreen NOMM"
+msgstr ""
+
+#: src/gui/app_views/settings.py:94
+msgid "App launches in full screen when you select a game"
+msgstr ""
+
+#: src/gui/app_views/settings.py:113
+msgid "Close"
+msgstr ""
+
+#: src/gui/dashboard_views/downloads_tab.py:34
+msgid "All"
+msgstr ""
+
+#: src/gui/dashboard_views/downloads_tab.py:38
+msgid "Uninstalled"
+msgstr ""
+
+#: src/gui/dashboard_views/downloads_tab.py:38
+msgid "Installed"
+msgstr ""
+
+#: src/gui/dashboard_views/downloads_tab.py:122
+msgid "Downloaded: {}"
+msgstr ""
+
+#: src/gui/dashboard_views/downloads_tab.py:132
+#: src/gui/dashboard_views/mods_tab.py:216
+msgid "Installed: {}"
+msgstr ""
+
+#: src/gui/dashboard_views/downloads_tab.py:137
+#: src/gui/dashboard_views/tools_tab.py:76
+msgid "Reinstall"
+msgstr ""
+
+#: src/gui/dashboard_views/downloads_tab.py:137
+msgid "Install"
+msgstr ""
+
+#: src/gui/dashboard_views/downloads_tab.py:147
+#: src/gui/dashboard_views/mods_tab.py:253
+msgid "Are you sure?"
+msgstr ""
+
+#: src/gui/dashboard_views/downloads_tab.py:177
+msgid "Could not delete the file: {}"
+msgstr ""
+
+#: src/gui/dashboard_views/downloads_tab.py:182
+msgid "Could not delete metadata for file: {}"
+msgstr ""
+
+#: src/gui/dashboard_views/downloads_tab.py:210
+msgid ""
+"Installation failed: Your configuration YAML is missing a mods_path. Check "
+"Github for more information on how to configure a YAML for NOMM"
+msgstr ""
+
+#: src/gui/dashboard_views/downloads_tab.py:218
+msgid "No files were found in your mod archive."
+msgstr ""
+
+#: src/gui/dashboard_views/downloads_tab.py:287
+msgid "Select Deployment Path"
+msgstr ""
+
+#: src/gui/dashboard_views/downloads_tab.py:299
+msgid "Multiple deployment locations available:"
+msgstr ""
+
+#: src/gui/dashboard_views/mods_tab.py:28
+msgid "Search mods..."
+msgstr ""
+
+#: src/gui/dashboard_views/mods_tab.py:71
+msgid "The staging metadata file could not be found, did you install any mods?"
+msgstr ""
+
+#: src/gui/dashboard_views/mods_tab.py:131
+msgid "{} file"
+msgid_plural "{} files"
+msgstr[0] ""
+msgstr[1] ""
+
+#: src/gui/dashboard_views/mods_tab.py:161
+msgid "Missing {} file"
+msgid_plural "Missing {} files"
+msgstr[0] ""
+msgstr[1] ""
+
+#: src/gui/dashboard_views/mods_tab.py:165
+msgid "Missing Files:"
+msgstr ""
+
+#: src/gui/dashboard_views/mods_tab.py:181
+msgid "Conflicting mod: {}"
+msgid_plural "Conflicting mods: {}"
+msgstr[0] ""
+msgstr[1] ""
+
+#: src/gui/dashboard_views/mods_tab.py:197
+msgid "This mod contains a text file, click to view."
+msgstr ""
+
+#: src/gui/dashboard_views/mods_tab.py:210
+msgid "Enabled: {}"
+msgstr ""
+
+#: src/gui/dashboard_views/tools_tab.py:26
+msgid "No utilities defined."
+msgstr ""
+
+#: src/gui/dashboard_views/tools_tab.py:73
+msgid "Download"
+msgstr ""
+
+#: src/gui/dashboard_views/tools_tab.py:96
+msgid "Edit Load Order"
+msgstr ""
+
+#: src/gui/dashboard_views/tools_tab.py:113
+msgid "Download Failed"
+msgstr ""
+
+#: src/gui/dashboard_views/tools_tab.py:118
+msgid ""
+"Warning: This process may be destructive to existing game files. Please "
+"ensure you have backed up your game directory before proceeding."
+msgstr ""
+
+#: src/gui/dashboard_views/tools_tab.py:122
+msgid "Confirm Installation"
+msgstr ""
+
+#: src/gui/dashboard_views/tools_tab.py:125
+msgid "Cancel"
+msgstr ""
+
+#: src/gui/dashboard_views/tools_tab.py:126
+msgid "Install Anyway"
+msgstr ""
+
+#: src/gui/dashboard_views/tools_tab.py:142
+msgid "Success"
+msgstr ""
+
+#: src/gui/dashboard_views/tools_tab.py:143
+msgid "{} has been installed."
+msgstr ""
+
+#: src/gui/dashboard_views/tools_tab.py:146
+msgid "Installation Error"
 msgstr ""

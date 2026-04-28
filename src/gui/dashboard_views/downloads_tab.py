@@ -207,7 +207,7 @@ class DownloadsTab(Gtk.Box):
         archive_full_path = os.path.join(self.dashboard.downloads_path, filename)
         
         if not self.dashboard.deployment_targets:
-            self.dashboard.show_message(_("Error"), _("Installation failed: Your configuration YAML is missing a mods_path..."))
+            self.dashboard.show_message(_("Error"), _("Installation failed: Your configuration YAML is missing a mods_path. Check Github for more information on how to configure a YAML for NOMM"))
             return
 
         try:

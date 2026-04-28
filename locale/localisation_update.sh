@@ -1,5 +1,5 @@
 # Update the template
-xgettext --from-code=UTF-8 --language=Python --keyword=_ --output=locale/com.nomm.Nomm.pot src/*.py src/core/*.py src/gui/*py
+xgettext --from-code=UTF-8 --language=Python --keyword=_ --output=locale/com.nomm.Nomm.pot src/*.py src/core/*.py src/gui/*py src/gui/app_views/*.py src/gui/dashboard_views/*.py
 
 # Merge new strings into the translation files without losing old ones
 msgmerge --update locale/fr.po locale/com.nomm.Nomm.pot
