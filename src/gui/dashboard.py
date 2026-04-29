@@ -52,7 +52,7 @@ class GameDashboard(Gtk.Box):
         self.headers = {
             'apikey': self.user_config["nexus_api_key"],
             'Application-Name': 'NOMM',
-            'Application-Version': '0.1'
+            'Application-Version': '0.9'
         }
 
         # Per game accent colour theming
