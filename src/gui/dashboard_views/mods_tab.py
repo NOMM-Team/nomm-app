@@ -10,7 +10,7 @@ from core.mod_manager import (change_mod_index, check_for_conflicts,
                               deploy_all_ordered_mods, load_staging_metadata,
                               read_index, toggle_mod_state)
 from core.nexus_api import check_for_mod_updates_async
-from core.tools import timestamp_converter
+from core.tools import timestamp_converter, write_yaml
 
 _ = gettext.gettext
 ngettext = gettext.ngettext
