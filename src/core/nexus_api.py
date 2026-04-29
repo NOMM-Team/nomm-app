@@ -84,8 +84,8 @@ def handle_nexus_link(nxm_link: str) -> bool:
     }
     
     splitted_nxm = urlsplit(nxm_link)
-    nexus_game_id = splitted_nxm.netloc.lower()
-    print(f"Nexus Game ID: {nexus_game_id}")
+    nexus_id = splitted_nxm.netloc.lower()
+    print(f"Nexus Game ID: {nexus_id}")
 
     game_configs_dir = os.path.join(app_dir, "game_configs")
     game_folder_name = ""
@@ -96,15 +96,15 @@ def handle_nexus_link(nxm_link: str) -> bool:
                 try:
                     with open(os.path.join(game_configs_dir, filename), 'r') as f:
                         g_data = yaml.safe_load(f)
-                        if g_data and g_data.get("nexus_id") == nexus_game_id:
-                            game_folder_name = g_data.get("name", nexus_game_id)
+                        if g_data and g_data.get("nexus_id") == nexus_id:
+                            game_folder_name = g_data.get("name", nexus_id)
                             break
                 except:
                     continue
 
     if not game_folder_name:
-        print(f"Game {nexus_game_id} could not be found in game_configs!")
-        send_download_notification("failure-game-not-found", file_name=None, game_name=nexus_game_id, icon_path=None)
+        print(f"Game {nexus_id} could not be found in game_configs!")
+        send_download_notification("failure-game-not-found", file_name=None, game_name=nexus_id, icon_path=None)
         return
 
     final_download_dir = Path(base_download_path) / game_folder_name
@@ -115,11 +115,11 @@ def handle_nexus_link(nxm_link: str) -> bool:
         _download_nexus_collection(nxm_link, headers, final_download_dir)
     else:
         print("Downloading single mod")
-        _download_nexus_mod(nxm_link, headers, final_download_dir, nexus_game_id, game_folder_name, user_config_dir)
+        _download_nexus_mod(nxm_link, headers, final_download_dir, nexus_id, game_folder_name, user_config_dir)
 
 # Download the mods from nexus and is used in nxm_handler
 # nxm_handler/download_nexus_mod
-def _download_nexus_mod(nxm_link: str, headers: dict, final_download_dir: Path, nexus_game_id: str, game_folder_name: str, user_config_dir):
+def _download_nexus_mod(nxm_link: str, headers: dict, final_download_dir: Path, nexus_id: str, game_folder_name: str, user_config_dir):
     try:
         splitted_nxm = urlsplit(nxm_link)
         nxm_path = splitted_nxm.path.split('/')
@@ -133,7 +133,7 @@ def _download_nexus_mod(nxm_link: str, headers: dict, final_download_dir: Path, 
             'expires': nxm_query.get("expires")
         }
         
-        download_api_url = f"https://api.nexusmods.com/v1/games/{nexus_game_id}/mods/{mod_id}/files/{file_id}/download_link.json"
+        download_api_url = f"https://api.nexusmods.com/v1/games/{nexus_id}/mods/{mod_id}/files/{file_id}/download_link.json"
 
         response = requests.get(download_api_url, headers=headers, params=params)
         if response.status_code == 403:
@@ -160,7 +160,7 @@ def _download_nexus_mod(nxm_link: str, headers: dict, final_download_dir: Path, 
             download_with_progress(file_url, final_download_dir) # windowed download
         
         try:
-            info_api_url = f"https://api.nexusmods.com/v1/games/{nexus_game_id}/mods/{mod_id}/files/{file_id}.json"
+            info_api_url = f"https://api.nexusmods.com/v1/games/{nexus_id}/mods/{mod_id}/files/{file_id}.json"
             info_response = requests.get(info_api_url, headers=headers)
             info_response.raise_for_status()
             file_info_data = info_response.json()
@@ -171,7 +171,7 @@ def _download_nexus_mod(nxm_link: str, headers: dict, final_download_dir: Path, 
                 "changelog": file_info_data.get("changelog_html", ""),
                 "mod_id": mod_id,
                 "file_id": file_id,
-                "mod_link": f"https://www.nexusmods.com/{nexus_game_id}/mods/{mod_id}"  
+                "mod_link": f"https://www.nexusmods.com/{nexus_id}/mods/{mod_id}"  
             }
 
             downloads_metadata_path = get_metadata_path(str(final_download_dir), is_staging=False)
@@ -180,7 +180,7 @@ def _download_nexus_mod(nxm_link: str, headers: dict, final_download_dir: Path, 
             downloads_metadata["mods"] = {}
             downloads_metadata["info"] = {}
             downloads_metadata["info"]["game"] = game_folder_name
-            downloads_metadata["info"]["nexus_id"] = nexus_game_id
+            downloads_metadata["info"]["nexus_id"] = nexus_id
             downloads_metadata["mods"][file_name] = mod_metadata
 
             write_yaml(downloads_metadata, downloads_metadata_path)
