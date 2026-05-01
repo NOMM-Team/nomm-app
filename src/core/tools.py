@@ -170,6 +170,7 @@ def process_bbcode(raw_desc: str) -> str:
 
     print("BBCode successfuly parsed into HTML")
     return pango_text
+
 def retrieve_casesensitive_paths(path:str):
     parts = path.split('/')
     part_list = []
