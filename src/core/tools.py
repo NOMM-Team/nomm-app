@@ -2,6 +2,7 @@ import os
 import yaml
 
 from typing import List, Dict, Any
+from gi.repository import GLib
 
 def get_contrast_color(hex_code: str) -> str:
     hex_code = hex_code.lstrip('#')
@@ -47,3 +48,8 @@ def timestamp_converter(timestamp: str, timestamp_type="short") -> str:
     if timestamp_type == "short": # used for the base UI
         return timestamp.strftime("%x %H:%M")
     return legible_timestamp
+
+def load_user_config() -> dict:
+    """Returns the user's NOMM configuration file data as a dictionary"""
+    user_config_path = os.path.join(GLib.get_user_data_dir (), 'nomm', 'user_config.yaml')
+    return load_yaml(user_config_path)
