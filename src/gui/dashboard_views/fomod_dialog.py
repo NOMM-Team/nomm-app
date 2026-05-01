@@ -1,4 +1,7 @@
-from gi.repository import Gtk, Adw, GObject
+import re
+
+from gi.repository import Adw, GObject, Gtk
+
 
 class FomodSelectionDialog(Gtk.Window):
     
@@ -72,6 +75,10 @@ class FomodSelectionDialog(Gtk.Window):
         
         # Looping on items to fill the list box
         for name, desc, source in options:
+            
+            clean_desc = desc.replace('\n', ' ').replace('\r', '').strip()
+            clean_desc = re.sub(' +', ' ', clean_desc)
+            
             if source == '':
                 continue
             radio = Gtk.CheckButton(group=first_radio)
@@ -90,10 +97,11 @@ class FomodSelectionDialog(Gtk.Window):
             name_label = Gtk.Label(label=name, xalign=0)
             name_label.add_css_class("heading")
             
-            desc_label = Gtk.Label(label=desc, xalign=0, wrap=True)
+            desc_label = Gtk.Label(label=clean_desc, xalign=0, wrap=False)
             desc_label.add_css_class("dim-label")
             desc_label.add_css_class("caption")
             desc_label.set_ellipsize(3)
+            desc_label.set_lines(1)
             
             text_vbox.append(name_label)
             text_vbox.append(desc_label)
