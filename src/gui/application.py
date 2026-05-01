@@ -10,7 +10,7 @@ gi.require_version('Notify', '0.7')
 from gi.repository import Adw, Gdk, GdkPixbuf, GLib, Gtk, Pango, Gio
 
 from core.config import update_user_config
-from core.tools import load_yaml, write_yaml, load_user_config
+from core.tools import load_yaml, write_yaml, load_user_config, write_user_config
 from core.scanner import get_steam_base_dir, scan_all_games
 from gui.app_views.library_view import LibraryView
 from gui.dashboard import GameDashboard
@@ -252,6 +252,12 @@ class Nomm(Adw.Application):
         print(f"Checking for access rights to library paths: {game_libraries}")
         self.locked_libraries = [lib for lib in game_libraries if not os.access(lib, os.W_OK)]
 
+        user_config = load_user_config()
+        if "ignored_libraries" in user_config:
+            ignored_libraries = user_config["ignored_libraries"]
+            print(f"Libraries ignored and not checked: {ignored_libraries}")
+            self.locked_libraries = [path for path in self.locked_libraries if path not in ignored_libraries]
+
         # If there are some missing paths, should display permission request window
         if self.locked_libraries or self.locked_essential_paths:
             print(f"Missing read/write access to some paths: {str(self.locked_libraries + self.locked_essential_paths)}")
@@ -338,13 +344,19 @@ class Nomm(Adw.Application):
         quit_btn.connect("clicked", lambda x: self.quit())
         button_row.append(quit_btn)
         
-        # Button: Continue anyway (Standard Grey) - will NOT be displayed if missing an essential path
+        # Continue buttons will NOT be displayed if missing an essential path
         if not self.locked_essential_paths:
-            continue_btn = Gtk.Button(label=_("Continue anyway"))
+            # Button: Continue anyway
+            continue_btn = Gtk.Button(label=_("Continue"))
             continue_btn.add_css_class("pill")
             continue_btn.connect("clicked", lambda x: self.show_library_ui())
             button_row.append(continue_btn)
 
+            # Button: Continue and ignore 
+            continue_ignore_btn = Gtk.Button(label=_("Continue & Ignore"))
+            continue_ignore_btn.add_css_class("pill")
+            continue_ignore_btn.connect("clicked", lambda x: self.ignore_libraries())
+            button_row.append(continue_ignore_btn)
         
         
         action_box.append(button_row)
@@ -352,6 +364,20 @@ class Nomm(Adw.Application):
         self.remove_stack_child("permissions")
         self.stack.add_named(status_page, "permissions")
         self.stack.set_visible_child_name("permissions")
+
+    def ignore_libraries(self):
+        """lets user ignore checking for r/w access to some libraries during startup check"""
+        user_config = load_user_config()
+        if "ignored_libraries" not in user_config:
+            user_config["ignored_libraries"] = []
+        for path in self.locked_libraries:
+            if path not in user_config["ignored_libraries"]:
+                user_config["ignored_libraries"].append(path)
+                print(f"Added path: {path} to ignored libraries")
+        write_user_config(user_config)
+
+        # Once ignored paths are added to config, show library
+        self.show_library_ui()
 
     def show_library_ui(self):
         self.remove_stack_child("library")

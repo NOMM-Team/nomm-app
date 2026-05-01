@@ -52,4 +52,19 @@ def timestamp_converter(timestamp: str, timestamp_type="short") -> str:
 def load_user_config() -> dict:
     """Returns the user's NOMM configuration file data as a dictionary"""
     user_config_path = os.path.join(GLib.get_user_data_dir (), 'nomm', 'user_config.yaml')
-    return load_yaml(user_config_path)
+    try:
+        data = load_yaml(user_config_path)
+    except:
+        print("Error: could not load user config.")
+        return None
+    return data
+
+def write_user_config(data: dict) -> dict:
+    """Writes to the user's NOMM configuration file"""
+    try: 
+        user_config_path = os.path.join(GLib.get_user_data_dir (), 'nomm', 'user_config.yaml')
+        write_yaml(data, user_config_path)
+    except:
+        print("Error: could not write to user config.")
+        return False
+    return True
