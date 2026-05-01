@@ -91,3 +91,7 @@ def translate_fuse_path(folder_info) -> str:
         except GLib.Error:
             print("Can not get real path. If you see this message you will need to manually give NOMM host filesystem permissions.")
     return folder_path
+
+def load_query(file_path: str):
+    with open(file_path, 'r') as f:
+        return f.read()
