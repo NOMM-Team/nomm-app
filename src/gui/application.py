@@ -43,6 +43,9 @@ class Nomm(Adw.Application):
         self.win = None
 
     def sync_configs(self):
+        """Synchronises game configs from bundled YAMLs to user YAMLs"""
+        # This should only be run if it's the app's first run OR it's a manual refresh
+        print("Synchronising YAML game_configs")
         src, dest = self.default_game_config_path, self.game_config_path
         if not os.path.exists(src): return
         if not os.path.exists(dest): os.makedirs(dest)
@@ -70,9 +73,8 @@ class Nomm(Adw.Application):
             print(f"Error loading CSS: {e}")
             
     def do_activate(self):
-        self.sync_configs()
-        self.styles_application()
         
+        self.styles_application()
         if self.win:
             self.win.present()
             return
@@ -86,6 +88,7 @@ class Nomm(Adw.Application):
         self.win.set_content(self.stack)
 
         if not os.path.exists(self.user_config_path):
+            self.sync_configs()
             self.show_welcome_screen()
         else:
             self.show_loading_and_scan()
@@ -439,4 +442,5 @@ class Nomm(Adw.Application):
         """Resets some logic when the user does a manual refresh"""
         # Reset ignored libraries
         update_user_config("ignored_libraries",[])
+        self.sync_configs()
         self.show_loading_and_scan()
