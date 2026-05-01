@@ -38,6 +38,10 @@ def write_yaml(data: dict, path: str) -> bool:
 
 def timestamp_converter(timestamp: str, timestamp_type="short") -> str:
     """Converts standard time timestamps (2026-04-28 15:52:14.249614) into localised text"""
+    
+    if isinstance(timestamp, str):
+        return timestamp
+    
     #TODO: review this method to produce a nicer timestamp format
     legible_timestamp = timestamp
     try:
