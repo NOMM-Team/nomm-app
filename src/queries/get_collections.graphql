@@ -1,0 +1,54 @@
+query collectionRevision(
+          $slug: String,
+          $revision: Int,
+          $viewAdultContent: Boolean,
+          $domainName: String
+        ) {
+          collectionRevision(
+            slug: $slug,
+            revision: $revision,
+            viewAdultContent: $viewAdultContent,
+            domainName: $domainName
+          ) {
+            assetsSizeBytes
+            collectionChangelog {
+                updatedAt
+            }
+            collectionId
+            collectionSchema {
+                updatedAt
+            }
+            collectionSchemaId
+            contentPreviewLink
+            downloadLink
+            externalResources {
+                name
+                author
+                optional
+                resourceType
+                resourceUrl
+                version
+            }
+            gameVersions {
+                id
+            }
+            latest
+            modCount
+            modFiles {
+                id
+                fileId
+                file {
+                    modId
+                    name
+                }
+            }
+            revision
+            revisionNumber
+            revisionStatus
+            status
+            totalDownloads
+            totalSize
+            uniqueDownloads
+            updatedAt
+          }
+        }

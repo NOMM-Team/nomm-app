@@ -47,3 +47,7 @@ def timestamp_converter(timestamp: str, timestamp_type="short") -> str:
     if timestamp_type == "short": # used for the base UI
         return timestamp.strftime("%x %H:%M")
     return legible_timestamp
+
+def load_query(file_path: str):
+    with open(file_path, 'r') as f:
+        return f.read()

@@ -10,7 +10,7 @@ from gi.repository import GLib
 from core.mod_manager import get_metadata_path, load_staging_metadata
 from core.downloader import download_mod
 from gui.notifications import send_download_notification, download_with_progress
-from core.tools import load_yaml, write_yaml
+from core.tools import load_yaml, write_yaml, load_query
 from typing import Optional, Callable
 
 # Same code as check_for_update but with a worker and a thread for async
@@ -237,28 +237,15 @@ def _download_nexus_collection(nxm_link: str, headers: dict, final_download_dir:
 # Get files from collexion and returns a dict if it manages to get the list
 # nxm_handler/get_files_from_collection.py
 def _get_files_from_collection(game_domain: str, collection_id: str, revision_id: str, headers: dict):
-    graphql_url = "https://graphql.nexusmods.com"
+    # API Endpoint
+    graphql_url = "https://api.nexusmods.com/v2/graphql"
     
+    current_dir = pathlib.Path(__file__).parent.parent.resolve()
+    query_path = os.path.join(current_dir, 'queries', 'get_collections.graphql')
     # GraphQL Query to get mod IDs and file IDs from a revision
-    query = """
-    query collectionRevision(slug: $slug, revision: $revision, domainName: $domainName) {
-        modFiles {
-          modId
-          fileId
-        }
-      }
-    """
-
-    queryold = """
-    query GetCollectionFiles($slug: String, $revision: Int, $domainName: String) {
-      collectionRevision(slug: $slug, revision: $revision, domainName: $domainName) {
-        modFiles {
-          modId
-          fileId
-        }
-      }
-    }
-    """
+    # This query also retrieve other datas such as collection ID
+    # and a lot of other informations
+    query = load_query(query_path)
     
     variables = {
         "slug": collection_id,
@@ -277,7 +264,7 @@ def _get_files_from_collection(game_domain: str, collection_id: str, revision_id
             allow_redirects=True
         )
 
-        if response.status_code != 200:
+        if not response.raise_for_status:
             print(f"Failed API Call: {response.status_code}")
             print(f"Response: {response.text}")
 
@@ -290,17 +277,17 @@ def _get_files_from_collection(game_domain: str, collection_id: str, revision_id
             return []
 
         # Extract the list of modFiles
-        revision_data = data.get("data", {}).get("collectionRevision")
+        revision_data = data["data"]["collectionRevision"]
         if not revision_data:
             print(f"Error: Collection {collection_id} Revision {revision_id} not found.")
             return []
             
-        mod_files = revision_data.get("modFiles", [])
+        revision_data = data["data"]["collectionRevision"]
         
         # Transform into a cleaner list of dicts
         # The GraphQL returns camelCase: {'modId': 123, 'fileId': 456}
         # We'll normalize them to snake_case for a loop: {'mod_id': 123, 'file_id': 456}
-        return [{"mod_id": m["modId"], "file_id": m["fileId"]} for m in mod_files]
+        return [{"mod_id": m["file"]['modId'], "file_id": m["fileId"]} for m in mod_files]
 
     except Exception as e:
         print(f"GraphQL Query Failed: {e}")
