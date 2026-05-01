@@ -5,30 +5,75 @@ import xml.etree.ElementTree as ET
 from core.archive_manager import get_all_relative_files
 
 # Parsing the fomod from the XML
-# fomod_handler.py/parse_fomod_xml
-def parse_fomod_xml(xml_data):
+def parse_fomod_xml(xml_data) -> dict :
+    fomod_data = {}
     try:
-        root = ET.fromstring(xml_data)
-        options = []
-        # Find all plugins (options) within the XML structure
-        for plugin in root.findall(".//plugin"):
-            name = plugin.get('name')
-            desc_node = plugin.find('description')
-            desc = desc_node.text.strip() if desc_node is not None and desc_node.text else "No description provided."
-            
-            folder_node = plugin.find(".//folder")
-            source = folder_node.get('source') if folder_node is not None else None
-            
-            if source:
-                options.append((name, desc, source))
-        
-        module_name = root.findtext('moduleName') or "Unknown Mod"
-        return module_name, options
+        module_name = xml_data.findtext('moduleName')
+        steps = xml_data.findall('.//installStep')
+        fomod_data[module_name] = {}
+        for step in steps:
+            step_name = step.get('name')
+            fomod_data[module_name][step_name] = {}
+            for group in step.findall('.//group'):
+                group_name = group.get('name')
+                group_type = group.get('type')
+                fomod_data[module_name][step_name][group_name] = {
+                    'type' : group_type,
+                    'plugins' : []
+                }
+                options = []
+                for plugin in group.findall('.//plugin'):
+                    plugin_name = plugin.get('name')
+                    plugin_desc = plugin.findtext('description', default='No description provided')
+                    if plugin.find('image') != None:
+                        image_tag = plugin.find('image')
+                        plugin_image_path = image_tag.get('path')
+                    else:
+                        plugin_image_path = ''
+                    items = plugin.findall('.//folder') + plugin.findall('.//file')
+                    folders_data = []
+                    plugin_folder = {}
+                    for index,item in enumerate(items):
+                        source = item.get('source')
+                        dest = item.get('destination')
+                        plugin_folder = {
+                            'source': source,
+                            'destination': dest
+                        }
+                        folders_data.append(plugin_folder)
+                    type_tag = plugin.find('.//type')
+                    plugin_type = type_tag.get('name')
+                    fomod_data[module_name][step_name][group_name]['plugins'].append({
+                        'name': plugin_name,
+                        'desc': plugin_desc.strip(),
+                        'image_path': plugin_image_path,
+                        'folders': folders_data,
+                        'type': plugin_type
+                    })
+                    source_for_option = ''
+                    if len(folders_data) > 0:
+                        source_for_option = folders_data[0].get('source')
+                    desc = plugin_desc
+                    options.append((plugin_name, desc, source_for_option))
+                
+                return module_name, options
     except Exception as e:
         print(f"Failed to parse FOMOD XML: {e}")
         return None, []
+    
+def get_fomod_step_count(parsed_fomod_metadata:dict) -> int:
+    for moduleName in parsed_fomod_metadata:
+        print('inloop')
+        stepCount = len(parsed_fomod_metadata[moduleName])
+    print(stepCount)
+    return stepCount
+    
+def get_fomod_group_count(parsed_fomod_metadata:dict) -> int:
+    print('wip')
 
-# To check, really different
+def get_fomod_step_type(parsed_step_metadata:dict) -> str:
+    print('wip')
+
 def apply_fomod_selection(mod_staging_dir: str, source_folder_name: str) -> list:
     normalized_source = source_folder_name.replace('\\', '/').strip('/')
     source_path = None

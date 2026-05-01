@@ -2,6 +2,7 @@ import gettext
 import os
 import shutil
 import webbrowser
+import xml.etree.ElementTree as ET
 from datetime import datetime
 from pathlib import Path
 
@@ -225,10 +226,10 @@ class DownloadsTab(Gtk.Box):
 
             if fomod_xml_path:
                 xml_path = os.path.join(mod_staging_dir, fomod_xml_path)
-                with open(xml_path, 'rb') as f:
-                    xml_data = f.read()
+                tree = ET.parse(xml_path)
+                xml_root = tree.getroot()
                 
-                module_name, options = parse_fomod_xml(xml_data)
+                module_name, options = parse_fomod_xml(xml_root)
                 
                 if options:
                     dialog = FomodSelectionDialog(self.dashboard.app.win, module_name, options)
