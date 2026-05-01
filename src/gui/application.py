@@ -7,10 +7,10 @@ gi.require_version('Gtk', '4.0')
 gi.require_version('Adw', '1')
 gi.require_version('Notify', '0.7')
 
-from gi.repository import Adw, Gdk, GdkPixbuf, GLib, Gtk
+from gi.repository import Adw, Gdk, GdkPixbuf, GLib, Gtk, Pango, Gio
 
 from core.config import update_user_config
-from core.tools import load_yaml, write_yaml
+from core.tools import load_yaml, write_yaml, load_user_config, write_user_config, translate_fuse_path
 from core.scanner import get_steam_base_dir, scan_all_games
 from gui.app_views.library_view import LibraryView
 from gui.dashboard import GameDashboard
@@ -24,6 +24,7 @@ class Nomm(Adw.Application):
     def __init__(self, **kwargs):
         super().__init__(application_id=APP_NAME, **kwargs)
         self.matches = []
+        self.user_defined_paths = []
         self.steam_base = get_steam_base_dir()
 
         user_data_dir = os.path.join(GLib.get_user_data_dir(), 'nomm')
@@ -145,12 +146,10 @@ class Nomm(Adw.Application):
         dialog.select_folder(self.win, None, self.on_downloads_folder_selected_callback)
 
     def on_downloads_folder_selected_callback(self, dialog, result):
-        try:
-            selected_file = dialog.select_folder_finish(result)
-            if selected_file:
-                self.temp_config = {"download_path": selected_file.get_path(), "library_paths": []}
-                self.show_staging_select_screen()
-        except: pass
+        selected_folder_path = translate_fuse_path(dialog.select_folder_finish(result))
+        self.temp_config = {"download_path": selected_folder_path, "library_paths": []}
+        self.user_defined_paths = [selected_folder_path]
+        self.show_staging_select_screen()
 
     def show_staging_select_screen(self):
         self.remove_stack_child("setup")
@@ -177,12 +176,11 @@ class Nomm(Adw.Application):
         dialog.select_folder(self.win, None, self.on_staging_folder_selected_callback)
 
     def on_staging_folder_selected_callback(self, dialog, result):
-        try:
-            selected_file = dialog.select_folder_finish(result)
-            if selected_file:
-                self.temp_config["staging_path"] = selected_file.get_path()
-                self.show_nexus_api_key_screen()
-        except: pass
+        selected_folder_path = translate_fuse_path(dialog.select_folder_finish(result))
+        self.temp_config["staging_path"] = selected_folder_path
+        self.user_defined_paths.append(selected_folder_path)
+        self.show_nexus_api_key_screen()
+
 
     def show_nexus_api_key_screen(self):
         self.remove_stack_child("api_key")
@@ -223,8 +221,144 @@ class Nomm(Adw.Application):
         threading.Thread(target=self.run_background_workflow, daemon=True).start()
 
     def run_background_workflow(self):
-        self.matches = scan_all_games(self.game_config_path)
-        GLib.idle_add(self.show_library_ui)
+        self.matches, game_libraries = scan_all_games(self.game_config_path)
+
+        # Check if there are essential paths that are locked (staging & downloads folders)
+        user_config = load_user_config()
+        essential_paths = [user_config["download_path"], user_config["staging_path"]]
+        print(f"Checking for access rights to essential paths: {essential_paths}")
+        self.locked_essential_paths = [path for path in essential_paths if not os.access(path, os.W_OK)]
+        
+        # Check which game libraries are locked (No Write Access)
+        print(f"Checking for access rights to library paths: {game_libraries}")
+        self.locked_libraries = [lib for lib in game_libraries if not os.access(lib, os.W_OK)]
+
+        user_config = load_user_config()
+        if "ignored_libraries" in user_config:
+            ignored_libraries = user_config["ignored_libraries"]
+            print(f"Libraries ignored and not checked: {ignored_libraries}")
+            self.locked_libraries = [path for path in self.locked_libraries if path not in ignored_libraries]
+
+        # If there are some missing paths, should display permission request window
+        if self.locked_libraries or self.locked_essential_paths:
+            print(f"Missing read/write access to some paths: {str(self.locked_libraries + self.locked_essential_paths)}")
+            GLib.idle_add(self.show_permission_request)
+        else:
+            GLib.idle_add(self.show_library_ui)
+
+    def copy_to_clipboard(self, btn, text):
+        # Get the default display directly from Gdk
+        display = Gdk.Display.get_default()
+        clipboard = display.get_clipboard()
+        
+        # In GTK4, use .set_content() or .set() depending on your version
+        # .set(text) is a convenience method added in later GTK4 updates
+        clipboard.set(text)
+        
+        # Visual feedback
+        btn.set_icon_name("object-select-symbolic")
+        GLib.timeout_add(1000, lambda: btn.set_icon_name("edit-copy-symbolic"))
+
+    def show_permission_request(self):
+        status_page = Adw.StatusPage(
+            icon_name="system-lock-screen-symbolic",
+            title=_("Permissions Missing"),
+            description=_("Nomm needs some extra permissions to read/write to specific folders.\n"
+                        "This is used so that NOMM can find your games and install &amp; deploy mods properly.\n"
+                        "Please copy the command below and run it in your terminal.")
+        )
+
+        # Generate the command
+        paths_str = " ".join([f"--filesystem='{p}'" for p in (self.locked_libraries + self.locked_essential_paths)])
+        full_command = f"flatpak override --user {paths_str} {APP_NAME}"
+
+        # Build the Multi-line Block
+        action_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=15)
+        action_box.set_halign(Gtk.Align.CENTER)
+
+        # We use a horizontal box to keep the TextView and Copy button together
+        cmd_container = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
+        
+        # TextView setup
+        text_view = Gtk.TextView()
+        text_view.set_editable(False)
+        text_view.set_cursor_visible(False)
+        text_view.set_wrap_mode(Gtk.WrapMode.WORD_CHAR) # Essential for wrapping long paths
+        text_view.set_monospace(True)
+        text_view.add_css_class("card") # Adds a nice background/border in Libadwaita
+        
+        # Insert the command into the TextView buffer
+        buffer = text_view.get_buffer()
+        buffer.set_text(full_command)
+        
+        # Set a minimum size so it looks like a "block"
+        text_view.set_size_request(450, 100) 
+        # Add some internal padding
+        text_view.set_left_margin(10); text_view.set_right_margin(10)
+        text_view.set_top_margin(10); text_view.set_bottom_margin(10)
+
+        copy_btn = Gtk.Button(icon_name="edit-copy-symbolic", tooltip_text=_("Copy to Clipboard"))
+        copy_btn.set_valign(Gtk.Align.START) # Keep button at the top of the multi-line block
+        copy_btn.add_css_class("suggested-action")
+        copy_btn.connect("clicked", self.copy_to_clipboard, full_command)
+
+        cmd_container.append(text_view)
+        cmd_container.append(copy_btn)
+        action_box.append(cmd_container)
+
+        # Footer
+        restart_hint = Gtk.Label(label=_("Restart Nomm after running the command."))
+        restart_hint.add_css_class("dim-label")
+        action_box.append(restart_hint)
+
+        status_page.set_child(action_box)
+
+        # Container for buttons
+        button_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
+        button_row.set_halign(Gtk.Align.CENTER)
+        button_row.set_margin_top(24)
+
+        # Button: Quit (Accented/Blue)
+        quit_btn = Gtk.Button(label=_("Quit"))
+        quit_btn.add_css_class("pill")
+        quit_btn.add_css_class("suggested-action") # This provides the accent color
+        quit_btn.connect("clicked", lambda x: self.quit())
+        button_row.append(quit_btn)
+        
+        # Continue buttons will NOT be displayed if missing an essential path
+        if not self.locked_essential_paths:
+            # Button: Continue anyway
+            continue_btn = Gtk.Button(label=_("Continue"))
+            continue_btn.add_css_class("pill")
+            continue_btn.connect("clicked", lambda x: self.show_library_ui())
+            button_row.append(continue_btn)
+
+            # Button: Continue and ignore 
+            continue_ignore_btn = Gtk.Button(label=_("Continue & Ignore"))
+            continue_ignore_btn.add_css_class("pill")
+            continue_ignore_btn.connect("clicked", lambda x: self.ignore_libraries())
+            button_row.append(continue_ignore_btn)
+        
+        
+        action_box.append(button_row)
+
+        self.remove_stack_child("permissions")
+        self.stack.add_named(status_page, "permissions")
+        self.stack.set_visible_child_name("permissions")
+
+    def ignore_libraries(self):
+        """lets user ignore checking for r/w access to some libraries during startup check"""
+        user_config = load_user_config()
+        if "ignored_libraries" not in user_config:
+            user_config["ignored_libraries"] = []
+        for path in self.locked_libraries:
+            if path not in user_config["ignored_libraries"]:
+                user_config["ignored_libraries"].append(path)
+                print(f"Added path: {path} to ignored libraries")
+        write_user_config(user_config)
+
+        # Once ignored paths are added to config, show library
+        self.show_library_ui()
 
     def show_library_ui(self):
         self.remove_stack_child("library")
@@ -281,3 +415,9 @@ class Nomm(Adw.Application):
         from gui.app_views.settings import SettingsWindow
         settings_win = SettingsWindow(parent_window=self.win, assets_path=self.assets_path)
         settings_win.present()
+
+    def manual_library_refresh(self):
+        """Resets some logic when the user does a manual refresh"""
+        # Reset ignored libraries
+        update_user_config("ignored_libraries",[])
+        self.show_loading_and_scan()

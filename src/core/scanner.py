@@ -46,7 +46,7 @@ def get_steam_library_paths(vdf_path) -> List[str]:
     return libraries
 
 # launcher.py/get_heroic_library_paths
-def get_heroic_library_paths() -> Dict[str, Optional[str]]:
+def get_heroic_config_paths() -> Dict[str, Optional[str]]:
     paths = {"epic": None, "gog": None}
     
     # Epic
@@ -167,19 +167,25 @@ def scan_heroic_gog_game(yaml_data, yaml_path, game_title, installed_gog, steam_
 def scan_all_games(game_configs_dir):
     matches = []
     steam_base = get_steam_base_dir()
-    
+
+    game_libraries = []
+
     user_config_dir = os.path.join(GLib.get_user_data_dir(), 'nomm', 'user_config.yaml')
     user_config = load_yaml(user_config_dir)
     found_libs = set(user_config.get("library_paths", []))
+    
 
-    # Update Steam Libraries if empty
-    if not found_libs and steam_base:
+    # Update Steam Libraries
+    if steam_base:
         found_libs = set(get_steam_library_paths(os.path.join(steam_base, "config/libraryfolders.vdf")))
         if found_libs:
             update_user_config("library_paths", sorted(list(found_libs)))
 
+    game_libraries.extend(list(found_libs))
+    print(f"Game libraries detected: {str(game_libraries)}")
+
     # Pre-load Heroic Libraries
-    heroic_paths = get_heroic_library_paths()
+    heroic_paths = get_heroic_config_paths()
     installed_epic = {}
     installed_gog = {}
     
@@ -201,6 +207,8 @@ def scan_all_games(game_configs_dir):
         print(f"Configs directory not found at {game_configs_dir}")
         return matches
 
+    heroic_game_paths = []
+
     # Scan each config
     for filename in os.listdir(game_configs_dir):
         if not filename.lower().endswith((".yaml", ".yml")):
@@ -212,6 +220,7 @@ def scan_all_games(game_configs_dir):
                 yaml_data = yaml.safe_load(f) or {}
 
             if not yaml_data.get("name") or yaml_data.get("mods_path") is None:
+                print("Yaml game file malformed, skipping...")
                 continue
             
             game_title = yaml_data["name"]
@@ -228,6 +237,7 @@ def scan_all_games(game_configs_dir):
                 match = scan_heroic_epic_game(yaml_data, yaml_path, game_title, installed_epic, steam_base)
                 if match:
                     matches.append(match)
+                    heroic_game_paths.append(match["path"])
                     continue
 
             # --- SCAN HEROIC GOG ---
@@ -235,15 +245,31 @@ def scan_all_games(game_configs_dir):
                 match = scan_heroic_gog_game(yaml_data, yaml_path, game_title, installed_gog, steam_base)
                 if match:
                     matches.append(match)
+                    heroic_game_paths.append(match["path"])
                     continue
+        
+        
 
         except Exception as e:
             print(f"Error processing {filename} during scan: {e}")
+    
+    heroic_library_paths = obtain_heroic_libraries(heroic_game_paths)
 
-    return matches
+    game_libraries = game_libraries + heroic_library_paths
+
+    return matches, game_libraries
+
+def obtain_heroic_libraries(game_paths: list) -> list:
+    """Takes a list of unique game paths and attempts to extrapolate a list of library directories"""
+    directory_paths = []
+    for path in game_paths:
+        if os.path.dirname(path) not in directory_paths:
+            directory_paths.append(os.path.dirname(path))
+    return directory_paths
+    
 
 # Grabs the assets from heroic games launcher such as banner and game image
-#TODO: Needs to be cleaned
+# TODO: Needs to be cleaned
 # utils.py download_heroic_assets
 def download_heroic_assets(appName: str, platform: str):
     if isinstance(appName, list):
