@@ -11,8 +11,8 @@ from core.fomod_manager import (check_for_dependencies,
                                 get_fomod_group_options, get_fomod_step_count,
                                 get_plugin_image_path, get_plugin_type,
                                 have_plugins_images, is_step_visible)
-from gui.text_window import TextWindow
 from core.tools import retrieve_casesensitive_paths
+from gui.text_window import TextWindow
 
 
 class FomodSelectionDialog(Adw.Window):
