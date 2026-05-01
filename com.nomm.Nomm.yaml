@@ -1,11 +1,10 @@
 id: com.nomm.Nomm
 runtime: org.gnome.Platform
-runtime-version: '49' # Matching the latest stable GNOME runtime
+runtime-version: '49' # latest stable GNOME runtime
 sdk: org.gnome.Sdk
-command: nomm # The name of your entry-point script
+command: nomm
 finish-args:
-  # Network access for downloading images and Nexus mods
-  - --share=network
+  - --share=network # Network access for downloading images and Nexus mods
   - --share=ipc
   - --socket=fallback-x11
   - --socket=wayland
@@ -15,16 +14,11 @@ finish-args:
   - --filesystem=~/.config/heroic:ro # Standard
   - --filesystem=~/.var/app/com.heroicgameslauncher.hgl/config/heroic:ro # Flatpak
   # Steam
-  - --filesystem=~/.local/share/Steam:rw # Standard
+  - --filesystem=~/.local/share/Steam:ro # Standard
   - --filesystem=~/.var/app/com.valvesoftware.Steam:ro # Flatpak
-  # Mounting points (to install mods in games)
-  - --filesystem=/run/media:rw
-  - --filesystem=/mnt:rw
-  #to allow to read and write files from home folder
-  - --filesystem=home
 
 modules:
-  # 1. Python dependencies (generated via flatpak-pip-generator)
+  # Python dependencies (generated via flatpak-pip-generator)
   - python3-modules.json
 
   # bundling unrar because otherwise the default version in flatpak doesn't work
@@ -44,14 +38,12 @@ modules:
     build-commands:
       # '7za' is the standalone binary with the main codecs built-in
       - make 7za
-      # We install it as '7z' so your Python code doesn't have to change
       - install -Dm755 bin/7za /app/bin/7z
     sources:
       - type: archive
         url: https://github.com/p7zip-project/p7zip/archive/refs/tags/v17.05.tar.gz
         sha256: d2788f892571058c08d27095c22154579dfefb807ebe357d145ab2ddddefb1a6
 
-  # 2. Your Application
   - name: NOMM
     buildsystem: simple
 
@@ -59,24 +51,21 @@ modules:
       # Install entry point from the src folder to /app/bin
       - install -D src/main.py /app/bin/nomm
       
-      # Autres fichiers racines de src
-      - cp src/*.yaml /app/bin/
-      
       # Install desktop file
       - install -D com.nomm.Nomm.desktop /app/share/applications/com.nomm.Nomm.desktop
 
       # Install metainfo
       - install -D com.nomm.Nomm.metainfo.xml /app/share/metainfo/com.nomm.Nomm.metainfo.xml
 
-      # Install icon
+      # Install logo
       - install -D assets/nomm.png /app/share/icons/hicolor/64x64/apps/com.nomm.Nomm.png
 
-      # Copy all other python files FROM src into the same /app/bin folder
-      # This ensures 'nomm' and 'dashboard.py' are flat neighbors
+      # Copy all other python files
       - cp -r src/core /app/bin/core
       - cp -r src/gui /app/bin/gui
       - cp -r src/styles /app/bin/styles
 
+      # Other files (shenanigans)
       - cp src/*.yaml /app/bin/
       
       # Copy non-code folders
