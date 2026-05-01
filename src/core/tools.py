@@ -2,7 +2,7 @@ import os
 import yaml
 
 from typing import List, Dict, Any
-from gi.repository import GLib
+from gi.repository import GLib, Gio
 
 def get_contrast_color(hex_code: str) -> str:
     hex_code = hex_code.lstrip('#')
@@ -68,3 +68,22 @@ def write_user_config(data: dict) -> dict:
         print("Error: could not write to user config.")
         return False
     return True
+
+def translate_fuse_path(folder_info) -> str:
+    folder_path = folder_info.get_path()
+    if "run/user" in folder_path:
+        print(f"Detected sandboxed path: {folder_path}")
+        try:
+            # Get FileInfo for File
+            file_info = folder_info.query_info("xattr::document-portal.host-path", Gio.FileQueryInfoFlags.NONE, None)
+
+            # Query file attribute for real path
+            real_path = file_info.get_attribute_string("xattr::document-portal.host-path")
+            if real_path is not None: # Attribute does not exist if None
+                print(f"Real path parsed: {real_path}")
+                return real_path
+            else:
+                pass # TODO: Throw error dialog to request user to broaden sandbox permissions.
+        except GLib.Error:
+            print("Can not get real path. If you see this message you will need to manually give NOMM host filesystem permissions.")
+    return folder_path

@@ -10,7 +10,7 @@ gi.require_version('Notify', '0.7')
 from gi.repository import Adw, Gdk, GdkPixbuf, GLib, Gtk, Pango, Gio
 
 from core.config import update_user_config
-from core.tools import load_yaml, write_yaml, load_user_config, write_user_config
+from core.tools import load_yaml, write_yaml, load_user_config, write_user_config, translate_fuse_path
 from core.scanner import get_steam_base_dir, scan_all_games
 from gui.app_views.library_view import LibraryView
 from gui.dashboard import GameDashboard
@@ -145,27 +145,8 @@ class Nomm(Adw.Application):
         dialog = Gtk.FileDialog(title=_("Select Mod Downloads Folder"))
         dialog.select_folder(self.win, None, self.on_downloads_folder_selected_callback)
 
-    def translate_fuse_path(self, folder_info) -> str:
-        folder_path = folder_info.get_path()
-        if "run/user" in folder_path:
-            print(f"Detected sandboxed path: {folder_path}")
-            try:
-                # Get FileInfo for File
-                file_info = folder_info.query_info("xattr::document-portal.host-path", Gio.FileQueryInfoFlags.NONE, None)
-
-                # Query file attribute for real path
-                real_path = file_info.get_attribute_string("xattr::document-portal.host-path")
-                if real_path is not None: # Attribute does not exist if None
-                    print(f"Real path parsed: {real_path}")
-                    return real_path
-                else:
-                    pass # TODO: Throw error dialog to request user to broaden sandbox permissions.
-            except GLib.Error:
-                print("Can not get real path. If you see this message you will need to manually give NOMM host filesystem permissions.")
-        return folder_path
-
     def on_downloads_folder_selected_callback(self, dialog, result):
-        selected_folder_path = self.translate_fuse_path(dialog.select_folder_finish(result))
+        selected_folder_path = translate_fuse_path(dialog.select_folder_finish(result))
         self.temp_config = {"download_path": selected_folder_path, "library_paths": []}
         self.user_defined_paths = [selected_folder_path]
         self.show_staging_select_screen()
@@ -195,7 +176,7 @@ class Nomm(Adw.Application):
         dialog.select_folder(self.win, None, self.on_staging_folder_selected_callback)
 
     def on_staging_folder_selected_callback(self, dialog, result):
-        selected_folder_path = self.translate_fuse_path(dialog.select_folder_finish(result))
+        selected_folder_path = translate_fuse_path(dialog.select_folder_finish(result))
         self.temp_config["staging_path"] = selected_folder_path
         self.user_defined_paths.append(selected_folder_path)
         self.show_nexus_api_key_screen()
