@@ -36,10 +36,6 @@ def write_yaml(data: dict, path: str) -> bool:
 
 def timestamp_converter(timestamp: str, timestamp_type="short") -> str:
     """Converts standard time timestamps (2026-04-28 15:52:14.249614) into localised text"""
-    
-    if isinstance(timestamp, str):
-        return timestamp
-    
     #TODO: review this method to produce a nicer timestamp format
     legible_timestamp = timestamp
     try:
@@ -91,7 +87,3 @@ def translate_fuse_path(folder_info) -> str:
         except GLib.Error:
             print("Can not get real path. If you see this message you will need to manually give NOMM host filesystem permissions.")
     return folder_path
-
-def load_query(file_path: str):
-    with open(file_path, 'r') as f:
-        return f.read()
