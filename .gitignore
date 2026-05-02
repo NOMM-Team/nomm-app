@@ -1,11 +1,13 @@
 __pycache__/
-# build directory
-repo/
 
-/flatpak-pip-generator.py
-/.flatpak-builder
-/python3-modules.json
 /.vscode
-/build-dir
 
-nomm.flatpak
+# flatpak build files
+repo/
+/.flatpak-builder
+/build-dir
+/build/flatpak/flatpak-pip-generator.py
+/build/flatpak/python3-modules.json
+
+# flatpak package
+NOMM.flatpak
