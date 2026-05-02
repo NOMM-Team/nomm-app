@@ -1,0 +1,19 @@
+name: "PRAGMATA"
+steam_folder_name: PRAGMATA
+steam_id: 3357650
+nexus_id: pragmata
+accent_colour: "#032396"
+
+mods_path: ""
+
+essential-utilities:
+  REFramework:
+    name: REFramework
+    version: REF Nightly 01373
+    creator: praydog
+    creator-link: https://github.com/praydog
+    source: https://github.com/praydog/REFramework-nightly/releases/download/nightly-01373-c4b1314820d20255febf7834903e8cedb669b49c/REFramework.zip
+    utility_path: ""
+    enable_command: ""
+    whitelist:
+      - dinput8.dll

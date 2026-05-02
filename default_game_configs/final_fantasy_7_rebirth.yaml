@@ -1,6 +1,7 @@
 name: FINAL FANTASY VII REBIRTH
 steam_id: 2909400
 nexus_id: finalfantasy7rebirth
+accent_colour: "#ac1a24"
 
 mods_path:
 - path: End/Content/Paks/~mods/

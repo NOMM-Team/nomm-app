@@ -2,5 +2,6 @@ name: FINAL FANTASY VII REMAKE INTERGRADE
 steam_folder_name: FINAL FANTASY VII REMAKE
 steam_id: 1462040
 nexus_id: finalfantasy7remake
+accent_colour: "#1CA9C9"
 
 mods_path: End/Content/Paks/~mods/

@@ -1,0 +1,7 @@
+name: "SpongeBob SquarePants: The Cosmic Shake"
+steam_folder_name: SpongeBob SquarePants The Cosmic Shake
+steam_id: 1282150
+nexus_id: spongebobsquarepantsthecosmicshake
+accent_colour: "#cd06e3"
+
+mods_path: CosmicShake/Content/Paks/

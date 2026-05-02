@@ -2,6 +2,7 @@ name: "SpongeBob SquarePants: Battle for Bikini Bottom - Rehydrated"
 steam_folder_name: SpongeBob SquarePants Battle for Bikini Bottom - Rehydrated
 steam_id: 969990
 nexus_id: spongebobsquarepantsbattleforbikinibottomrehydrated
+accent_colour: "#fff51c"
 
 mods_path:
 - path: Pineapple/Content/Paks/~mods

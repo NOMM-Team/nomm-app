@@ -2,5 +2,6 @@ name: "Metal Gear Solid Δ: Snake Eater"
 steam_folder_name: MGSDelta
 steam_id: 2417610
 nexus_id: metalgearsoliddeltasnakeeater
+accent_colour: "#009500"
 
 mods_path: MGSDelta/Content/Paks/~mods/

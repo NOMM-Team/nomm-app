@@ -340,21 +340,21 @@ def finalise_mod_metadata(filename: str, mod_files: list, deployment_target_name
     current_staging_metadata = load_staging_metadata(staging_meta_path)
     current_download_metadata = {}
 
-    #This request should only fail if all previous files were manually added --> can be fixed with a rework of check_index
+    mod_name = filename.replace(".zip", "").replace(".rar", "").replace(".7z", "")
+
+    # This request should only fail if all previous files were manually added --> can be fixed with a rework of check_index
     if os.path.exists(downloads_meta_path):
         with open(downloads_meta_path, 'r') as f:
             current_download_metadata = yaml.safe_load(f) or {}
-
-    if "info" in current_download_metadata:
-        current_staging_metadata["info"] = current_download_metadata["info"]
+        if "info" in current_download_metadata:
+            current_staging_metadata["info"] = current_download_metadata["info"]
+        if filename in current_download_metadata.get("mods"):
+            mod_data = current_download_metadata["mods"][filename]
+            mod_name = mod_data.get("name", mod_name)
+            current_staging_metadata["mods"][mod_name] = mod_data
     
-    mod_name = filename.replace(".zip", "").replace(".rar", "").replace(".7z", "")
-    
-    if filename in current_download_metadata.get("mods"):
-        mod_data = current_download_metadata["mods"][filename]
-        mod_name = mod_data.get("name", mod_name)
-        current_staging_metadata["mods"][mod_name] = mod_data
-    else:
+    # Catch-all check in case we don't have the metadata initialised for that mod
+    if mod_name not in current_staging_metadata["mods"]:
         current_staging_metadata["mods"][mod_name] = {}
 
     current_staging_metadata["mods"][mod_name]["mod_files"] = mod_files
