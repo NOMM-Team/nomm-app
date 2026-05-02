@@ -2,5 +2,6 @@ name: "STAR WARS Jedi Fallen Order"
 steam_folder_name: Jedi Fallen Order
 steam_id: 1172380
 nexus_id: starwarsjedifallenorder
+accent_colour: "#F7F9FA"
 
 mods_path: SwGame/Content/Paks/~mods/

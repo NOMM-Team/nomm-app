@@ -1,6 +1,7 @@
 name: Marvel Rivals
 steam_id: 2767030
 nexus_id: marvelrivals
+accent_colour: "#fcd92d"
 
 mods_path: MarvelGame/Marvel/Content/Paks/~mods/
 
