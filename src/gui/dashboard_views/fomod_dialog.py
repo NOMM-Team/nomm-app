@@ -14,6 +14,7 @@ from core.fomod_manager import (check_for_dependencies,
 from core.tools import retrieve_casesensitive_paths
 from gui.text_window import TextWindow
 
+from core.fomod_manager import get_fomod_group_options, get_fomod_module_name, get_fomod_group_type
 
 class FomodSelectionDialog(Adw.Window):
     
