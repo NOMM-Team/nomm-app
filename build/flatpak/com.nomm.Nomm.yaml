@@ -64,7 +64,6 @@ modules:
       - cp -r src/core /app/bin/core
       - cp -r src/gui /app/bin/gui
       - cp -r src/styles /app/bin/styles
-      - cp -r src/queries /app/bin/queries
 
       # Other files (shenanigans)
       - cp src/*.yaml /app/bin/
