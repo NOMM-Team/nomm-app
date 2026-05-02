@@ -1,11 +1,13 @@
-import re
 import os
 import pathlib
+import re
 
-from gi.repository import Adw, GObject, Gtk, GdkPixbuf, Gdk
+from gi.repository import Adw, Gdk, GdkPixbuf, GObject, Gtk
 
-from core.fomod_manager import (get_fomod_group_options, get_fomod_group_type,
-                                get_fomod_module_name, get_plugin_image_path, get_fomod_step_count, get_fomod_group_count)
+from core.fomod_manager import (get_fomod_group_count, get_fomod_group_options,
+                                get_fomod_group_type, get_fomod_module_name,
+                                get_fomod_step_count, get_plugin_image_path,
+                                get_plugin_type)
 
 
 class FomodSelectionDialog(Gtk.Window):
@@ -190,8 +192,15 @@ class FomodSelectionDialog(Gtk.Window):
         # Looping on items to fill the list box
         for name, desc, source in options:
             
+            plugin_type = get_plugin_type(self.fomod_metadata, name, self.current_step, self.current_group)
+            
             clean_desc = desc.replace('\n', ' ').replace('\r', '').strip()
             clean_desc = re.sub(' +', ' ', clean_desc)
+            
+            if plugin_type == 'Recommended':
+                clean_desc = "This plugin is recommended by the author"
+            elif plugin_type == 'Required':
+                clean_desc = "This plugin has been defined as required by the author"
             
             if source == [] :
                 extracted_information.append(clean_desc)
@@ -239,6 +248,10 @@ class FomodSelectionDialog(Gtk.Window):
                 row.is_radio = True
             else:
                 row.is_radio = False
+            
+            if plugin_type == 'Required':
+                row.set_can_target(False)
+                row.radio_button.set_active(True)
             
             # Adding row to the UI
             list_box.append(row)
