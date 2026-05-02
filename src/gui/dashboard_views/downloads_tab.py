@@ -233,7 +233,7 @@ class DownloadsTab(Gtk.Box):
                 fomod_metadata = parse_fomod_xml(xml_root)
                 
                 if fomod_metadata:
-                    dialog = FomodSelectionDialog(self.dashboard.app.win, fomod_metadata)
+                    dialog = FomodSelectionDialog(self.dashboard.app.win, fomod_metadata, mod_staging_dir)
                     dialog.connect("response", self.on_fomod_dialog_response, mod_staging_dir, filename)
                     dialog.present()
                     return

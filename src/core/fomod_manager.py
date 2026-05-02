@@ -107,6 +107,16 @@ def get_fomod_group_options(parsed_fomod_metadata:dict, step_index: int = 0, gro
     # TODO:Target path should also be sent with source path
     return options
 
+def get_plugin_image_path(parsed_fomod_metadata:dict, plugin_name:str, step_index: int = 0, group_index: int = 0) -> string:
+    module_name = list(parsed_fomod_metadata.keys())[0]
+    step_name = list(parsed_fomod_metadata[module_name].keys())[step_index]
+    group_name = list(parsed_fomod_metadata[module_name][step_name].keys())[group_index]
+    plugins = parsed_fomod_metadata[module_name][step_name][group_name]['plugins']
+    for plugin in plugins:
+        if plugin['name'] == plugin_name:
+            return plugin['image_path']
+    return ''
+
 def apply_fomod_selection(mod_staging_dir: str, source_folder_name: str) -> list:
     normalized_source = source_folder_name.replace('\\', '/').strip('/')
     source_path = None
