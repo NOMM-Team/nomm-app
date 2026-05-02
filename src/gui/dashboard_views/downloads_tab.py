@@ -12,7 +12,7 @@ from gi.repository import Adw, Gdk, Gio, GLib, Gtk, Pango
 from core.archive_manager import (delete_downloaded_archive, extract_archive,
                                   get_all_relative_files,
                                   process_dropped_files)
-from core.fomod_manager import apply_fomod_selection, parse_fomod_xml
+from core.fomod_manager import apply_fomod_selection, parse_fomod_xml, get_required_files
 from core.mod_manager import (finalise_mod_metadata, is_mod_installed,
                               load_staging_metadata, remove_mod_from_metadata)
 from core.tools import timestamp_converter
@@ -262,7 +262,11 @@ class DownloadsTab(Gtk.Box):
     def on_fomod_dialog_response(self, dialog, response, mod_staging_dir, filename):
         # As we have multiple files to copy, we loop on items to retrieve every source and it's associated destination
         if response == Gtk.ResponseType.OK:
+            
             install_items = dialog.get_global_sources()
+            
+            required = get_required_files(dialog.fomod_metadata)
+            install_items = required + install_items
             
             temp_install_dir = f"{mod_staging_dir}_final_fomod"
             os.makedirs(temp_install_dir, exist_ok=True)
@@ -293,6 +297,8 @@ class DownloadsTab(Gtk.Box):
                                           
                 except Exception as e:
                     self.dashboard.show_message(_("Error"), str(e))
+            
+            grouped_final_files = get_all_relative_files(temp_install_dir)
             
             if grouped_final_files:
                 shutil.rmtree(mod_staging_dir, ignore_errors=True)

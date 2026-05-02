@@ -158,3 +158,13 @@ def apply_fomod_selection(mod_staging_dir: str, source_folder_name: str, dest_pa
         copied_files.append(os.path.basename(source_path))
 
     return copied_files
+
+def get_required_files(parsed_fomod_metadata: dict) -> list:
+    required_items = []
+    module_name = list(parsed_fomod_metadata.keys())[0]
+    for step in parsed_fomod_metadata[module_name].values():
+        for group in step.values():
+            for plugin in group['plugins']:
+                if plugin['type'] in ('Required', 'Recommended'):
+                    required_items.extend(plugin['folders'])
+    return required_items
