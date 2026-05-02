@@ -65,14 +65,14 @@ def get_fomod_step_count(parsed_fomod_metadata:dict) -> int:
     
     return step_count
     
-def get_fomod_group_count(parsed_fomod_metadata:dict, step_index: int) -> int:
+def get_fomod_group_count(parsed_fomod_metadata:dict, step_index: int = 0) -> int:
     module_name = list(parsed_fomod_metadata.keys())[0]
     step_name = list(parsed_fomod_metadata[module_name].keys())[step_index]
     group_count = len(parsed_fomod_metadata[module_name][step_name])
     
     return group_count
 
-def get_fomod_group_type(parsed_fomod_metadata:dict, step_index: int, group_index: int) -> str:
+def get_fomod_group_type(parsed_fomod_metadata:dict, step_index: int = 0, group_index: int = 0) -> str:
     module_name = list(parsed_fomod_metadata.keys())[0]
     step_name = list(parsed_fomod_metadata[module_name].keys())[step_index]
     group_name = list(parsed_fomod_metadata[module_name][step_name].keys())[group_index]
@@ -83,7 +83,7 @@ def get_fomod_group_type(parsed_fomod_metadata:dict, step_index: int, group_inde
 def get_fomod_module_name(parsed_fomod_metadata:dict) -> str:
     return list(parsed_fomod_metadata.keys())[0]
 
-def get_fomod_group_options(parsed_fomod_metadata:dict, step_index: int, group_index: int) -> list:
+def get_fomod_group_options(parsed_fomod_metadata:dict, step_index: int = 0, group_index: int = 0) -> list:
     module_name = list(parsed_fomod_metadata.keys())[0]
     step_name = list(parsed_fomod_metadata[module_name].keys())[step_index]
     group_name = list(parsed_fomod_metadata[module_name][step_name].keys())[group_index]

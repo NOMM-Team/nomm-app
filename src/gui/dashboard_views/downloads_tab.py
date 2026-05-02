@@ -12,8 +12,7 @@ from gi.repository import Adw, Gdk, Gio, GLib, Gtk, Pango
 from core.archive_manager import (delete_downloaded_archive, extract_archive,
                                   get_all_relative_files,
                                   process_dropped_files)
-from core.fomod_manager import (apply_fomod_selection, get_fomod_group_options,
-                                get_fomod_module_name, parse_fomod_xml)
+from core.fomod_manager import apply_fomod_selection, parse_fomod_xml
 from core.mod_manager import (finalise_mod_metadata, is_mod_installed,
                               load_staging_metadata, remove_mod_from_metadata)
 from core.tools import timestamp_converter
@@ -232,12 +231,9 @@ class DownloadsTab(Gtk.Box):
                 xml_root = tree.getroot()
                 
                 fomod_metadata = parse_fomod_xml(xml_root)
-                options = get_fomod_group_options(fomod_metadata, 0, 0)
-                module_name = get_fomod_module_name(fomod_metadata)
-                # module_name, options = parse_fomod_xml(xml_root)
                 
-                if options:
-                    dialog = FomodSelectionDialog(self.dashboard.app.win, module_name, options)
+                if fomod_metadata:
+                    dialog = FomodSelectionDialog(self.dashboard.app.win, fomod_metadata)
                     dialog.connect("response", self.on_fomod_dialog_response, mod_staging_dir, filename)
                     dialog.present()
                     return
@@ -267,13 +263,14 @@ class DownloadsTab(Gtk.Box):
 
     def on_fomod_dialog_response(self, dialog, response, mod_staging_dir, filename):
         if response == Gtk.ResponseType.OK:
-            source_folder_name = dialog.get_selected_source()
-            if source_folder_name:
-                try:
-                    final_files = apply_fomod_selection(mod_staging_dir, source_folder_name)
-                    self.resolve_deployment_path(filename, final_files)
-                except Exception as e:
-                    self.dashboard.show_message(_("Error"), str(e))
+            source_folders_name = dialog.get_selected_source()
+            for source_folder_name in source_folders_name:
+                if source_folder_name:
+                    try:
+                        final_files = apply_fomod_selection(mod_staging_dir, source_folder_name)
+                        self.resolve_deployment_path(filename, final_files)
+                    except Exception as e:
+                        self.dashboard.show_message(_("Error"), str(e))
         else:
             import shutil
             shutil.rmtree(mod_staging_dir, ignore_errors=True)

@@ -2,6 +2,7 @@ import re
 
 from gi.repository import Adw, GObject, Gtk
 
+from core.fomod_manager import get_fomod_group_options, get_fomod_module_name, get_fomod_group_type
 
 class FomodSelectionDialog(Gtk.Window):
     
@@ -9,7 +10,11 @@ class FomodSelectionDialog(Gtk.Window):
         'response': (GObject.SignalFlags.RUN_LAST, None, (int,))
     }
     
-    def __init__(self, parent, module_name, options):
+    def __init__(self, parent, fomod_metadata):
+        
+        options = get_fomod_group_options(fomod_metadata)
+        module_name = get_fomod_module_name(fomod_metadata)
+        
         super().__init__(title=f"Installer: {module_name}", transient_for=parent, modal=True)
         self.set_default_size(1200, 800)
         self.add_css_class("fomod-dialog")
@@ -67,8 +72,18 @@ class FomodSelectionDialog(Gtk.Window):
         
         # Initializing the list box to pick an option
         main_box.list_box = Gtk.ListBox(css_classes=["boxed-list"])
+        
         # TODO: add a condition if multiple choices are allowed
-        main_box.list_box.set_selection_mode(Gtk.SelectionMode.SINGLE)
+        selection_type = get_fomod_group_type(fomod_metadata)
+        if selection_type == 'SelectExactlyOne':
+            main_box.list_box.set_selection_mode(Gtk.SelectionMode.SINGLE)
+        elif selection_type == 'SelectAtLeastOne':
+            main_box.list_box.set_selection_mode(Gtk.SelectionMode.MULTIPLE)
+        elif selection_type == 'SelectAtMostOne':
+            main_box.list_box.set_selection_mode(Gtk.SelectionMode.SINGLE)
+        elif selection_type == 'SelectAny':
+            main_box.list_box.set_selection_mode(Gtk.SelectionMode.MULTIPLE)
+        
         main_box.list_box.connect("row-selected", self.on_row_selected)
         
         first_radio = None
@@ -79,11 +94,11 @@ class FomodSelectionDialog(Gtk.Window):
             clean_desc = desc.replace('\n', ' ').replace('\r', '').strip()
             clean_desc = re.sub(' +', ' ', clean_desc)
             
-            if source == '':
-                continue
-            radio = Gtk.CheckButton(group=first_radio)
-            if not first_radio:
-                first_radio = radio
+            if source != []:
+                radio = Gtk.CheckButton(group=first_radio)
+                if selection_type == 'SelectExactlyOne' or selection_type == 'SelectAtLeastOne':    
+                    if not first_radio:
+                        first_radio = radio
             
             # Setting up the row UI
             row_content = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
@@ -106,18 +121,21 @@ class FomodSelectionDialog(Gtk.Window):
             text_vbox.append(name_label)
             text_vbox.append(desc_label)
             
-            row_content.append(radio)
+            if source != []:
+                row_content.append(radio)
             row_content.append(text_vbox)
             
             # Allows to retrieve row content
             row = Gtk.ListBoxRow()
             row.set_child(row_content)
-            row.radio_button = radio
+            if source != []:
+                row.radio_button = radio
             row.name_label = name
             
             # Adding row to the UI
             main_box.list_box.append(row)
-            self.options_map[radio] = source
+            if source != []:
+                self.options_map[radio] = source
             
         # Setting up a scrollable box
         scrolled = Gtk.ScrolledWindow(
@@ -179,6 +197,7 @@ class FomodSelectionDialog(Gtk.Window):
     def get_selected_source(self):
         for radio, source in self.options_map.items():
             if radio.get_active():
+                # Todo: allow get_selected_source to return a list instead of a string to install multiple mods/paths
                 return source
         return None
     
