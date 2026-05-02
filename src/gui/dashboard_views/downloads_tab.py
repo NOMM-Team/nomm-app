@@ -275,7 +275,8 @@ class DownloadsTab(Gtk.Box):
         if response == Gtk.ResponseType.OK:
             
             install_items = dialog.get_global_sources()
-            
+            # This line could be removed if required files are indeed toggled since they will automatically be included
+            # in install_items
             required = get_required_files(dialog.fomod_metadata)
             install_items = required + install_items
             
