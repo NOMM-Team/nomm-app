@@ -276,6 +276,9 @@ class DownloadsTab(Gtk.Box):
             
             install_items = dialog.get_global_sources()
             
+            required = get_required_files(dialog.fomod_metadata)
+            install_items = required + install_items
+            
             temp_install_dir = f"{mod_staging_dir}_final_fomod"
             os.makedirs(temp_install_dir, exist_ok=True)
             
