@@ -1,6 +1,7 @@
 name: Spyro Reignited Trilogy
+steam_folder_name: Spyro Reignited Trilogy
 steam_id: 996580
-
 nexus_id: spyroreignitedtrilogy
+accent_colour: "#BF3EFF"
 
 mods_path: Falcon/Content/Paks/~mods/
