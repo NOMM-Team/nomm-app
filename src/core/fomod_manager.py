@@ -99,7 +99,6 @@ def get_fomod_group_options(parsed_fomod_metadata:dict, step_index: int = 0, gro
             sources.append(source)
         options.append((plugin_name, plugin_desc, sources))
     
-    # TODO:Target path should also be sent with source path
     return options
 
 def get_plugin_image_path(parsed_fomod_metadata:dict, plugin_name:str, step_index: int = 0, group_index: int = 0) -> str:
