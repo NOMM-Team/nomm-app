@@ -1,6 +1,8 @@
 import os
 import pathlib
 import re
+import os
+import pathlib
 
 from gi.repository import Adw, Gdk, GdkPixbuf, GObject, Gtk
 
@@ -14,7 +16,6 @@ from core.fomod_manager import (check_for_dependencies,
 from core.tools import retrieve_casesensitive_paths
 from gui.text_window import TextWindow
 
-from core.fomod_manager import get_fomod_group_options, get_fomod_module_name, get_fomod_group_type
 
 class FomodSelectionDialog(Adw.Window):
     
@@ -88,6 +89,11 @@ class FomodSelectionDialog(Adw.Window):
         spacer.set_hexpand(True)
         footer_box.append(spacer)
         footer_box.add_css_class('footer-box')
+        
+        # Instructions
+        self.fomod_desc = Gtk.Label(label='', xalign=0)
+        self.fomod_desc.add_css_class("desc")
+        self.fomod_desc.add_css_class("dim-label")
         
         # Instructions
         self.fomod_desc = Gtk.Label(label='', xalign=0)
