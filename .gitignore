@@ -1,13 +1,14 @@
+# Generic
 __pycache__/
+.venv/
+.vscode
 
-/.vscode
-
-# flatpak build files
+# Flatpak build files
 repo/
-/.flatpak-builder
-/build-dir
-/build/flatpak/flatpak-pip-generator.py
-/build/flatpak/python3-modules.json
+.flatpak-builder
+build-dir
+build/flatpak/flatpak-pip-generator.py
+build/flatpak/python3-modules.json
 
-# flatpak package
+# Flatpak package
 NOMM.flatpak
