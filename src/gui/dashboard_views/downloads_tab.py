@@ -260,6 +260,7 @@ class DownloadsTab(Gtk.Box):
         self.list_box.remove_css_class("drop-active")
 
     def on_fomod_dialog_response(self, dialog, response, mod_staging_dir, filename):
+        # As we have multiple files to copy, we loop on items to retrieve every source and it's associated destination
         if response == Gtk.ResponseType.OK:
             install_items = dialog.get_global_sources()
             
@@ -281,7 +282,6 @@ class DownloadsTab(Gtk.Box):
                 
                 try:
                     res = apply_fomod_selection(mod_staging_dir, install_source, dest_path)
-                    print(f'{install_source} installed')
                     
                     if isinstance(res, list):
                         for f in res:
@@ -295,19 +295,16 @@ class DownloadsTab(Gtk.Box):
                     self.dashboard.show_message(_("Error"), str(e))
             
             if grouped_final_files:
-                import shutil
                 shutil.rmtree(mod_staging_dir, ignore_errors=True)
                 
                 os.rename(temp_install_dir, mod_staging_dir)
                 
                 self.resolve_deployment_path(filename, grouped_final_files)
             else:
-                import shutil
                 shutil.rmtree(mod_staging_dir, ignore_errors=True)
                 shutil.rmtree(temp_install_dir, ignore_errors=True)
                 
         else:
-            import shutil
             shutil.rmtree(mod_staging_dir, ignore_errors=True)
 
         dialog.destroy()

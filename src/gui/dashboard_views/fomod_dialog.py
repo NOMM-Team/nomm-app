@@ -94,9 +94,29 @@ class FomodSelectionDialog(Gtk.Window):
         
         # Initializing the list box to pick an option and adapting the instructions to match the selection mode
         main_box.list_box = Gtk.ListBox(css_classes=["boxed-list"])
-        main_box.list_box.connect("row-selected", self.on_row_selected)
+        main_box.list_box.set_activate_on_single_click(True)
+        main_box.list_box.connect("row-activated", self.on_row_selected)
         
-        self.populate_listbox(main_box.list_box, options)
+        
+        
+        # Next button in case mod has multiple groups
+        self.next_btn = Gtk.Button(label="Next")
+        self.next_btn.connect("clicked", self.on_next_clicked, main_box.list_box)
+        self.next_btn.add_css_class('install-btn')
+        
+        # Previous button that will be displayed if current step > 1
+        self.previous_btn = Gtk.Button(label="Previous")
+        self.previous_btn.connect("clicked", self.on_previous_clicked, main_box.list_box)
+        
+        
+        # Initializing buttons to confirm/cancel choices
+        cancel_btn = Gtk.Button(label="Cancel")
+        cancel_btn.connect("clicked", self.on_cancel_clicked)
+        
+        self.install_btn = Gtk.Button(label="Install")
+        self.install_btn.connect("clicked", self.on_install_clicked)
+        self.install_btn.add_css_class('install-btn')
+        self.set_default_widget(self.install_btn)
             
         # Setting up a scrollable box
         scrolled = Gtk.ScrolledWindow(
@@ -119,24 +139,7 @@ class FomodSelectionDialog(Gtk.Window):
         self.right_box.add_css_class("boxed-preview")
         main_box.append(self.right_box)
         
-        # Initializing buttons to confirm/cancel choices
-        self.install_btn = Gtk.Button(label="Install")
         group_count = get_fomod_group_count(fomod_metadata)
-        if group_count > 1:
-            # Next button in case mod has multiple groups
-            self.next_btn = Gtk.Button(label="Next")
-            self.next_btn.connect("clicked", self.on_next_clicked, main_box.list_box)
-            self.next_btn.add_css_class('install-btn')
-            
-            # Previous button that will be displayed if current step > 1
-            self.previous_btn = Gtk.Button(label="Previous")
-            self.previous_btn.connect("clicked", self.on_previous_clicked, main_box.list_box)
-        cancel_btn = Gtk.Button(label="Cancel")
-        
-        cancel_btn.connect("clicked", self.on_cancel_clicked)
-        self.install_btn.connect("clicked", self.on_install_clicked)
-        self.install_btn.add_css_class('install-btn')
-        self.set_default_widget(self.install_btn)
         
         footer_box.append(cancel_btn)
         if group_count > 1:
@@ -147,14 +150,11 @@ class FomodSelectionDialog(Gtk.Window):
         if group_count > 1:
             self.install_btn.set_visible(False)
         
-        # Initializing selection at first row
-        first_row = main_box.list_box.get_row_at_index(0)
-        if first_row:
-            main_box.list_box.select_row(first_row)
-        
         # Preparing two separators for the GUI
         title_separator = Gtk.Separator()
         title_separator2 = Gtk.Separator()
+        
+        self.populate_listbox(main_box.list_box, options)
         
         # Adding each components to the main container
         content_area.append(self.header_box)
@@ -233,6 +233,13 @@ class FomodSelectionDialog(Gtk.Window):
             row.radio_button = radio
             row.name_label = name
             
+            radio.set_can_target(False)
+
+            if selection_type == 'SelectExactlyOne' or selection_type == 'SelectAtMostOne':
+                row.is_radio = True
+            else:
+                row.is_radio = False
+            
             # Adding row to the UI
             list_box.append(row)
             self.options_map[radio] = source
@@ -256,17 +263,42 @@ class FomodSelectionDialog(Gtk.Window):
             skip_row = Gtk.ListBoxRow()
             skip_row.set_child(default_row_content)
             
+            default_radio.set_can_target(False)
+            
+            skip_row.is_radio = True
+            
             skip_row.radio_button = default_radio
             skip_row.name_label = "Skip"
             
             self.options_map[default_radio] = {}
                 
             list_box.append(skip_row)
+        
+        if selection_type == 'SelectAtLeastOne':
+            if not radio.get_active():
+                self.next_btn.set_sensitive(False)
+                self.install_btn.set_sensitive(False)
+            else:
+                self.next_btn.set_sensitive(True)
+                self.install_btn.set_sensitive(True)
+        
+        # Initialize the selector if needed
+        if selection_type == 'SelectAtMostOne' or selection_type == 'SelectExactlyOne':
+            first_row = list_box.get_row_at_index(0)
+            if first_row:
+                list_box.select_row(first_row)
+                self.on_row_selected(list_box, first_row)
 
     def on_row_selected(self, list_box, row):
         if row is not None:
             if hasattr(row, "radio_button"):
-                row.radio_button.set_active(True)
+                if getattr(row, "is_radio", False):
+                    # If radio, click on ligne can set status to active
+                    row.radio_button.set_active(True)
+                else:
+                    # If toggle, we just reverse the current state
+                    current_state = row.radio_button.get_active()
+                    row.radio_button.set_active(not current_state)
             self.display_preview(list_box, row)
     
     def on_next_clicked(self, button, list_box):
@@ -314,8 +346,7 @@ class FomodSelectionDialog(Gtk.Window):
         if self.global_sources:
             self.global_sources.pop()
     
-        # Populate logic
-        ## Check if there is a next group or if we reset group to 0 and move steps instead
+        # Check if there is a next group or if we reset group to 0 and move steps instead
         step_count = get_fomod_step_count(self.fomod_metadata)
         group_count = get_fomod_group_count(self.fomod_metadata, self.current_step)
         
@@ -335,6 +366,7 @@ class FomodSelectionDialog(Gtk.Window):
         
         options = get_fomod_group_options(self.fomod_metadata, self.current_step, self.current_group)
         
+        # checks if a whole group has no source file then skip
         if all(not option[2] for option in options):
             self.on_previous_clicked(self.next_btn, list_box)
             return
