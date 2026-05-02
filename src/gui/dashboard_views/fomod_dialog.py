@@ -38,6 +38,9 @@ class FomodSelectionDialog(Adw.Window):
         self.required_data = fomod_metadata['required_data']
         dependencies_data = fomod_metadata['dependencies_data']
         
+        # Sources registered for every step/group
+        self.global_sources = []
+        
         # Initializing the current step for multiple-steps FOMods
         self.current_step = 0
         self.current_group = 0
