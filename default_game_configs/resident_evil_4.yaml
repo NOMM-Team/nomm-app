@@ -1,0 +1,19 @@
+name: "Resident Evil 4"
+steam_folder_name: RESIDENT EVIL 4  BIOHAZARD RE4
+steam_id: 2050650
+nexus_id: residentevil42023
+accent_colour: "#b71b27"
+
+mods_path: ""
+
+essential-utilities:
+  REFramework:
+    name: REFramework
+    version: REF Nightly 01373
+    creator: praydog
+    creator-link: https://github.com/praydog
+    source: https://github.com/praydog/REFramework-nightly/releases/download/nightly-01373-c4b1314820d20255febf7834903e8cedb669b49c/REFramework.zip
+    utility_path: ""
+    enable_command: ""
+    whitelist:
+      - dinput8.dll

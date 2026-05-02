@@ -1,0 +1,30 @@
+name: "Resident Evil 7 Biohazard"
+steam_folder_name: RESIDENT EVIL 7 biohazard
+steam_id: 418370
+nexus_id: residentevil7
+accent_colour: "#eb7701"
+
+mods_path: ""
+
+essential-utilities:
+  REFramework DX11:
+    name: REFramework DX11 Version
+    version: 1.5.9.1
+    creator: praydog
+    creator-link: https://github.com/praydog
+    source: https://github.com/praydog/REFramework/releases/download/v1.5.9.1/RE7_TDB49.zip
+    utility_path: ""
+    enable_command: ""
+    whitelist:
+      - dinput8.dll
+
+  REFramework RT:
+    name: REFramework RT Version (DX12)
+    version: REF Nightly 01373
+    creator: praydog
+    creator-link: https://github.com/praydog
+    source: https://github.com/praydog/REFramework-nightly/releases/download/nightly-01373-c4b1314820d20255febf7834903e8cedb669b49c/REFramework.zip
+    utility_path: ""
+    enable_command: ""
+    whitelist:
+      - dinput8.dll

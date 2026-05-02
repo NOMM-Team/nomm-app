@@ -1,0 +1,32 @@
+name: "Resident Evil 2"
+steam_folder_name: RESIDENT EVIL 2  BIOHAZARD RE2
+steam_id: 883710
+nexus_id: residentevil22019
+accent_colour: "#b71b27"
+
+mods_path: ""
+
+essential-utilities:
+  REFramework DX11:
+    name: REFramework DX11 Version
+    version: 1.5.9.1
+    creator: praydog
+    creator-link: https://github.com/praydog
+    source: https://github.com/praydog/REFramework/releases/download/v1.5.9.1/RE2_TDB66.zip
+    utility_path: ""
+    enable_command: ""
+    whitelist:
+      - dinput8.dll
+
+  REFramework RT:
+    name: REFramework RT Version (DX12)
+    version: REF Nightly 01373
+    creator: praydog
+    creator-link: https://github.com/praydog
+    source: https://github.com/praydog/REFramework-nightly/releases/download/nightly-01373-c4b1314820d20255febf7834903e8cedb669b49c/REFramework.zip
+    utility_path: ""
+    enable_command: ""
+    whitelist:
+      - dinput8.dll
+
+
