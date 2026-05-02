@@ -102,7 +102,7 @@ def get_fomod_group_options(parsed_fomod_metadata:dict, step_index: int = 0, gro
     # TODO:Target path should also be sent with source path
     return options
 
-def get_plugin_image_path(parsed_fomod_metadata:dict, plugin_name:str, step_index: int = 0, group_index: int = 0) -> string:
+def get_plugin_image_path(parsed_fomod_metadata:dict, plugin_name:str, step_index: int = 0, group_index: int = 0) -> str:
     module_name = list(parsed_fomod_metadata.keys())[0]
     step_name = list(parsed_fomod_metadata[module_name].keys())[step_index]
     group_name = list(parsed_fomod_metadata[module_name][step_name].keys())[group_index]
@@ -112,7 +112,7 @@ def get_plugin_image_path(parsed_fomod_metadata:dict, plugin_name:str, step_inde
             return plugin['image_path']
     return ''
 
-def get_plugin_type(parsed_fomod_metadata:dict, plugin_name:str, step_index: int = 0, group_index: int = 0) -> string:
+def get_plugin_type(parsed_fomod_metadata:dict, plugin_name:str, step_index: int = 0, group_index: int = 0) -> str:
     module_name = list(parsed_fomod_metadata.keys())[0]
     step_name = list(parsed_fomod_metadata[module_name].keys())[step_index]
     group_name = list(parsed_fomod_metadata[module_name][step_name].keys())[group_index]
