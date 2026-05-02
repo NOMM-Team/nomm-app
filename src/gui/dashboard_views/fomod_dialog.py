@@ -3,6 +3,7 @@ import pathlib
 import re
 import os
 import pathlib
+import re
 
 from gi.repository import Adw, Gdk, GdkPixbuf, GObject, Gtk
 
@@ -264,6 +265,8 @@ class FomodSelectionDialog(Adw.Window):
             
             plugin_index += 1
             
+            plugin_type = get_plugin_type(self.fomod_metadata, name, self.current_step, self.current_group)
+            
             clean_desc = desc.replace('\n', ' ').replace('\r', '').strip()
             clean_desc = re.sub(' +', ' ', clean_desc)
             
@@ -355,6 +358,10 @@ class FomodSelectionDialog(Adw.Window):
                 row.is_radio = True
             else:
                 row.is_radio = False
+            
+            if plugin_type == 'Required':
+                row.set_can_target(False)
+                row.radio_button.set_active(True)
             
             # Adding row to the UI
             list_box.append(row)
