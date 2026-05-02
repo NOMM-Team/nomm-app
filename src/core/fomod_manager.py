@@ -49,11 +49,6 @@ def parse_fomod_xml(xml_data) -> dict :
                         'folders': folders_data,
                         'type': plugin_type
                     })
-                    source_for_option = ''
-                    if len(folders_data) > 0:
-                        source_for_option = folders_data[0].get('source')
-                    desc = plugin_desc
-                
         return fomod_data
     except Exception as e:
         print(f"Failed to parse FOMOD XML: {e}")
@@ -100,7 +95,7 @@ def get_fomod_group_options(parsed_fomod_metadata:dict, step_index: int = 0, gro
         sources = []
         source_items = plugin['folders']
         for source_item in source_items:
-            source = source_item.get('source')
+            source = source_item
             sources.append(source)
         options.append((plugin_name, plugin_desc, sources))
     
@@ -117,33 +112,44 @@ def get_plugin_image_path(parsed_fomod_metadata:dict, plugin_name:str, step_inde
             return plugin['image_path']
     return ''
 
-def apply_fomod_selection(mod_staging_dir: str, source_folder_name: str) -> list:
+def apply_fomod_selection(mod_staging_dir: str, source_folder_name: str, dest_path: str) -> list:
+
     normalized_source = source_folder_name.replace('\\', '/').strip('/')
     source_path = None
     
-    
     direct_path = os.path.join(mod_staging_dir, normalized_source)
-    # checks if file exists
-    if os.path.isdir(direct_path):
-        # checks if direct path is the same as source_path, which means all we have to do is copy the files as it is once extracted
+    if os.path.exists(direct_path):
         source_path = direct_path
     else:
-        #Explore the folder to find normalized source from the root
-        for root, _, _ in os.walk(mod_staging_dir):
-            # Calculates relative root and replaces \\ for compatibility
+        for root, _, files in os.walk(mod_staging_dir):
             rel_root = os.path.relpath(root, mod_staging_dir).replace('\\', '/')
-            #If we find the folder, then we break
             if rel_root == normalized_source or rel_root.endswith('/' + normalized_source):
                 source_path = root
                 break
+            for f in files:
+                rel_file = os.path.relpath(os.path.join(root, f), mod_staging_dir).replace('\\', '/')
+                if rel_file == normalized_source or rel_file.endswith('/' + normalized_source):
+                    source_path = os.path.join(root, f)
+                    break
+            if source_path:
+                break
 
     if not source_path:
-        raise FileNotFoundError(f"Could not find folder '{normalized_source}' in extracted mod.")
+        raise FileNotFoundError(f"Could not find folder or file '{normalized_source}' in extracted mod.")
 
-    temp_safe_dir = f"{mod_staging_dir}_temp_fomod"
-    # Moves the folder to a temporary direction before installing it
-    shutil.move(source_path, temp_safe_dir)
-    shutil.rmtree(mod_staging_dir)
-    os.rename(temp_safe_dir, mod_staging_dir)
+    copied_files = []
 
-    return get_all_relative_files(mod_staging_dir)
+    if os.path.isdir(source_path):
+        os.makedirs(dest_path, exist_ok=True)
+        shutil.copytree(source_path, dest_path, dirs_exist_ok=True)
+        
+        for root, _, files in os.walk(source_path):
+            for file in files:
+                rel_path = os.path.relpath(os.path.join(root, file), source_path)
+                copied_files.append(rel_path.replace('\\', '/'))
+    else:
+        os.makedirs(dest_path if os.path.isdir(dest_path) else os.path.dirname(dest_path), exist_ok=True)
+        shutil.copy2(source_path, dest_path)
+        copied_files.append(os.path.basename(source_path))
+
+    return copied_files

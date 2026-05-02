@@ -228,9 +228,7 @@ class DownloadsTab(Gtk.Box):
             if fomod_xml_path:
                 xml_path = os.path.join(mod_staging_dir, fomod_xml_path)
                 tree = ET.parse(xml_path)
-                xml_root = tree.getroot()
-                
-                fomod_metadata = parse_fomod_xml(xml_root)
+                fomod_metadata = parse_fomod_xml(tree.getroot())
                 
                 if fomod_metadata:
                     dialog = FomodSelectionDialog(self.dashboard.app.win, fomod_metadata, mod_staging_dir)
@@ -263,14 +261,51 @@ class DownloadsTab(Gtk.Box):
 
     def on_fomod_dialog_response(self, dialog, response, mod_staging_dir, filename):
         if response == Gtk.ResponseType.OK:
-            source_folders_name = dialog.get_selected_source()
-            for source_folder_name in source_folders_name:
-                if source_folder_name:
-                    try:
-                        final_files = apply_fomod_selection(mod_staging_dir, source_folder_name)
-                        self.resolve_deployment_path(filename, final_files)
-                    except Exception as e:
-                        self.dashboard.show_message(_("Error"), str(e))
+            install_items = dialog.get_global_sources()
+            
+            temp_install_dir = f"{mod_staging_dir}_final_fomod"
+            os.makedirs(temp_install_dir, exist_ok=True)
+            
+            grouped_final_files = []
+            for install_item in install_items:
+                install_source = install_item.get('source')
+                install_destination = install_item.get('destination')
+                
+                if not install_source: 
+                    continue
+                    
+                if not install_destination:
+                    install_destination = ""
+                
+                dest_path = os.path.join(temp_install_dir, install_destination)
+                
+                try:
+                    res = apply_fomod_selection(mod_staging_dir, install_source, dest_path)
+                    print(f'{install_source} installed')
+                    
+                    if isinstance(res, list):
+                        for f in res:
+                            final_path = os.path.normpath(os.path.join(install_destination, f)).replace('\\', '/')
+                            grouped_final_files.append(final_path)
+                    else:
+                        final_path = os.path.normpath(os.path.join(install_destination, res)).replace('\\', '/')
+                        grouped_final_files.append(final_path)
+                                          
+                except Exception as e:
+                    self.dashboard.show_message(_("Error"), str(e))
+            
+            if grouped_final_files:
+                import shutil
+                shutil.rmtree(mod_staging_dir, ignore_errors=True)
+                
+                os.rename(temp_install_dir, mod_staging_dir)
+                
+                self.resolve_deployment_path(filename, grouped_final_files)
+            else:
+                import shutil
+                shutil.rmtree(mod_staging_dir, ignore_errors=True)
+                shutil.rmtree(temp_install_dir, ignore_errors=True)
+                
         else:
             import shutil
             shutil.rmtree(mod_staging_dir, ignore_errors=True)

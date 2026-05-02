@@ -18,14 +18,18 @@ class FomodSelectionDialog(Gtk.Window):
         
         self.fomod_metadata = fomod_metadata
         
+        # Sources registered for every step/group
+        self.global_sources = []
+        
         # Initializing the current step for multiple-steps FOMods
         self.current_step = 0
         self.current_group = 0
         
-        
         options = get_fomod_group_options(fomod_metadata)
         module_name = get_fomod_module_name(fomod_metadata)
-        # Look for the fomod path
+        
+        # Look for the fomod path in case the archive is 
+        # mod_arc/mod_name/FOMOD instead of mod_arc/FOMOD
         self.fomod_staging_dir = mod_staging_dir
         for root, dirs, _ in os.walk(mod_staging_dir):
             if 'fomod' in [d.lower() for d in dirs]:
@@ -255,26 +259,24 @@ class FomodSelectionDialog(Gtk.Window):
             skip_row.radio_button = default_radio
             skip_row.name_label = "Skip"
             
-            self.options_map[default_radio] = []
+            self.options_map[default_radio] = {}
                 
             list_box.append(skip_row)
 
     def on_row_selected(self, list_box, row):
-        if row is None:
-            return
-        
-        if hasattr(row, "radio_button"):
-            row.radio_button.set_active(True)
-            
-        self.display_preview(list_box, row)
+        if row is not None:
+            if hasattr(row, "radio_button"):
+                row.radio_button.set_active(True)
+            self.display_preview(list_box, row)
     
     def on_next_clicked(self, button, list_box):
         # Source storing logic
-        
-        step_count = get_fomod_step_count(self.fomod_metadata)
-        group_count = get_fomod_group_count(self.fomod_metadata, self.current_step)
+        selected_sources = self.get_selected_source()
+        self.global_sources.append(selected_sources)
         
         # Step and group enumeration
+        step_count = get_fomod_step_count(self.fomod_metadata)
+        group_count = get_fomod_group_count(self.fomod_metadata, self.current_step)
         if self.current_group < (group_count - 1):
             self.current_group += 1
         elif self.current_step < (step_count - 1):
@@ -308,7 +310,10 @@ class FomodSelectionDialog(Gtk.Window):
         self.populate_listbox(list_box, options)
 
     def on_previous_clicked(self, button, list_box):
-        
+        # Remove data logic
+        if self.global_sources:
+            self.global_sources.pop()
+    
         # Populate logic
         ## Check if there is a next group or if we reset group to 0 and move steps instead
         step_count = get_fomod_step_count(self.fomod_metadata)
@@ -343,15 +348,30 @@ class FomodSelectionDialog(Gtk.Window):
         # Refreshing the view
         self.populate_listbox(list_box, options)
         
-    # TODO: Method needs to return both source items and target destination for each item
     # Which means that it will return a dict instead of a list
     def get_selected_source(self) -> list:
+        all_selected_sources = []
+    
         for radio, source in self.options_map.items():
             if radio.get_active():
-                return source
-        return []
+                if isinstance(source, list):
+                    all_selected_sources.extend(source)
+                else:
+                    all_selected_sources.append(source)        
+        return all_selected_sources
+    
+    def get_global_sources(self) -> list[dict[str]]:
+        files_to_install = []
+
+        for items in self.global_sources:
+            files_to_install.extend(items)
+        return files_to_install
     
     def on_install_clicked(self, button):
+        selected_sources = self.get_selected_source()
+        if selected_sources:
+            self.global_sources.append(selected_sources)
+            
         self.emit("response", Gtk.ResponseType.OK)
         self.close()
 
@@ -363,8 +383,10 @@ class FomodSelectionDialog(Gtk.Window):
         # Destroy child if child exists
         while child := self.right_box.get_first_child():
             self.right_box.remove(child)
-            
-        selected_plugin_name = row.name_label
+
+        if row is not None:
+            selected_plugin_name = row.name_label
+        
         image_path = get_plugin_image_path(self.fomod_metadata, selected_plugin_name, self.current_step, self.current_group)
         
         if image_path != '':
@@ -387,9 +409,13 @@ class FomodSelectionDialog(Gtk.Window):
             picture.add_css_class("fomod-preview-image")
             
             self.right_box.append(picture)
+            self.right_box.set_visible(True)
         else:
-            no_image_label = Gtk.Label(label="No preview available")
-            no_image_label.set_hexpand(True)
-            no_image_label.set_vexpand(True)
-            no_image_label.add_css_class("dim-label")
-            self.right_box.append(no_image_label)
+            self.show_no_preview_label()
+    
+    def show_no_preview_label(self):
+        no_image_label = Gtk.Label(label="No preview available")
+        no_image_label.set_hexpand(True)
+        no_image_label.set_vexpand(True)
+        no_image_label.add_css_class("dim-label")
+        self.right_box.append(no_image_label)
