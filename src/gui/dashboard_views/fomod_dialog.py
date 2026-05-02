@@ -67,7 +67,7 @@ class FomodSelectionDialog(Gtk.Window):
         
         # Initializing the list box to pick an option
         main_box.list_box = Gtk.ListBox(css_classes=["boxed-list"])
-        #TODO: add a condition if multiple choices are allowed
+        # TODO: add a condition if multiple choices are allowed
         main_box.list_box.set_selection_mode(Gtk.SelectionMode.SINGLE)
         main_box.list_box.connect("row-selected", self.on_row_selected)
         

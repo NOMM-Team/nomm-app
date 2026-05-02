@@ -21,7 +21,6 @@ def parse_fomod_xml(xml_data) -> dict :
                     'type' : group_type,
                     'plugins' : []
                 }
-                options = []
                 for plugin in group.findall('.//plugin'):
                     plugin_name = plugin.get('name')
                     plugin_desc = plugin.findtext('description', default='No description provided')
@@ -42,7 +41,7 @@ def parse_fomod_xml(xml_data) -> dict :
                         }
                         folders_data.append(plugin_folder)
                     type_tag = plugin.find('.//type')
-                    plugin_type = type_tag.get('name')
+                    plugin_type = type_tag.get('name') if type_tag is not None else 'Optional'
                     fomod_data[module_name][step_name][group_name]['plugins'].append({
                         'name': plugin_name,
                         'desc': plugin_desc.strip(),
@@ -54,25 +53,59 @@ def parse_fomod_xml(xml_data) -> dict :
                     if len(folders_data) > 0:
                         source_for_option = folders_data[0].get('source')
                     desc = plugin_desc
-                    options.append((plugin_name, desc, source_for_option))
                 
-                return module_name, options
+        return fomod_data
     except Exception as e:
         print(f"Failed to parse FOMOD XML: {e}")
-        return None, []
+        return {}
     
 def get_fomod_step_count(parsed_fomod_metadata:dict) -> int:
-    for moduleName in parsed_fomod_metadata:
-        print('inloop')
-        stepCount = len(parsed_fomod_metadata[moduleName])
-    print(stepCount)
-    return stepCount
+    module_name = list(parsed_fomod_metadata.keys())[0]
+    step_count = len(parsed_fomod_metadata[module_name])
     
-def get_fomod_group_count(parsed_fomod_metadata:dict) -> int:
-    print('wip')
+    return step_count
+    
+def get_fomod_group_count(parsed_fomod_metadata:dict, step_index: int) -> int:
+    module_name = list(parsed_fomod_metadata.keys())[0]
+    step_name = list(parsed_fomod_metadata[module_name].keys())[step_index]
+    group_count = len(parsed_fomod_metadata[module_name][step_name])
+    
+    return group_count
 
-def get_fomod_step_type(parsed_step_metadata:dict) -> str:
-    print('wip')
+def get_fomod_group_type(parsed_fomod_metadata:dict, step_index: int, group_index: int) -> str:
+    module_name = list(parsed_fomod_metadata.keys())[0]
+    step_name = list(parsed_fomod_metadata[module_name].keys())[step_index]
+    group_name = list(parsed_fomod_metadata[module_name][step_name].keys())[group_index]
+    group_type = parsed_fomod_metadata[module_name][step_name][group_name]['type']
+    
+    return group_type
+
+def get_fomod_module_name(parsed_fomod_metadata:dict) -> str:
+    return list(parsed_fomod_metadata.keys())[0]
+
+def get_fomod_group_options(parsed_fomod_metadata:dict, step_index: int, group_index: int) -> list:
+    module_name = list(parsed_fomod_metadata.keys())[0]
+    step_name = list(parsed_fomod_metadata[module_name].keys())[step_index]
+    group_name = list(parsed_fomod_metadata[module_name][step_name].keys())[group_index]
+    options = []
+    plugins = parsed_fomod_metadata[module_name][step_name][group_name]['plugins']
+    for plugin in plugins:
+        # Plugin name
+        plugin_name = plugin['name']
+
+        # Plugin description
+        plugin_desc = plugin['desc']
+
+        # Source path
+        sources = []
+        source_items = plugin['folders']
+        for source_item in source_items:
+            source = source_item.get('source')
+            sources.append(source)
+        options.append((plugin_name, plugin_desc, sources))
+    
+    # TODO:Target path should also be sent with source path
+    return options
 
 def apply_fomod_selection(mod_staging_dir: str, source_folder_name: str) -> list:
     normalized_source = source_folder_name.replace('\\', '/').strip('/')
