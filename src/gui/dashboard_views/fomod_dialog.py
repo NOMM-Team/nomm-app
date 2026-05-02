@@ -349,6 +349,13 @@ class FomodSelectionDialog(Adw.Window):
                 row.set_sensitive(False)
                 row.radio_button.set_active(False)
             
+            radio.set_can_target(False)
+
+            if selection_type == 'SelectExactlyOne' or selection_type == 'SelectAtMostOne':
+                row.is_radio = True
+            else:
+                row.is_radio = False
+            
             # Adding row to the UI
             list_box.append(row)
             self.options_map[radio] = source
@@ -387,7 +394,6 @@ class FomodSelectionDialog(Adw.Window):
                 
             list_box.append(skip_row)
         
-        # I need to patch this
         if selection_type == 'SelectAtLeastOne':
             if not radio.get_active():
                 self.next_btn.set_sensitive(False)
