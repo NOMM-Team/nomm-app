@@ -114,16 +114,68 @@ class ToolsTab(Gtk.Box):
 
         download_file_async(source_url, util_dir, on_success, on_error)
 
-    def on_utility_install_clicked(self, btn, util):
-        msg = _("Warning: This process may be destructive to existing game files. Please ensure you have backed up your game directory before proceeding.")
+    def on_utility_install_clicked(self, btn, util: dict):
+        # Base warning message
+        msg = _("This process may replace existing game files. Please ensure you have backed up your game directory before proceeding.")
         
         dialog = Adw.MessageDialog(
             transient_for=self.dashboard.app.win,
-            heading=_("Confirm Installation"),
-            body=msg
+            heading=_("Confirm Installation")
         )
+        
+        dialog.set_default_size(500, -1)
+
+        # Container for the body content
+        content_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)
+        
+        # Primary warning label
+        warning_label = Gtk.Label(label=msg, wrap=True, xalign=0)
+        content_box.append(warning_label)
+
+        # Check if steam_launch_options exist in the util dict
+        launch_options = util.get("steam_launch_options")
+        if launch_options:
+            separator = Gtk.Separator(orientation=Gtk.Orientation.HORIZONTAL)
+            separator.set_margin_top(8)
+            separator.set_margin_bottom(8)
+            content_box.append(separator)
+
+            # Additional instruction text
+            instruction_text = _("This utility requires the game to have extra Steam launch options.\n"
+                                 "NOMM is able to add these for you but <b>Steam needs to be turned off</b>.")
+            instruction_label = Gtk.Label(label=instruction_text, wrap=True, xalign=0)
+            instruction_label.set_use_markup(True)
+            content_box.append(instruction_label)
+
+            # The code box with copy button
+            code_bin = Adw.Bin()
+            code_bin.add_css_class("card") # Gives it the boxed look
+
+            code_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
+            code_box.set_margin_start(12); code_box.set_margin_end(6)
+            code_box.set_margin_top(6); code_box.set_margin_bottom(6)
+
+            options_label = Gtk.Label(label=launch_options, selectable=True, xalign=0)
+            options_label.add_css_class("monospace")
+            
+            copy_btn = Gtk.Button(icon_name="edit-copy-symbolic")
+            copy_btn.set_tooltip_text(_("Copy to Clipboard"))
+            copy_btn.add_css_class("flat")
+            copy_btn.connect("clicked", self.dashboard.app.copy_to_clipboard, launch_options)
+
+            code_box.append(options_label)
+            code_box.set_hexpand(True)
+            options_label.set_hexpand(True)
+            code_box.append(copy_btn)
+            
+            code_bin.set_child(code_box)
+            content_box.append(code_bin)
+
+        # Set the custom box as the extra child of the dialog
+        dialog.set_extra_child(content_box)
+        
         dialog.add_response("cancel", _("Cancel"))
-        dialog.add_response("install", _("Install Anyway"))
+        dialog.add_response("install", _("Continue"))
         dialog.set_response_appearance("install", Adw.ResponseAppearance.DESTRUCTIVE)
         
         def on_response(d, response_id):
