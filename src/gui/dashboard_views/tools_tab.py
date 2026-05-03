@@ -136,7 +136,7 @@ class ToolsTab(Gtk.Box):
 
     def execute_utility_install(self, util):
         try:
-            deploy_essential_utility(util, self.dashboard.downloads_path, self.dashboard.game_path)
+            deploy_essential_utility(util, self.dashboard.downloads_path, self.dashboard.game_path, self.dashboard.steam_base, self.dashboard.game_config.get("steam_id"))
             
             self.dashboard.show_message(
                 _("Success"),

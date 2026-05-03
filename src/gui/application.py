@@ -10,7 +10,7 @@ gi.require_version('Notify', '0.7')
 from gi.repository import Adw, Gdk, GdkPixbuf, GLib, Gtk, Pango, Gio
 
 from core.config import update_user_config
-from core.tools import load_yaml, write_yaml, load_user_config, write_user_config, translate_fuse_path
+from core.tools import load_yaml, write_yaml, load_user_config, write_user_config, translate_fuse_path, get_username_from_steam_id
 from core.scanner import get_steam_base_dir, scan_all_games
 from gui.app_views.library_view import LibraryView
 from gui.dashboard import GameDashboard
@@ -199,13 +199,78 @@ class Nomm(Adw.Application):
         
         cont_btn = Gtk.Button(label=_("Continue"))
         cont_btn.add_css_class("suggested-action")
-        cont_btn.connect("clicked", lambda b: self.finalize_setup(self.api_entry.get_text()))
+        cont_btn.connect("clicked", lambda b: self.store_api_key(self.api_entry.get_text()))
         entry_box.append(self.api_entry); entry_box.append(cont_btn)
         status_page.set_child(entry_box)
         self.stack.add_named(status_page, "api_key"); self.stack.set_visible_child_name("api_key")
 
-    def finalize_setup(self, api_key):
+    def store_api_key(self, api_key):
         self.temp_config["nexus_api_key"] = api_key
+        self.steam_user_id_handler()
+
+    def steam_user_id_handler(self):
+        steam_userdata_path = self.steam_base + "userdata/"
+        steam_user_ids = [f for f in os.listdir(steam_userdata_path) if os.path.isdir(os.path.join(steam_userdata_path, f))]
+        steam_user_ids.remove("0")
+        print(f"Steam user IDs detected: {steam_user_ids}")
+        if len(steam_user_ids) > 1:
+            self.show_steam_user_id_selection_screen(steam_user_ids)
+        else:
+            steam_user_id = steam_user_ids[0]
+            self.temp_config["steam_user_id"] = steam_user_id
+            self.finalize_setup()
+
+    def show_steam_user_id_selection_screen(self, steam_user_ids):
+        status_page = Adw.StatusPage(
+            title=_("Select Your Steam user ID"),
+            description=_("Multiple Steam user IDs were detected in your Steam installation.\n"
+            "Please select the one that you want to configure when using NOMM."),
+        )
+
+        # Usage in your StatusPage:
+        icon_path = self.assets_path + "/platform_logos/steam_logo.svg"
+        file_obj = Gio.File.new_for_path(icon_path)
+        paintable = Gtk.IconPaintable.new_for_file(file_obj, 128, 1) # file, size, scale
+        status_page.set_paintable(paintable)
+
+        # Create a boxed list for the options
+        list_box = Gtk.ListBox()
+        list_box.add_css_class("boxed-list")
+        list_box.set_selection_mode(Gtk.SelectionMode.NONE)
+        list_box.set_valign(Gtk.Align.START)
+
+
+        options = []
+        for steam_user_id in steam_user_ids:
+            options.append({
+                "id": steam_user_id,
+                "username": get_username_from_steam_id(steam_user_id, self.steam_base)})
+
+
+        for opt in options:
+            row = Adw.ActionRow(title=opt["id"], subtitle=opt["username"])
+            row.set_activatable(True)
+            # Connect the row to a callback
+            row.connect("activated", self.on_option_selected, opt["id"])
+            list_box.append(row)
+
+        # Wrap the list in a box for padding/alignment
+        container = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=20)
+        container.set_halign(Gtk.Align.CENTER)
+        container.set_margin_top(24)
+        container.append(list_box)
+
+        status_page.set_child(container)
+        self.stack.add_titled(status_page, "option_select", _("Select Option"))
+        self.stack.set_visible_child_name("option_select")
+
+    def on_option_selected(self, row, steam_user_id):
+        print(f"User's Steam user ID set to: {steam_user_id}")
+        self.temp_config["steam_user_id"] = steam_user_id
+        # Continue to next part of setup
+        self.finalize_setup()
+
+    def finalize_setup(self):
         write_yaml(self.temp_config, self.user_config_path)
         self.show_loading_and_scan()
 
