@@ -7,6 +7,7 @@ import re
 from typing import List, Dict, Any
 from gi.repository import GLib, Gio
 
+
 def get_contrast_color(hex_code: str) -> str:
     hex_code = hex_code.lstrip('#')
     
