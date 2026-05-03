@@ -15,6 +15,16 @@
     font-size: 12px;
 }
 
+.description-btn {
+    margin: 0px;
+    border-radius: 0;
+    background-color: shade(@card_bg_color, 0.4);
+}
+
+.description-btn:hover {
+    background-color: shade(@card_bg_color, 0.2);
+}
+
 .boxed-list {
     background-color: shade(@card_bg_color, 0.8);
     border-radius: 10px 0px 0px 0px;
@@ -33,7 +43,6 @@
 }
 
 .scrolled {
-    min-width: 350px;
 }
 
 .boxed-preview {
@@ -50,4 +59,25 @@
 
 .install-btn {
     background-color: var(--accent-bg-color, #3584e4);
+    color: @window_fg_color;
+}
+
+.fomod-preview-image {
+    padding: 15px;
+}
+
+.show-desc-icon {
+    background-color: transparent;
+    color: @accent_color;
+    padding: 0px 10px 0px 10px;
+    margin: 0px 0px 0px 0px;
+    border-radius: 6px;
+    min-width: 10px;
+    min-height: 10px;
+}
+
+.show-desc-icon:hover {
+    background-color: alpha(@accent_bg_color, 0.2);
+    -gtk-icon-style: symbolic;
+    transition: background-color 200ms ease-in-out;
 }

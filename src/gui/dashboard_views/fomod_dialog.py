@@ -8,6 +8,7 @@ from core.fomod_manager import (get_fomod_group_count, get_fomod_group_options,
                                 get_fomod_group_type, get_fomod_module_name,
                                 get_fomod_step_count, get_plugin_image_path,
                                 get_plugin_type)
+from gui.text_window import TextWindow
 
 
 class FomodSelectionDialog(Gtk.Window):
@@ -17,6 +18,9 @@ class FomodSelectionDialog(Gtk.Window):
     }
     
     def __init__(self, parent, fomod_metadata, mod_staging_dir):
+        
+        module_name = get_fomod_module_name(fomod_metadata)
+        super().__init__(title=f"Installer: {module_name}", transient_for=parent, modal=False)
         
         self.fomod_metadata = fomod_metadata
         
@@ -28,7 +32,6 @@ class FomodSelectionDialog(Gtk.Window):
         self.current_group = 0
         
         options = get_fomod_group_options(fomod_metadata)
-        module_name = get_fomod_module_name(fomod_metadata)
         
         # Look for the fomod path in case the archive is 
         # mod_arc/mod_name/FOMOD instead of mod_arc/FOMOD
@@ -38,8 +41,7 @@ class FomodSelectionDialog(Gtk.Window):
                 self.fomod_staging_dir = root
                 break
         
-        super().__init__(title=f"Installer: {module_name}", transient_for=parent, modal=True)
-        self.set_default_size(1000, 600)
+        self.set_default_size(1100, 622)
         self.add_css_class("fomod-dialog")
         self.options_map = {}
         
@@ -104,19 +106,22 @@ class FomodSelectionDialog(Gtk.Window):
         # Next button in case mod has multiple groups
         self.next_btn = Gtk.Button(label="Next")
         self.next_btn.connect("clicked", self.on_next_clicked, main_box.list_box)
+        self.next_btn.set_cursor_from_name('pointer')
         self.next_btn.add_css_class('install-btn')
         
         # Previous button that will be displayed if current step > 1
         self.previous_btn = Gtk.Button(label="Previous")
+        self.previous_btn.set_cursor_from_name('pointer')
         self.previous_btn.connect("clicked", self.on_previous_clicked, main_box.list_box)
-        
         
         # Initializing buttons to confirm/cancel choices
         cancel_btn = Gtk.Button(label="Cancel")
+        cancel_btn.set_cursor_from_name('pointer')
         cancel_btn.connect("clicked", self.on_cancel_clicked)
         
         self.install_btn = Gtk.Button(label="Install")
         self.install_btn.connect("clicked", self.on_install_clicked)
+        self.install_btn.set_cursor_from_name('pointer')
         self.install_btn.add_css_class('install-btn')
         self.set_default_widget(self.install_btn)
             
@@ -126,7 +131,7 @@ class FomodSelectionDialog(Gtk.Window):
             vexpand=True, 
             hexpand=False
         )
-        scrolled.set_max_content_height(350)
+        scrolled.set_size_request(380, -1)
         scrolled.add_css_class("scrolled")
         scrolled.set_child(main_box.list_box)
         main_box.append(scrolled)
@@ -201,6 +206,8 @@ class FomodSelectionDialog(Gtk.Window):
                 clean_desc = "This plugin is recommended by the author"
             elif plugin_type == 'Required':
                 clean_desc = "This plugin has been defined as required by the author"
+            elif desc != '' and len(desc) >= 65:
+                clean_desc = 'Plugin description is too long to be displayed here' 
             
             if source == [] :
                 extracted_information.append(clean_desc)
@@ -219,8 +226,10 @@ class FomodSelectionDialog(Gtk.Window):
             row_content.set_margin_bottom(10)
             
             text_vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=2)
+            text_vbox.set_hexpand(True)
             
-            name_label = Gtk.Label(label=name, xalign=0, wrap=True)
+            name_label = Gtk.Label(label=name, xalign=0, wrap=False)
+            name_label.set_ellipsize(3)
             name_label.add_css_class("heading")
             
             desc_label = Gtk.Label(label=clean_desc, xalign=0, wrap=False)
@@ -232,15 +241,31 @@ class FomodSelectionDialog(Gtk.Window):
             text_vbox.append(name_label)
             text_vbox.append(desc_label)
             
+            desc_btn = Gtk.Button()
+            desc_btn.connect("clicked", self.on_show_desc_clicked, name, desc)
+            desc_btn.set_icon_name('games-config-tiles-symbolic')
+            desc_btn.add_css_class('show-desc-icon')
+            desc_btn.set_halign(Gtk.Align.END)
+            desc_btn.set_visible(False)
+            
             row_content.append(radio)
             row_content.append(text_vbox)
+            row_content.append(desc_btn)
             
             # Allows to retrieve row content
             row = Gtk.ListBoxRow()
+            row.set_cursor_from_name('pointer')
             row.set_child(row_content)
+            
+            
+            motion = Gtk.EventControllerMotion()
+            row.add_controller(motion)
+            motion.connect('enter', lambda *_, btn=desc_btn: btn.set_visible(True))
+            motion.connect('leave', lambda *_, btn=desc_btn: btn.set_visible(False))
             
             row.radio_button = radio
             row.name_label = name
+            row.desc_label = desc
             
             radio.set_can_target(False)
 
@@ -454,7 +479,9 @@ class FomodSelectionDialog(Gtk.Window):
             picture.add_css_class("fomod-preview-image")
             
             self.right_box.append(picture)
+            
             self.right_box.set_visible(True)
+            
         else:
             self.show_no_preview_label()
     
@@ -464,3 +491,8 @@ class FomodSelectionDialog(Gtk.Window):
         no_image_label.set_vexpand(True)
         no_image_label.add_css_class("dim-label")
         self.right_box.append(no_image_label)
+    
+    def on_show_desc_clicked(self, button, title, content):
+        self.desc_window = TextWindow(self, title, content)
+        self.desc_window.present()
+    
