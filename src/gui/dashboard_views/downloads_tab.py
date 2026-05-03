@@ -215,6 +215,7 @@ class DownloadsTab(Gtk.Box):
         display_name = display_name.replace(".zip", "").replace(".rar", "").replace(".7z", "")
         mod_staging_dir = os.path.join(self.dashboard.staging_path, display_name)
         archive_full_path = os.path.join(self.dashboard.downloads_path, filename)
+        btn.set_sensitive(False)
         
         if not self.dashboard.deployment_targets:
             self.dashboard.show_message(_("Error"), _("Installation failed: Your configuration YAML is missing a mods_path. Check Github for more information on how to configure a YAML for NOMM"))
@@ -225,6 +226,7 @@ class DownloadsTab(Gtk.Box):
             GLib.idle_add(on_extraction_done, data)
         
         def on_extraction_done(data):
+            btn.set_sensitive(True)
             if not data:
                 return False
             if data['fomod']:
