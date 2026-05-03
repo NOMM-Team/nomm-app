@@ -1,6 +1,7 @@
 import gettext
 import os
 import shutil
+import threading
 import webbrowser
 from datetime import datetime
 from pathlib import Path
@@ -9,7 +10,9 @@ import yaml
 from gi.repository import Adw, Gdk, Gio, GLib, Gtk, Pango
 
 from core.archive_manager import (delete_downloaded_archive, extract_archive,
-                                  get_all_relative_files, process_dropped_files)
+                                  get_all_relative_files,
+                                  prepare_mod_installation,
+                                  process_dropped_files)
 from core.fomod_manager import apply_fomod_selection, parse_fomod_xml
 from core.mod_manager import (finalise_mod_metadata, is_mod_installed,
                               load_staging_metadata, remove_mod_from_metadata)
@@ -213,43 +216,39 @@ class DownloadsTab(Gtk.Box):
             self.dashboard.show_message(_("Error"), _("Installation failed: Your configuration YAML is missing a mods_path. Check Github for more information on how to configure a YAML for NOMM"))
             return
 
-        try:
-            extract_archive(archive_full_path, mod_staging_dir)
-            all_files = get_all_relative_files(mod_staging_dir)
-
-            if not all_files:
-                self.dashboard.show_message(_("Error"), _("No files were found in your mod archive."))
-                return
-
-            fomod_xml_path = next((f for f in all_files if f.lower().endswith("fomod/moduleconfig.xml")), None)
-
-            if fomod_xml_path:
-                xml_path = os.path.join(mod_staging_dir, fomod_xml_path)
-                with open(xml_path, 'rb') as f:
-                    xml_data = f.read()
-                
-                module_name, options = parse_fomod_xml(xml_data)
-                
-                if options:
-                    dialog = FomodSelectionDialog(self.dashboard.app.win, module_name, options)
-                    dialog.connect("response", self.on_fomod_dialog_response, mod_staging_dir, filename)
-                    dialog.present()
-                    return
-
-            self.resolve_deployment_path(filename, all_files)
-
-        except Exception as e:
-            self.dashboard.show_message(_("Error"), _("Installation failed: {}").format(e))
+        def worker():
+            data = prepare_mod_installation(archive_full_path, mod_staging_dir, filename)
+            GLib.idle_add(on_extraction_done, data)
+        
+        def on_extraction_done(data):
+            if not data:
+                return False
+            if data['fomod']:
+                dialog = FomodSelectionDialog(self.dashboard.app.win, data['fomod']['module_name'], data['fomod']['options'])
+                dialog.connect("response", self.on_fomod_dialog_response, mod_staging_dir, filename)
+                dialog.present()
+                return False
+            self.resolve_deployment_path(filename, data['files'])
+            return False
+        
+        threading.Thread(target=worker, daemon=True).start()
 
     def on_file_drop(self, _targer, value, _x, _y):
         if isinstance(value, Gdk.FileList):
             files = value.get_files()
             uris = [f.get_uri() for f in files]
-
-            mods = process_dropped_files(uris, self.dashboard.downloads_path)
-
-            if mods:
-                return True
+            
+            def worker():
+                mods = process_dropped_files(uris, self.dashboard.downloads_path)
+                GLib.idle_add(on_file_processed, mods)    
+            
+            def on_file_processed(mods):
+                if mods:
+                    self.populate_list()
+                return False
+            
+            threading.Thread(target=worker, daemon=True).start()
+            return True
         return False
 
     def on_drag_enter(self, _target, _x, _y):
