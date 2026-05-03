@@ -87,20 +87,24 @@ class DownloadsTab(Gtk.Box):
 
         staging_metadata = load_staging_metadata(self.dashboard.staging_metadata_path)
         
+        meta_path = self.dashboard.downloads_metadata_path
+        metadata = {}
+        if os.path.exists(meta_path):
+            try:
+                with open(meta_path, 'r') as meta_f:
+                    metadata = yaml.safe_load(meta_f)
+            except: pass
+            
         for file_name in files:
             installed = is_mod_installed(file_name, staging_metadata)
             
             display_name, version_text, changelog = file_name, "—", ""
-            meta_path = self.dashboard.downloads_metadata_path
-            if os.path.exists(meta_path):
-                try:
-                    with open(meta_path, 'r') as meta_f:
-                        metadata = yaml.safe_load(meta_f)
-                        if file_name in metadata.get("mods", {}):
-                            display_name = metadata["mods"][file_name].get("name", file_name)
-                            version_text = metadata["mods"][file_name].get("version", "—")
-                            changelog = metadata["mods"][file_name].get("changelog", "")
-                except: pass
+
+            if file_name in metadata.get("mods", {}):
+                display_name = metadata["mods"][file_name].get("name", file_name)
+                version_text = metadata["mods"][file_name].get("version", "—")
+                changelog = metadata["mods"][file_name].get("changelog", "")
+                
 
             row = Adw.ActionRow(title=display_name)
             row.is_installed = installed
@@ -349,20 +353,31 @@ class DownloadsTab(Gtk.Box):
         dialog.present()
 
     def finalise_installation(self, filename, extracted_roots, deployment_target):
-        try:
-            finalise_mod_metadata(
-                filename, 
-                extracted_roots, 
-                deployment_target["name"], 
-                self.dashboard.staging_metadata_path, 
-                self.dashboard.downloads_metadata_path
-            )
-        except Exception as e:
-            self.dashboard.show_message("Error", f"Installation failed: There was an issue creating/updating the metadata file: {e}")
-
-        self.populate_list()
         
-        if hasattr(self.dashboard, 'mods_tab'):
-            self.dashboard.mods_tab.populate_list()
-            
-        self.dashboard.update_indicators()
+        def worker():
+            error = None
+            try:
+                finalise_mod_metadata(
+                    filename, 
+                    extracted_roots, 
+                    deployment_target["name"], 
+                    self.dashboard.staging_metadata_path, 
+                    self.dashboard.downloads_metadata_path
+                )
+            except Exception as error:
+                pass
+            GLib.idle_add(on_metadata_finalised, error)
+        
+        def on_metadata_finalised(error):
+            if error:
+                self.dashboard.show_message("Error", f"Installation failed: There was an issue creating/updating the metadata file: {error}")
+                
+            self.populate_list()
+
+            if hasattr(self.dashboard, 'mods_tab'):
+                self.dashboard.mods_tab.populate_list()
+
+            self.dashboard.update_indicators()
+            return False
+        
+        threading.Thread(target=worker, daemon=True).start()

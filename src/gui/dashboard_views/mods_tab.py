@@ -151,8 +151,9 @@ class ModsTab(Gtk.Box):
             
             # Suffix: Missing Files
             missing_files = []
+            mod_dir = staging_path / display_name
             for mod_file in mod_files:    
-                if not os.path.exists(staging_path/display_name/mod_file):
+                if not os.path.exists(mod_dir/mod_file):
                     missing_files.append(mod_file)
             if missing_files:
                 missing_file_badge = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)

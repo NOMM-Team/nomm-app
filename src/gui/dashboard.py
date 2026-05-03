@@ -199,7 +199,7 @@ class GameDashboard(Gtk.Box):
         self.append(main_layout)
 
     def update_indicators(self):
-        stats = get_mod_statistics(self.staging_metadata_path, self.downloads_path)
+        stats = get_mod_statistics(staging_metadata, self.downloads_path)
         
         self.mods_inactive_label.set_text(str(stats["mods_inactive"]))
         self.mods_active_label.set_text(str(stats["mods_active"]))
