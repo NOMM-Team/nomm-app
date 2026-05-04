@@ -1,6 +1,7 @@
 import os
 import shutil
 import yaml
+import threading
 import subprocess
 import zipfile
 from datetime import datetime
@@ -8,6 +9,8 @@ from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional
 from datetime import datetime
 from core.tools import load_yaml, write_yaml
+
+meta_lock = threading.Lock()
 
 #TODO:Change the logic to deploy last mods from the index first
 def deploy_mod_files(staging_dir: str, dest_dir: str, mod_name: str) -> bool:
@@ -253,48 +256,49 @@ def deploy_essential_utility(util_config: dict, downloads_path: str, game_path: 
 # 
 def toggle_mod_state(mod_name: str, mod_files: list, state: bool, staging_dir: str, deployment_targets: list) -> bool:
     staging_meta_path = os.path.join(staging_dir, ".staging.nomm.yaml")
-    staging_metadata = load_staging_metadata(staging_meta_path)
-    
-    if not deployment_targets or not staging_metadata or mod_name not in staging_metadata.get("mods", {}):
-        return False
-
     dest_dir = deployment_targets[0]["path"]
-    mod_info = staging_metadata["mods"][mod_name]
     
-    if "deployment_target" in mod_info:
-        for target in deployment_targets:
-            if target["name"] == mod_info["deployment_target"]:
-                dest_dir = target["path"]
-                break
+    with meta_lock:
+        staging_metadata = load_staging_metadata(staging_meta_path)
+        if not deployment_targets or not staging_metadata or mod_name not in staging_metadata.get("mods", {}):
+            return False
+        
+        mod_info = staging_metadata["mods"][mod_name]
 
-    staging_mod_dir = os.path.join(staging_dir, mod_name)
+        if "deployment_target" in mod_info:
+            for target in deployment_targets:
+                if target["name"] == mod_info["deployment_target"]:
+                    dest_dir = target["path"]
+                    break
 
-    # state is true so the mod has to be installed/deployed
-    if state:
-        # deploy_mod_files return true if it worked, false if it doesn't
-        mod_info["status"] = "enabled"
-        mod_info["enabled_timestamp"] = datetime.now()
-        write_yaml(staging_metadata, staging_meta_path)
-        if check_for_conflicts(staging_meta_path):
-            success = deploy_all_ordered_mods(staging_dir, dest_dir)
+        staging_mod_dir = os.path.join(staging_dir, mod_name)
+
+        # state is true so the mod has to be installed/deployed
+        if state:
+            # deploy_mod_files return true if it worked, false if it doesn't
+            mod_info["status"] = "enabled"
+            mod_info["enabled_timestamp"] = datetime.now()
+            write_yaml(staging_metadata, staging_meta_path)
+            if check_for_conflicts(staging_meta_path):
+                success = deploy_all_ordered_mods(staging_dir, dest_dir)
+            else:
+                success = deploy_mod_files(staging_dir, dest_dir, mod_name)
+            if success:
+                #TODO: Remove status data as there already is a timestamp
+                print(f"Successfully deployed mod: {mod_name}")
+                return True
+            return False
+        # state is false, deleting the datas and ensure metadata are set to proper value
         else:
-            success = deploy_mod_files(staging_dir, dest_dir, mod_name)
-        if success:
-            #TODO: Remove status data as there already is a timestamp
-            print(f"Successfully deployed mod: {mod_name}")
+            unlink_mod_files(staging_mod_dir, dest_dir, mod_files)
+            mod_info["status"] = "disabled"
+            # Pop is a safety measure to prevent a crash for a missing key
+            mod_info.pop("enabled_timestamp", None)
+            write_yaml(staging_metadata, staging_meta_path)
+            # If there is a conflict mods have to be reloaded in case you unloaded a mod that did an override
+            if check_for_conflicts(staging_meta_path):
+                success = deploy_all_ordered_mods(staging_dir, dest_dir)
             return True
-        return False
-    # state is false, deleting the datas and ensure metadata are set to proper value
-    else:
-        unlink_mod_files(staging_mod_dir, dest_dir, mod_files)
-        mod_info["status"] = "disabled"
-        # Pop is a safety measure to prevent a crash for a missing key
-        mod_info.pop("enabled_timestamp", None)
-        write_yaml(staging_metadata, staging_meta_path)
-        # If there is a conflict mods have to be reloaded in case you unloaded a mod that did an override
-        if check_for_conflicts(staging_meta_path):
-            success = deploy_all_ordered_mods(staging_dir, dest_dir)
-        return True
 
 # method to get the metadata path that is used everywhere in the app
 def get_metadata_path(base_folder: str, is_staging: bool = True) -> str:
@@ -341,32 +345,32 @@ def finalise_mod_metadata(filename: str, mod_files: list, deployment_target_name
     current_download_metadata = {}
 
     mod_name = filename.replace(".zip", "").replace(".rar", "").replace(".7z", "")
+    with meta_lock:
+        # This request should only fail if all previous files were manually added --> can be fixed with a rework of check_index
+        if os.path.exists(downloads_meta_path):
+            with open(downloads_meta_path, 'r') as f:
+                current_download_metadata = yaml.safe_load(f) or {}
+            if "info" in current_download_metadata:
+                current_staging_metadata["info"] = current_download_metadata["info"]
+            if filename in current_download_metadata.get("mods"):
+                mod_data = current_download_metadata["mods"][filename]
+                mod_name = mod_data.get("name", mod_name)
+                current_staging_metadata["mods"][mod_name] = mod_data
 
-    # This request should only fail if all previous files were manually added --> can be fixed with a rework of check_index
-    if os.path.exists(downloads_meta_path):
-        with open(downloads_meta_path, 'r') as f:
-            current_download_metadata = yaml.safe_load(f) or {}
-        if "info" in current_download_metadata:
-            current_staging_metadata["info"] = current_download_metadata["info"]
-        if filename in current_download_metadata.get("mods"):
-            mod_data = current_download_metadata["mods"][filename]
-            mod_name = mod_data.get("name", mod_name)
-            current_staging_metadata["mods"][mod_name] = mod_data
+        # Catch-all check in case we don't have the metadata initialised for that mod
+        if mod_name not in current_staging_metadata["mods"]:
+            current_staging_metadata["mods"][mod_name] = {}
+
+        current_staging_metadata["mods"][mod_name]["mod_files"] = mod_files
+        current_staging_metadata["mods"][mod_name]["status"] = "disabled"
+        current_staging_metadata["mods"][mod_name]["archive_name"] = filename
+        current_staging_metadata["mods"][mod_name]["install_timestamp"] = datetime.now()
+        current_staging_metadata["mods"][mod_name]["deployment_target"] = deployment_target_name
     
-    # Catch-all check in case we don't have the metadata initialised for that mod
-    if mod_name not in current_staging_metadata["mods"]:
-        current_staging_metadata["mods"][mod_name] = {}
+        if mod_name not in current_staging_metadata["index"]:
+            current_staging_metadata["index"].append(mod_name)
 
-    current_staging_metadata["mods"][mod_name]["mod_files"] = mod_files
-    current_staging_metadata["mods"][mod_name]["status"] = "disabled"
-    current_staging_metadata["mods"][mod_name]["archive_name"] = filename
-    current_staging_metadata["mods"][mod_name]["install_timestamp"] = datetime.now()
-    current_staging_metadata["mods"][mod_name]["deployment_target"] = deployment_target_name
-   
-    if mod_name not in current_staging_metadata["index"]:
-        current_staging_metadata["index"].append(mod_name)
-
-    write_yaml(current_staging_metadata, staging_meta_path)
+        write_yaml(current_staging_metadata, staging_meta_path)
 
 # Mostly returns index, will very likely disappear in the future
 # New

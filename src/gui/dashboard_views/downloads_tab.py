@@ -1,6 +1,7 @@
 import gettext
 import os
 import shutil
+import threading
 import webbrowser
 import threading
 import xml.etree.ElementTree as ET
@@ -30,7 +31,7 @@ class DownloadsTab(Gtk.Box):
         
         self.dashboard = dashboard
         self.current_filter = "all"
-
+        
         # Action Bar
         action_bar = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
         filter_group = Gtk.Box(css_classes=["linked"])
@@ -87,21 +88,24 @@ class DownloadsTab(Gtk.Box):
 
         staging_metadata = load_staging_metadata(self.dashboard.staging_metadata_path)
         
+        meta_path = self.dashboard.downloads_metadata_path
+        metadata = {}
+        if os.path.exists(meta_path):
+            try:
+                with open(meta_path, 'r') as meta_f:
+                    metadata = yaml.safe_load(meta_f)
+            except: pass
+            
         for file_name in files:
             installed = is_mod_installed(file_name, staging_metadata)
             
             display_name, version_text, changelog = file_name, "—", ""
-            meta_path = self.dashboard.downloads_metadata_path
-            if os.path.exists(meta_path):
-                try:
-                    with open(meta_path, 'r') as meta_f:
-                        metadata = yaml.safe_load(meta_f)
-                        if file_name in metadata.get("mods", {}):
-                            display_name = metadata["mods"][file_name].get("name", file_name)
-                            version_text = metadata["mods"][file_name].get("version", "—")
-                            changelog = metadata["mods"][file_name].get("changelog", "")
-                except: pass
 
+            if file_name in metadata.get("mods", {}):
+                display_name = metadata["mods"][file_name].get("name", file_name)
+                version_text = metadata["mods"][file_name].get("version", "—")
+                changelog = metadata["mods"][file_name].get("changelog", "")
+            
             row = Adw.ActionRow(title=display_name)
             row.is_installed = installed
             if display_name != file_name: row.set_subtitle(file_name)
@@ -127,7 +131,7 @@ class DownloadsTab(Gtk.Box):
             download_timestamp_tooltip = _("Downloaded: {}").format(timestamp_converter(self.get_download_timestamp(file_name), "long"))
             download_timestamp_row = self.dashboard.create_timestamp_row(download_timestamp_label, download_timestamp_tooltip, "downloaded.svg")
             timestamp_box.append(download_timestamp_row)
-
+            
             if installed:
                 for mod_key, mod_val in staging_metadata.get("mods", {}).items():
                     if mod_val.get("archive_name") == file_name:
@@ -144,6 +148,8 @@ class DownloadsTab(Gtk.Box):
             if not installed: install_btn.add_css_class("suggested-action")
             install_btn.set_cursor_from_name("pointer")
             install_btn.connect("clicked", self.on_install_clicked, file_name, display_name)
+            if file_name in self.dashboard.currently_installing:
+                install_btn.set_sensitive(False)
             row.add_suffix(install_btn)
 
             # Trash Button
@@ -242,11 +248,18 @@ class DownloadsTab(Gtk.Box):
         if isinstance(value, Gdk.FileList):
             files = value.get_files()
             uris = [f.get_uri() for f in files]
-
-            mods = process_dropped_files(uris, self.dashboard.downloads_path)
-
-            if mods:
-                return True
+            
+            def worker():
+                mods = process_dropped_files(uris, self.dashboard.downloads_path)
+                GLib.idle_add(on_file_processed, mods)    
+            
+            def on_file_processed(mods):
+                if mods:
+                    self.populate_list()
+                return False
+            
+            threading.Thread(target=worker, daemon=True).start()
+            return True
         return False
 
     def on_drag_enter(self, _target, _x, _y):
@@ -386,20 +399,32 @@ class DownloadsTab(Gtk.Box):
         dialog.present()
 
     def finalise_installation(self, filename, extracted_roots, deployment_target):
-        try:
-            finalise_mod_metadata(
-                filename, 
-                extracted_roots, 
-                deployment_target["name"], 
-                self.dashboard.staging_metadata_path, 
-                self.dashboard.downloads_metadata_path
-            )
-        except Exception as e:
-            self.dashboard.show_message("Error", f"Installation failed: There was an issue creating/updating the metadata file: {e}")
-
-        self.populate_list()
         
-        if hasattr(self.dashboard, 'mods_tab'):
-            self.dashboard.mods_tab.populate_list()
-            
-        self.dashboard.update_indicators()
+        def worker():
+            error = None
+            try:
+                finalise_mod_metadata(
+                    filename, 
+                    extracted_roots, 
+                    deployment_target["name"], 
+                    self.dashboard.staging_metadata_path, 
+                    self.dashboard.downloads_metadata_path
+                )
+            except Exception as error:
+                pass
+            GLib.idle_add(on_metadata_finalised, error)
+        
+        def on_metadata_finalised(error):
+            self.dashboard.currently_installing.discard(filename)
+            if error:
+                self.dashboard.show_message("Error", f"Installation failed: There was an issue creating/updating the metadata file: {error}")
+                
+            self.populate_list()
+
+            if hasattr(self.dashboard, 'mods_tab'):
+                self.dashboard.mods_tab.populate_list()
+
+            self.dashboard.update_indicators()
+            return False
+        
+        threading.Thread(target=worker, daemon=True).start()
