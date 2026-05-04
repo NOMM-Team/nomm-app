@@ -123,6 +123,10 @@ class ModsTab(Gtk.Box):
         self.preview_description.connect("activate-link", lambda label, uri: webbrowser.open(uri))
         #self.preview_description.add_css_class("dim-label") # Optional styling
         
+        self.sc = Gtk.ScrolledWindow(vexpand=True)
+        self.sc.set_child(self.mods_list_box)
+        self.append(self.sc)
+        
         self.desc_scroll.set_child(self.preview_description)
         self.preview_pane.append(self.desc_scroll)
 
@@ -223,41 +227,6 @@ class ModsTab(Gtk.Box):
                 mod_files = mod_metadata.get("mod_files", [])
 
                 row = Adw.ActionRow(title=display_name)
-
-            # Timestamps
-            if "install_timestamp" in mod_metadata or "enabled_timestamp" in mod_metadata:
-                timestamp_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=2, valign=Gtk.Align.CENTER, margin_end=15)
-
-                # Enabled Timestamp
-                if "enabled_timestamp" in mod_metadata:
-                    enabled_timestamp_label = timestamp_converter(mod_metadata["enabled_timestamp"])
-                    enabled_tooltip = _("Enabled: {}").format(timestamp_converter(mod_metadata["enabled_timestamp"], "long"))
-                    
-                    enabled_row = self.dashboard.create_timestamp_row(enabled_timestamp_label, enabled_tooltip, "enabled.svg")
-                    timestamp_box.append(enabled_row)
-
-                # Installed Timestamp
-                if "install_timestamp" in mod_metadata:
-                    installed_timestamp_label = timestamp_converter(mod_metadata["install_timestamp"])
-                    installed_tooltip = _("Installed: {}").format(timestamp_converter(mod_metadata["install_timestamp"], "long"))
-                    
-                    installed_row = self.dashboard.create_timestamp_row(installed_timestamp_label, installed_tooltip, "installed.svg")
-                    timestamp_box.append(installed_row)
-                row.add_suffix(timestamp_box)
-
-            # Trash
-            u_stack = Gtk.Stack(transition_type=Gtk.StackTransitionType.CROSSFADE, hhomogeneous=False, interpolate_size=True)
-            bin_btn = Gtk.Button(icon_name="user-trash-symbolic", valign=Gtk.Align.CENTER, css_classes=["flat"])
-            conf_del_btn = Gtk.Button(label=_("Are you sure?"), valign=Gtk.Align.CENTER, css_classes=["destructive-action"])
-            conf_del_btn.connect("clicked", self.dashboard.on_uninstall_item, mod_files, mod)
-            
-            bin_btn.connect("clicked", lambda b, s=u_stack: [
-                s.set_visible_child_name("c"),
-                GLib.timeout_add_seconds(3, lambda: s.set_visible_child_name("b") or False)
-            ])
-            u_stack.add_named(bin_btn, "b"); u_stack.add_named(conf_del_btn, "c")
-            row.add_suffix(u_stack)
-
                 row_element_margin = 10
 
                 # Toggle Switch

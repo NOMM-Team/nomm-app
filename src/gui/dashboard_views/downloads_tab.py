@@ -38,6 +38,8 @@ class DownloadsTab(Gtk.Box):
         self.download_lbl_maps = {}
         self.currently_downloading = []
         
+        self.scrolled = Gtk.ScrolledWindow(vexpand=True)
+        
         # Action Bar
         action_bar = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
         filter_group = Gtk.Box(css_classes=["linked"])
