@@ -31,6 +31,9 @@ class DownloadsTab(Gtk.Box):
         self.dashboard = dashboard
         self.current_filter = "all"
         
+        print(self.dashboard.currently_installing)
+        print(self.dashboard.currently_toggling)
+        
         # Action Bar
         action_bar = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
         filter_group = Gtk.Box(css_classes=["linked"])
@@ -105,7 +108,11 @@ class DownloadsTab(Gtk.Box):
                 version_text = metadata["mods"][file_name].get("version", "—")
                 changelog = metadata["mods"][file_name].get("changelog", "")
                 
-
+            # In case a two mods are installed at the same time and self.populate is called before the end of one installation
+            if file_name in self.dashboard.currently_installing:
+                print('changing status because this mod is currently installing')
+                installed = True
+            
             row = Adw.ActionRow(title=display_name)
             row.is_installed = installed
             if display_name != file_name: row.set_subtitle(file_name)
@@ -131,10 +138,6 @@ class DownloadsTab(Gtk.Box):
             download_timestamp_tooltip = _("Downloaded: {}").format(timestamp_converter(self.get_download_timestamp(file_name), "long"))
             download_timestamp_row = self.dashboard.create_timestamp_row(download_timestamp_label, download_timestamp_tooltip, "downloaded.svg")
             timestamp_box.append(download_timestamp_row)
-            
-            # In case a two mods are installed at the same time and self.populate is called before the end of one installation
-            if file_name in self.dashboard.currently_installing:
-                installed = True
             
             if installed:
                 for mod_key, mod_val in staging_metadata.get("mods", {}).items():
@@ -226,7 +229,11 @@ class DownloadsTab(Gtk.Box):
         if not self.dashboard.deployment_targets:
             self.dashboard.show_message(_("Error"), _("Installation failed: Your configuration YAML is missing a mods_path. Check Github for more information on how to configure a YAML for NOMM"))
             return
-
+        
+        # Stores the currently installing mod in a local variable in case multiple mods are installing at the same time
+        self.dashboard.currently_installing.add(filename)
+        print(self.dashboard.currently_installing)
+        
         def worker():
             data = prepare_mod_installation(archive_full_path, mod_staging_dir, filename)
             GLib.idle_add(on_extraction_done, data)
@@ -361,8 +368,6 @@ class DownloadsTab(Gtk.Box):
         dialog.present()
 
     def finalise_installation(self, filename, extracted_roots, deployment_target):
-        # Stores the currently installing mod in a local variable in case multiple mods are installing at the same time
-        self.dashboard.currently_installing.add(filename)
         
         def worker():
             error = None
@@ -389,6 +394,7 @@ class DownloadsTab(Gtk.Box):
                 self.dashboard.mods_tab.populate_list()
 
             self.dashboard.update_indicators()
+            print(self.dashboard.currently_installing)
             return False
         
         threading.Thread(target=worker, daemon=True).start()
