@@ -12,7 +12,7 @@ import requests
 import yaml
 from gi.repository import Adw, Gdk, Gio, Gtk
 
-from core.config import parse_deployment_paths
+from core.user_config import parse_deployment_paths
 from core.tools import load_yaml, write_yaml
 from core.mod_manager import (completely_uninstall_mod, get_metadata_path,
                               get_mod_statistics, load_staging_metadata,
@@ -123,7 +123,7 @@ class GameDashboard(Gtk.Box):
         back_btn.set_cursor_from_name("pointer")
         back_btn.connect("clicked", self.on_back_clicked)
         
-        # Mod count box -- Need a CSS
+        # Mod count box
         mods_badge_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=4)
         mods_badge_box.set_halign(Gtk.Align.END)
         mods_badge_box.set_valign(Gtk.Align.END)

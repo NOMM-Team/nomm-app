@@ -27,7 +27,7 @@ def send_download_notification(status, file_name="", game_name=None, icon_path=N
 
     notification = Notify.Notification.new(title, full_body)
 
-    # Handle the Icon
+    # Icon
     if icon_path and os.path.exists(icon_path):
         try:
             pixbuf = GdkPixbuf.Pixbuf.new_from_file_at_scale(icon_path, 64, 64, True)
@@ -75,7 +75,6 @@ def download_with_progress(url, dest_folder):
         lbl_name = Gtk.Label(label=f"Downloading File: <b>{filename}</b>", use_markup=True, xalign=0)
         progress_bar = Gtk.ProgressBar(show_text=True)
         
-        # --- ADD THIS BLOCK ---
         stack = Gtk.Stack()
         stack.set_transition_type(Gtk.StackTransitionType.SLIDE_LEFT)
         stack.set_transition_duration(500) 
@@ -91,14 +90,11 @@ def download_with_progress(url, dest_folder):
 
         stack.add_named(tip_label_a, "a")
         stack.add_named(tip_label_b, "b")
-        # ----------------------
 
         box.append(lbl_name)
-        # box.append(lbl_dest) # Keep if you want it
         box.append(progress_bar)
-        box.append(stack) # Add the stack here
+        box.append(stack)
 
-        # --- ADD THE ROTATION LOGIC ---
         def rotate_tips():
             if status["finished"]:
                 return False
@@ -111,7 +107,7 @@ def download_with_progress(url, dest_folder):
             stack.set_visible_child_name(next_name)
             return True
 
-        GLib.timeout_add(6000, rotate_tips) # Rotate every 6 seconds
+        GLib.timeout_add(6000, rotate_tips)
         
         win.present()
         return win, progress_bar
@@ -140,8 +136,8 @@ def download_with_progress(url, dest_folder):
             status["success"] = False
         finally:
             status["finished"] = True
-            GLib.idle_add(window.destroy) # Close window when done
-            event.set() # Wake up the calling thread
+            GLib.idle_add(window.destroy)
+            event.set()
 
     # Start download thread
     thread = threading.Thread(target=run_download)

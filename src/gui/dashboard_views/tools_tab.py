@@ -7,7 +7,7 @@ from pathlib import Path
 from gi.repository import Adw, GLib, Gtk
 
 from core.mod_manager import deploy_essential_utility, is_utility_installed
-from core.downloader import download_file_async
+from core.downloader import download_mod
 
 _ = gettext.gettext
 
@@ -106,13 +106,18 @@ class ToolsTab(Gtk.Box):
             return
 
         util_dir = os.path.join(self.dashboard.downloads_path, "utilities")
+        def worker():
+            success = download_mod(source_url, util_dir)
+            GLib.idle_add(on_download_finished, success)
+        
+        def on_download_finished(success):
+            if success:
+                stack.set_visible_child_name("install")
+            else:
+                self.dashboard.show_message(_("Download Failed"), error_msg)
+            return False
 
-        def on_success():
-            stack.set_visible_child_name("install")
-        def on_error(error_msg):
-            self.dashboard.show_message(_("Download Failed"), error_msg)
-
-        download_file_async(source_url, util_dir, on_success, on_error)
+        threading.Thread(target=worker, daemon=True).start()
 
     def on_utility_install_clicked(self, btn, util):
         msg = _("Warning: This process may be destructive to existing game files. Please ensure you have backed up your game directory before proceeding.")

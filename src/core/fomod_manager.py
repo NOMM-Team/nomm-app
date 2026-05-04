@@ -3,7 +3,6 @@ import shutil
 import xml.etree.ElementTree as ET
 
 # Parsing the fomod from the XML
-# fomod_handler.py/parse_fomod_xml
 def parse_fomod_xml(xml_data):
     try:
         root = ET.fromstring(xml_data)
@@ -26,7 +25,6 @@ def parse_fomod_xml(xml_data):
         print(f"Failed to parse FOMOD XML: {e}")
         return None, []
 
-# To check, really different
 def apply_fomod_selection(mod_staging_dir: str, source_folder_name: str) -> list:
     normalized_source = source_folder_name.replace('\\', '/').strip('/')
     source_path = None
@@ -42,7 +40,7 @@ def apply_fomod_selection(mod_staging_dir: str, source_folder_name: str) -> list
         for root, _, _ in os.walk(mod_staging_dir):
             # Calculates relative root and replaces \\ for compatibility
             rel_root = os.path.relpath(root, mod_staging_dir).replace('\\', '/')
-            #If we find the folder, then we break
+            # If we find the folder, then we break
             if rel_root == normalized_source or rel_root.endswith('/' + normalized_source):
                 source_path = root
                 break

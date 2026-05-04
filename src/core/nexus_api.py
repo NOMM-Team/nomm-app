@@ -13,8 +13,7 @@ from gui.notifications import send_download_notification, download_with_progress
 from core.tools import load_yaml, write_yaml
 from typing import Optional, Callable
 
-# Same code as check_for_update but with a worker and a thread for async
-# Dashboard/check_for_update() but in a thread
+# TODO: compare with check_for_update because it's almost the same but async
 def check_for_mod_updates_async(staging_metadata: dict, headers: dict, game_id: str, on_complete_callback: Optional[Callable]) -> None:
     def worker():
         print("Checking for updates in background...")
@@ -62,7 +61,6 @@ def check_for_mod_updates_async(staging_metadata: dict, headers: dict, game_id: 
     threading.Thread(target=worker, daemon=True).start()
 
 # Interprets nxm links and launchs notification
-# nxm_handler.py/handle_nexus_link
 def handle_nexus_link(nxm_link: str) -> bool:
 
     app_dir = os.path.join(GLib.get_user_data_dir(), "nomm")
@@ -117,8 +115,6 @@ def handle_nexus_link(nxm_link: str) -> bool:
         print("Downloading single mod")
         _download_nexus_mod(nxm_link, headers, final_download_dir, nexus_id, game_folder_name, user_config_dir)
 
-# Download the mods from nexus and is used in nxm_handler
-# nxm_handler/download_nexus_mod
 def _download_nexus_mod(nxm_link: str, headers: dict, final_download_dir: Path, nexus_id: str, game_folder_name: str, user_config_dir):
     try:
         splitted_nxm = urlsplit(nxm_link)
@@ -196,7 +192,6 @@ def _download_nexus_mod(nxm_link: str, headers: dict, final_download_dir: Path, 
         print(f"An error occurred: {e}")
         return False
 
-# nxm_handler/download_nexus_collection
 def _download_nexus_collection(nxm_link: str, headers: dict, final_download_dir: Path):
     parts = nxm_link.replace("nxm://", "").split("/")
     game_domain = parts[0]

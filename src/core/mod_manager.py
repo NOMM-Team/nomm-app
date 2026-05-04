@@ -1,18 +1,18 @@
 import os
 import shutil
-import yaml
-import threading
 import subprocess
+import threading
 import zipfile
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional
-from datetime import datetime
+
+import yaml
+
 from core.tools import load_yaml, write_yaml
 
 meta_lock = threading.Lock()
 
-#TODO:Change the logic to deploy last mods from the index first
 def deploy_mod_files(staging_dir: str, dest_dir: str, mod_name: str) -> bool:
     dest_path = Path(dest_dir)
     staging_mod_path = os.path.join(Path(staging_dir), mod_name)
@@ -67,7 +67,6 @@ def deploy_mod_files(staging_dir: str, dest_dir: str, mod_name: str) -> bool:
     
     return is_success
 
-# Just a loop that deploy mods following the index list
 def deploy_all_ordered_mods(staging_dir: str, dest_dir: str) -> bool:
     staging_meta_path = os.path.join(staging_dir, ".staging.nomm.yaml")
     indexed_mods = read_index(staging_meta_path)
@@ -100,9 +99,7 @@ def deploy_all_ordered_mods(staging_dir: str, dest_dir: str) -> bool:
         return False
     return True
 
-# dashboard.py/update_indicators with available downloads and mods grouped but logic is the same
 def get_mod_statistics(staging_meta_path: str, downloads_path: str) -> dict:
-    # Dictionary is initialized here
     stats = {
         "mods_inactive": 0,
         "mods_active": 0,
@@ -136,7 +133,6 @@ def get_mod_statistics(staging_meta_path: str, downloads_path: str) -> dict:
     return stats
 
 # Reworked during the refactor, loops on the mods in staging_metadata and checks
-# dashboard.py/is_mod_installed but f "archive_name" not in staging_metadata["mods"][mod] removed
 def is_mod_installed(archive_filename, staging_metadata) -> bool:
     if staging_metadata:
         for mod_val in staging_metadata.get("mods", {}).values():
@@ -145,7 +141,6 @@ def is_mod_installed(archive_filename, staging_metadata) -> bool:
     return False
 
 # Checks if mod files from staging and dest folders are the same and remove the symlink if they are
-# dashboard.py (l: 1069)
 def unlink_mod_files(staging_dir: str, dest_dir: str, mod_files: list[str]):
     dest_path = Path(dest_dir)
     staging_path = Path(staging_dir)
@@ -155,9 +150,6 @@ def unlink_mod_files(staging_dir: str, dest_dir: str, mod_files: list[str]):
         source_item = staging_path / mod_file
 
         if link_item.exists() or link_item.is_symlink():
-            # This try prevents nomm from unlinking files that are from another mod
-            # If texture_1 is installed by mod_1 and mod_2 did an override, texture_1
-            # wont be unlinked on mod_1 uninstall
             try:
                 if os.path.samefile(source_item, link_item):
                     link_item.unlink()
@@ -172,14 +164,12 @@ def unlink_mod_files(staging_dir: str, dest_dir: str, mod_files: list[str]):
                 break
             current_dir = current_dir.parent
 
-# Previous function + delete mod from staging folder
 def completely_uninstall_mod(staging_dir: str, dest_dir: str, mod_files: list[str]):
     unlink_mod_files(staging_dir, dest_dir, mod_files)
     
     if os.path.exists(staging_dir):
         shutil.rmtree(staging_dir, ignore_errors=True)
 
-# dashboard.py/check_for_comflicts
 def check_for_conflicts(staging_meta_path: str) -> list:
     path_registry = {}
     staging_metadata = load_staging_metadata(staging_meta_path)
@@ -197,22 +187,18 @@ def check_for_conflicts(staging_meta_path: str) -> list:
     conflicts = []
     for mod_list in path_registry.values():
         if len(mod_list) > 1:
-            # We use set() then list() to ensure we don't 
-            # list the same mod twice if it has weird internal duplicates
             unique_mods = sorted(list(set(mod_list)))
             if unique_mods not in conflicts:
                 conflicts.append(unique_mods)
 
     return conflicts
 
-# Dashboard.py/find_text_file
 def find_text_file(mod_files: list) -> str:
     for file_path in mod_files:
         if ".txt" in file_path:
             return file_path
     return ""
 
-# #dashboard.py (l:883)
 def is_utility_installed(local_zip_path: Path, target_dir: Path) -> bool:
     if not local_zip_path.exists():
         return False
@@ -222,7 +208,6 @@ def is_utility_installed(local_zip_path: Path, target_dir: Path) -> bool:
     except Exception: 
         return False
 
- # dashboard.py/execute_utility_install
 def deploy_essential_utility(util_config: dict, downloads_path: str, game_path: str):
     source_url = util_config.get("source")
     filename = source_url.split("/")[-1]
@@ -252,8 +237,7 @@ def deploy_essential_utility(util_config: dict, downloads_path: str, game_path: 
     cmd = util_config.get("enable_command")
     if cmd:
         subprocess.run(cmd, shell=True, cwd=game_root)
-
-# 
+ 
 def toggle_mod_state(mod_name: str, mod_files: list, state: bool, staging_dir: str, deployment_targets: list) -> bool:
     staging_meta_path = os.path.join(staging_dir, ".staging.nomm.yaml")
     dest_dir = deployment_targets[0]["path"]
@@ -300,7 +284,6 @@ def toggle_mod_state(mod_name: str, mod_files: list, state: bool, staging_dir: s
                 success = deploy_all_ordered_mods(staging_dir, dest_dir)
             return True
 
-# method to get the metadata path that is used everywhere in the app
 def get_metadata_path(base_folder: str, is_staging: bool = True) -> str:
     filename = ".staging.nomm.yaml" if is_staging else ".downloads.nomm.yaml"
     return os.path.join(base_folder, filename)
@@ -309,7 +292,6 @@ def load_staging_metadata(path: str) -> dict:
     data = load_yaml(path)
     
     # load metadata also initialize the staging_metadata as a safety measure
-    # this is a change reviewed
     if not isinstance(data, dict):
         data = {}
     if "mods" not in data:
@@ -322,7 +304,6 @@ def load_staging_metadata(path: str) -> dict:
     return data
 
 # Removes the mod from the staging metadata -- metadata allows to list mods that are installed
-# Dashboard.py (l:216)
 def remove_mod_from_metadata(path: str, mod_name: str) -> bool:
     data = load_staging_metadata(path)
 
@@ -339,7 +320,6 @@ def remove_mod_from_metadata(path: str, mod_name: str) -> bool:
     return False
 
 # Writing the metadata with needed fields
-# dashboard.py/create_downloads_page (l:1339)
 def finalise_mod_metadata(filename: str, mod_files: list, deployment_target_name: str, staging_meta_path: str, downloads_meta_path: str):
     current_staging_metadata = load_staging_metadata(staging_meta_path)
     current_download_metadata = {}
@@ -373,13 +353,11 @@ def finalise_mod_metadata(filename: str, mod_files: list, deployment_target_name
         write_yaml(current_staging_metadata, staging_meta_path)
 
 # Mostly returns index, will very likely disappear in the future
-# New
 def read_index(staging_meta_path: str) -> List[str]:
     current_staging_metadata = load_staging_metadata(staging_meta_path)
     return current_staging_metadata["index"]
 
 # Change the mod index from the index list
-# New
 def change_mod_index(staging_meta_path: str, mod_name: str, index: int):
     current_staging_metadata=load_staging_metadata(staging_meta_path)
     

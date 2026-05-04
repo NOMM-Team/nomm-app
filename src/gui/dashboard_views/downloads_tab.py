@@ -31,6 +31,8 @@ class DownloadsTab(Gtk.Box):
         self.dashboard = dashboard
         self.current_filter = "all"
         
+        self.scrolled = Gtk.ScrolledWindow(vexpand=True)
+        
         # Action Bar
         action_bar = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
         filter_group = Gtk.Box(css_classes=["linked"])
@@ -66,9 +68,9 @@ class DownloadsTab(Gtk.Box):
         
         self.add_controller(drop_target)
         
-        scrolled = Gtk.ScrolledWindow(vexpand=True)
-        scrolled.set_child(self.list_box)
-        self.append(scrolled)
+        self.scrolled = Gtk.ScrolledWindow(vexpand=True)
+        self.scrolled.set_child(self.list_box)
+        self.append(self.scrolled)
 
         if self.dashboard.downloads_path and os.path.exists(self.dashboard.downloads_path):
             self.setup_folder_monitor()
@@ -76,6 +78,7 @@ class DownloadsTab(Gtk.Box):
         self.populate_list()
 
     def populate_list(self):
+        valign = self.scrolled.get_valign()
         while child := self.list_box.get_first_child():
             self.list_box.remove(child)
 
@@ -166,6 +169,7 @@ class DownloadsTab(Gtk.Box):
             row.add_suffix(d_stack)
             
             self.list_box.append(row)
+        self.scrolled.set_valign(valign)
 
     # Filter lists
     def filter_list_rows(self, row):
@@ -195,12 +199,11 @@ class DownloadsTab(Gtk.Box):
         self.populate_list()
         self.dashboard.update_indicators()
 
-# dashboard.py/setup_folder_monitor
     def setup_folder_monitor(self):
         f = Gio.File.new_for_path(self.dashboard.downloads_path)
         self.monitor = f.monitor_directory(Gio.FileMonitorFlags.NONE, None)
         self.monitor.connect("changed", self.on_downloads_folder_changed)
-# dashboard.py/on_downloads_folder_changed
+
     def on_downloads_folder_changed(self, monitor, file, other_file, event_type):
         relevant_events = [Gio.FileMonitorEvent.CREATED, Gio.FileMonitorEvent.DELETED]
         if event_type in relevant_events:
