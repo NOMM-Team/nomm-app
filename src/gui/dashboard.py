@@ -34,6 +34,7 @@ class GameDashboard(Gtk.Box):
         self.app_id = app_id
         self.current_filter = "all"
         self.active_tab = "mods"
+        self.steam_base = steam_base
         self.assets_path = assets_path
         self.game_config = load_yaml(game_config_path)
         self.user_config = load_yaml(user_config_path)
