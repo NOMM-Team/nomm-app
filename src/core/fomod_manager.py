@@ -2,8 +2,6 @@ import os
 import shutil
 import xml.etree.ElementTree as ET
 
-from core.archive_manager import get_all_relative_files
-
 # Parsing the fomod from the XML
 def parse_fomod_xml(xml_data) -> dict :
     fomod_data = {}
