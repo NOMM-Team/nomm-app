@@ -31,9 +31,6 @@ class DownloadsTab(Gtk.Box):
         self.dashboard = dashboard
         self.current_filter = "all"
         
-        print(self.dashboard.currently_installing)
-        print(self.dashboard.currently_toggling)
-        
         # Action Bar
         action_bar = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
         filter_group = Gtk.Box(css_classes=["linked"])
@@ -107,11 +104,6 @@ class DownloadsTab(Gtk.Box):
                 display_name = metadata["mods"][file_name].get("name", file_name)
                 version_text = metadata["mods"][file_name].get("version", "—")
                 changelog = metadata["mods"][file_name].get("changelog", "")
-                
-            # In case a two mods are installed at the same time and self.populate is called before the end of one installation
-            if file_name in self.dashboard.currently_installing:
-                print('changing status because this mod is currently installing')
-                installed = True
             
             row = Adw.ActionRow(title=display_name)
             row.is_installed = installed
@@ -232,7 +224,6 @@ class DownloadsTab(Gtk.Box):
         
         # Stores the currently installing mod in a local variable in case multiple mods are installing at the same time
         self.dashboard.currently_installing.add(filename)
-        print(self.dashboard.currently_installing)
         
         def worker():
             data = prepare_mod_installation(archive_full_path, mod_staging_dir, filename)
@@ -394,7 +385,6 @@ class DownloadsTab(Gtk.Box):
                 self.dashboard.mods_tab.populate_list()
 
             self.dashboard.update_indicators()
-            print(self.dashboard.currently_installing)
             return False
         
         threading.Thread(target=worker, daemon=True).start()
