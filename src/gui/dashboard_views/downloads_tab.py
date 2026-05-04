@@ -30,7 +30,7 @@ class DownloadsTab(Gtk.Box):
         
         self.dashboard = dashboard
         self.current_filter = "all"
-
+        
         # Action Bar
         action_bar = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
         filter_group = Gtk.Box(css_classes=["linked"])
@@ -131,7 +131,11 @@ class DownloadsTab(Gtk.Box):
             download_timestamp_tooltip = _("Downloaded: {}").format(timestamp_converter(self.get_download_timestamp(file_name), "long"))
             download_timestamp_row = self.dashboard.create_timestamp_row(download_timestamp_label, download_timestamp_tooltip, "downloaded.svg")
             timestamp_box.append(download_timestamp_row)
-
+            
+            # In case a two mods are installed at the same time and self.populate is called before the end of one installation
+            if file_name in self.dashboard.currently_installing:
+                installed = True
+            
             if installed:
                 for mod_key, mod_val in staging_metadata.get("mods", {}).items():
                     if mod_val.get("archive_name") == file_name:
@@ -148,6 +152,8 @@ class DownloadsTab(Gtk.Box):
             if not installed: install_btn.add_css_class("suggested-action")
             install_btn.set_cursor_from_name("pointer")
             install_btn.connect("clicked", self.on_install_clicked, file_name, display_name)
+            if file_name in self.dashboard.currently_installing:
+                install_btn.set_sensitive(False)
             row.add_suffix(install_btn)
 
             # Trash Button
@@ -355,6 +361,8 @@ class DownloadsTab(Gtk.Box):
         dialog.present()
 
     def finalise_installation(self, filename, extracted_roots, deployment_target):
+        # Stores the currently installing mod in a local variable in case multiple mods are installing at the same time
+        self.dashboard.currently_installing.add(filename)
         
         def worker():
             error = None
@@ -371,6 +379,7 @@ class DownloadsTab(Gtk.Box):
             GLib.idle_add(on_metadata_finalised, error)
         
         def on_metadata_finalised(error):
+            self.dashboard.currently_installing.discard(filename)
             if error:
                 self.dashboard.show_message("Error", f"Installation failed: There was an issue creating/updating the metadata file: {error}")
                 

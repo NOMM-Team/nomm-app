@@ -111,6 +111,9 @@ class ModsTab(Gtk.Box):
             # Toggle Switch
             mod_toggle_switch = Gtk.Switch(active=True if "enabled_timestamp" in mod_metadata else False, valign=Gtk.Align.CENTER, css_classes=["accent-switch"])
             mod_toggle_switch.connect("state-set", self.on_mod_toggled, mod_files, mod)
+            if mod in self.dashboard.currently_toggling:
+                mod_toggle_switch.set_active(True)
+                mod_toggle_switch.set_sensitive(False)
             row.add_prefix(mod_toggle_switch)
             
             if conflicts:
@@ -286,6 +289,7 @@ class ModsTab(Gtk.Box):
 
     def on_mod_toggled(self, switch, state, mod_files: list, mod: str):
         switch.set_sensitive(False)
+        self.dashboard.currently_toggling.add(mod)
         def worker():
             success = toggle_mod_state(
                 mod_name=mod,
@@ -298,6 +302,7 @@ class ModsTab(Gtk.Box):
             
         def on_toggle_done(success):
             # UI Fallback if toggle fail
+            self.dashboard.currently_toggling.discard(mod)
             switch.set_sensitive(True)
             if state and not success:
                 switch.set_active(False) 
