@@ -1,0 +1,67 @@
+.tw-content-area {
+}
+
+.tw-header {
+    background-color: @card_bg_color;
+    padding: 8px;
+    border-bottom: 1px solid alpha(@borders, 0.5);
+}
+
+.tw-body {
+    background-color: @window_bg_color;
+}
+
+.tw-footer {
+    background-color: @card_bg_color;
+    padding: 6px 10px;
+    border-top: 1px solid alpha(@borders, 0.5);
+}
+
+.tw-header-icon {
+    background-color: alpha(@accent_bg_color, 0.2);
+    -gtk-icon-style: symbolic;
+    color: @accent_color;
+    padding: 4px;
+    border-radius: 6px;
+    min-width: 28px;
+    min-height: 28px;
+}
+
+.tw-title {
+    font-weight: 600;
+    font-size: 0.95em;
+    color: @window_fg_color;
+}
+
+.tw-file-name {
+    font-size: 0.85em;
+    color: alpha(@window_fg_color, 0.55);
+}
+
+.tw-scrolled {
+    padding: 12px;
+    background-color: @window_bg_color;
+}
+
+.tw-body-content {
+    font-size: 0.95em;
+    color: @window_fg_color;
+    line-height: 1.5;
+}
+
+.tw-close-btn {
+    padding: 6px 20px;
+    border-radius: 6px;
+}
+
+.tw-close-icon {
+    color: alpha(@window_fg_color, 0.7);
+    min-width: 28px;
+    min-height: 28px;
+    border-radius: 6px;
+}
+
+.tw-close-icon:hover {
+    background-color: alpha(@window_fg_color, 0.08);
+    color: @window_fg_color;
+}

@@ -3,6 +3,8 @@ import os
 import shutil
 import threading
 import webbrowser
+import threading
+import xml.etree.ElementTree as ET
 from datetime import datetime
 from pathlib import Path
 
@@ -11,9 +13,8 @@ from gi.repository import Adw, Gdk, Gio, GLib, Gtk, Pango
 
 from core.archive_manager import (delete_downloaded_archive, extract_archive,
                                   get_all_relative_files,
-                                  prepare_mod_installation,
-                                  process_dropped_files)
-from core.fomod_manager import apply_fomod_selection, parse_fomod_xml
+                                  process_dropped_files, prepare_mod_installation)
+from core.fomod_manager import apply_fomod_selection, parse_fomod_xml, get_required_files
 from core.mod_manager import (finalise_mod_metadata, is_mod_installed,
                               load_staging_metadata, remove_mod_from_metadata)
 from core.tools import timestamp_converter
@@ -226,15 +227,15 @@ class DownloadsTab(Gtk.Box):
         self.dashboard.currently_installing.add(filename)
         
         def worker():
-            data = prepare_mod_installation(archive_full_path, mod_staging_dir, filename)
+            data = prepare_mod_installation(self, archive_full_path, mod_staging_dir, filename)
             GLib.idle_add(on_extraction_done, data)
-        
+                
         def on_extraction_done(data):
             btn.set_sensitive(True)
             if not data:
                 return False
             if data['fomod']:
-                dialog = FomodSelectionDialog(self.dashboard.app.win, data['fomod']['module_name'], data['fomod']['options'])
+                dialog = FomodSelectionDialog(self.dashboard.app.win, data['fomod'], mod_staging_dir)
                 dialog.connect("response", self.on_fomod_dialog_response, mod_staging_dir, filename)
                 dialog.present()
                 return False
@@ -268,17 +269,56 @@ class DownloadsTab(Gtk.Box):
     def on_drag_leave(self, _target):
         self.list_box.remove_css_class("drop-active")
 
+    # Consider moving part of this logic into core
     def on_fomod_dialog_response(self, dialog, response, mod_staging_dir, filename):
+        # As we have multiple files to copy, we loop on items to retrieve every source and it's associated destination
         if response == Gtk.ResponseType.OK:
-            source_folder_name = dialog.get_selected_source()
-            if source_folder_name:
+            
+            install_items = dialog.get_global_sources()
+            # This line could be removed if required files are indeed toggled since they will automatically be included
+            # in install_items
+            required = get_required_files(dialog.fomod_metadata)
+            install_items = required + install_items
+            
+            temp_install_dir = f"{mod_staging_dir}_final_fomod"
+            os.makedirs(temp_install_dir, exist_ok=True)
+            
+            grouped_final_files = []
+            for install_item in install_items:
+                install_source = install_item.get('source')
+                install_destination = install_item.get('destination')
+                
+                if not install_source: 
+                    continue
+                    
+                if not install_destination:
+                    install_destination = ""
+                
+                dest_path = os.path.join(temp_install_dir, install_destination)
                 try:
-                    final_files = apply_fomod_selection(mod_staging_dir, source_folder_name)
-                    self.resolve_deployment_path(filename, final_files)
+                    res = apply_fomod_selection(mod_staging_dir, install_source, dest_path)
+                    if isinstance(res, list):
+                        for f in res:
+                            final_path = os.path.normpath(os.path.join(install_destination, f)).replace('\\', '/')
+                            grouped_final_files.append(final_path)
+                    else:
+                        final_path = os.path.normpath(os.path.join(install_destination, res)).replace('\\', '/')
+                        grouped_final_files.append(final_path)
+                                          
                 except Exception as e:
                     self.dashboard.show_message(_("Error"), str(e))
+            
+            grouped_final_files = get_all_relative_files(temp_install_dir)
+            
+            if grouped_final_files:
+                shutil.rmtree(mod_staging_dir, ignore_errors=True)
+                os.rename(temp_install_dir, mod_staging_dir)
+                self.resolve_deployment_path(filename, grouped_final_files)
+            else:
+                shutil.rmtree(mod_staging_dir, ignore_errors=True)
+                shutil.rmtree(temp_install_dir, ignore_errors=True)
+                
         else:
-            import shutil
             shutil.rmtree(mod_staging_dir, ignore_errors=True)
 
         dialog.destroy()
