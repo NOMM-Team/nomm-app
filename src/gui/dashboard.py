@@ -42,6 +42,8 @@ class GameDashboard(Gtk.Box):
         self.downloads_path = str(Path(os.path.join(Path(self.user_config.get("download_path")), game_name)))
         self.staging_path = Path(os.path.join(Path(self.user_config.get("staging_path")), game_name))
         self.platform = self.game_config.get("platform")
+        self.currently_toggling = set()
+        self.currently_installing = set()
         
         self.staging_metadata_path = get_metadata_path(self.staging_path, is_staging=True)
         self.downloads_metadata_path = get_metadata_path(self.downloads_path, is_staging=False)

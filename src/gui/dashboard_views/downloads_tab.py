@@ -1,6 +1,7 @@
 import gettext
 import os
 import shutil
+import threading
 import webbrowser
 from datetime import datetime
 from pathlib import Path
@@ -9,7 +10,9 @@ import yaml
 from gi.repository import Adw, Gdk, Gio, GLib, Gtk, Pango
 
 from core.archive_manager import (delete_downloaded_archive, extract_archive,
-                                  get_all_relative_files, process_dropped_files)
+                                  get_all_relative_files,
+                                  prepare_mod_installation,
+                                  process_dropped_files)
 from core.fomod_manager import apply_fomod_selection, parse_fomod_xml
 from core.mod_manager import (finalise_mod_metadata, is_mod_installed,
                               load_staging_metadata, remove_mod_from_metadata)
@@ -27,7 +30,7 @@ class DownloadsTab(Gtk.Box):
         
         self.dashboard = dashboard
         self.current_filter = "all"
-
+        
         # Action Bar
         action_bar = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
         filter_group = Gtk.Box(css_classes=["linked"])
@@ -84,21 +87,24 @@ class DownloadsTab(Gtk.Box):
 
         staging_metadata = load_staging_metadata(self.dashboard.staging_metadata_path)
         
+        meta_path = self.dashboard.downloads_metadata_path
+        metadata = {}
+        if os.path.exists(meta_path):
+            try:
+                with open(meta_path, 'r') as meta_f:
+                    metadata = yaml.safe_load(meta_f)
+            except: pass
+            
         for file_name in files:
             installed = is_mod_installed(file_name, staging_metadata)
             
             display_name, version_text, changelog = file_name, "—", ""
-            meta_path = self.dashboard.downloads_metadata_path
-            if os.path.exists(meta_path):
-                try:
-                    with open(meta_path, 'r') as meta_f:
-                        metadata = yaml.safe_load(meta_f)
-                        if file_name in metadata.get("mods", {}):
-                            display_name = metadata["mods"][file_name].get("name", file_name)
-                            version_text = metadata["mods"][file_name].get("version", "—")
-                            changelog = metadata["mods"][file_name].get("changelog", "")
-                except: pass
 
+            if file_name in metadata.get("mods", {}):
+                display_name = metadata["mods"][file_name].get("name", file_name)
+                version_text = metadata["mods"][file_name].get("version", "—")
+                changelog = metadata["mods"][file_name].get("changelog", "")
+            
             row = Adw.ActionRow(title=display_name)
             row.is_installed = installed
             if display_name != file_name: row.set_subtitle(file_name)
@@ -124,7 +130,7 @@ class DownloadsTab(Gtk.Box):
             download_timestamp_tooltip = _("Downloaded: {}").format(timestamp_converter(self.get_download_timestamp(file_name), "long"))
             download_timestamp_row = self.dashboard.create_timestamp_row(download_timestamp_label, download_timestamp_tooltip, "downloaded.svg")
             timestamp_box.append(download_timestamp_row)
-
+            
             if installed:
                 for mod_key, mod_val in staging_metadata.get("mods", {}).items():
                     if mod_val.get("archive_name") == file_name:
@@ -141,6 +147,8 @@ class DownloadsTab(Gtk.Box):
             if not installed: install_btn.add_css_class("suggested-action")
             install_btn.set_cursor_from_name("pointer")
             install_btn.connect("clicked", self.on_install_clicked, file_name, display_name)
+            if file_name in self.dashboard.currently_installing:
+                install_btn.set_sensitive(False)
             row.add_suffix(install_btn)
 
             # Trash Button
@@ -208,48 +216,49 @@ class DownloadsTab(Gtk.Box):
         display_name = display_name.replace(".zip", "").replace(".rar", "").replace(".7z", "")
         mod_staging_dir = os.path.join(self.dashboard.staging_path, display_name)
         archive_full_path = os.path.join(self.dashboard.downloads_path, filename)
+        btn.set_sensitive(False)
         
         if not self.dashboard.deployment_targets:
             self.dashboard.show_message(_("Error"), _("Installation failed: Your configuration YAML is missing a mods_path. Check Github for more information on how to configure a YAML for NOMM"))
             return
-
-        try:
-            extract_archive(archive_full_path, mod_staging_dir)
-            all_files = get_all_relative_files(mod_staging_dir)
-
-            if not all_files:
-                self.dashboard.show_message(_("Error"), _("No files were found in your mod archive."))
-                return
-
-            fomod_xml_path = next((f for f in all_files if f.lower().endswith("fomod/moduleconfig.xml")), None)
-
-            if fomod_xml_path:
-                xml_path = os.path.join(mod_staging_dir, fomod_xml_path)
-                with open(xml_path, 'rb') as f:
-                    xml_data = f.read()
-                
-                module_name, options = parse_fomod_xml(xml_data)
-                
-                if options:
-                    dialog = FomodSelectionDialog(self.dashboard.app.win, module_name, options)
-                    dialog.connect("response", self.on_fomod_dialog_response, mod_staging_dir, filename)
-                    dialog.present()
-                    return
-
-            self.resolve_deployment_path(filename, all_files)
-
-        except Exception as e:
-            self.dashboard.show_message(_("Error"), _("Installation failed: {}").format(e))
+        
+        # Stores the currently installing mod in a local variable in case multiple mods are installing at the same time
+        self.dashboard.currently_installing.add(filename)
+        
+        def worker():
+            data = prepare_mod_installation(archive_full_path, mod_staging_dir, filename)
+            GLib.idle_add(on_extraction_done, data)
+        
+        def on_extraction_done(data):
+            btn.set_sensitive(True)
+            if not data:
+                return False
+            if data['fomod']:
+                dialog = FomodSelectionDialog(self.dashboard.app.win, data['fomod']['module_name'], data['fomod']['options'])
+                dialog.connect("response", self.on_fomod_dialog_response, mod_staging_dir, filename)
+                dialog.present()
+                return False
+            self.resolve_deployment_path(filename, data['files'])
+            return False
+        
+        threading.Thread(target=worker, daemon=True).start()
 
     def on_file_drop(self, _targer, value, _x, _y):
         if isinstance(value, Gdk.FileList):
             files = value.get_files()
             uris = [f.get_uri() for f in files]
-
-            mods = process_dropped_files(uris, self.dashboard.downloads_path)
-
-            if mods:
-                return True
+            
+            def worker():
+                mods = process_dropped_files(uris, self.dashboard.downloads_path)
+                GLib.idle_add(on_file_processed, mods)    
+            
+            def on_file_processed(mods):
+                if mods:
+                    self.populate_list()
+                return False
+            
+            threading.Thread(target=worker, daemon=True).start()
+            return True
         return False
 
     def on_drag_enter(self, _target, _x, _y):
@@ -350,20 +359,32 @@ class DownloadsTab(Gtk.Box):
         dialog.present()
 
     def finalise_installation(self, filename, extracted_roots, deployment_target):
-        try:
-            finalise_mod_metadata(
-                filename, 
-                extracted_roots, 
-                deployment_target["name"], 
-                self.dashboard.staging_metadata_path, 
-                self.dashboard.downloads_metadata_path
-            )
-        except Exception as e:
-            self.dashboard.show_message("Error", f"Installation failed: There was an issue creating/updating the metadata file: {e}")
-
-        self.populate_list()
         
-        if hasattr(self.dashboard, 'mods_tab'):
-            self.dashboard.mods_tab.populate_list()
-            
-        self.dashboard.update_indicators()
+        def worker():
+            error = None
+            try:
+                finalise_mod_metadata(
+                    filename, 
+                    extracted_roots, 
+                    deployment_target["name"], 
+                    self.dashboard.staging_metadata_path, 
+                    self.dashboard.downloads_metadata_path
+                )
+            except Exception as error:
+                pass
+            GLib.idle_add(on_metadata_finalised, error)
+        
+        def on_metadata_finalised(error):
+            self.dashboard.currently_installing.discard(filename)
+            if error:
+                self.dashboard.show_message("Error", f"Installation failed: There was an issue creating/updating the metadata file: {error}")
+                
+            self.populate_list()
+
+            if hasattr(self.dashboard, 'mods_tab'):
+                self.dashboard.mods_tab.populate_list()
+
+            self.dashboard.update_indicators()
+            return False
+        
+        threading.Thread(target=worker, daemon=True).start()

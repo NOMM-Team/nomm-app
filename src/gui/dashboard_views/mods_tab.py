@@ -1,6 +1,7 @@
 import gettext
 import os
 import webbrowser
+import threading
 from datetime import datetime
 from pathlib import Path
 
@@ -110,9 +111,12 @@ class ModsTab(Gtk.Box):
             # Toggle Switch
             mod_toggle_switch = Gtk.Switch(active=True if "enabled_timestamp" in mod_metadata else False, valign=Gtk.Align.CENTER, css_classes=["accent-switch"])
             mod_toggle_switch.connect("state-set", self.on_mod_toggled, mod_files, mod)
+            if mod in self.dashboard.currently_toggling:
+                mod_toggle_switch.set_active(True)
+                mod_toggle_switch.set_sensitive(False)
             row.add_prefix(mod_toggle_switch)
             
-            if check_for_conflicts(os.path.join(staging_path, ".staging.nomm.yaml")):
+            if conflicts:
                 # Drag for load order
                 drag_handle = Gtk.Image.new_from_icon_name("open-menu-symbolic")
                 drag_handle.set_cursor_from_name("grab")
@@ -134,7 +138,7 @@ class ModsTab(Gtk.Box):
                 file_badge_sizegroup.add_widget(file_list_badge)
                 row.add_prefix(file_list_badge)
                 
-            if check_for_conflicts(os.path.join(staging_path, ".staging.nomm.yaml")):
+            if conflicts:
                 # Load Index
                 index_label = Gtk.Label(label=f"{index}")
                 index_label.add_css_class("dim-label")
@@ -150,8 +154,9 @@ class ModsTab(Gtk.Box):
             
             # Suffix: Missing Files
             missing_files = []
+            mod_dir = staging_path / display_name
             for mod_file in mod_files:    
-                if not os.path.exists(staging_path/display_name/mod_file):
+                if not os.path.exists(mod_dir/mod_file):
                     missing_files.append(mod_file)
             if missing_files:
                 missing_file_badge = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
@@ -283,24 +288,33 @@ class ModsTab(Gtk.Box):
         return search_text in getattr(row, 'mod_name', '')
 
     def on_mod_toggled(self, switch, state, mod_files: list, mod: str):
-        success = toggle_mod_state(
-            mod_name=mod,
-            mod_files=mod_files,
-            state=state,
-            staging_dir=str(self.dashboard.staging_path),
-            deployment_targets=self.dashboard.deployment_targets
-        )
+        switch.set_sensitive(False)
+        self.dashboard.currently_toggling.add(mod)
+        def worker():
+            success = toggle_mod_state(
+                mod_name=mod,
+                mod_files=mod_files,
+                state=state,
+                staging_dir=str(self.dashboard.staging_path),
+                deployment_targets=self.dashboard.deployment_targets
+            )
+            GLib.idle_add(on_toggle_done, success)
+            
+        def on_toggle_done(success):
+            # UI Fallback if toggle fail
+            self.dashboard.currently_toggling.discard(mod)
+            switch.set_sensitive(True)
+            if state and not success:
+                switch.set_active(False) 
+                return False
+            
+            # UI Refresh
+            self.dashboard.update_indicators()
+            self.populate_list()
 
-        # UI Fallback if toggle fail
-        if state and not success:
-            switch.set_active(False) 
             return False
-
-        # UI Refresh
-        self.dashboard.update_indicators()
-        self.populate_list()
         
-        return False
+        threading.Thread(target=worker, daemon=True).start()
     
     def on_drag_prepare(self, source, x, y, mod_name):
         value = GObject.Value(GObject.TYPE_STRING, mod_name)
