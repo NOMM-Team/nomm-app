@@ -401,6 +401,7 @@ class FomodSelectionDialog(Adw.Window):
                 
             list_box.append(skip_row)
         
+        # I need to patch this
         if selection_type == 'SelectAtLeastOne':
             if not radio.get_active():
                 self.next_btn.set_sensitive(False)
