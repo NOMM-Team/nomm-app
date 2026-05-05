@@ -1,0 +1,13 @@
+.mod-thumbnail-frame {
+    border: none;
+    border-radius: 12px;
+    overflow: hidden;
+    
+    /* Hard constraints */
+    min-width: 240px;
+    max-width: 240px;
+    min-height: 135px;
+    max-height: 135px;
+    
+    margin: 10px auto; /* Centers it horizontally */
+}

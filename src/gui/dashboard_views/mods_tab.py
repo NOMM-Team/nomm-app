@@ -5,7 +5,7 @@ import threading
 from datetime import datetime
 from pathlib import Path
 
-from gi.repository import Adw, Gdk, GLib, GObject, Gtk
+from gi.repository import Adw, Gdk, GLib, GObject, Gtk, Gio
 
 from core.mod_manager import (change_mod_index, check_for_conflicts,
                               deploy_all_ordered_mods, load_staging_metadata,
@@ -68,6 +68,8 @@ class ModsTab(Gtk.Box):
 
         # Preview pane with Revealer
         self.revealer = Gtk.Revealer(transition_type=Gtk.RevealerTransitionType.SLIDE_LEFT)
+        self.revealer.set_hexpand(False) 
+        self.revealer.set_halign(Gtk.Align.END)
         self.main_content.append(self.revealer)
 
         self.setup_preview_pane()
@@ -75,9 +77,21 @@ class ModsTab(Gtk.Box):
 
     def setup_preview_pane(self):
         self.preview_pane = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
-        self.preview_pane.set_size_request(300, -1)
+        self.preview_pane.set_size_request(350, -1)
+        self.preview_pane.set_hexpand(False)
         self.preview_pane.add_css_class("background")
-        self.preview_pane.set_margin_start(10)
+
+        self.thumb_container = Gtk.Frame()
+        self.thumb_container.add_css_class("mod-thumbnail-frame")
+        self.thumb_container.set_halign(Gtk.Align.CENTER)
+        self.preview_thumbnail = Gtk.Picture()
+        self.preview_thumbnail.set_can_shrink(True) 
+        
+        self.preview_thumbnail.set_content_fit(Gtk.ContentFit.COVER)
+        self.preview_thumbnail.set_size_request(240, 135)
+
+        self.thumb_container.set_child(self.preview_thumbnail)
+        self.preview_pane.append(self.thumb_container)
 
         # Header with close button
         header = Gtk.CenterBox(margin_top=10, margin_bottom=10)
@@ -104,6 +118,26 @@ class ModsTab(Gtk.Box):
         version = mod_info.get("version", "Unknown")
         self.preview_version.set_label(f"Version: {version}")
         self.revealer.set_reveal_child(True)
+
+        # Add thumbnail
+        thumbnail_path = mod_info.get("thumbnail")
+        if thumbnail_path and os.path.exists(thumbnail_path):
+            try:
+                # Create a Gio.File and then a Texture from that file
+                # This is more "low-level" and avoids the Gtk-CRITICAL scaler issues
+                file = Gio.File.new_for_path(thumbnail_path)
+                texture = Gdk.Texture.new_from_file(file)
+                
+                # Use set_paintable instead of set_filename
+                self.preview_thumbnail.set_paintable(texture)
+                self.preview_thumbnail.set_visible(True)
+            except Exception as e:
+                print(f"Failed to create texture: {e}")
+                self.preview_thumbnail.set_visible(False)
+        else:
+            # Hide the widget or set a placeholder if no image exists
+            self.preview_thumbnail.set_visible(False)
+
 
     def populate_list(self):
         
