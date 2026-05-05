@@ -101,7 +101,6 @@ class ModsTab(Gtk.Box):
         self.preview_title.set_label(mod_name)
         version = mod_info.get("version", "Unknown")
         self.preview_version.set_label(f"Version: {version}")
-
         self.revealer.set_reveal_child(True)
 
     def populate_list(self):
@@ -135,7 +134,6 @@ class ModsTab(Gtk.Box):
             
             display_name = mod
             mod_metadata = staging_metadata["mods"][mod]
-            
 
             version_text = mod_metadata.get("version", "—")
             new_version = mod_metadata.get("new_version", "")
@@ -253,27 +251,7 @@ class ModsTab(Gtk.Box):
                 info_text_badge.set_margin_end(row_element_margin)
                 row.add_suffix(info_text_badge)
 
-            # Timestamps
-            if "install_timestamp" in mod_metadata or "enabled_timestamp" in mod_metadata:
-                timestamp_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=2, valign=Gtk.Align.CENTER, margin_end=15)
-
-                # Enabled Timestamp
-                if "enabled_timestamp" in mod_metadata:
-                    enabled_timestamp_label = timestamp_converter(mod_metadata["enabled_timestamp"])
-                    enabled_tooltip = _("Enabled: {}").format(timestamp_converter(mod_metadata["enabled_timestamp"], "long"))
-                    
-                    enabled_row = self.dashboard.create_timestamp_row(enabled_timestamp_label, enabled_tooltip, "enabled.svg")
-                    timestamp_box.append(enabled_row)
-
-                # Installed Timestamp
-                if "install_timestamp" in mod_metadata:
-                    installed_timestamp_label = timestamp_converter(mod_metadata["install_timestamp"])
-                    installed_tooltip = _("Installed: {}").format(timestamp_converter(mod_metadata["install_timestamp"], "long"))
-                    
-                    installed_row = self.dashboard.create_timestamp_row(installed_timestamp_label, installed_tooltip, "installed.svg")
-                    timestamp_box.append(installed_row)
-                
-                row.add_suffix(timestamp_box)
+            
 
             # Version
             version_badge = Gtk.Button()
@@ -302,6 +280,27 @@ class ModsTab(Gtk.Box):
             if len(version_text) < 10:
                 version_badge_sizegroup.add_widget(version_badge)
             row.add_suffix(version_badge)
+
+            # Timestamps
+            if "install_timestamp" in mod_metadata or "enabled_timestamp" in mod_metadata:
+                timestamp_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=2, valign=Gtk.Align.CENTER, margin_end=15)
+
+                # Enabled Timestamp
+                if "enabled_timestamp" in mod_metadata:
+                    enabled_timestamp_label = timestamp_converter(mod_metadata["enabled_timestamp"])
+                    enabled_tooltip = _("Enabled: {}").format(timestamp_converter(mod_metadata["enabled_timestamp"], "long"))
+                    
+                    enabled_row = self.dashboard.create_timestamp_row(enabled_timestamp_label, enabled_tooltip, "enabled.svg")
+                    timestamp_box.append(enabled_row)
+
+                # Installed Timestamp
+                if "install_timestamp" in mod_metadata:
+                    installed_timestamp_label = timestamp_converter(mod_metadata["install_timestamp"])
+                    installed_tooltip = _("Installed: {}").format(timestamp_converter(mod_metadata["install_timestamp"], "long"))
+                    
+                    installed_row = self.dashboard.create_timestamp_row(installed_timestamp_label, installed_tooltip, "installed.svg")
+                    timestamp_box.append(installed_row)
+                row.add_suffix(timestamp_box)
 
             # Trash
             u_stack = Gtk.Stack(transition_type=Gtk.StackTransitionType.CROSSFADE, hhomogeneous=False, interpolate_size=True)
@@ -390,9 +389,13 @@ class ModsTab(Gtk.Box):
 
     def check_for_updates(self, btn):
         staging_metadata = load_staging_metadata(self.dashboard.staging_metadata_path)
-        if not staging_metadata: return
-        game_id = staging_metadata.get("info", {}).get("nexus_id")
-        if not game_id: return
+        if not staging_metadata:
+            print(f"Staging metadata not found at: {self.dashboard.staging_metadata_path}. Aborting update process.")
+            return
+        nexus_id = staging_metadata.get("info", {}).get("nexus_id")
+        if not nexus_id:
+            print(f"nexus_id not found in staging metadata. Aborting update process.")
+            return
 
         btn.set_sensitive(False)
 
@@ -402,4 +405,4 @@ class ModsTab(Gtk.Box):
                 self.populate_list()
             btn.set_sensitive(True)
 
-        check_for_mod_updates_async(staging_metadata, self.dashboard.headers, game_id, on_updates_checked)
+        check_for_mod_updates_async(staging_metadata, self.dashboard.headers, nexus_id, on_updates_checked)
