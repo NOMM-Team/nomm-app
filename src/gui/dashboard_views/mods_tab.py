@@ -96,9 +96,8 @@ class ModsTab(Gtk.Box):
 
     def on_row_clicked(self, listbox, row):
         # We need to fetch the metadata associated with this row
-        staging_metadata = load_staging_metadata(self.dashboard.staging_metadata_path)
         mod_name = row.get_title() # ActionRow title
-        mod_info = staging_metadata.get("mods", {}).get(mod_name, {})
+        mod_info = row.mod_data
 
         # Update labels
         self.preview_title.set_label(mod_name)
