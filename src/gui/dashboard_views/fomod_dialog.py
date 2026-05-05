@@ -5,9 +5,9 @@ import re
 from gi.repository import Adw, Gdk, GdkPixbuf, GObject, Gtk
 
 from core.fomod_manager import (get_fomod_group_count, get_fomod_group_options,
-                                get_fomod_group_type, get_fomod_module_name,
+                                get_fomod_group_info, get_fomod_module_name,
                                 get_fomod_step_count, get_plugin_image_path,
-                                get_plugin_type)
+                                get_plugin_type, have_plugins_images)
 from gui.text_window import TextWindow
 
 
@@ -96,12 +96,17 @@ class FomodSelectionDialog(Gtk.Window):
         
         self.header_box.append(self.fomod_desc)
         
+        self.group_label = Gtk.Label(label='')
+        self.group_label.add_css_class("title-2")
+        self.group_label.add_css_class("dim-label")
+        self.group_label.set_margin_top(10)
+        self.group_label.set_margin_start(32)
+        self.group_label.set_halign(Gtk.Align.START)
+        
         # Initializing the list box to pick an option and adapting the instructions to match the selection mode
         main_box.list_box = Gtk.ListBox(css_classes=["boxed-list"])
         main_box.list_box.set_activate_on_single_click(True)
         main_box.list_box.connect("row-activated", self.on_row_selected)
-        
-        
         
         # Next button in case mod has multiple groups
         self.next_btn = Gtk.Button(label="Next")
@@ -126,19 +131,19 @@ class FomodSelectionDialog(Gtk.Window):
         self.set_default_widget(self.install_btn)
             
         # Setting up a scrollable box
-        scrolled = Gtk.ScrolledWindow(
+        self.scrolled = Gtk.ScrolledWindow(
             propagate_natural_height=True, 
             vexpand=True, 
             hexpand=False
         )
-        scrolled.set_size_request(380, -1)
-        scrolled.add_css_class("scrolled")
-        scrolled.set_child(main_box.list_box)
-        main_box.append(scrolled)
+        self.scrolled.set_size_request(380, -1)
+        self.scrolled.add_css_class("scrolled")
+        self.scrolled.set_child(main_box.list_box)
+        main_box.append(self.scrolled)
         
         # Vertical separator between the mod list and the preview
-        separator = Gtk.Separator(orientation=Gtk.Orientation.VERTICAL)
-        main_box.append(separator)
+        self.vseparator = Gtk.Separator(orientation=Gtk.Orientation.VERTICAL)
+        main_box.append(self.vseparator)
         
         # Setting up the preview area on the right
         self.right_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
@@ -166,13 +171,23 @@ class FomodSelectionDialog(Gtk.Window):
         # Adding each components to the main container
         content_area.append(self.header_box)
         content_area.append(title_separator)
+        content_area.append(self.group_label)
         content_area.append(main_box)
         content_area.append(title_separator2)
         content_area.append(footer_box)
     
     def populate_listbox(self, list_box, options):
         
-        selection_type = get_fomod_group_type(self.fomod_metadata, self.current_step, self.current_group)
+        if not have_plugins_images(self.fomod_metadata, self.current_step, self.current_group):
+            self.right_box.set_visible(False)
+            self.vseparator.set_visible(False)
+            self.scrolled.set_hexpand(True)
+        else:
+            self.right_box.set_visible(True)
+            self.vseparator.set_visible(True)
+            self.scrolled.set_hexpand(False)
+        
+        selection_type = get_fomod_group_info(self.fomod_metadata, self.current_step, self.current_group)['type']
         
         if selection_type == 'SelectExactlyOne':
             self.fomod_desc.set_label("This mod offers multiple variants, pick one you'd like to install")
@@ -193,6 +208,10 @@ class FomodSelectionDialog(Gtk.Window):
         self.options_map = {}
         
         extracted_information = []
+        
+        # Displaying group info if there is a group info
+        group_name = get_fomod_group_info(self.fomod_metadata, self.current_step, self.current_group)['name']
+        self.group_label.set_label(group_name)
         
         # Looping on items to fill the list box
         for name, desc, source in options:
@@ -275,7 +294,7 @@ class FomodSelectionDialog(Gtk.Window):
                 row.is_radio = False
             
             if plugin_type == 'Required':
-                row.set_can_target(False)
+                row.set_sensitive(False)
                 row.radio_button.set_active(True)
             
             # Adding row to the UI
@@ -312,13 +331,11 @@ class FomodSelectionDialog(Gtk.Window):
                 
             list_box.append(skip_row)
         
+        # I need to patch this
         if selection_type == 'SelectAtLeastOne':
             if not radio.get_active():
                 self.next_btn.set_sensitive(False)
                 self.install_btn.set_sensitive(False)
-            else:
-                self.next_btn.set_sensitive(True)
-                self.install_btn.set_sensitive(True)
         
         # Initialize the selector if needed
         if selection_type == 'SelectAtMostOne' or selection_type == 'SelectExactlyOne':
@@ -338,6 +355,15 @@ class FomodSelectionDialog(Gtk.Window):
                     current_state = row.radio_button.get_active()
                     row.radio_button.set_active(not current_state)
             self.display_preview(list_box, row)
+            
+            selection_type = get_fomod_group_info(self.fomod_metadata, self.current_step, self.current_group)['type']
+            if selection_type == 'SelectAtLeastOne':
+                if row.radio_button.get_active():
+                    self.next_btn.set_sensitive(True)
+                    self.install_btn.set_sensitive(True)
+                else:
+                    self.next_btn.set_sensitive(False)
+                    self.install_btn.set_sensitive(False)
     
     def on_next_clicked(self, button, list_box):
         # Source storing logic
@@ -450,13 +476,23 @@ class FomodSelectionDialog(Gtk.Window):
         self.close()
         
     def display_preview(self, listbox, row):
+        if row is not None:
+            selected_plugin_name = row.name_label
+            
+        if not have_plugins_images(self.fomod_metadata, self.current_step, self.current_group):
+            self.right_box.set_visible(False)
+            self.vseparator.set_visible(False)
+            self.scrolled.set_hexpand(True)
+            return
+        else:
+            self.right_box.set_visible(True)
+            self.vseparator.set_visible(True)
+            self.scrolled.set_hexpand(False)
+        
         # Destroy child if child exists
         while child := self.right_box.get_first_child():
             self.right_box.remove(child)
 
-        if row is not None:
-            selected_plugin_name = row.name_label
-        
         image_path = get_plugin_image_path(self.fomod_metadata, selected_plugin_name, self.current_step, self.current_group)
         
         if image_path != '':

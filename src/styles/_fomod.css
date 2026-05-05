@@ -32,6 +32,7 @@
 
 .boxed-list row {
     border-radius: 0;
+    outline: none;
 }
 
 .boxed-list row:first-child {
@@ -39,10 +40,12 @@
 }
 
 .boxed-list row:selected {
-    background-color: shade(@card_bg_color, 0.9);
+    background-color: transparent;
+    border-radius: 10px 0px 0px 0px;
 }
 
-.scrolled {
+.boxed-list row:focus {
+    outline: none; /* Supprime le liseré bleu par défaut */
 }
 
 .boxed-preview {

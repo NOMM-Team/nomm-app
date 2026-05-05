@@ -5,3 +5,18 @@ accent_colour: "#FFFF00"
 gog_id: 1423049311
 
 nexus_id: "cyberpunk2077"
+
+essential-utilities:
+  red4ext:
+    name: "red4ext"
+    creator: wopss
+    creator-link: https://github.com/wopss
+    source: "https://github.com/wopss/RED4ext/releases/download/v1.30.0/red4ext-1.30.0.zip"
+    utility_path: ""
+
+  CyberEngineTweaks:
+    name: "Cyber Engine Tweaks"
+    creator: maximegmd
+    creator-link: https://github.com/maximegmd
+    source: "https://github.com/maximegmd/CyberEngineTweaks/releases/download/v1.37.1/cet_1.37.1.zip"
+    utility_path: ""

@@ -34,8 +34,8 @@ def parse_fomod_xml(xml_data) -> dict :
                         source = item.get('source')
                         dest = item.get('destination')
                         plugin_folder = {
-                            'source': source,
-                            'destination': dest
+                            'source': source.replace('\\', '/'),
+                            'destination': dest.replace('\\', '/')
                         }
                         folders_data.append(plugin_folder)
                     type_tag = plugin.find('.//type')
@@ -65,13 +65,16 @@ def get_fomod_group_count(parsed_fomod_metadata:dict, step_index: int = 0) -> in
     
     return group_count
 
-def get_fomod_group_type(parsed_fomod_metadata:dict, step_index: int = 0, group_index: int = 0) -> str:
+def get_fomod_group_info(parsed_fomod_metadata:dict, step_index: int = 0, group_index: int = 0) -> dict[str]:
     module_name = list(parsed_fomod_metadata.keys())[0]
     step_name = list(parsed_fomod_metadata[module_name].keys())[step_index]
     group_name = list(parsed_fomod_metadata[module_name][step_name].keys())[group_index]
     group_type = parsed_fomod_metadata[module_name][step_name][group_name]['type']
-    
-    return group_type
+    data = {
+        'type' : group_type,
+        'name' : group_name
+    }
+    return data
 
 def get_fomod_module_name(parsed_fomod_metadata:dict) -> str:
     return list(parsed_fomod_metadata.keys())[0]
@@ -108,6 +111,16 @@ def get_plugin_image_path(parsed_fomod_metadata:dict, plugin_name:str, step_inde
         if plugin['name'] == plugin_name:
             return plugin['image_path']
     return ''
+
+def have_plugins_images(parsed_fomod_metadata:dict, step_index: int = 0, group_index: int = 0) -> bool:
+    module_name = list(parsed_fomod_metadata.keys())[0]
+    step_name = list(parsed_fomod_metadata[module_name].keys())[step_index]
+    group_name = list(parsed_fomod_metadata[module_name][step_name].keys())[group_index]
+    plugins = parsed_fomod_metadata[module_name][step_name][group_name]['plugins']
+    for plugin in plugins:
+        if plugin['image_path']:
+            return True
+    return False
 
 def get_plugin_type(parsed_fomod_metadata:dict, plugin_name:str, step_index: int = 0, group_index: int = 0) -> str:
     module_name = list(parsed_fomod_metadata.keys())[0]
