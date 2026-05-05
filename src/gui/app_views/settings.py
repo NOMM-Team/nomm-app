@@ -6,15 +6,16 @@ import requests
 from gi.repository import Adw, Gio, GLib, Gtk
 
 from core.config import update_user_config
-from core.tools import load_yaml
+from core.tools import load_yaml, translate_fuse_path
 
 _ = gettext.gettext
 
 class SettingsWindow(Adw.Window):
-    def __init__(self, parent_window, assets_path, **kwargs):
+    def __init__(self, app, parent_window, assets_path, **kwargs):
         super().__init__(title=_("Settings"), transient_for=parent_window, modal=True, **kwargs)
+        self.app = app
         self.set_default_size(500, -1)
-        self.assets_path = assets_path
+        self.assets_path = assets_path        
 
         self.user_config_dir = os.path.join(GLib.get_user_data_dir(), "nomm", "user_config.yaml")
 
@@ -121,9 +122,10 @@ class SettingsWindow(Adw.Window):
             try:
                 folder = dialog.select_folder_finish(result)
                 if folder:
-                    new_path = folder.get_path()
-                    update_user_config(config_key, new_path)
-                    row.set_subtitle(new_path)
+                    print("new folder selected")
+                    folder_path = translate_fuse_path(folder)
+                    update_user_config(config_key, folder_path)
+                    row.set_subtitle(folder_path)
             except Exception as e:
                 print(f"Folder selection failed: {e}")
 
@@ -187,3 +189,4 @@ class SettingsWindow(Adw.Window):
     def close_settings(self):
         update_user_config('nexus_api_key', self.api_entry.get_text())
         self.destroy()
+        self.app.show_loading_and_scan()
