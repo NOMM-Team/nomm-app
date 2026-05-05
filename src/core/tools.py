@@ -1,10 +1,10 @@
 import os
 import yaml
 import vdf
+import requests
 
 from typing import List, Dict, Any
 from gi.repository import GLib, Gio
-
 
 def get_contrast_color(hex_code: str) -> str:
     hex_code = hex_code.lstrip('#')
@@ -103,3 +103,18 @@ def get_username_from_steam_id(steam_id: str, steam_base_path) -> str:
         print("Could not find the Steam username")
         return None
     return steam_username
+
+def download_image(url: str, save_path: str) -> bool:
+    # Send a GET request to the URL
+    response = requests.get(url, stream=True)
+    
+    # Check if the request was successful (Status Code 200)
+    if response.status_code == 200:
+        with open(save_path, 'wb') as f:
+            for chunk in response.iter_content(1024):
+                f.write(chunk)
+        print(f"Thumbnail successfully downloaded: {save_path}")
+        return True
+    else:
+        print(f"Failed to retrieve image. Status code: {response.status_code}")
+        return False
