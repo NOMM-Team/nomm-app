@@ -11,18 +11,40 @@ from gi.repository import GLib
 
 from core.downloader import Downloader
 from core.mod_manager import get_metadata_path, load_staging_metadata, meta_lock
-from core.tools import load_yaml, write_yaml
+from core.tools import load_yaml, write_yaml, download_image
 from gui.notifications import download_popup, send_download_notification
+
+def get_mod_info(headers: dict, game_id: str, mod_id: str) -> dict:
+    print(f"Obtaining mod information for mod: {mod_id}")
+
+    try:
+        mod_url = f"https://api.nexusmods.com/v1/games/{game_id}/mods/{mod_id}.json"
+        resp = requests.get(mod_url, headers=headers, timeout=10)
+        resp.raise_for_status()
+    except Exception as e:
+        print(f"Failed to obtain mod information: {e}")
+
+    remote_data = resp.json()
+    metadata = {}
+    metadata["display_name"] = remote_data.get("name")
+    metadata["author"] = remote_data.get("author")
+    metadata["created"] = remote_data.get("created")
+    metadata["description"] = remote_data.get("description")
+    metadata["endorsements"] = remote_data.get("endorsement_count")
+    metadata["downloads"] = remote_data.get("download_count")
+    metadata["version"] = remote_data.get("version")
+    metadata["thumbnail"] = remote_data.get("picture_url")
+
+    return metadata
 
 def check_for_mod_updates_async(staging_metadata: dict, headers: dict, game_id: str, on_complete_callback: Optional[Callable]) -> None:
     def worker():
         print("Checking for updates in background...")
         mods_updated = False
-        
-        
-        for mod_name, details in staging_metadata.get("mods", {}).items():
-            mod_id = details.get("mod_id")
-            local_version = str(details.get("version", ""))
+
+        for mod_name, mod_metadata in staging_metadata.get("mods", {}).items():
+            mod_id = mod_metadata.get("mod_id")
+            local_version = str(mod_metadata.get("version", ""))
             if not mod_id:
                 print(f"No mod ID found for {mod_name}, skipping update check")
                 continue
@@ -31,13 +53,13 @@ def check_for_mod_updates_async(staging_metadata: dict, headers: dict, game_id: 
             try:
                 mod_url = f"https://api.nexusmods.com/v1/games/{game_id}/mods/{mod_id}.json"
                 resp = requests.get(mod_url, headers=headers, timeout=10)
-                
+                print(resp.content)
                 if resp.status_code == 200:
                     remote_data = resp.json()
                     remote_version = str(remote_data.get("version", ""))
 
                     if remote_version and remote_version != local_version:
-                        details["new_version"] = remote_version
+                        mod_metadata["new_version"] = remote_version
                         mods_updated = True
 
                         changelog_url = f"https://api.nexusmods.com/v1/games/{game_id}/mods/{mod_id}/changelogs.json"
@@ -50,7 +72,10 @@ def check_for_mod_updates_async(staging_metadata: dict, headers: dict, game_id: 
                             new_log = logs.get(remote_version)
                             if new_log:
                                 # Join list of changes into a single string if necessary
-                                details["changelog"] = "\n".join(new_log) if isinstance(new_log, list) else new_log
+                                mod_metadata["changelog"] = "\n".join(new_log) if isinstance(new_log, list) else new_log
+                    
+                    mod_metadata["test"] = "testy"
+
                 else:
                     print(f"Error getting update info for {mod_name}: {resp.status_code}")
 
@@ -133,7 +158,7 @@ def _download_nexus_mod(nxm_link: str, headers: dict, final_download_dir: Path, 
         download_api_url = f"https://api.nexusmods.com/v1/games/{nexus_id}/mods/{mod_id}/files/{file_id}/download_link.json"
 
         response = requests.get(download_api_url, headers=headers, params=params)
-        if response.status_code == 403:
+        if response.status_code != 200:
             print(f"Nexus API Error: {response.json()}")
         response.raise_for_status()
 
