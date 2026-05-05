@@ -481,7 +481,7 @@ class Nomm(Adw.Application):
 
     def on_settings_clicked(self, button):
         from gui.app_views.settings import SettingsWindow
-        settings_win = SettingsWindow(parent_window=self.win, assets_path=self.assets_path)
+        settings_win = SettingsWindow(self, parent_window=self.win, assets_path=self.assets_path)
         settings_win.present()
 
     def manual_library_refresh(self):
