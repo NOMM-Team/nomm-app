@@ -1,10 +1,10 @@
 import os
 import yaml
 import vdf
+import requests
 
 from typing import List, Dict, Any
 from gi.repository import GLib, Gio
-
 
 def get_contrast_color(hex_code: str) -> str:
     hex_code = hex_code.lstrip('#')
@@ -100,3 +100,18 @@ def retrieve_casesensitive_paths(path:str):
             return None
     path = os.path.join(*part_list)
     return path
+
+def download_image(url: str, save_path: str) -> bool:
+    # Send a GET request to the URL
+    response = requests.get(url, stream=True)
+    
+    # Check if the request was successful (Status Code 200)
+    if response.status_code == 200:
+        with open(save_path, 'wb') as f:
+            for chunk in response.iter_content(1024):
+                f.write(chunk)
+        print(f"Thumbnail successfully downloaded: {save_path}")
+        return True
+    else:
+        print(f"Failed to retrieve image. Status code: {response.status_code}")
+        return False
