@@ -51,16 +51,59 @@ class ModsTab(Gtk.Box):
         action_bar.append(launch_btn)
 
         self.append(action_bar)
+        
+        # Container for List + Preview
+        self.main_content = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=0)
+        self.append(self.main_content)
 
         # Mod list
         self.mods_list_box = Gtk.ListBox(css_classes=["boxed-list"])
         self.mods_list_box.set_filter_func(self.filter_mods_rows)
-        
+        self.mods_list_box.connect("row-activated", self.on_row_clicked) 
+        self.list_scroll = Gtk.ScrolledWindow(vexpand=True, hexpand=True)
+        self.list_scroll.set_child(self.mods_list_box)
+        self.main_content.append(self.list_scroll)
+
+        # Preview pane with Revealer
+        self.revealer = Gtk.Revealer(transition_type=Gtk.RevealerTransitionType.SLIDE_LEFT)
+        self.main_content.append(self.revealer)
+
+        self.setup_preview_pane()
         self.populate_list()
-        
-        sc = Gtk.ScrolledWindow(vexpand=True)
-        sc.set_child(self.mods_list_box)
-        self.append(sc)
+
+    def setup_preview_pane(self):
+        self.preview_pane = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
+        self.preview_pane.set_size_request(300, -1)
+        self.preview_pane.add_css_class("background")
+        self.preview_pane.set_margin_start(10)
+
+        # Header with close button
+        header = Gtk.CenterBox(margin_top=10, margin_bottom=10)
+        self.preview_title = Gtk.Label(css_classes=["title-2"])
+        header.set_center_widget(self.preview_title)
+        close_btn = Gtk.Button(icon_name="window-close-symbolic", css_classes=["flat"])
+        close_btn.connect("clicked", lambda x: self.revealer.set_reveal_child(False))
+        header.set_end_widget(close_btn)
+        self.preview_pane.append(header)
+
+        # Metadata Display
+        self.preview_version = Gtk.Label(css_classes=["dim-label"])
+        self.preview_pane.append(self.preview_version)
+
+        self.revealer.set_child(self.preview_pane)
+
+    def on_row_clicked(self, listbox, row):
+        # We need to fetch the metadata associated with this row
+        staging_metadata = load_staging_metadata(self.dashboard.staging_metadata_path)
+        mod_name = row.get_title() # ActionRow title
+        mod_info = staging_metadata.get("mods", {}).get(mod_name, {})
+
+        # Update labels
+        self.preview_title.set_label(mod_name)
+        version = mod_info.get("version", "Unknown")
+        self.preview_version.set_label(f"Version: {version}")
+
+        self.revealer.set_reveal_child(True)
 
     def populate_list(self):
         while child := self.mods_list_box.get_first_child():
@@ -101,6 +144,7 @@ class ModsTab(Gtk.Box):
             mod_files = mod_metadata.get("mod_files", [])
 
             row = Adw.ActionRow(title=display_name)
+            row.set_activatable(True)
             
             if len(mod_files) == 1:
                 row.set_subtitle(mod_files[0])
