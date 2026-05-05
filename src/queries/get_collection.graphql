@@ -1,0 +1,22 @@
+query collectionRevision(
+          $slug: String,
+          $revision: Int,
+          $viewAdultContent: Boolean,
+          $domainName: String
+        ) {
+          collectionRevision(
+            slug: $slug,
+            revision: $revision,
+            viewAdultContent: $viewAdultContent,
+            domainName: $domainName
+          ) {
+            modFiles {
+                id
+                fileId
+                file {
+                    modId
+                    name
+                }
+            }
+          }
+        }
