@@ -11,7 +11,7 @@ from core.mod_manager import (change_mod_index, check_for_conflicts,
                               deploy_all_ordered_mods, load_staging_metadata,
                               read_index, toggle_mod_state)
 from core.nexus_api import check_for_mod_updates_async
-from core.tools import timestamp_converter, write_yaml
+from core.tools import timestamp_converter, write_yaml, process_bbcode
 
 _ = gettext.gettext
 ngettext = gettext.ngettext
@@ -19,8 +19,8 @@ ngettext = gettext.ngettext
 class ModsTab(Gtk.Box):
     def __init__(self, dashboard):
         super().__init__(orientation=Gtk.Orientation.VERTICAL, spacing=10)
-        self.set_margin_start(30)
-        self.set_margin_end(30)
+        self.set_margin_start(15)
+        self.set_margin_end(15)
         self.set_margin_top(20)
         
         self.dashboard = dashboard
@@ -74,27 +74,20 @@ class ModsTab(Gtk.Box):
         self.populate_list()
 
     def setup_preview_pane(self):
-        self.preview_pane = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
-        self.preview_pane.set_size_request(350, -1)
+        self.preview_pane = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=5)
+        self.preview_pane.set_size_request(390, -1)
         self.preview_pane.set_hexpand(True)
         self.preview_pane.add_css_class("background")
 
         # Container for the image to handle centering and potential rounding
-        self.thumb_container = Gtk.Box(halign=Gtk.Align.CENTER, margin_top=10)
-        self.thumb_container.set_size_request(300, 150)
-        self.preview_thumbnail = Gtk.Image()
-        # -1 for height allows it to maintain aspect ratio
-        self.preview_thumbnail.set_pixel_size(300)
-        self.preview_thumbnail.set_size_request(300, 150) # 16:9 ratio for 300 width
-        
-        # This is a GTK4 property that helps with clipping
-        self.preview_thumbnail.set_overflow(Gtk.Overflow.HIDDEN)
-        
-        self.thumb_container.append(self.preview_thumbnail)
+        self.thumb_container = Gtk.Box(halign=Gtk.Align.CENTER, margin_start=20)
+        self.thumb_container.set_size_request(300, 168)
+        self.thumb_container.add_css_class("rounded-thumb")
+        self.thumb_container.set_overflow(Gtk.Overflow.HIDDEN)
         self.preview_pane.append(self.thumb_container)
 
         # Header with close button
-        header = Gtk.CenterBox(margin_top=10, margin_bottom=10)
+        header = Gtk.CenterBox(margin_top=10)
         self.preview_title = Gtk.Label(css_classes=["title-2"])
         header.set_center_widget(self.preview_title)
         close_btn = Gtk.Button(icon_name="window-close-symbolic", css_classes=["flat"])
@@ -106,10 +99,37 @@ class ModsTab(Gtk.Box):
         self.preview_version = Gtk.Label(css_classes=["dim-label"])
         self.preview_pane.append(self.preview_version)
 
+        # Description Box
+        # ScrolledWindow to handle long description
+        self.desc_scroll = Gtk.ScrolledWindow(
+            vexpand=True, 
+            propagate_natural_height=True,
+            min_content_height=150,
+            margin_start=15,
+            margin_bottom=15
+        )
+        #self.desc_scroll.add_css_class("view") # Gives it a distinct "box" look
+
+        # TextView for the actual text
+        self.preview_description = Gtk.Label(
+            wrap=True,
+            xalign=0,
+            yalign=0,
+            selectable=True,
+            use_markup=True
+        )
+        # This one line handles opening links in the default browser!
+        self.preview_description.connect("activate-link", lambda label, uri: webbrowser.open(uri))
+        #self.preview_description.add_css_class("dim-label") # Optional styling
+        
+        self.desc_scroll.set_child(self.preview_description)
+        self.preview_pane.append(self.desc_scroll)
+
         self.revealer.set_child(self.preview_pane)
 
     def on_row_clicked(self, listbox, row):
         # We need to fetch the metadata associated with this row
+
         mod_name = row.get_title() # ActionRow title
         mod_info = row.mod_data
 
@@ -122,15 +142,28 @@ class ModsTab(Gtk.Box):
         # Add thumbnail
         thumbnail_path = mod_info.get("thumbnail")
         if thumbnail_path and os.path.exists(thumbnail_path):
-            pixbuf = GdkPixbuf.Pixbuf.new_from_file_at_scale(
-                thumbnail_path, 300, 168, False
-            )
-            self.preview_thumbnail.set_from_pixbuf(pixbuf)
+            thumb_path = thumbnail_path
         else:
-            pixbuf = GdkPixbuf.Pixbuf.new_from_file_at_scale(
-                    self.dashboard.assets_path + "/nomm.png", 300, 168, True
-                )
-            self.preview_thumbnail.set_from_pixbuf(pixbuf)
+            thumb_path = self.dashboard.assets_path + "/nomm.png"
+
+        pixbuf = GdkPixbuf.Pixbuf.new_from_file_at_scale(
+            thumb_path, 300, 168, True
+        )
+        texture = Gdk.Texture.new_for_pixbuf(pixbuf)
+        
+        self.preview_thumbnail = Gtk.Picture.new_for_paintable(texture)
+        self.preview_thumbnail.set_hexpand(False)
+        self.preview_thumbnail.set_vexpand(False)
+        # clear previous image
+        while child := self.thumb_container.get_first_child():
+            self.thumb_container.remove(child)
+        # add new one
+        self.thumb_container.append(self.preview_thumbnail)
+
+        # Description
+        formatted_text = process_bbcode(mod_info.get("description", ""))
+        self.preview_description.set_markup(formatted_text)
+
         self.revealer.set_reveal_child(True)
 
     def populate_list(self):
@@ -162,9 +195,10 @@ class ModsTab(Gtk.Box):
             if mod not in staging_metadata["mods"]:
                 continue
             
-            display_name = mod
+            
             mod_metadata = staging_metadata["mods"][mod]
 
+            display_name = mod_metadata.get("display_name", mod)
             version_text = mod_metadata.get("version", "—")
             new_version = mod_metadata.get("new_version", "")
             changelog = mod_metadata.get("changelog", "")
@@ -174,10 +208,8 @@ class ModsTab(Gtk.Box):
             row = Adw.ActionRow(title=display_name)
             row.set_activatable(True)
             row.mod_data = mod_metadata
-            
-            if len(mod_files) == 1:
-                row.set_subtitle(mod_files[0])
-            row.mod_name = display_name.lower()
+            row.set_subtitle(mod_metadata.get("author", ""))
+            row.mod_name = mod_metadata.get(display_name.lower)
 
             row_element_margin = 10
 
