@@ -5,7 +5,7 @@ import threading
 from datetime import datetime
 from pathlib import Path
 
-from gi.repository import Adw, Gdk, GLib, GObject, Gtk, Gio
+from gi.repository import Adw, Gdk, GLib, GObject, Gtk, Gio, GdkPixbuf
 
 from core.mod_manager import (change_mod_index, check_for_conflicts,
                               deploy_all_ordered_mods, load_staging_metadata,
@@ -76,19 +76,21 @@ class ModsTab(Gtk.Box):
     def setup_preview_pane(self):
         self.preview_pane = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
         self.preview_pane.set_size_request(350, -1)
-        self.preview_pane.set_hexpand(False)
+        self.preview_pane.set_hexpand(True)
         self.preview_pane.add_css_class("background")
 
-        self.thumb_container = Gtk.Frame()
-        self.thumb_container.add_css_class("mod-thumbnail-frame")
-        self.thumb_container.set_halign(Gtk.Align.CENTER)
-        self.preview_thumbnail = Gtk.Picture()
-        self.preview_thumbnail.set_can_shrink(True) 
+        # Container for the image to handle centering and potential rounding
+        self.thumb_container = Gtk.Box(halign=Gtk.Align.CENTER, margin_top=10)
+        self.thumb_container.set_size_request(300, 150)
+        self.preview_thumbnail = Gtk.Image()
+        # -1 for height allows it to maintain aspect ratio
+        self.preview_thumbnail.set_pixel_size(300)
+        self.preview_thumbnail.set_size_request(300, 150) # 16:9 ratio for 300 width
         
-        self.preview_thumbnail.set_content_fit(Gtk.ContentFit.COVER)
-        self.preview_thumbnail.set_size_request(240, 135)
-
-        self.thumb_container.set_child(self.preview_thumbnail)
+        # This is a GTK4 property that helps with clipping
+        self.preview_thumbnail.set_overflow(Gtk.Overflow.HIDDEN)
+        
+        self.thumb_container.append(self.preview_thumbnail)
         self.preview_pane.append(self.thumb_container)
 
         # Header with close button
@@ -115,27 +117,21 @@ class ModsTab(Gtk.Box):
         self.preview_title.set_label(mod_name)
         version = mod_info.get("version", "Unknown")
         self.preview_version.set_label(f"Version: {version}")
-        self.revealer.set_reveal_child(True)
+        
 
         # Add thumbnail
         thumbnail_path = mod_info.get("thumbnail")
         if thumbnail_path and os.path.exists(thumbnail_path):
-            try:
-                # Create a Gio.File and then a Texture from that file
-                # This is more "low-level" and avoids the Gtk-CRITICAL scaler issues
-                file = Gio.File.new_for_path(thumbnail_path)
-                texture = Gdk.Texture.new_from_file(file)
-                
-                # Use set_paintable instead of set_filename
-                self.preview_thumbnail.set_paintable(texture)
-                self.preview_thumbnail.set_visible(True)
-            except Exception as e:
-                print(f"Failed to create texture: {e}")
-                self.preview_thumbnail.set_visible(False)
+            pixbuf = GdkPixbuf.Pixbuf.new_from_file_at_scale(
+                thumbnail_path, 300, 168, False
+            )
+            self.preview_thumbnail.set_from_pixbuf(pixbuf)
         else:
-            # Hide the widget or set a placeholder if no image exists
-            self.preview_thumbnail.set_visible(False)
-
+            pixbuf = GdkPixbuf.Pixbuf.new_from_file_at_scale(
+                    self.dashboard.assets_path + "/nomm.png", 300, 168, True
+                )
+            self.preview_thumbnail.set_from_pixbuf(pixbuf)
+        self.revealer.set_reveal_child(True)
 
     def populate_list(self):
         while child := self.mods_list_box.get_first_child():

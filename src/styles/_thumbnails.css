@@ -1,13 +1,8 @@
-.mod-thumbnail-frame {
-    border: none;
-    border-radius: 12px;
-    overflow: hidden;
-    
-    /* Hard constraints */
-    min-width: 240px;
-    max-width: 240px;
-    min-height: 135px;
-    max-height: 135px;
-    
-    margin: 10px auto; /* Centers it horizontally */
+.mod-thumbnail-container {
+    min-width: 300px;
+    max-height: 168px;
+}
+
+.mod-thumbnail-container image {
+    min-width: 300px;
 }
