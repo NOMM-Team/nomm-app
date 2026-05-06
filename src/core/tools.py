@@ -2,6 +2,7 @@ import os
 import yaml
 import vdf
 import requests
+import re
 
 from typing import List, Dict, Any
 from gi.repository import GLib, Gio
@@ -115,3 +116,33 @@ def download_image(url: str, save_path: str) -> bool:
     else:
         print(f"Failed to retrieve image. Status code: {response.status_code}")
         return False
+
+def process_bbcode(raw_desc: str) -> str:
+
+    # 1. Convert BBCode/HTML-ish to Pango Markup
+    pango_text = raw_desc.replace("<br />", "\n")
+    pango_text = pango_text.replace("[b]", "<b>").replace("[/b]", "</b>")
+    pango_text = pango_text.replace("[u]", "<u>").replace("[/u]", "</u>")
+    
+    # Handle lists
+    pango_text = pango_text.replace("[*]", "  • ").replace("[list]", "").replace("[/list]", "")
+
+    # Handle colors: [color=#hex] -> <span foreground="#hex">
+    pango_text = re.sub(r'\[color=([^\]]+)\]', r'<span foreground="\1">', pango_text)
+    pango_text = pango_text.replace("[/color]", "</span>")
+    
+    # Handle sizes: [size=4] -> <span size="large">
+    pango_text = re.sub(r'\[size=[^\]]+\]', r'<span size="large">', pango_text)
+    pango_text = pango_text.replace("[/size]", "</span>")
+    
+    # Strip URL tags
+    pango_text = re.sub(r'\[url=([^\]]+)\](.*?)\[/url\]', r'<a href="\1">\2</a>', pango_text)
+    
+    # Remove image tags
+    pango_text = re.sub(r'\[img\].*?\[/img\]', '', pango_text)
+    # Handle spoiler tags
+    pango_text = pango_text.replace("[spoiler]", "\n--- SPOILER ---\n").replace("[/spoiler]", "\n----------------\n")
+
+    pango_text = re.sub(r'\n\s*\n', '\n', pango_text) # Collapse excessive newlines
+
+    return pango_text
