@@ -160,12 +160,11 @@ class ModsTab(Gtk.Box):
         self.thumb_container.append(self.preview_thumbnail)
 
         # Description
-        #formatted_text = process_bbcode(mod_info.get("description", ""))
-        #formatted_text = mod_info.get("description", "")
         if "description" in mod_info and mod_info["description"]:
             with open(mod_info["description"]) as f:
                 description = f.read()
         self.preview_description.set_markup(description)
+
 
         self.revealer.set_reveal_child(True)
 
