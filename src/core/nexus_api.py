@@ -8,8 +8,8 @@ import yaml
 from gi.repository import GLib
 
 from core.mod_manager import get_metadata_path, load_staging_metadata
-from core.downloader import download_mod
-from gui.notifications import send_download_notification, download_with_progress
+from core.downloader import Downloader
+from gui.notifications import send_download_notification, download_popup
 from core.tools import load_yaml, write_yaml
 from typing import Optional, Callable
 
@@ -116,6 +116,7 @@ def handle_nexus_link(nxm_link: str) -> bool:
         _download_nexus_mod(nxm_link, headers, final_download_dir, nexus_id, game_folder_name, user_config_dir)
 
 def _download_nexus_mod(nxm_link: str, headers: dict, final_download_dir: Path, nexus_id: str, game_folder_name: str, user_config_dir):
+    downloader = Downloader()
     try:
         splitted_nxm = urlsplit(nxm_link)
         nxm_path = splitted_nxm.path.split('/')
@@ -151,9 +152,9 @@ def _download_nexus_mod(nxm_link: str, headers: dict, final_download_dir: Path, 
         print(f"Downloading {file_name} to {game_folder_name}...")
         user_meta = load_yaml(user_config_dir)
         if user_meta.get('disable_download_window'):
-            download_mod(file_url, str(final_download_dir)) # silent download
+            downloader.download_mod(file_url, str(final_download_dir)) # silent download
         else:
-            download_with_progress(file_url, final_download_dir) # windowed download
+            download_popup(file_url, final_download_dir) # windowed download
         
         try:
             info_api_url = f"https://api.nexusmods.com/v1/games/{nexus_id}/mods/{mod_id}/files/{file_id}.json"
@@ -197,6 +198,8 @@ def _download_nexus_collection(nxm_link: str, headers: dict, final_download_dir:
     game_domain = parts[0]
     collection_id = parts[2]
     revision_id = parts[4] if len(parts) > 4 else "1"
+
+    downloader = Downloader()
     
     # Fetch Collection Metadata via GraphQL
     print(f"Fetching collection revision {revision_id}...")
@@ -221,7 +224,7 @@ def _download_nexus_collection(nxm_link: str, headers: dict, final_download_dir:
             
             if links:
                 direct_url = links[0]['URI']
-                if download_mod(direct_url, str(final_download_dir)):
+                if downloader.download_mod(direct_url, str(final_download_dir)):
                     success_count += 1
         except Exception as e:
             print(f"Failed to download mod {mod_id}: {e}")

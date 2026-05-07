@@ -11,7 +11,7 @@ from gi.repository import Adw, Gdk, GdkPixbuf, GLib, Gtk, Pango, Gio
 
 from core.user_config import update_user_config, load_user_config, write_user_config
 from core.tools import load_yaml, write_yaml, translate_fuse_path
-from core.scanner import get_steam_base_dir, scan_all_games
+from core.gamestore_scanner import get_steam_base_dir, scan_all_games
 from gui.app_views.library_view import LibraryView
 from gui.dashboard import GameDashboard
 

@@ -7,7 +7,7 @@ from pathlib import Path
 from gi.repository import Adw, GLib, Gtk
 
 from core.mod_manager import deploy_essential_utility, is_utility_installed
-from core.downloader import download_mod
+from core.downloader import Downloader
 
 _ = gettext.gettext
 
@@ -70,15 +70,28 @@ class ToolsTab(Gtk.Box):
 
                 stack = Gtk.Stack(transition_type=Gtk.StackTransitionType.CROSSFADE)
                 
+                dl_pbar = Gtk.ProgressBar()
+                dl_pbar.set_can_target(False)
+                dl_pbar.add_css_class('utility-pbar')
+                dl_pbar.set_hexpand(True)
+                dl_pbar.set_vexpand(True)
+                dl_pbar.set_halign(Gtk.Align.FILL)
+                dl_pbar.set_valign(Gtk.Align.FILL)
+
                 dl_btn = Gtk.Button(label=_("Download"), css_classes=["suggested-action"], valign=Gtk.Align.CENTER)
-                dl_btn.connect("clicked", self.on_utility_download_clicked, util, stack)
+                dl_btn.connect("clicked", self.on_utility_download_clicked, util, stack, dl_pbar)
+
+                # Overlay to display download progress on top of download button
+                overlay = Gtk.Overlay()
+                overlay.set_child(dl_btn)
+                overlay.add_overlay(dl_pbar)
                 
                 inst_btn = Gtk.Button(label=_("Reinstall") if is_installed else "Install", valign=Gtk.Align.CENTER)
                 if not is_installed: 
                     inst_btn.add_css_class("suggested-action")
                 inst_btn.connect("clicked", self.on_utility_install_clicked, util)
                 
-                stack.add_named(dl_btn, "download")
+                stack.add_named(overlay, "download")
                 stack.add_named(inst_btn, "install")
                 stack.set_visible_child_name("install" if local_zip_path.exists() else "download")
                 
@@ -100,24 +113,34 @@ class ToolsTab(Gtk.Box):
             btn_container.set_center_widget(load_order_btn)
             self.append(btn_container)
 
-    def on_utility_download_clicked(self, btn, util, stack):
+    def on_utility_download_clicked(self, btn, util, stack, pbar):
         source_url = util.get("source")
         if not source_url: 
             return
 
-        util_dir = os.path.join(self.dashboard.downloads_path, "utilities")
-        def worker():
-            success = download_mod(source_url, util_dir)
-            GLib.idle_add(on_download_finished, success)
-        
-        def on_download_finished(success):
-            if success:
-                stack.set_visible_child_name("install")
-            else:
-                self.dashboard.show_message(_("Download Failed"), error_msg)
-            return False
+        btn.set_sensitive(False)
+        btn.add_css_class('btn-download-before')
 
-        threading.Thread(target=worker, daemon=True).start()
+        util_dir = os.path.join(self.dashboard.downloads_path, "utilities")
+
+        downloader = Downloader()
+        
+        def on_download_progress(downloader_inst, percent):
+            pbar.set_fraction(percent)
+        
+        def on_download_finished(downloader_inst, success):
+            stack.set_visible_child_name("install")
+            btn.set_sensitive(True)
+        
+        def on_download_error(downloader_inst, e):
+            self.dashboard.show_message(_("Download Failed"), e)
+            btn.set_sensitive(True)
+
+        downloader.connect('progress-changed', on_download_progress)
+        downloader.connect('download-complete', on_download_finished)
+        downloader.connect('download-error', on_download_error)
+            
+        threading.Thread(target=downloader.download_mod, args=(source_url, util_dir), daemon=True).start()
 
     def on_utility_install_clicked(self, btn, util):
         msg = _("Warning: This process may be destructive to existing game files. Please ensure you have backed up your game directory before proceeding.")

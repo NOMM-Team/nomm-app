@@ -17,7 +17,7 @@ from core.tools import load_yaml, write_yaml
 from core.mod_manager import (completely_uninstall_mod, get_metadata_path,
                               get_mod_statistics, load_staging_metadata,
                               remove_mod_from_metadata)
-from core.scanner import find_game_art
+from core.gamestore_scanner import find_game_art
 from core.tools import get_contrast_color
 from gui.dashboard_views.downloads_tab import DownloadsTab
 from gui.dashboard_views.mods_tab import ModsTab

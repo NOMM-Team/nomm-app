@@ -1,13 +1,13 @@
 import os
-import yaml
-import gi
-import threading
 import random
+import threading
+
+import gi
 import requests
+import yaml
 
 gi.require_version('Notify', '0.7')
-from gi.repository import GdkPixbuf, GLib, Notify, Gtk
-
+from gi.repository import GdkPixbuf, GLib, Gtk, Notify
 
 # This function handle notifications when downloading mods from Nexusmods
 def send_download_notification(status, file_name="", game_name=None, icon_path=None):
@@ -44,7 +44,10 @@ def send_download_notification(status, file_name="", game_name=None, icon_path=N
         print(f"libnotify failed: {e}")
 
 # Check import before uncommenting the method
-def download_with_progress(url, dest_folder):
+def download_popup(url, dest_folder):
+    from core.downloader import Downloader
+
+    downloader = Downloader()
     filename = url.split('/')[-1].split('?')[0] or "download"
     dest_path = os.path.join(dest_folder, filename)
     os.makedirs(dest_folder, exist_ok=True)
@@ -85,7 +88,7 @@ def download_with_progress(url, dest_folder):
         tip_label_b = Gtk.Label(label="", wrap=True, use_markup=True)
         
         for lbl in [tip_label_a, tip_label_b]:
-            lbl.add_css_class("caption") # Assuming you have this in your CSS
+            lbl.add_css_class("caption")
             lbl.set_justify(Gtk.Justification.CENTER)
 
         stack.add_named(tip_label_a, "a")
@@ -114,34 +117,21 @@ def download_with_progress(url, dest_folder):
 
     # Initialize UI on main thread
     window, pbar = create_ui()
-    
-    def run_download():
-        try:
-            response = requests.get(url, stream=True, timeout=15)
-            total_size = int(response.headers.get('content-length', 0))
 
-            downloaded = 0
-            with open(dest_path, 'wb') as f:
-                for data in response.iter_content(chunk_size=4096):
-                    f.write(data)
-                    downloaded += len(data)
-                    if total_size > 0:
-                        percent = downloaded / total_size
-                        # Update UI Progress
-                        GLib.idle_add(pbar.set_fraction, percent)
+    def on_download_progress(downloader_inst, percent ):
+        pbar.set_fraction(percent)
 
-            status["success"] = True
-        except Exception as e:
-            print(f"Download error: {e}")
-            status["success"] = False
-        finally:
-            status["finished"] = True
-            GLib.idle_add(window.destroy)
-            event.set()
+    def on_download_done(success):
+        status['finished'] = True
+        status['success'] = success
+        window.destroy
+        return False
+            
+    downloader.connect('progress-changed', on_download_progress)
+    downloader.connect('download-complete', on_download_done)
 
-    # Start download thread
-    thread = threading.Thread(target=run_download)
-    thread.start()
+    event.set()
+    threading.Thread(target=downloader.download_mod, args=(url, dest_folder), daemon=True).start()
 
     # We use a nested main loop to make this method "block" 
     # until the download finishes without freezing the UI.
