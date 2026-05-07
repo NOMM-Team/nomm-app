@@ -11,10 +11,10 @@ from gi.repository import GLib
 
 from core.downloader import Downloader
 from core.mod_manager import get_metadata_path, load_staging_metadata, meta_lock
-from core.tools import load_yaml, write_yaml, download_image
+from core.tools import load_yaml, write_yaml, download_image, process_bbcode
 from gui.notifications import download_popup, send_download_notification
 
-def get_mod_info(headers: dict, game_id: str, mod_id: str) -> dict:
+def get_mod_info(headers: dict, game_id: str, mod_id: str, download_dir: Path) -> dict:
     print(f"Obtaining mod information for mod: {mod_id}")
 
     try:
@@ -29,11 +29,26 @@ def get_mod_info(headers: dict, game_id: str, mod_id: str) -> dict:
     metadata["display_name"] = remote_data.get("name")
     metadata["author"] = remote_data.get("author")
     metadata["created"] = remote_data.get("created")
-    metadata["description"] = remote_data.get("description")
     metadata["endorsements"] = remote_data.get("endorsement_count")
     metadata["downloads"] = remote_data.get("download_count")
     metadata["version"] = remote_data.get("version")
     metadata["thumbnail"] = remote_data.get("picture_url")
+    #metadata["description"] = remote_data.get("description")
+
+    # Download thumbnail to have a local copy
+    thumbnail_folder = download_dir.resolve() / f"thumbnails/"
+    thumbnail_folder.mkdir(parents=True, exist_ok=True)
+    thumbnail_path = str(thumbnail_folder / (f"{metadata["display_name"]}.png"))
+    download_image(metadata["thumbnail"], thumbnail_path)
+    metadata["thumbnail"] = thumbnail_path
+
+    # Save description separately to not pollute metadata file
+    description_folder = download_dir.resolve() / f"descriptions/"
+    description_folder.mkdir(parents=True, exist_ok=True)
+    description_path = str(description_folder / (f"{metadata["display_name"]}.html"))
+    with open(description_path, 'w') as f:
+        f.write(process_bbcode(remote_data.get("description")))
+    metadata["description"] = description_path
 
     return metadata
 
