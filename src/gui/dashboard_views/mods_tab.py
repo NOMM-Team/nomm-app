@@ -110,7 +110,6 @@ class ModsTab(Gtk.Box):
             margin_start=15,
             margin_bottom=15
         )
-        #self.desc_scroll.add_css_class("view") # Gives it a distinct "box" look
 
         # TextView for the actual text
         self.preview_description = Gtk.Label(
@@ -163,8 +162,12 @@ class ModsTab(Gtk.Box):
         self.thumb_container.append(self.preview_thumbnail)
 
         # Description
-        formatted_text = process_bbcode(mod_info.get("description", ""))
-        self.preview_description.set_markup(formatted_text)
+        #formatted_text = process_bbcode(mod_info.get("description", ""))
+        #formatted_text = mod_info.get("description", "")
+        if "description" in mod_info and mod_info["description"]:
+            with open(mod_info["description"]) as f:
+                description = f.read()
+        self.preview_description.set_markup(description)
 
         self.revealer.set_reveal_child(True)
 
