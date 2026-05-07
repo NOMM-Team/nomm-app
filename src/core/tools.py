@@ -139,7 +139,12 @@ def process_bbcode(raw_desc: str) -> str:
     pango_text = pango_text.replace("[/size]", "</span>")
     
     # Strip URL tags
-    pango_text = re.sub(r'\[url=([^\]]+)\](.*?)\[/url\]', r'<a href="\1">\2</a>', pango_text)
+    pango_text = re.sub(
+        r'\[url=([^\]]+)\](.*?)\[/url\]', 
+        r'<a href="\1">\2</a>', 
+        pango_text, 
+        flags=re.DOTALL
+    )
     
     # Remove image tags
     pango_text = re.sub(r'\[img\].*?\[/img\]', '', pango_text)
@@ -148,4 +153,5 @@ def process_bbcode(raw_desc: str) -> str:
 
     pango_text = re.sub(r'\n\s*\n', '\n', pango_text) # Collapse excessive newlines
 
+    print("BBCode successfuly parsed into HTML")
     return pango_text
