@@ -10,11 +10,11 @@ from gi.repository import GLib
 from core.mod_manager import get_metadata_path, load_staging_metadata
 from core.downloader import download_mod
 from gui.notifications import send_download_notification, download_with_progress
-from core.tools import load_yaml, write_yaml, download_image
+from core.tools import load_yaml, write_yaml, download_image, process_bbcode
 from typing import Optional, Callable
 
 
-def get_mod_info(headers: dict, game_id: str, mod_id: str) -> dict:
+def get_mod_info(headers: dict, game_id: str, mod_id: str, download_dir: Path) -> dict:
     print(f"Obtaining mod information for mod: {mod_id}")
 
     try:
@@ -29,11 +29,26 @@ def get_mod_info(headers: dict, game_id: str, mod_id: str) -> dict:
     metadata["display_name"] = remote_data.get("name")
     metadata["author"] = remote_data.get("author")
     metadata["created"] = remote_data.get("created")
-    metadata["description"] = remote_data.get("description")
     metadata["endorsements"] = remote_data.get("endorsement_count")
     metadata["downloads"] = remote_data.get("download_count")
     metadata["version"] = remote_data.get("version")
     metadata["thumbnail"] = remote_data.get("picture_url")
+    #metadata["description"] = remote_data.get("description")
+
+    # Download thumbnail to have a local copy
+    thumbnail_folder = download_dir.resolve() / f"thumbnails/"
+    thumbnail_folder.mkdir(parents=True, exist_ok=True)
+    thumbnail_path = str(thumbnail_folder / (f"{metadata["display_name"]}.png"))
+    download_image(metadata["thumbnail"], thumbnail_path)
+    metadata["thumbnail"] = thumbnail_path
+
+    # Save description separately to not pollute metadata file
+    description_folder = download_dir.resolve() / f"descriptions/"
+    description_folder.mkdir(parents=True, exist_ok=True)
+    description_path = str(description_folder / (f"{metadata["display_name"]}.html"))
+    with open(description_path, 'w') as f:
+        f.write(process_bbcode(remote_data.get("description")))
+    metadata["description"] = description_path
 
     return metadata
 
@@ -197,7 +212,7 @@ def _download_nexus_mod(nxm_link: str, headers: dict, final_download_dir: Path, 
         print(f"Warning: Could not retrieve mod metadata: {e}")
 
     # obtain additional metadata on the mod
-    mod_metadata = get_mod_info(headers, nexus_id, mod_id)
+    mod_metadata = get_mod_info(headers, nexus_id, mod_id, final_download_dir)
     mod_metadata["name"] = file_info_data.get("name", "Unknown Mod")
     mod_metadata["changelog"] = file_info_data.get("changelog_html", "")
     mod_metadata["mod_id"] = mod_id
@@ -205,27 +220,19 @@ def _download_nexus_mod(nxm_link: str, headers: dict, final_download_dir: Path, 
     mod_metadata["mod_link"] = f"https://www.nexusmods.com/{nexus_id}/mods/{mod_id}" 
     mod_metadata["file_version"] = file_info_data.get("version", "")
 
-    # download thumbnail
-    
-    thumbnail_folder = final_download_dir.resolve() / f"thumbnails/"
-    thumbnail_folder.mkdir(parents=True, exist_ok=True)
-    thumbnail_path = str(thumbnail_folder / (f"{mod_metadata["name"]}.png"))
-    download_image(mod_metadata["thumbnail"], thumbnail_path)
-    mod_metadata["thumbnail"] = thumbnail_path
-    
+    # Handle saving all of this data
     downloads_metadata_path = get_metadata_path(str(final_download_dir), is_staging=False)
     downloads_metadata = load_yaml(downloads_metadata_path)
 
-    downloads_metadata["mods"] = {}
+    if "mods" not in downloads_metadata:
+        downloads_metadata["mods"] = {}
     downloads_metadata["info"] = {}
     downloads_metadata["info"]["game"] = game_folder_name
     downloads_metadata["info"]["nexus_id"] = nexus_id
     downloads_metadata["mods"][file_name] = mod_metadata
 
-
-
     write_yaml(downloads_metadata, downloads_metadata_path)
-    
+
     send_download_notification("success", file_name=file_name, game_name=game_folder_name, icon_path=None)
 
     print(f"Done! Saved to {full_file_path}")
