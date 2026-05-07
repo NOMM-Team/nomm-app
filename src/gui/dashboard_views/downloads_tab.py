@@ -38,7 +38,11 @@ class DownloadsTab(Gtk.Box):
         self.download_lbl_maps = {}
         self.currently_downloading = []
         
+        self.downloader = downloader
+        
         self.scrolled = Gtk.ScrolledWindow(vexpand=True)
+        
+        self.download_maps = {}
         
         # Action Bar
         action_bar = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)

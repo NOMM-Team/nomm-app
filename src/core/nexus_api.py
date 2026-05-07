@@ -217,8 +217,6 @@ def _download_nexus_collection(nxm_link: str, headers: dict, final_download_dir:
     game_domain = parts[0]
     collection_id = parts[2]
     revision_id = parts[4] if len(parts) > 4 else "1"
-
-    downloader = Downloader()
     
     # Fetch Collection Metadata via GraphQL
     print(f"Fetching collection revision {revision_id}...")
