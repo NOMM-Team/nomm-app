@@ -123,9 +123,10 @@ def process_bbcode(raw_desc: str) -> str:
     pango_text = raw_desc.replace("<br />", "\n")
     pango_text = pango_text.replace("[b]", "<b>").replace("[/b]", "</b>")
     pango_text = pango_text.replace("[u]", "<u>").replace("[/u]", "</u>")
+    pango_text = pango_text.replace("[i]", "<i>").replace("[/i]", "</i>")
     
     # Handle lists
-    pango_text = pango_text.replace("[*]", "  • ").replace("[list]", "").replace("[/list]", "")
+    pango_text = pango_text.replace("[*]", "  • ").replace("[list]", "").replace("[/list]", "").replace("[/*]", "")
 
     # Handle colors: [color=#hex] -> <span foreground="#hex">
     pango_text = re.sub(r'\[color=([^\]]+)\]', r'<span foreground="\1">', pango_text)
@@ -135,16 +136,29 @@ def process_bbcode(raw_desc: str) -> str:
     pango_text = re.sub(r'\[size=[^\]]+\]', r'<span size="large">', pango_text)
     pango_text = pango_text.replace("[/size]", "</span>")
     
-    # Strip URL tags
+    # Handle urls
     pango_text = re.sub(
         r'\[url=([^\]]+)\](.*?)\[/url\]', 
         r'<a href="\1">\2</a>', 
         pango_text, 
         flags=re.DOTALL
     )
-    
+
+    # Handle youtube links
+    pango_text = re.sub(
+        r'\[youtube\](.*?)\[/youtube\]', 
+        r'<a href="https://youtu.be/\1">YouTube Video (\1)</a>', 
+        pango_text, 
+        flags=re.DOTALL
+    )
+
     # Remove image tags
     pango_text = re.sub(r'\[img\].*?\[/img\]', '', pango_text)
+
+    # Handle line tags
+    divider = '<span foreground="gray">' + ("─" * 40) + '</span>'
+    pango_text = pango_text.replace("[line]", f"\n{divider}\n")
+
     # Handle spoiler tags
     pango_text = pango_text.replace("[spoiler]", "\n--- SPOILER ---\n").replace("[/spoiler]", "\n----------------\n")
 
