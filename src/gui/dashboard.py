@@ -26,7 +26,7 @@ from gui.dashboard_views.tools_tab import ToolsTab
 rarfile.UNRAR_TOOL = "/app/bin/unrar"
 
 class GameDashboard(Gtk.Box):
-    def __init__(self, game_name, game_path, application, steam_base=None, app_id=None, user_config_path=None, game_config_path=None, assets_path=None, **kwargs):
+    def __init__(self, game_name, game_path, application, steam_base=None, app_id=None, user_config_path=None, game_config_path=None, assets_path=None, downloader=None, **kwargs):
         super().__init__(orientation=Gtk.Orientation.VERTICAL, **kwargs)
         self.app = application
         self.game_name = game_name
@@ -43,6 +43,7 @@ class GameDashboard(Gtk.Box):
         self.platform = self.game_config.get("platform")
         self.currently_toggling = set()
         self.currently_installing = set()
+        self.downloader = downloader
         
         self.staging_metadata_path = get_metadata_path(self.staging_path, is_staging=True)
         self.downloads_metadata_path = get_metadata_path(self.downloads_path, is_staging=False)
@@ -219,14 +220,14 @@ class GameDashboard(Gtk.Box):
         if self.view_stack.get_child_by_name("downloads"):
             self.view_stack.remove(self.view_stack.get_child_by_name("downloads"))
 
-        self.downloads_tab = DownloadsTab(self)
+        self.downloads_tab = DownloadsTab(self, self.downloader)
         self.view_stack.add_named(self.downloads_tab, "downloads")
 
     def create_tools_page(self):
         if self.view_stack.get_child_by_name("tools"):
             self.view_stack.remove(self.view_stack.get_child_by_name("tools"))
 
-        self.tools_tab = ToolsTab(self)
+        self.tools_tab = ToolsTab(self, self.downloader)
         self.view_stack.add_named(self.tools_tab, "tools")
 
     def load_text_file(self, btn, path):        

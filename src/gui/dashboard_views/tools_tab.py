@@ -7,18 +7,18 @@ from pathlib import Path
 from gi.repository import Adw, GLib, Gtk
 
 from core.mod_manager import deploy_essential_utility, is_utility_installed
-from core.downloader import Downloader
 
 _ = gettext.gettext
 
 class ToolsTab(Gtk.Box):
-    def __init__(self, dashboard):
+    def __init__(self, dashboard, downloader):
         super().__init__(orientation=Gtk.Orientation.VERTICAL, spacing=10)
         self.set_margin_start(100)
         self.set_margin_end(100)
         self.set_margin_top(40)
         
         self.dashboard = dashboard
+        self.downloader = downloader
         
         utilities_cfg = self.dashboard.game_config.get("essential-utilities", {})
         
@@ -73,16 +73,19 @@ class ToolsTab(Gtk.Box):
                 dl_pbar = Gtk.ProgressBar()
                 dl_pbar.set_can_target(False)
                 dl_pbar.add_css_class('utility-pbar')
-                dl_pbar.set_hexpand(True)
                 dl_pbar.set_vexpand(True)
                 dl_pbar.set_halign(Gtk.Align.FILL)
                 dl_pbar.set_valign(Gtk.Align.FILL)
+                dl_pbar.set_size_request(-1, -1)
 
                 dl_btn = Gtk.Button(label=_("Download"), css_classes=["suggested-action"], valign=Gtk.Align.CENTER)
                 dl_btn.connect("clicked", self.on_utility_download_clicked, util, stack, dl_pbar)
-
+                dl_btn.set_valign(Gtk.Align.FILL)
+                
                 # Overlay to display download progress on top of download button
                 overlay = Gtk.Overlay()
+                overlay.set_halign(Gtk.Align.CENTER) 
+                overlay.set_valign(Gtk.Align.CENTER)
                 overlay.set_child(dl_btn)
                 overlay.add_overlay(dl_pbar)
                 
@@ -90,6 +93,10 @@ class ToolsTab(Gtk.Box):
                 if not is_installed: 
                     inst_btn.add_css_class("suggested-action")
                 inst_btn.connect("clicked", self.on_utility_install_clicked, util)
+
+                height_group = Gtk.SizeGroup(mode=Gtk.SizeGroupMode.BOTH)
+                height_group.add_widget(dl_btn)
+                height_group.add_widget(dl_pbar)
                 
                 stack.add_named(overlay, "download")
                 stack.add_named(inst_btn, "install")
@@ -122,11 +129,9 @@ class ToolsTab(Gtk.Box):
         btn.add_css_class('btn-download-before')
 
         util_dir = os.path.join(self.dashboard.downloads_path, "utilities")
-
-        downloader = Downloader()
         
-        def on_download_progress(downloader_inst, percent):
-            pbar.set_fraction(percent)
+        def on_download_progress(downloader_inst, download_data):
+            pbar.set_fraction(download_data['progress'])
         
         def on_download_finished(downloader_inst, success):
             stack.set_visible_child_name("install")
@@ -136,11 +141,11 @@ class ToolsTab(Gtk.Box):
             self.dashboard.show_message(_("Download Failed"), e)
             btn.set_sensitive(True)
 
-        downloader.connect('progress-changed', on_download_progress)
-        downloader.connect('download-complete', on_download_finished)
-        downloader.connect('download-error', on_download_error)
+        self.downloader.connect('progress-changed', on_download_progress)
+        self.downloader.connect('download-complete', on_download_finished)
+        self.downloader.connect('download-error', on_download_error)
             
-        threading.Thread(target=downloader.download_mod, args=(source_url, util_dir), daemon=True).start()
+        threading.Thread(target=self.downloader.download_mod, args=(source_url, util_dir), daemon=True).start()
 
     def on_utility_install_clicked(self, btn, util):
         msg = _("Warning: This process may be destructive to existing game files. Please ensure you have backed up your game directory before proceeding.")

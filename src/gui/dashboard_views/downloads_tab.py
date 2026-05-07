@@ -22,7 +22,7 @@ from gui.dashboard_views.fomod_dialog import FomodSelectionDialog
 _ = gettext.gettext
 
 class DownloadsTab(Gtk.Box):
-    def __init__(self, dashboard):
+    def __init__(self, dashboard, downloader):
         super().__init__(orientation=Gtk.Orientation.VERTICAL, spacing=10)
         self.set_margin_start(100)
         self.set_margin_end(100)
@@ -31,7 +31,11 @@ class DownloadsTab(Gtk.Box):
         self.dashboard = dashboard
         self.current_filter = "all"
         
+        self.downloader = downloader
+        
         self.scrolled = Gtk.ScrolledWindow(vexpand=True)
+        
+        self.download_maps = {}
         
         # Action Bar
         action_bar = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
@@ -40,6 +44,8 @@ class DownloadsTab(Gtk.Box):
         self.all_filter_btn = Gtk.ToggleButton(label=_("All"), active=True)
         self.all_filter_btn.connect("toggled", self.on_filter_toggled, "all")
         filter_group.append(self.all_filter_btn)
+        
+        self.downloader.connect('progress-changed', self.on_download_progress)
         
         for n, l in [("uninstalled", _("Uninstalled")), ("installed", _("Installed"))]:
             b = Gtk.ToggleButton(label=l, group=self.all_filter_btn)
@@ -74,7 +80,7 @@ class DownloadsTab(Gtk.Box):
 
         if self.dashboard.downloads_path and os.path.exists(self.dashboard.downloads_path):
             self.setup_folder_monitor()
-            
+        
         self.populate_list()
 
     def populate_list(self):
@@ -144,7 +150,17 @@ class DownloadsTab(Gtk.Box):
                         break
             
             row.add_suffix(timestamp_box)
-
+            
+            # Progressbar
+            dl_pbar = Gtk.ProgressBar()
+            dl_pbar.set_can_target(False)
+            dl_pbar.add_css_class('utility-pbar')
+            dl_pbar.set_vexpand(True)
+            dl_pbar.set_halign(Gtk.Align.FILL)
+            dl_pbar.set_valign(Gtk.Align.FILL)
+            dl_pbar.set_size_request(-1, -1)
+            self.download_maps[file_name] = dl_pbar
+            
             # Install Button
             install_btn = Gtk.Button(label=_("Reinstall") if installed else _("Install"), valign=Gtk.Align.CENTER)
             if not installed: install_btn.add_css_class("suggested-action")
@@ -152,7 +168,15 @@ class DownloadsTab(Gtk.Box):
             install_btn.connect("clicked", self.on_install_clicked, file_name, display_name)
             if file_name in self.dashboard.currently_installing:
                 install_btn.set_sensitive(False)
-            row.add_suffix(install_btn)
+                
+            # Overlay to display download progress on top of download button
+            overlay = Gtk.Overlay()
+            overlay.set_halign(Gtk.Align.CENTER) 
+            overlay.set_valign(Gtk.Align.CENTER)
+            overlay.set_child(install_btn)
+            overlay.add_overlay(dl_pbar)
+            
+            row.add_suffix(overlay)
 
             # Trash Button
             d_stack = Gtk.Stack(transition_type=Gtk.StackTransitionType.CROSSFADE, hhomogeneous=False, interpolate_size=True)
@@ -391,3 +415,10 @@ class DownloadsTab(Gtk.Box):
             return False
         
         threading.Thread(target=worker, daemon=True).start()
+        
+    def on_download_progress(self, downloader, data):
+        filename = data['filename']
+        print(f"Looking for: {filename}")
+        progress = data['progress']
+        if filename in self.download_maps:
+            self.download_maps[filename].set_fraction(progress)

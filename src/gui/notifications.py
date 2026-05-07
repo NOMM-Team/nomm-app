@@ -44,10 +44,8 @@ def send_download_notification(status, file_name="", game_name=None, icon_path=N
         print(f"libnotify failed: {e}")
 
 # Check import before uncommenting the method
-def download_popup(url, dest_folder):
-    from core.downloader import Downloader
+def download_popup(url, dest_folder, downloader):
 
-    downloader = Downloader()
     filename = url.split('/')[-1].split('?')[0] or "download"
     dest_path = os.path.join(dest_folder, filename)
     os.makedirs(dest_folder, exist_ok=True)
@@ -118,17 +116,26 @@ def download_popup(url, dest_folder):
     # Initialize UI on main thread
     window, pbar = create_ui()
 
-    def on_download_progress(downloader_inst, percent ):
-        pbar.set_fraction(percent)
+    def on_download_progress(downloader_inst, download_data):
+        pbar.set_fraction(download_data['progress'])
 
-    def on_download_done(success):
+    def on_download_done(downloader_inst, success):
+        print('finished')
         status['finished'] = True
         status['success'] = success
-        window.destroy
+        window.destroy()
         return False
             
+    def on_download_fail(downloader_inst, e):
+        status['finished'] = True
+        status['success'] = False
+        print(f'Error downloading the mod: {e}')
+        window.destroy()
+        return False
+    
     downloader.connect('progress-changed', on_download_progress)
     downloader.connect('download-complete', on_download_done)
+    downloader.connect('download-error', on_download_fail)
 
     event.set()
     threading.Thread(target=downloader.download_mod, args=(url, dest_folder), daemon=True).start()

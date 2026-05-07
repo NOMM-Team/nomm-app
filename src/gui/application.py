@@ -22,6 +22,9 @@ translation_system.install(names=['ngettext'])
 
 class Nomm(Adw.Application):
     def __init__(self, **kwargs):
+        
+        self.downloader = kwargs.pop('downloader', None)
+        
         super().__init__(application_id=APP_NAME, **kwargs)
         self.matches = []
         self.user_defined_paths = []
@@ -396,7 +399,8 @@ class Nomm(Adw.Application):
             app_id=game_info.get('app_id'),
             user_config_path=self.user_config_path,
             game_config_path=game_info["game_config_path"],
-            assets_path=self.assets_path
+            assets_path=self.assets_path,
+            downloader = self.downloader
         )
         update_user_config("last_selected_game", game_info["name"])
         self.remove_stack_child("dashboard")

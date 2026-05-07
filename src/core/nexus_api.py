@@ -61,7 +61,7 @@ def check_for_mod_updates_async(staging_metadata: dict, headers: dict, game_id: 
     threading.Thread(target=worker, daemon=True).start()
 
 # Interprets nxm links and launchs notification
-def handle_nexus_link(nxm_link: str) -> bool:
+def handle_nexus_link(nxm_link: str, downloader: Downloader) -> bool:
 
     app_dir = os.path.join(GLib.get_user_data_dir(), "nomm")
     user_config_dir = os.path.join(app_dir, "user_config.yaml")
@@ -113,10 +113,9 @@ def handle_nexus_link(nxm_link: str) -> bool:
         _download_nexus_collection(nxm_link, headers, final_download_dir)
     else:
         print("Downloading single mod")
-        _download_nexus_mod(nxm_link, headers, final_download_dir, nexus_id, game_folder_name, user_config_dir)
+        _download_nexus_mod(nxm_link, headers, final_download_dir, nexus_id, game_folder_name, user_config_dir, downloader)
 
-def _download_nexus_mod(nxm_link: str, headers: dict, final_download_dir: Path, nexus_id: str, game_folder_name: str, user_config_dir):
-    downloader = Downloader()
+def _download_nexus_mod(nxm_link: str, headers: dict, final_download_dir: Path, nexus_id: str, game_folder_name: str, user_config_dir, downloader: Downloader):
     try:
         splitted_nxm = urlsplit(nxm_link)
         nxm_path = splitted_nxm.path.split('/')
@@ -152,9 +151,13 @@ def _download_nexus_mod(nxm_link: str, headers: dict, final_download_dir: Path, 
         print(f"Downloading {file_name} to {game_folder_name}...")
         user_meta = load_yaml(user_config_dir)
         if user_meta.get('disable_download_window'):
-            downloader.download_mod(file_url, str(final_download_dir)) # silent download
+            threading.Thread(
+                target=downloader.download_mod, 
+                args=(file_url, str(final_download_dir)), 
+                daemon=True
+            ).start()
         else:
-            download_popup(file_url, final_download_dir) # windowed download
+            download_popup(file_url, final_download_dir, downloader) # windowed download
         
         try:
             info_api_url = f"https://api.nexusmods.com/v1/games/{nexus_id}/mods/{mod_id}/files/{file_id}.json"
@@ -193,13 +196,11 @@ def _download_nexus_mod(nxm_link: str, headers: dict, final_download_dir: Path, 
         print(f"An error occurred: {e}")
         return False
 
-def _download_nexus_collection(nxm_link: str, headers: dict, final_download_dir: Path):
+def _download_nexus_collection(nxm_link: str, headers: dict, final_download_dir: Path, downloader: Downloader):
     parts = nxm_link.replace("nxm://", "").split("/")
     game_domain = parts[0]
     collection_id = parts[2]
     revision_id = parts[4] if len(parts) > 4 else "1"
-
-    downloader = Downloader()
     
     # Fetch Collection Metadata via GraphQL
     print(f"Fetching collection revision {revision_id}...")

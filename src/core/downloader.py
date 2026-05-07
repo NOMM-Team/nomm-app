@@ -8,7 +8,7 @@ from gui.notifications import send_download_notification
 
 class Downloader(GObject.Object):
     __gsignals__ = {
-        'progress-changed': (GObject.SignalFlags.RUN_FIRST, None, (float,)),
+        'progress-changed': (GObject.SignalFlags.RUN_FIRST, None, (object,)),
         'download-complete': (GObject.SignalFlags.RUN_FIRST, None, (bool,)),
         'download-error': (GObject.SignalFlags.RUN_FIRST, None, (str,))
     }
@@ -32,10 +32,15 @@ class Downloader(GObject.Object):
                     f.write(data)
                     downloaded += len(data)
                     if total_size > 0:
-                            percent = downloaded / total_size
-                            GLib.idle_add(self.emit, 'progress-changed', percent)
+                            dl_ratio = downloaded / total_size
+                            download_data = {
+                                'filename' : filename,
+                                'progress' : dl_ratio
+                            }
+                            GLib.idle_add(self.emit, 'progress-changed', download_data)
             send_download_notification("success", file_name=filename)
-            GLib.idle_add(self.emit, 'download-complete', True)
+            success = True
+            GLib.idle_add(self.emit, 'download-complete', success)
             return True
         except Exception as e:
             send_download_notification("failure-game-not-found", file_name=filename)
