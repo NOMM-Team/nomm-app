@@ -33,9 +33,10 @@ def parse_fomod_xml(xml_data) -> dict :
                     for index,item in enumerate(items):
                         source = item.get('source')
                         dest = item.get('destination')
+                        dest = dest.replace('\\', '/')
                         plugin_folder = {
                             'source': source.replace('\\', '/'),
-                            'destination': dest.replace('\\', '/')
+                            'destination': dest.lstrip('\\/')
                         }
                         folders_data.append(plugin_folder)
                     type_tag = plugin.find('.//type')

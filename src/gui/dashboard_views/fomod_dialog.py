@@ -152,14 +152,17 @@ class FomodSelectionDialog(Gtk.Window):
         main_box.append(self.right_box)
         
         group_count = get_fomod_group_count(fomod_metadata)
+        step_count = get_fomod_step_count(fomod_metadata)
+        
+        print(f"{self.current_step}/{step_count} then {self.current_group}/{group_count}")
         
         footer_box.append(cancel_btn)
-        if group_count > 1:
+        if group_count > 1 or step_count > 1:
             self.previous_btn.set_visible(False)
             footer_box.append(self.previous_btn)
             footer_box.append(self.next_btn)
         footer_box.append(self.install_btn)
-        if group_count > 1:
+        if group_count > 1 or step_count > 1:
             self.install_btn.set_visible(False)
         
         # Preparing two separators for the GUI
