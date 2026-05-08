@@ -43,6 +43,8 @@ class FomodSelectionDialog(Adw.Window):
         self.global_sources = []
         self.active_flags = {}
         self.flags_history = []
+        self.required_data = fomod_metadata['required_data']
+        dependencies_data = fomod_metadata['dependencies_data']
         
         # Initializing the current step for multiple-steps FOMods
         self.current_step = 0

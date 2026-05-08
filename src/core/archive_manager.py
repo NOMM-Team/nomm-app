@@ -113,7 +113,7 @@ def prepare_mod_installation(parent, archive_full_path, mod_staging_dir, filenam
         
         data = {
             'files': files,
-            'fomod': [fomod_metadata[0], fomod_metadata[1], fomod_metadata[2]]
+            'fomod': fomod_metadata
         }
         return data
     return None
