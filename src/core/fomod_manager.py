@@ -48,7 +48,7 @@ def parse_fomod_xml(xml_data) -> dict :
                     folders_data = []
                     plugin_folder = {}
                     for index,item in enumerate(items):
-                        source = item.get('source')
+                        source = item.get('source') or ''
                         dest = item.get('destination') or ''
                         dest = dest.replace('\\', '/')
                         plugin_folder = {
@@ -107,9 +107,25 @@ def parse_fomod_xml(xml_data) -> dict :
                         'condition_flags': condition_flags,
                         'type_descriptor': type_descriptor
                     })
+            visible_data = None
+            visible_tag = step.find('visible')
+            if visible_tag is not None:
+                deps = visible_tag.find('dependencies')
+                if deps is not None:
+                    flags = []
+                    for flag_dep in deps.findall('flagDependency'):
+                        flags.append({
+                            'flag': flag_dep.get('flag'),
+                            'value': flag_dep.get('value')
+                        })
+                    visible_data = {
+                        'operator': deps.get('operator') or 'And',
+                        'flags': flags
+                    }
             step_data = {
                 'step_name' : step_name,
-                'group' : group_list
+                'group' : group_list,
+                'visible' : visible_data
             }
             step_list.append(step_data)
         module_data = step_list
@@ -151,8 +167,8 @@ def parse_fomod_xml(xml_data) -> dict :
             items = required_files.findall('.//folder') + required_files.findall('.//file')
             plugin_folder = {}
             for index,item in enumerate(items):
-                source = item.get('source')
-                dest = item.get('destination') or ''
+                source = item.get('source', '')
+                dest = item.get('destination', '')
                 dest = dest.replace('\\', '/')
                 plugin_folder = {
                     'source': source.replace('\\', '/'),
@@ -174,54 +190,51 @@ def parse_fomod_xml(xml_data) -> dict :
         print(f"Failed to parse FOMOD XML: {e}")
         return {}
     
-def get_fomod_step_count(parsed_fomod_metadata: dict) -> int:
-    return len(parsed_fomod_metadata)
+def get_fomod_step_count(module_data: dict) -> int:
+    return len(module_data)
 
-def get_fomod_group_count(parsed_fomod_metadata: dict, step_index: int = 0) -> int:
-    return len(parsed_fomod_metadata[step_index]['group'])
+def get_fomod_group_count(module_data: dict, step_index: int = 0) -> int:
+    return len(module_data[step_index]['group'])
 
-def get_fomod_group_info(parsed_fomod_metadata: dict, step_index: int = 0, group_index: int = 0) -> dict:
-    group = parsed_fomod_metadata[step_index]['group'][group_index]
+def get_fomod_group_info(module_data: dict, step_index: int = 0, group_index: int = 0) -> dict:
+    group = module_data[step_index]['group'][group_index]
     return {
         'type': group['type'],
         'name': group['name']
     }
 
-def get_fomod_module_name(parsed_fomod_metadata: dict) -> str:
-    return 'lol'
-
-def get_fomod_group_options(parsed_fomod_metadata: dict, step_index: int = 0, group_index: int = 0) -> list:
+def get_fomod_group_options(module_data: dict, step_index: int = 0, group_index: int = 0) -> list:
     options = []
-    plugins = parsed_fomod_metadata[step_index]['group'][group_index]['plugins']
+    plugins = module_data[step_index]['group'][group_index]['plugins']
     for plugin in plugins:
         sources = list(plugin['folders'])
         condition_flags = plugin['condition_flags']
         options.append((plugin['name'], plugin['desc'], sources, condition_flags))
     return options
 
-def get_plugin_image_path(parsed_fomod_metadata: dict, plugin_name: str, step_index: int = 0, group_index: int = 0) -> str:
-    plugins = parsed_fomod_metadata[step_index]['group'][group_index]['plugins']
+def get_plugin_image_path(module_data: dict, plugin_name: str, step_index: int = 0, group_index: int = 0) -> str:
+    plugins = module_data[step_index]['group'][group_index]['plugins']
     for plugin in plugins:
         if plugin['name'] == plugin_name:
             return plugin['image_path']
     return ''
 
-def have_plugins_images(parsed_fomod_metadata: dict, step_index: int = 0, group_index: int = 0) -> bool:
-    plugins = parsed_fomod_metadata[step_index]['group'][group_index]['plugins']
+def have_plugins_images(module_data: dict, step_index: int = 0, group_index: int = 0) -> bool:
+    plugins = module_data[step_index]['group'][group_index]['plugins']
     for plugin in plugins:
         if plugin['image_path']:
             return True
     return False
 
-def get_plugin_type(parsed_fomod_metadata: dict, plugin_name: str, step_index: int = 0, group_index: int = 0) -> str:
-    plugins = parsed_fomod_metadata[step_index]['group'][group_index]['plugins']
+def get_plugin_type(module_data: dict, plugin_name: str, step_index: int = 0, group_index: int = 0) -> str:
+    plugins = module_data[step_index]['group'][group_index]['plugins']
     for plugin in plugins:
         if plugin['name'] == plugin_name:
             return plugin['type_descriptor']['default_type']
     return ''
 
-def get_plugin_flags(parsed_fomod_metadata: dict, plugin_name: str, step_index: int = 0, group_index: int = 0) -> list:
-    plugins = parsed_fomod_metadata[step_index]['group'][group_index]['plugins']
+def get_plugin_flags(module_data: dict, plugin_name: str, step_index: int = 0, group_index: int = 0) -> list:
+    plugins = module_data[step_index]['group'][group_index]['plugins']
     for plugin in plugins:
         if plugin['name'] == plugin_name:
             return plugin['condition_flags']
@@ -274,8 +287,8 @@ def apply_fomod_selection(mod_staging_dir: str, source_folder_name: str, dest_pa
 
     return copied_files
 
-def dump_fomod_data(parsed_fomod_metadata: dict):
-    pprint.pprint(parsed_fomod_metadata, indent=2, width=120)
+def dump_fomod_data(module_data: dict):
+    pprint.pprint(module_data, indent=2, width=120)
 
 def generate_source_from_flags(flags_metadata: dict, flags: list) -> dict:
     result = []
@@ -334,8 +347,8 @@ def check_for_dependencies(dependencies_data:dict, dest_dir: str) -> bool:
     return search
     
 
-def check_for_plugin_dependencies(parsed_fomod_metadata: dict, dest_dir: str, step_index: int = 0, group_index: int = 0, plugin_index: int = 0, selected_flags = None) -> str:
-    plugin = parsed_fomod_metadata[step_index]['group'][group_index]['plugins'][plugin_index]
+def check_for_plugin_dependencies(module_data: dict, dest_dir: str, step_index: int = 0, group_index: int = 0, plugin_index: int = 0, selected_flags = None) -> str:
+    plugin = module_data[step_index]['group'][group_index]['plugins'][plugin_index]
     
     # Check for file dependency
     for cond_type in plugin['type_descriptor']['conditional_types']:
@@ -372,4 +385,16 @@ def check_for_plugin_dependencies(parsed_fomod_metadata: dict, dest_dir: str, st
     # Check for flag dependency
     return plugin['type_descriptor']['default_type']
     
-    
+def is_step_visible(module_data: dict, step_index: int, active_flags: dict) -> bool:
+
+    visible_condition = module_data[step_index].get('visible')
+    if not visible_condition:
+        return True
+    operator = visible_condition['operator']
+    flags = visible_condition['flags']
+    if not flags:
+        return True
+    if operator == 'And':
+        return all(active_flags.get(f['flag']) == f['value'] for f in flags)
+    else:
+        return any(active_flags.get(f['flag']) == f['value'] for f in flags)

@@ -8,9 +8,9 @@ from core.fomod_manager import (check_for_dependencies,
                                 check_for_plugin_dependencies,
                                 generate_source_from_flags,
                                 get_fomod_group_count, get_fomod_group_info,
-                                get_fomod_group_options, get_fomod_module_name,
-                                get_fomod_step_count, get_plugin_image_path,
-                                get_plugin_type, have_plugins_images)
+                                get_fomod_group_options, get_fomod_step_count,
+                                get_plugin_image_path, get_plugin_type,
+                                have_plugins_images, is_step_visible)
 from gui.text_window import TextWindow
 
 
@@ -223,8 +223,9 @@ class FomodSelectionDialog(Gtk.Window):
         
         first_radio = None
         
-        # Deleting the option map
+        # Deleting the option map and flags map
         self.options_map = {}
+        self.flags_map = {}
         
         extracted_information = []
         
@@ -420,7 +421,15 @@ class FomodSelectionDialog(Gtk.Window):
         elif self.current_step < (step_count - 1):
             self.current_group = 0
             self.current_step += 1
-            
+        
+        # Skip invisible steps when entering a new step
+        while self.current_group == 0 and not is_step_visible(self.module_data, self.current_step, self.active_flags):
+            if self.current_step < step_count - 1:
+                self.current_step += 1
+            else:
+                self.on_install_clicked(button)
+                return
+        
         # Recounting groups since we might have moved to another step
         new_group_count = get_fomod_group_count(self.module_data, self.current_step)
         if (self.current_step == step_count - 1) and (self.current_group == new_group_count - 1):
@@ -452,7 +461,6 @@ class FomodSelectionDialog(Gtk.Window):
         if self.global_sources:
             self.global_sources.pop()
         
-        # Broken
         step_flags = self.flags_history.pop()
         for flag in step_flags:
             self.active_flags.pop(flag, None)
@@ -469,6 +477,14 @@ class FomodSelectionDialog(Gtk.Window):
             self.current_group = get_fomod_group_count(self.module_data, self.current_step) - 1
         self.install_btn.set_visible(False)
         self.next_btn.set_visible(True)
+        
+        # Skip invisible steps going backwards
+        while not is_step_visible(self.module_data, self.current_step, self.active_flags):
+            if self.current_step > 0:
+                self.current_step -= 1
+                self.current_group = get_fomod_group_count(self.module_data, self.current_step) - 1
+            else:
+                break
         
         if self.current_step == 0 and self.current_group == 0:
             self.previous_btn.set_visible(False)
