@@ -14,7 +14,7 @@ from gi.repository import Adw, Gdk, Gio, GLib, Gtk, Pango
 from core.archive_manager import (delete_downloaded_archive, extract_archive,
                                   get_all_relative_files,
                                   process_dropped_files, prepare_mod_installation)
-from core.fomod_manager import apply_fomod_selection, parse_fomod_xml, get_required_files
+from core.fomod_manager import apply_fomod_selection, parse_fomod_xml
 from core.mod_manager import (finalise_mod_metadata, is_mod_installed,
                               load_staging_metadata, remove_mod_from_metadata)
 from core.tools import timestamp_converter
@@ -235,7 +235,7 @@ class DownloadsTab(Gtk.Box):
             if not data:
                 return False
             if data['fomod']:
-                dialog = FomodSelectionDialog(self.dashboard.app.win, data['fomod'], mod_staging_dir)
+                dialog = FomodSelectionDialog(self.dashboard.app.win, data['fomod'][1], data['fomod'][2], mod_staging_dir)
                 dialog.connect("response", self.on_fomod_dialog_response, mod_staging_dir, filename)
                 dialog.present()
                 return False
@@ -275,10 +275,6 @@ class DownloadsTab(Gtk.Box):
         if response == Gtk.ResponseType.OK:
             
             install_items = dialog.get_global_sources()
-            # This line could be removed if required files are indeed toggled since they will automatically be included
-            # in install_items
-            required = get_required_files(dialog.fomod_metadata)
-            install_items = required + install_items
             
             temp_install_dir = f"{mod_staging_dir}_final_fomod"
             os.makedirs(temp_install_dir, exist_ok=True)

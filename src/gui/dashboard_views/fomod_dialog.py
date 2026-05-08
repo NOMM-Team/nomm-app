@@ -17,12 +17,13 @@ class FomodSelectionDialog(Gtk.Window):
         'response': (GObject.SignalFlags.RUN_LAST, None, (int,))
     }
     
-    def __init__(self, parent, fomod_metadata, mod_staging_dir):
+    def __init__(self, parent, module_data, flags_data, mod_staging_dir):
         
-        module_name = get_fomod_module_name(fomod_metadata)
+        module_name = 'lol'
         super().__init__(title=f"Installer: {module_name}", transient_for=parent, modal=False)
         
-        self.fomod_metadata = fomod_metadata
+        self.fomod_metadata = module_data
+        self.flags_data = flags_data
         
         # Sources registered for every step/group
         self.global_sources = []
@@ -32,7 +33,7 @@ class FomodSelectionDialog(Gtk.Window):
         self.current_step = 0
         self.current_group = 0
         
-        options = get_fomod_group_options(fomod_metadata)
+        options = get_fomod_group_options(module_data)
         
         # Look for the fomod path in case the archive is 
         # mod_arc/mod_name/FOMOD instead of mod_arc/FOMOD
@@ -153,8 +154,8 @@ class FomodSelectionDialog(Gtk.Window):
         self.right_box.add_css_class("boxed-preview")
         main_box.append(self.right_box)
         
-        group_count = get_fomod_group_count(fomod_metadata)
-        step_count = get_fomod_step_count(fomod_metadata)
+        group_count = get_fomod_group_count(module_data)
+        step_count = get_fomod_step_count(module_data)
         
         print(f"{self.current_step}/{step_count} then {self.current_group}/{group_count}")
         
@@ -494,7 +495,7 @@ class FomodSelectionDialog(Gtk.Window):
         self.active_flags.update(self.get_selected_flags())
         
         print(self.global_sources)
-        converted_flags = generate_source_from_flags(self.fomod_metadata, self.active_flags)
+        converted_flags = generate_source_from_flags(self.flags_data, self.active_flags)
         self.global_sources.append(converted_flags)
         print(self.global_sources)
         
