@@ -42,10 +42,7 @@ class FomodSelectionDialog(Adw.Window):
         # Sources registered for every step/group
         self.global_sources = []
         self.active_flags = {}
-        
-        # Check if files exists
-        if not check_for_dependencies(dependencies_data, mod_staging_dir):
-            print('Missing dependencies')
+        self.flags_history = []
         
         # Initializing the current step for multiple-steps FOMods
         self.current_step = 0
@@ -260,6 +257,10 @@ class FomodSelectionDialog(Adw.Window):
         # Displaying group info if there is a group info
         group_name = get_fomod_group_info(self.module_data, self.current_step, self.current_group)['name']
         self.fomod_desc.set_label(group_name)
+        
+        plugin_index = 0
+        
+        is_not_usable = False
         
         plugin_index = 0
         
