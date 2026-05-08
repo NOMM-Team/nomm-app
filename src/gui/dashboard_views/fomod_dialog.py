@@ -7,7 +7,7 @@ from gi.repository import Adw, Gdk, GdkPixbuf, GObject, Gtk
 from core.fomod_manager import (get_fomod_group_count, get_fomod_group_options,
                                 get_fomod_group_info, get_fomod_module_name,
                                 get_fomod_step_count, get_plugin_image_path,
-                                get_plugin_type, have_plugins_images, generate_source_from_flags)
+                                get_plugin_type, have_plugins_images, generate_source_from_flags, check_for_dependencies)
 from gui.text_window import TextWindow
 
 
@@ -17,7 +17,7 @@ class FomodSelectionDialog(Gtk.Window):
         'response': (GObject.SignalFlags.RUN_LAST, None, (int,))
     }
     
-    def __init__(self, parent, module_data, flags_data, mod_staging_dir):
+    def __init__(self, parent, dependencies_data, module_data, flags_data, mod_staging_dir):
         
         module_name = 'lol'
         super().__init__(title=f"Installer: {module_name}", transient_for=parent, modal=False)
@@ -28,6 +28,10 @@ class FomodSelectionDialog(Gtk.Window):
         # Sources registered for every step/group
         self.global_sources = []
         self.active_flags = {}
+        
+        # Check if files exists
+        if not check_for_dependencies(dependencies_data, mod_staging_dir):
+            print('Missing dependencies')
         
         # Initializing the current step for multiple-steps FOMods
         self.current_step = 0

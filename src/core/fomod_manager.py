@@ -1,6 +1,7 @@
 import os
 import pprint
 import shutil
+from pathlib import Path
 import xml.etree.ElementTree as ET
 
 # Parsing the fomod from the XML
@@ -15,7 +16,6 @@ def parse_fomod_xml(xml_data) -> dict :
             dependencies_data = dependencies_loops(module_dependencies)
         else:
             dependencies_data = {}
-        
         
         # Module tree, where options are actually stored
         module_data = {}
@@ -297,11 +297,11 @@ def check_for_dependencies(dependencies_data:dict, dest_dir: str) -> bool:
     operator = dependencies_data['current_dependencies']['operator']
     for file in dep_item:
         searched_item = Path(dest_dir)/file['file']
-        if operator == 'And':
+        if operator == 'And' and (file['state'] == 'Active' or file['state'] == 'Inactive'):
             if not searched_item.exists():
                 return False
     if operator == 'Or':
-        search = any((Path(dest_dir)/f['file']).exists() for f in dep_item)
+        search = any((Path(dest_dir)/f['file']).exists() and (f['state'] == 'Active' or f['state'] == 'Inactive') for f in dep_item)
         return search
     if dependencies_data['nested_dependencies']:
         for nested in dependencies_data['nested_dependencies']:
