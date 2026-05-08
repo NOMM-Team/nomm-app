@@ -7,7 +7,7 @@ from gi.repository import Adw, Gdk, GdkPixbuf, GObject, Gtk
 from core.fomod_manager import (get_fomod_group_count, get_fomod_group_options,
                                 get_fomod_group_info, get_fomod_module_name,
                                 get_fomod_step_count, get_plugin_image_path,
-                                get_plugin_type, have_plugins_images)
+                                get_plugin_type, have_plugins_images, generate_source_from_flags)
 from gui.text_window import TextWindow
 
 
@@ -26,6 +26,7 @@ class FomodSelectionDialog(Gtk.Window):
         
         # Sources registered for every step/group
         self.global_sources = []
+        self.active_flags = {}
         
         # Initializing the current step for multiple-steps FOMods
         self.current_step = 0
@@ -44,6 +45,7 @@ class FomodSelectionDialog(Gtk.Window):
         self.set_default_size(1100, 622)
         self.add_css_class("fomod-dialog")
         self.options_map = {}
+        self.flags_map = {}
         
         # Initializing every container
         content_area = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
@@ -204,6 +206,9 @@ class FomodSelectionDialog(Gtk.Window):
         elif selection_type == 'SelectAny':
             self.fomod_desc.set_label("This mod offers multiple variants, pick any plugin you'd like to install")
             list_box.set_selection_mode(Gtk.SelectionMode.MULTIPLE)
+        elif selection_type == 'SelectAll':
+            self.fomod_desc.set_label("This mod offers multiple variants but you must pick all of them")
+            list_box.set_selection_mode(Gtk.SelectionMode.MULTIPLE)
         
         first_radio = None
         
@@ -217,7 +222,7 @@ class FomodSelectionDialog(Gtk.Window):
         self.group_label.set_label(group_name)
         
         # Looping on items to fill the list box
-        for name, desc, source in options:
+        for name, desc, source, flags in options:
             
             plugin_type = get_plugin_type(self.fomod_metadata, name, self.current_step, self.current_group)
             
@@ -231,7 +236,7 @@ class FomodSelectionDialog(Gtk.Window):
             elif desc != '' and len(desc) >= 65:
                 clean_desc = 'Plugin description is too long to be displayed here' 
             
-            if source == [] :
+            if source == [] and not flags:
                 extracted_information.append(clean_desc)
                 continue
             
@@ -303,6 +308,7 @@ class FomodSelectionDialog(Gtk.Window):
             # Adding row to the UI
             list_box.append(row)
             self.options_map[radio] = source
+            self.flags_map[radio] = flags
             
         if selection_type == 'SelectAtMostOne':
             default_row_content = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
@@ -373,6 +379,9 @@ class FomodSelectionDialog(Gtk.Window):
         selected_sources = self.get_selected_source()
         self.global_sources.append(selected_sources)
         
+        # Flags storing logic
+        self.active_flags.update(self.get_selected_flags())
+        
         # Step and group enumeration
         step_count = get_fomod_step_count(self.fomod_metadata)
         group_count = get_fomod_group_count(self.fomod_metadata, self.current_step)
@@ -396,7 +405,7 @@ class FomodSelectionDialog(Gtk.Window):
         self.previous_btn.set_visible(True)
         
         # If there is a whole group with absolutely no source, we skip
-        if all(not option[2] for option in options):
+        if all(not option[2] and not option[3] for option in options):
             self.on_next_clicked(self.next_btn, list_box)
             return
         
@@ -412,6 +421,8 @@ class FomodSelectionDialog(Gtk.Window):
         # Remove data logic
         if self.global_sources:
             self.global_sources.pop()
+        if self.global_flags:
+            self.active_flags.pop()
     
         # Check if there is a next group or if we reset group to 0 and move steps instead
         step_count = get_fomod_step_count(self.fomod_metadata)
@@ -432,9 +443,8 @@ class FomodSelectionDialog(Gtk.Window):
             self.previous_btn.set_visible(True)
         
         options = get_fomod_group_options(self.fomod_metadata, self.current_step, self.current_group)
-        
         # checks if a whole group has no source file then skip
-        if all(not option[2] for option in options):
+        if all(not option[2] and not option[3] for option in options):
             self.on_previous_clicked(self.next_btn, list_box)
             return
         
@@ -459,6 +469,14 @@ class FomodSelectionDialog(Gtk.Window):
                     all_selected_sources.append(source)        
         return all_selected_sources
     
+    def get_selected_flags(self) -> dict:
+      all_selected_flags = {}
+      for radio, condition_flags in self.flags_map.items():
+          if radio.get_active():
+              for flag in condition_flags:
+                  all_selected_flags[flag['name']] = flag['value']
+      return all_selected_flags
+    
     def get_global_sources(self) -> list[dict[str]]:
         files_to_install = []
 
@@ -467,10 +485,19 @@ class FomodSelectionDialog(Gtk.Window):
         return files_to_install
     
     def on_install_clicked(self, button):
+        # Source storing
         selected_sources = self.get_selected_source()
         if selected_sources:
             self.global_sources.append(selected_sources)
-            
+        
+        # Flag storing
+        self.active_flags.update(self.get_selected_flags())
+        
+        print(self.global_sources)
+        converted_flags = generate_source_from_flags(self.fomod_metadata, self.active_flags)
+        self.global_sources.append(converted_flags)
+        print(self.global_sources)
+        
         self.emit("response", Gtk.ResponseType.OK)
         self.close()
 

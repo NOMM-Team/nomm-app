@@ -6,6 +6,55 @@ import xml.etree.ElementTree as ET
 def parse_fomod_xml(xml_data) -> dict :
     fomod_data = {}
     try:
+        
+        # Module dependency tree
+        module_dependencies = xml_data.find('moduleDependencies')
+        if module_dependencies is not None:
+            module_dependencies_type = module_dependencies.get('operator')
+            root_dependency_metadata = module_dependencies.findall('fileDependency')
+            required_files_root = []
+            for file in root_dependency_metadata:
+                req_file = file.get('file')
+                req_file = req_file.replace('\\', '/')
+                state = file.get('state')
+                file_data = {
+                'file' : req_file.lstrip('\\/'),
+                'state' : state
+                }
+                required_files_root.append(file_data)
+            global_root_data = {
+                'operator' : module_dependencies_type,
+                'req_files' : required_files_root
+            }
+            fomod_data['module_dependency'] = {
+                'root_dependencies' : global_root_data,
+                'nested_dependencies' : None
+            }
+            nested_dependencies = module_dependencies.findall('dependencies')
+            global_nested_data = []
+            for dependency in nested_dependencies:
+                nested_dependency_type = dependency.get('operator')
+                nested_dependencies_metadata = []
+                for file in dependency.findall('fileDependency'):
+                    req_file = file.get('file')
+                    req_file = req_file.replace('\\', '/')
+                    state = file.get('state')
+                    file_data = {
+                    'file' : req_file.lstrip('\\/'),
+                    'state' : state
+                    }
+                    nested_dependencies_metadata.append(file_data)
+                local_nested_data = {
+                    'operator' : nested_dependency_type,
+                    'req_files' : nested_dependencies_metadata
+                }
+                global_nested_data.append(local_nested_data)
+            fomod_data['module_dependency']['nested_dependencies'] = global_nested_data
+        else:
+            fomod_data['module_dependency'] = None
+        
+        
+        # Module tree, where options are actually stored
         module_name = xml_data.findtext('moduleName')
         steps = xml_data.findall('.//installStep')
         fomod_data[module_name] = {}
@@ -39,35 +88,111 @@ def parse_fomod_xml(xml_data) -> dict :
                             'destination': dest.lstrip('\\/')
                         }
                         folders_data.append(plugin_folder)
-                    type_tag = plugin.find('.//type')
-                    plugin_type = type_tag.get('name') if type_tag is not None else 'Optional'
+                    condition_flags = []
+                    condition_flags_tag = plugin.find('conditionFlags')
+                    if condition_flags_tag is not None:
+                        for flag in condition_flags_tag.findall('flag'):
+                            condition_flags.append({
+                                'name': flag.get('name'),
+                                'value': flag.text
+                            })
+                    type_descriptor = {'default_type': 'Optional', 'conditional_types': []}
+                    type_descriptor_tag = plugin.find('typeDescriptor')
+                    if type_descriptor_tag is not None:
+                        dependency_type_tag = type_descriptor_tag.find('dependencyType')
+                        if dependency_type_tag is not None:
+                            default_type_tag = dependency_type_tag.find('defaultType')
+                            type_descriptor['default_type'] = default_type_tag.get('name') if default_type_tag is not None else 'Optional'
+                            for cond_pattern in dependency_type_tag.findall('.//pattern'):
+                                deps = cond_pattern.find('dependencies')
+                                file_deps = []
+                                flag_deps = []
+                                operator = deps.get('operator') or 'And'
+                                if deps is not None:
+                                    for file_dep in deps.findall('fileDependency'):
+                                        file_deps.append({
+                                            'file': file_dep.get('file'),
+                                            'state': file_dep.get('state')
+                                        })
+                                    for flag_dep in deps.findall('flagDependency'):
+                                        flag_deps.append({
+                                            'flag': flag_dep.get('flag'),
+                                            'value': flag_dep.get('value')
+                                        })
+                                cond_type_tag = cond_pattern.find('type')
+                                type_descriptor['conditional_types'].append({
+                                    'type': cond_type_tag.get('name') if cond_type_tag is not None else 'Optional',
+                                    'dependencies': {
+                                        'operator': operator,
+                                        'file_deps': file_deps,
+                                        'flag_deps': flag_deps
+                                    }
+                                })
+                        else:
+                            simple_type = type_descriptor_tag.find('type')
+                            type_descriptor['default_type'] = simple_type.get('name') if simple_type is not None else 'Optional'
                     fomod_data[module_name][step_name][group_name]['plugins'].append({
                         'name': plugin_name,
                         'desc': plugin_desc.strip(),
                         'image_path': plugin_image_path,
                         'folders': folders_data,
-                        'type': plugin_type
+                        'condition_flags': condition_flags,
+                        'type_descriptor': type_descriptor
                     })
+        
+        # Conditional file installs
+        conditional_installs = xml_data.find('conditionalFileInstalls')
+        conditional_installs_data = []
+        if conditional_installs is not None:
+            for pattern in conditional_installs.findall('.//pattern'):
+                deps = pattern.find('dependencies')
+                flags = []
+                for flag_dep in deps.findall('flagDependency'):
+                    flags.append({
+                        'flag': flag_dep.get('flag'),
+                        'value': flag_dep.get('value')
+                    })
+                files_tag = pattern.find('files')
+                items = files_tag.findall('folder') + files_tag.findall('file')
+                files = []
+                for item in items:
+                    source = item.get('source', '').replace('\\', '/')
+                    dest = item.get('destination', '').replace('\\', '/')
+                    files.append({
+                        'source': source,
+                        'destination': dest.lstrip('\\/')
+                    })
+                conditional_installs_data.append({
+                    'dependencies': {
+                        'operator': deps.get('operator') or 'And',
+                        'flags': flags
+                    },
+                    'files': files
+                })
+                
+        fomod_data['conditional_installs'] = conditional_installs_data
+        
+        print_fomod_data(fomod_data)
         return fomod_data
     except Exception as e:
         print(f"Failed to parse FOMOD XML: {e}")
         return {}
     
 def get_fomod_step_count(parsed_fomod_metadata:dict) -> int:
-    module_name = list(parsed_fomod_metadata.keys())[0]
+    module_name = get_fomod_module_name(parsed_fomod_metadata)
     step_count = len(parsed_fomod_metadata[module_name])
     
     return step_count
     
 def get_fomod_group_count(parsed_fomod_metadata:dict, step_index: int = 0) -> int:
-    module_name = list(parsed_fomod_metadata.keys())[0]
+    module_name = get_fomod_module_name(parsed_fomod_metadata)
     step_name = list(parsed_fomod_metadata[module_name].keys())[step_index]
     group_count = len(parsed_fomod_metadata[module_name][step_name])
     
     return group_count
 
 def get_fomod_group_info(parsed_fomod_metadata:dict, step_index: int = 0, group_index: int = 0) -> dict[str]:
-    module_name = list(parsed_fomod_metadata.keys())[0]
+    module_name = get_fomod_module_name(parsed_fomod_metadata)
     step_name = list(parsed_fomod_metadata[module_name].keys())[step_index]
     group_name = list(parsed_fomod_metadata[module_name][step_name].keys())[group_index]
     group_type = parsed_fomod_metadata[module_name][step_name][group_name]['type']
@@ -78,10 +203,11 @@ def get_fomod_group_info(parsed_fomod_metadata:dict, step_index: int = 0, group_
     return data
 
 def get_fomod_module_name(parsed_fomod_metadata:dict) -> str:
-    return list(parsed_fomod_metadata.keys())[0]
+    reserved_keys = {'module_dependency', 'conditional_installs'}
+    return next(k for k in parsed_fomod_metadata if k not in reserved_keys)
 
 def get_fomod_group_options(parsed_fomod_metadata:dict, step_index: int = 0, group_index: int = 0) -> list:
-    module_name = list(parsed_fomod_metadata.keys())[0]
+    module_name = get_fomod_module_name(parsed_fomod_metadata)
     step_name = list(parsed_fomod_metadata[module_name].keys())[step_index]
     group_name = list(parsed_fomod_metadata[module_name][step_name].keys())[group_index]
     options = []
@@ -99,12 +225,16 @@ def get_fomod_group_options(parsed_fomod_metadata:dict, step_index: int = 0, gro
         for source_item in source_items:
             source = source_item
             sources.append(source)
-        options.append((plugin_name, plugin_desc, sources))
+        
+        # Condition flags
+        condition_flags = plugin['condition_flags']
+        
+        options.append((plugin_name, plugin_desc, sources, condition_flags))
     
     return options
 
 def get_plugin_image_path(parsed_fomod_metadata:dict, plugin_name:str, step_index: int = 0, group_index: int = 0) -> str:
-    module_name = list(parsed_fomod_metadata.keys())[0]
+    module_name = get_fomod_module_name(parsed_fomod_metadata)
     step_name = list(parsed_fomod_metadata[module_name].keys())[step_index]
     group_name = list(parsed_fomod_metadata[module_name][step_name].keys())[group_index]
     plugins = parsed_fomod_metadata[module_name][step_name][group_name]['plugins']
@@ -114,7 +244,7 @@ def get_plugin_image_path(parsed_fomod_metadata:dict, plugin_name:str, step_inde
     return ''
 
 def have_plugins_images(parsed_fomod_metadata:dict, step_index: int = 0, group_index: int = 0) -> bool:
-    module_name = list(parsed_fomod_metadata.keys())[0]
+    module_name = get_fomod_module_name(parsed_fomod_metadata)
     step_name = list(parsed_fomod_metadata[module_name].keys())[step_index]
     group_name = list(parsed_fomod_metadata[module_name][step_name].keys())[group_index]
     plugins = parsed_fomod_metadata[module_name][step_name][group_name]['plugins']
@@ -124,13 +254,23 @@ def have_plugins_images(parsed_fomod_metadata:dict, step_index: int = 0, group_i
     return False
 
 def get_plugin_type(parsed_fomod_metadata:dict, plugin_name:str, step_index: int = 0, group_index: int = 0) -> str:
-    module_name = list(parsed_fomod_metadata.keys())[0]
+    module_name = get_fomod_module_name(parsed_fomod_metadata)
     step_name = list(parsed_fomod_metadata[module_name].keys())[step_index]
     group_name = list(parsed_fomod_metadata[module_name][step_name].keys())[group_index]
     plugins = parsed_fomod_metadata[module_name][step_name][group_name]['plugins']
     for plugin in plugins:
         if plugin['name'] == plugin_name:
-            return plugin['type']
+            return plugin['type_descriptor']['default_type']
+    return ''
+
+def get_plugin_flags(parsed_fomod_metadata:dict, plugin_name:str, step_index: int = 0, group_index: int = 0) -> str:
+    module_name = get_fomod_module_name(parsed_fomod_metadata)
+    step_name = list(parsed_fomod_metadata[module_name].keys())[step_index]
+    group_name = list(parsed_fomod_metadata[module_name][step_name].keys())[group_index]
+    plugins = parsed_fomod_metadata[module_name][step_name][group_name]['plugins']
+    for plugin in plugins:
+        if plugin['condition_flags'] == plugin_flag:
+            return plugin['condition_flags']
     return ''
 
 def apply_fomod_selection(mod_staging_dir: str, source_folder_name: str, dest_path: str) -> list:
@@ -182,11 +322,25 @@ def apply_fomod_selection(mod_staging_dir: str, source_folder_name: str, dest_pa
 
 def get_required_files(parsed_fomod_metadata: dict) -> list:
     required_items = []
-    module_name = list(parsed_fomod_metadata.keys())[0]
+    module_name = get_fomod_module_name(parsed_fomod_metadata)
     # Walk through the whole metadatas to retrieve every required files
     for step in parsed_fomod_metadata[module_name].values():
         for group in step.values():
             for plugin in group['plugins']:
-                if plugin['type'] == 'Required':
+                if plugin['type_descriptor']['default_type'] == 'Required':
                     required_items.extend(plugin['folders'])
     return required_items
+
+def generate_source_from_flags(parsed_fomod_metadata: dict, flags: list) -> dict:
+    result = []
+    for pattern in parsed_fomod_metadata['conditional_installs']:
+        operator = pattern['dependencies']['operator']
+        pattern_flags = pattern['dependencies']['flags']
+        if operator == 'And':
+            match = all(flags.get(f['flag']) == f['value'] for f in pattern_flags)
+        else:
+            match = any(flags.get(f['flag']) == f['value'] for f in pattern_flags)
+        if match:
+            result.extend(pattern['files'])
+    return result
+        
