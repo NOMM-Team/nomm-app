@@ -235,7 +235,7 @@ class DownloadsTab(Gtk.Box):
             if not data:
                 return False
             if data['fomod']:
-                dialog = FomodSelectionDialog(self.dashboard.app.win, data['fomod'][0], data['fomod'][1], data['fomod'][2], mod_staging_dir)
+                dialog = FomodSelectionDialog(self.dashboard.app.win, data['fomod'][0], data['fomod'][1], data['fomod'][2], mod_staging_dir, self.dashboard.deployment_targets[0]['path'])
                 dialog.connect("response", self.on_fomod_dialog_response, mod_staging_dir, filename)
                 dialog.present()
                 return False

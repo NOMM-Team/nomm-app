@@ -76,7 +76,7 @@ def parse_fomod_xml(xml_data) -> dict :
                                     operator = deps.get('operator') or 'And'
                                     for file_dep in deps.findall('fileDependency'):
                                         file_deps.append({
-                                            'file': file_dep.get('file'),
+                                            'req_file': file_dep.get('file'),
                                             'state': file_dep.get('state')
                                         })
                                     for flag_dep in deps.findall('flagDependency'):
@@ -89,8 +89,8 @@ def parse_fomod_xml(xml_data) -> dict :
                                     'type': cond_type_tag.get('name') if cond_type_tag is not None else 'Optional',
                                     'dependencies': {
                                         'operator': operator,
-                                        'file_deps': file_deps,
-                                        'flag_deps': flag_deps
+                                        'file_dependencies': file_deps,
+                                        'flag_dependencies': flag_deps
                                     }
                                 })
                         else:
@@ -141,9 +141,9 @@ def parse_fomod_xml(xml_data) -> dict :
                     'files': files
                 })
         
-        dump_fomod_data(dependencies_data)
-        dump_fomod_data(module_data)
-        dump_fomod_data(flags_data)
+        # dump_fomod_data(dependencies_data)
+        # dump_fomod_data(module_data)
+        # dump_fomod_data(flags_data)
         return dependencies_data, module_data, flags_data
     except Exception as e:
         print(f"Failed to parse FOMOD XML: {e}")
@@ -281,7 +281,7 @@ def dependencies_loops(current_dependency_metadata) -> list:
         'req_files' : required_files_root
     }
     dependencies_data = {
-        'current_dependencies' : current_level_data,
+        'file_dependencies' : current_level_data,
         'nested_dependencies' : None
     }
     
@@ -293,18 +293,59 @@ def dependencies_loops(current_dependency_metadata) -> list:
 
 
 def check_for_dependencies(dependencies_data:dict, dest_dir: str) -> bool:
-    dep_item = dependencies_data['current_dependencies']['req_files']
-    operator = dependencies_data['current_dependencies']['operator']
-    for file in dep_item:
-        searched_item = Path(dest_dir)/file['file']
-        if operator == 'And' and (file['state'] == 'Active' or file['state'] == 'Inactive'):
-            if not searched_item.exists():
-                return False
+    if not dependencies_data:
+        return True
+    dep_item = dependencies_data['file_dependencies']['req_files']
+    operator = dependencies_data['file_dependencies']['operator']
+    search = False
+    if operator == 'And':
+        search = all((Path(dest_dir)/f['file']).exists() and (f['state'] == 'Active' or f['state'] == 'Inactive') for f in dep_item)
     if operator == 'Or':
         search = any((Path(dest_dir)/f['file']).exists() and (f['state'] == 'Active' or f['state'] == 'Inactive') for f in dep_item)
-        return search
     if dependencies_data['nested_dependencies']:
         for nested in dependencies_data['nested_dependencies']:
             if not check_for_dependencies(nested, dest_dir):
                 return False
-    return True
+    return search
+    
+
+def check_for_plugin_dependencies(parsed_fomod_metadata: dict, dest_dir: str, step_index: int = 0, group_index: int = 0, plugin_index: int = 0, selected_flags = None) -> str:
+    plugin = parsed_fomod_metadata[step_index]['group'][group_index]['plugins'][plugin_index]
+    
+    # Check for file dependency
+    for cond_type in plugin['type_descriptor']['conditional_types']:
+        dependencies = cond_type['dependencies']
+        operator = dependencies.get('operator')
+        search = False
+        if operator == 'And':
+            search_file = all(
+                (Path(dest_dir)/f['req_file']).exists() 
+                and (f['state'] == 'Active' or f['state'] == 'Inactive')
+                for f in dependencies['file_dependencies']
+            )
+            search_flag = all(
+                f['flag'] in selected_flags
+                and selected_flags[f['flag']] == f['value']
+                for f in dependencies['flag_dependencies']
+            ) if selected_flags else not dependencies['flag_dependencies']
+            search = search_file and search_flag
+        elif operator == 'Or':
+            search_file = any(
+                (Path(dest_dir)/f['req_file']).exists() 
+                and (f['state'] == 'Active' or f['state'] == 'Inactive') 
+                for f in dependencies['file_dependencies']
+            )
+            search_flag = any(
+                f['flag'] in selected_flags
+                and selected_flags[f['flag']] == f['value']
+                for f in dependencies['flag_dependencies']
+            ) if selected_flags else False
+            search = search_file or search_flag
+        if search:
+            return cond_type['type']
+    
+    # Check for flag dependency
+    return plugin['type_descriptor']['default_type']
+    
+    
+    

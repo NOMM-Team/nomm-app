@@ -4,10 +4,13 @@ import re
 
 from gi.repository import Adw, Gdk, GdkPixbuf, GObject, Gtk
 
-from core.fomod_manager import (get_fomod_group_count, get_fomod_group_options,
-                                get_fomod_group_info, get_fomod_module_name,
+from core.fomod_manager import (check_for_dependencies,
+                                check_for_plugin_dependencies,
+                                generate_source_from_flags,
+                                get_fomod_group_count, get_fomod_group_info,
+                                get_fomod_group_options, get_fomod_module_name,
                                 get_fomod_step_count, get_plugin_image_path,
-                                get_plugin_type, have_plugins_images, generate_source_from_flags, check_for_dependencies)
+                                get_plugin_type, have_plugins_images)
 from gui.text_window import TextWindow
 
 
@@ -17,7 +20,7 @@ class FomodSelectionDialog(Gtk.Window):
         'response': (GObject.SignalFlags.RUN_LAST, None, (int,))
     }
     
-    def __init__(self, parent, dependencies_data, module_data, flags_data, mod_staging_dir):
+    def __init__(self, parent, dependencies_data, module_data, flags_data, mod_staging_dir, game_dest):
         
         module_name = 'lol'
         super().__init__(title=f"Installer: {module_name}", transient_for=parent, modal=False)
@@ -28,10 +31,7 @@ class FomodSelectionDialog(Gtk.Window):
         # Sources registered for every step/group
         self.global_sources = []
         self.active_flags = {}
-        
-        # Check if files exists
-        if not check_for_dependencies(dependencies_data, mod_staging_dir):
-            print('Missing dependencies')
+        self.flags_history = []
         
         # Initializing the current step for multiple-steps FOMods
         self.current_step = 0
@@ -42,10 +42,16 @@ class FomodSelectionDialog(Gtk.Window):
         # Look for the fomod path in case the archive is 
         # mod_arc/mod_name/FOMOD instead of mod_arc/FOMOD
         self.fomod_staging_dir = mod_staging_dir
-        for root, dirs, _ in os.walk(mod_staging_dir):
+        for root, dirs, _files in os.walk(mod_staging_dir):
             if 'fomod' in [d.lower() for d in dirs]:
                 self.fomod_staging_dir = root
                 break
+        
+        self.game_dest = game_dest
+        
+        # Check if files exists
+        if not check_for_dependencies(dependencies_data, self.game_dest):
+           print('Error: Missing dependencies, mod probably wont work')
         
         self.set_default_size(1100, 622)
         self.add_css_class("fomod-dialog")
@@ -161,8 +167,6 @@ class FomodSelectionDialog(Gtk.Window):
         group_count = get_fomod_group_count(module_data)
         step_count = get_fomod_step_count(module_data)
         
-        print(f"{self.current_step}/{step_count} then {self.current_group}/{group_count}")
-        
         footer_box.append(cancel_btn)
         if group_count > 1 or step_count > 1:
             self.previous_btn.set_visible(False)
@@ -226,10 +230,17 @@ class FomodSelectionDialog(Gtk.Window):
         group_name = get_fomod_group_info(self.fomod_metadata, self.current_step, self.current_group)['name']
         self.group_label.set_label(group_name)
         
+        plugin_index = 0
+        
+        is_not_usable = False
+        
         # Looping on items to fill the list box
         for name, desc, source, flags in options:
             
-            plugin_type = get_plugin_type(self.fomod_metadata, name, self.current_step, self.current_group)
+            # Change dest dir to find the game folder
+            plugin_type = check_for_plugin_dependencies(self.fomod_metadata, self.game_dest, self.current_step, self.current_group, plugin_index, self.active_flags)
+            
+            plugin_index += 1
             
             clean_desc = desc.replace('\n', ' ').replace('\r', '').strip()
             clean_desc = re.sub(' +', ' ', clean_desc)
@@ -238,6 +249,11 @@ class FomodSelectionDialog(Gtk.Window):
                 clean_desc = "This plugin is recommended by the author"
             elif plugin_type == 'Required':
                 clean_desc = "This plugin has been defined as required by the author"
+            elif plugin_type == 'NotUsable':
+                clean_desc = "Not usable due to your previous choices or missing dependencies"
+                is_not_usable = True
+            elif plugin_type == 'CouldBeUsable':
+                clean_desc = "Missing dependencies or conflict caused by previous selection"
             elif desc != '' and len(desc) >= 65:
                 clean_desc = 'Plugin description is too long to be displayed here' 
             
@@ -309,6 +325,9 @@ class FomodSelectionDialog(Gtk.Window):
             if plugin_type == 'Required':
                 row.set_sensitive(False)
                 row.radio_button.set_active(True)
+            elif plugin_type == 'NotUsable':
+                row.set_sensitive(False)
+                row.radio_button.set_active(False)
             
             # Adding row to the UI
             list_box.append(row)
@@ -341,6 +360,9 @@ class FomodSelectionDialog(Gtk.Window):
             skip_row.radio_button = default_radio
             skip_row.name_label = "Skip"
             
+            if plugin_type == 'NotUsable':
+                skip_row.radio_button.set_active(True)
+            
             self.options_map[default_radio] = {}
                 
             list_box.append(skip_row)
@@ -352,7 +374,7 @@ class FomodSelectionDialog(Gtk.Window):
                 self.install_btn.set_sensitive(False)
         
         # Initialize the selector if needed
-        if selection_type == 'SelectAtMostOne' or selection_type == 'SelectExactlyOne':
+        if (selection_type == 'SelectAtMostOne' or selection_type == 'SelectExactlyOne') and is_not_usable == False :
             first_row = list_box.get_row_at_index(0)
             if first_row:
                 list_box.select_row(first_row)
@@ -386,6 +408,7 @@ class FomodSelectionDialog(Gtk.Window):
         
         # Flags storing logic
         self.active_flags.update(self.get_selected_flags())
+        self.flags_history.append(self.get_selected_flags())
         
         # Step and group enumeration
         step_count = get_fomod_step_count(self.fomod_metadata)
@@ -426,8 +449,11 @@ class FomodSelectionDialog(Gtk.Window):
         # Remove data logic
         if self.global_sources:
             self.global_sources.pop()
-        if self.global_flags:
-            self.active_flags.pop()
+        
+        # Broken
+        step_flags = self.flags_history.pop()
+        for flag in step_flags:
+            self.active_flags.pop(flag, None)
     
         # Check if there is a next group or if we reset group to 0 and move steps instead
         step_count = get_fomod_step_count(self.fomod_metadata)
@@ -498,10 +524,8 @@ class FomodSelectionDialog(Gtk.Window):
         # Flag storing
         self.active_flags.update(self.get_selected_flags())
         
-        print(self.global_sources)
         converted_flags = generate_source_from_flags(self.flags_data, self.active_flags)
         self.global_sources.append(converted_flags)
-        print(self.global_sources)
         
         self.emit("response", Gtk.ResponseType.OK)
         self.close()
