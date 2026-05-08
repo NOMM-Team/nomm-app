@@ -43,6 +43,10 @@ class FomodSelectionDialog(Adw.Window):
         self.global_sources = []
         self.active_flags = {}
         
+        # Check if files exists
+        if not check_for_dependencies(dependencies_data, mod_staging_dir):
+            print('Missing dependencies')
+        
         # Initializing the current step for multiple-steps FOMods
         self.current_step = 0
         self.current_group = 0
