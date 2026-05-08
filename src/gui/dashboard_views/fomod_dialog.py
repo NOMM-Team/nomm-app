@@ -20,24 +20,26 @@ class FomodSelectionDialog(Gtk.Window):
         'response': (GObject.SignalFlags.RUN_LAST, None, (int,))
     }
     
-    def __init__(self, parent, dependencies_data, module_data, flags_data, mod_staging_dir, game_dest):
+    def __init__(self, parent, fomod_metadata, mod_staging_dir, game_dest):
         
-        module_name = 'lol'
+        module_name = fomod_metadata['module_name']
         super().__init__(title=f"Installer: {module_name}", transient_for=parent, modal=False)
         
-        self.fomod_metadata = module_data
-        self.flags_data = flags_data
+        self.module_data = fomod_metadata['module_data']
+        self.flags_data = fomod_metadata['flags_data']
         
         # Sources registered for every step/group
         self.global_sources = []
         self.active_flags = {}
         self.flags_history = []
+        self.required_data = fomod_metadata['required_data']
+        dependencies_data = fomod_metadata['dependencies_data']
         
         # Initializing the current step for multiple-steps FOMods
         self.current_step = 0
         self.current_group = 0
         
-        options = get_fomod_group_options(module_data)
+        options = get_fomod_group_options(self.module_data)
         
         # Look for the fomod path in case the archive is 
         # mod_arc/mod_name/FOMOD instead of mod_arc/FOMOD
@@ -164,8 +166,8 @@ class FomodSelectionDialog(Gtk.Window):
         self.right_box.add_css_class("boxed-preview")
         main_box.append(self.right_box)
         
-        group_count = get_fomod_group_count(module_data)
-        step_count = get_fomod_step_count(module_data)
+        group_count = get_fomod_group_count(self.module_data)
+        step_count = get_fomod_step_count(self.module_data)
         
         footer_box.append(cancel_btn)
         if group_count > 1 or step_count > 1:
@@ -192,7 +194,7 @@ class FomodSelectionDialog(Gtk.Window):
     
     def populate_listbox(self, list_box, options):
         
-        if not have_plugins_images(self.fomod_metadata, self.current_step, self.current_group):
+        if not have_plugins_images(self.module_data, self.current_step, self.current_group):
             self.right_box.set_visible(False)
             self.vseparator.set_visible(False)
             self.scrolled.set_hexpand(True)
@@ -201,7 +203,7 @@ class FomodSelectionDialog(Gtk.Window):
             self.vseparator.set_visible(True)
             self.scrolled.set_hexpand(False)
         
-        selection_type = get_fomod_group_info(self.fomod_metadata, self.current_step, self.current_group)['type']
+        selection_type = get_fomod_group_info(self.module_data, self.current_step, self.current_group)['type']
         
         if selection_type == 'SelectExactlyOne':
             self.fomod_desc.set_label("This mod offers multiple variants, pick one you'd like to install")
@@ -227,7 +229,7 @@ class FomodSelectionDialog(Gtk.Window):
         extracted_information = []
         
         # Displaying group info if there is a group info
-        group_name = get_fomod_group_info(self.fomod_metadata, self.current_step, self.current_group)['name']
+        group_name = get_fomod_group_info(self.module_data, self.current_step, self.current_group)['name']
         self.group_label.set_label(group_name)
         
         plugin_index = 0
@@ -238,7 +240,7 @@ class FomodSelectionDialog(Gtk.Window):
         for name, desc, source, flags in options:
             
             # Change dest dir to find the game folder
-            plugin_type = check_for_plugin_dependencies(self.fomod_metadata, self.game_dest, self.current_step, self.current_group, plugin_index, self.active_flags)
+            plugin_type = check_for_plugin_dependencies(self.module_data, self.game_dest, self.current_step, self.current_group, plugin_index, self.active_flags)
             
             plugin_index += 1
             
@@ -392,7 +394,7 @@ class FomodSelectionDialog(Gtk.Window):
                     row.radio_button.set_active(not current_state)
             self.display_preview(list_box, row)
             
-            selection_type = get_fomod_group_info(self.fomod_metadata, self.current_step, self.current_group)['type']
+            selection_type = get_fomod_group_info(self.module_data, self.current_step, self.current_group)['type']
             if selection_type == 'SelectAtLeastOne':
                 if row.radio_button.get_active():
                     self.next_btn.set_sensitive(True)
@@ -411,8 +413,8 @@ class FomodSelectionDialog(Gtk.Window):
         self.flags_history.append(self.get_selected_flags())
         
         # Step and group enumeration
-        step_count = get_fomod_step_count(self.fomod_metadata)
-        group_count = get_fomod_group_count(self.fomod_metadata, self.current_step)
+        step_count = get_fomod_step_count(self.module_data)
+        group_count = get_fomod_group_count(self.module_data, self.current_step)
         if self.current_group < (group_count - 1):
             self.current_group += 1
         elif self.current_step < (step_count - 1):
@@ -420,7 +422,7 @@ class FomodSelectionDialog(Gtk.Window):
             self.current_step += 1
             
         # Recounting groups since we might have moved to another step
-        new_group_count = get_fomod_group_count(self.fomod_metadata, self.current_step)
+        new_group_count = get_fomod_group_count(self.module_data, self.current_step)
         if (self.current_step == step_count - 1) and (self.current_group == new_group_count - 1):
             self.install_btn.set_visible(True)
             self.next_btn.set_visible(False)
@@ -428,7 +430,7 @@ class FomodSelectionDialog(Gtk.Window):
             self.next_btn.set_visible(True)
             self.install_btn.set_visible(False)
             
-        options = get_fomod_group_options(self.fomod_metadata, self.current_step, self.current_group)
+        options = get_fomod_group_options(self.module_data, self.current_step, self.current_group)
         
         self.previous_btn.set_visible(True)
         
@@ -456,15 +458,15 @@ class FomodSelectionDialog(Gtk.Window):
             self.active_flags.pop(flag, None)
     
         # Check if there is a next group or if we reset group to 0 and move steps instead
-        step_count = get_fomod_step_count(self.fomod_metadata)
-        group_count = get_fomod_group_count(self.fomod_metadata, self.current_step)
+        step_count = get_fomod_step_count(self.module_data)
+        group_count = get_fomod_group_count(self.module_data, self.current_step)
         
         ## Step and group enumeration
         if self.current_group > 0:
             self.current_group -= 1
         elif self.current_step > 0:
             self.current_step -= 1
-            self.current_group = get_fomod_group_count(self.fomod_metadata, self.current_step) - 1
+            self.current_group = get_fomod_group_count(self.module_data, self.current_step) - 1
         self.install_btn.set_visible(False)
         self.next_btn.set_visible(True)
         
@@ -473,7 +475,7 @@ class FomodSelectionDialog(Gtk.Window):
         else:
             self.previous_btn.set_visible(True)
         
-        options = get_fomod_group_options(self.fomod_metadata, self.current_step, self.current_group)
+        options = get_fomod_group_options(self.module_data, self.current_step, self.current_group)
         # checks if a whole group has no source file then skip
         if all(not option[2] and not option[3] for option in options):
             self.on_previous_clicked(self.next_btn, list_box)
@@ -524,6 +526,10 @@ class FomodSelectionDialog(Gtk.Window):
         # Flag storing
         self.active_flags.update(self.get_selected_flags())
         
+        # Prepend the required files so they are installed first anyway
+        self.global_sources.insert(0, self.required_data)
+        
+        # Append the files installed from the matching flags
         converted_flags = generate_source_from_flags(self.flags_data, self.active_flags)
         self.global_sources.append(converted_flags)
         
@@ -538,7 +544,7 @@ class FomodSelectionDialog(Gtk.Window):
         if row is not None:
             selected_plugin_name = row.name_label
             
-        if not have_plugins_images(self.fomod_metadata, self.current_step, self.current_group):
+        if not have_plugins_images(self.module_data, self.current_step, self.current_group):
             self.right_box.set_visible(False)
             self.vseparator.set_visible(False)
             self.scrolled.set_hexpand(True)
@@ -552,7 +558,7 @@ class FomodSelectionDialog(Gtk.Window):
         while child := self.right_box.get_first_child():
             self.right_box.remove(child)
 
-        image_path = get_plugin_image_path(self.fomod_metadata, selected_plugin_name, self.current_step, self.current_group)
+        image_path = get_plugin_image_path(self.module_data, selected_plugin_name, self.current_step, self.current_group)
         
         if image_path != '':
             clean_relative_path = image_path.replace('\\', '/')

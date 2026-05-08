@@ -9,6 +9,9 @@ def parse_fomod_xml(xml_data) -> dict :
     fomod_data = {}
     try:
         
+        # Fomod module name
+        module_name = xml_data.findtext('moduleName')
+        
         # Module dependency tree
         dependencies_data = {}
         module_dependencies = xml_data.find('moduleDependencies')
@@ -46,7 +49,7 @@ def parse_fomod_xml(xml_data) -> dict :
                     plugin_folder = {}
                     for index,item in enumerate(items):
                         source = item.get('source')
-                        dest = item.get('destination')
+                        dest = item.get('destination') or ''
                         dest = dest.replace('\\', '/')
                         plugin_folder = {
                             'source': source.replace('\\', '/'),
@@ -141,10 +144,32 @@ def parse_fomod_xml(xml_data) -> dict :
                     'files': files
                 })
         
-        # dump_fomod_data(dependencies_data)
-        # dump_fomod_data(module_data)
-        # dump_fomod_data(flags_data)
-        return dependencies_data, module_data, flags_data
+        # Required files
+        required_files = xml_data.find('requiredInstallFiles')
+        required_data = []
+        if required_files :
+            items = required_files.findall('.//folder') + required_files.findall('.//file')
+            plugin_folder = {}
+            for index,item in enumerate(items):
+                source = item.get('source')
+                dest = item.get('destination') or ''
+                dest = dest.replace('\\', '/')
+                plugin_folder = {
+                    'source': source.replace('\\', '/'),
+                    'destination': dest.lstrip('\\/')
+                }
+                required_data.append(plugin_folder)
+        
+        # Put it in a whole dict as it was a lot of different categories
+        parsed_fomod = {
+            'module_name': module_name,
+            'dependencies_data': dependencies_data,
+            'module_data': module_data,
+            'flags_data': flags_data,
+            'required_data': required_data
+        }
+        
+        return parsed_fomod
     except Exception as e:
         print(f"Failed to parse FOMOD XML: {e}")
         return {}
@@ -346,6 +371,5 @@ def check_for_plugin_dependencies(parsed_fomod_metadata: dict, dest_dir: str, st
     
     # Check for flag dependency
     return plugin['type_descriptor']['default_type']
-    
     
     
