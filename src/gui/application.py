@@ -211,7 +211,8 @@ class Nomm(Adw.Application):
     def steam_user_id_handler(self):
         steam_userdata_path = self.steam_base + "userdata/"
         steam_user_ids = [f for f in os.listdir(steam_userdata_path) if os.path.isdir(os.path.join(steam_userdata_path, f))]
-        steam_user_ids.remove("0")
+        if "0" in steam_user_ids:
+            steam_user_ids.remove("0")
         print(f"Steam user IDs detected: {steam_user_ids}")
         if len(steam_user_ids) > 1:
             self.show_steam_user_id_selection_screen(steam_user_ids)
