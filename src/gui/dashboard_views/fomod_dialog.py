@@ -245,7 +245,7 @@ class FomodSelectionDialog(Adw.Window):
             self.group_label.set_markup(_("<i>This mod offers multiple variants but you must pick all of them</i>"))
             list_box.set_selection_mode(Gtk.SelectionMode.MULTIPLE)
         elif selection_type == 'SelectAll':
-            self.fomod_desc.set_label("This mod offers multiple variants but you must pick all of them")
+            self.group_label.set_markup(_("<i>This mod offers multiple variants but you must pick all of them</i>"))
             list_box.set_selection_mode(Gtk.SelectionMode.MULTIPLE)
         
         first_radio = None
