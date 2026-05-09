@@ -1,8 +1,10 @@
 import os
 import yaml
+import vdf
 
 from typing import List, Dict, Any
 from gi.repository import GLib, Gio
+
 
 def get_contrast_color(hex_code: str) -> str:
     hex_code = hex_code.lstrip('#')
@@ -87,3 +89,17 @@ def translate_fuse_path(folder_info) -> str:
         except GLib.Error:
             print("Can not get real path. If you see this message you will need to manually give NOMM host filesystem permissions.")
     return folder_path
+
+def get_username_from_steam_id(steam_id: str, steam_base_path) -> str:
+    localconfig_path = steam_base_path + "userdata/" + steam_id + "/config/localconfig.vdf"
+    if not os.path.exists(localconfig_path):
+        print(f"No file found at : {localconfig_path}")
+        return None
+    with open(localconfig_path, 'r') as vdf_file:
+        localconfig_data = vdf.load(vdf_file)
+    try:
+        steam_username = localconfig_data["UserLocalConfigStore"]["friends"][steam_id]["name"]
+    except ValueError:
+        print("Could not find the Steam username")
+        return None
+    return steam_username

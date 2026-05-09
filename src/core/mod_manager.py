@@ -4,11 +4,12 @@ import yaml
 import threading
 import subprocess
 import zipfile
+import vdf
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional
 from datetime import datetime
-from core.tools import load_yaml, write_yaml
+from core.tools import load_yaml, write_yaml, load_user_config
 
 meta_lock = threading.Lock()
 
@@ -212,7 +213,6 @@ def find_text_file(mod_files: list) -> str:
             return file_path
     return ""
 
-# #dashboard.py (l:883)
 def is_utility_installed(local_zip_path: Path, target_dir: Path) -> bool:
     if not local_zip_path.exists():
         return False
@@ -222,8 +222,7 @@ def is_utility_installed(local_zip_path: Path, target_dir: Path) -> bool:
     except Exception: 
         return False
 
- # dashboard.py/execute_utility_install
-def deploy_essential_utility(util_config: dict, downloads_path: str, game_path: str):
+def deploy_essential_utility(util_config: dict, downloads_path: str, game_path: str, steam_base: str, steam_id: str):
     source_url = util_config.get("source")
     filename = source_url.split("/")[-1]
     zip_path = Path(downloads_path) / "utilities" / filename
@@ -236,6 +235,7 @@ def deploy_essential_utility(util_config: dict, downloads_path: str, game_path: 
     whitelist = util_config.get("whitelist", [])
     blacklist = util_config.get("blacklist", [])
     
+    print("Extracting utility contents")
     # TODO:Replace function with extract_archive from archive_manager
     with zipfile.ZipFile(zip_path, 'r') as z:
         if not whitelist and not blacklist:
@@ -249,11 +249,31 @@ def deploy_essential_utility(util_config: dict, downloads_path: str, game_path: 
                     continue
                 z.extract(file_info, target_dir)
 
-    cmd = util_config.get("enable_command")
-    if cmd:
-        subprocess.run(cmd, shell=True, cwd=game_root)
+    command = util_config.get("enable_command")
+    if command:
+        print(f"Running utility enable command: {command}")
+        subprocess.run(command, shell=True, cwd=game_root)
+    
+    steam_launch_options = util_config.get("steam_launch_options")
+    if steam_launch_options:
+        print(f"Adding Steam launch options: {steam_launch_options}")
+        localconfig_path = steam_base + "userdata/" + load_user_config()["steam_user_id"] + "/config/localconfig.vdf"
+        print(f"...to localconfig file located at: {localconfig_path}")
+        with open(localconfig_path, 'r') as vdf_file:
+            localconfig = vdf.load(vdf_file)
+        game_data = localconfig["UserLocalConfigStore"]["Software"]["Valve"]["Steam"]["apps"][str(steam_id)]
+        if "LaunchOptions" not in game_data:
+            localconfig["UserLocalConfigStore"]["Software"]["Valve"]["Steam"]["apps"][str(steam_id)]["LaunchOptions"] = steam_launch_options
+        else:
+            localconfig["UserLocalConfigStore"]["Software"]["Valve"]["Steam"]["apps"][str(steam_id)]["LaunchOptions"] = steam_launch_option_merger(game_data["LaunchOptions"], steam_launch_options)
+        with open(localconfig_path, 'w') as vdf_file:
+            vdf.dump(localconfig, vdf_file)
 
-# 
+def steam_launch_option_merger(current_launch_options: str, new_option: str) -> str:
+    # TODO: add some proprer logic here - notably to check if the new option being added doesn't already exist.
+    merged_launch_option = current_launch_options + " " + new_option
+    return merged_launch_option
+
 def toggle_mod_state(mod_name: str, mod_files: list, state: bool, staging_dir: str, deployment_targets: list) -> bool:
     staging_meta_path = os.path.join(staging_dir, ".staging.nomm.yaml")
     dest_dir = deployment_targets[0]["path"]

@@ -104,6 +104,7 @@ essential-utilities: # this lets you define things such as mod loaders or essent
     source: "https://github.com/talon-d/darktideML-4linux/releases/download/1.5/darktideML-4linux1-5.zip" #the actual thing we'll need to download
     utility_path: "" # where the utility needs to be extracted to
     enable_command: "sh handle_darktide_mods.sh --enable" # any command that needs to be run (from the root of the game folder) to enable the mod loader
+    steam_launch_options: "babla" # any launch option that needs to be added to the game on Steam
 ```
 
 ## "Roadmap"
