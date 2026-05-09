@@ -14,7 +14,7 @@ from core.fomod_manager import (check_for_dependencies,
 from gui.text_window import TextWindow
 
 
-class FomodSelectionDialog(Gtk.Window):
+class FomodSelectionDialog(Adw.Window):
     
     __gsignals__ = {
         'response': (GObject.SignalFlags.RUN_LAST, None, (int,))
@@ -23,7 +23,7 @@ class FomodSelectionDialog(Gtk.Window):
     def __init__(self, parent, fomod_metadata, mod_staging_dir, game_dest):
         
         module_name = fomod_metadata['module_name']
-        super().__init__(title=f"Installer: {module_name}", transient_for=parent, modal=False)
+        super().__init__(transient_for=parent, modal=True)
         
         self.module_data = fomod_metadata['module_data']
         self.flags_data = fomod_metadata['flags_data']
@@ -61,8 +61,24 @@ class FomodSelectionDialog(Gtk.Window):
         self.flags_map = {}
         
         # Initializing every container
+        root_container = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        self.set_content(root_container)
+
+        # Window header bar
+        header_bar = Adw.HeaderBar()
+        self.title_widget = Adw.WindowTitle(
+            title=_("NOMM FOMOD Installer"),
+        )
+        header_bar.set_title_widget(self.title_widget)
+        root_container.append(header_bar)
+
         content_area = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        root_container.append(content_area)
+
+        # Extra in-window header
         self.header_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+
+        # Others
         main_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
         footer_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
         footer_box.set_halign(Gtk.Align.FILL)
@@ -70,8 +86,6 @@ class FomodSelectionDialog(Gtk.Window):
         spacer.set_hexpand(True)
         footer_box.append(spacer)
         footer_box.add_css_class('footer-box')
-        
-        self.set_child(content_area)
         
         # Instructions
         self.fomod_desc = Gtk.Label(label='', xalign=0)
@@ -97,12 +111,6 @@ class FomodSelectionDialog(Gtk.Window):
         footer_box.set_margin_start(0)
         footer_box.set_margin_end(0)
         footer_box.set_spacing(5)
-        
-        # Window title
-        fomod_label = Gtk.Label(label='FOMOD INSTALLER', xalign=0)
-        fomod_label.add_css_class("title-2")
-        fomod_label.add_css_class("dim-label")
-        self.header_box.append(fomod_label)
         
         # Mod name
         header = Gtk.Label(label=module_name, xalign=0)
@@ -206,19 +214,19 @@ class FomodSelectionDialog(Gtk.Window):
         selection_type = get_fomod_group_info(self.module_data, self.current_step, self.current_group)['type']
         
         if selection_type == 'SelectExactlyOne':
-            self.fomod_desc.set_label("This mod offers multiple variants, pick one you'd like to install")
+            self.group_label.set_markup(_("<i>This mod offers multiple variants, pick one you'd like to install</i>"))
             list_box.set_selection_mode(Gtk.SelectionMode.SINGLE)
         elif selection_type == 'SelectAtLeastOne':
-            self.fomod_desc.set_label("This mod offers multiple variants, pick one or more you'd like to install")
+            self.group_label.set_markup(_("<i>This mod offers multiple variants, pick one or more you'd like to install</i>"))
             list_box.set_selection_mode(Gtk.SelectionMode.MULTIPLE)
         elif selection_type == 'SelectAtMostOne':
-            self.fomod_desc.set_label("This mod offers multiple variants, pick at most one you'd like to install")
+            self.group_label.set_markup(_("<i>This mod offers multiple variants, pick at most one you'd like to install</i>"))
             list_box.set_selection_mode(Gtk.SelectionMode.SINGLE)
         elif selection_type == 'SelectAny':
-            self.fomod_desc.set_label("This mod offers multiple variants, pick any plugin you'd like to install")
+            self.group_label.set_markup(_("<i>This mod offers multiple variants, pick any plugin you'd like to install</i>"))
             list_box.set_selection_mode(Gtk.SelectionMode.MULTIPLE)
         elif selection_type == 'SelectAll':
-            self.fomod_desc.set_label("This mod offers multiple variants but you must pick all of them")
+            self.group_label.set_markup(_("<i>This mod offers multiple variants but you must pick all of them</i>"))
             list_box.set_selection_mode(Gtk.SelectionMode.MULTIPLE)
         
         first_radio = None
@@ -231,7 +239,7 @@ class FomodSelectionDialog(Gtk.Window):
         
         # Displaying group info if there is a group info
         group_name = get_fomod_group_info(self.module_data, self.current_step, self.current_group)['name']
-        self.group_label.set_label(group_name)
+        self.fomod_desc.set_label(group_name)
         
         plugin_index = 0
         
