@@ -1,9 +1,12 @@
 import os
 import shutil
 import subprocess
+import xml.etree.ElementTree as ET
 import zipfile
 from pathlib import Path
 from urllib.parse import unquote
+
+from core.fomod_manager import parse_fomod_xml
 
 import rarfile
 
@@ -92,30 +95,26 @@ def process_dropped_files(uri_list: list[str], destination_path: str) -> list[st
 
     return copied_files
 
-def prepare_mod_installation(archive_full_path, mod_staging_dir, filename):
+def prepare_mod_installation(parent, archive_full_path, mod_staging_dir, filename):
     if extract_archive(archive_full_path, mod_staging_dir):
         files = get_all_relative_files(mod_staging_dir)
+        
+        if not files:
+            parent.show_message(_("Error"), _("No files were found in your mod archive."))
+            return
+        
         fomod_xml_path = next((f for f in files if f.lower().endswith("fomod/moduleconfig.xml")), None)
-        fomod_data = None    
+        fomod_metadata = None
+        
         if fomod_xml_path:
             xml_path = os.path.join(mod_staging_dir, fomod_xml_path)
-            with open(xml_path, 'rb') as f:
-                xml_data = f.read()
-                try:
-                    module_name, options = parse_fomod_xml(xml_data)
-                    fomod_data = {
-                            "module_name": module_name,
-                            "options": options
-                    } if options else None
-                    
-                except Exception as e:
-                    print(f'Error while parsing FOMOD: {e}')
+            tree = ET.parse(xml_path)
+            fomod_metadata = parse_fomod_xml(tree.getroot())
+        
         data = {
-            "files": files,
-            "mod_staging_dir": mod_staging_dir,
-            "filename": filename,
-            "fomod": fomod_data
+            'files': files,
+            'fomod': fomod_metadata
         }
         return data
     return None
-            
+
