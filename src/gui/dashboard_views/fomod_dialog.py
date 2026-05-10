@@ -12,6 +12,7 @@ from core.fomod_manager import (check_for_dependencies,
                                 get_plugin_image_path, get_plugin_type,
                                 have_plugins_images, is_step_visible)
 from gui.text_window import TextWindow
+from core.tools import retrieve_casesensitive_paths
 
 
 class FomodSelectionDialog(Adw.Window):
@@ -585,13 +586,22 @@ class FomodSelectionDialog(Adw.Window):
         if image_path != '':
             clean_relative_path = image_path.replace('\\', '/')
             full_image_path = os.path.join(self.fomod_staging_dir, clean_relative_path)
-            pixbuf = GdkPixbuf.Pixbuf.new_from_file_at_scale(
-                full_image_path, 
-                width=800,
-                height=800,
-                preserve_aspect_ratio=True
-            )
-            
+            try:
+                pixbuf = GdkPixbuf.Pixbuf.new_from_file_at_scale(
+                    full_image_path, 
+                    width=800,
+                    height=800,
+                    preserve_aspect_ratio=True
+                )
+            except:
+                full_image_path = retrieve_casesensitive_paths(full_image_path)
+                pixbuf = GdkPixbuf.Pixbuf.new_from_file_at_scale(
+                    full_image_path, 
+                    width=800,
+                    height=800,
+                    preserve_aspect_ratio=True
+                )
+
             texture = Gdk.Texture.new_for_pixbuf(pixbuf)
             picture = Gtk.Picture.new_for_paintable(texture)
             picture.set_overflow(Gtk.Overflow.HIDDEN)
