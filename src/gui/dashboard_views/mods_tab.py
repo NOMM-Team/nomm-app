@@ -163,6 +163,8 @@ class ModsTab(Gtk.Box):
         if "description" in mod_info and mod_info["description"]:
             with open(mod_info["description"]) as f:
                 description = f.read()
+        else:
+            description = "Description not found in metadata"
         self.preview_description.set_markup(description)
 
 
