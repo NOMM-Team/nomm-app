@@ -1,0 +1,25 @@
+.utility-pbar{
+    opacity: 1;
+    margin: 0;
+    padding: 0;
+    min-width: 0;
+    background-color: transparent;
+}
+
+.utility-pbar > trough {
+    min-width: 0;
+    min-height: 36px;
+    border-radius: 10px;
+    background-color: transparent;
+}
+
+.utility-pbar > trough > progress {
+    min-width: 0;
+    min-height: 36px;
+    border-radius: 0px;
+    background-color: var(--accent-bg-color);
+}
+
+.btn-download-before {
+    background-color: shade(@card_bg_color, 0.8);
+}

@@ -1,13 +1,13 @@
 import os
-import yaml
-import gi
-import threading
 import random
+import threading
+
+import gi
 import requests
+import yaml
 
 gi.require_version('Notify', '0.7')
-from gi.repository import GdkPixbuf, GLib, Notify, Gtk
-
+from gi.repository import GdkPixbuf, GLib, Gtk, Notify
 
 # This function handle notifications when downloading mods from Nexusmods
 def send_download_notification(status, file_name="", game_name=None, icon_path=None):
@@ -27,7 +27,7 @@ def send_download_notification(status, file_name="", game_name=None, icon_path=N
 
     notification = Notify.Notification.new(title, full_body)
 
-    # Handle the Icon
+    # Icon
     if icon_path and os.path.exists(icon_path):
         try:
             pixbuf = GdkPixbuf.Pixbuf.new_from_file_at_scale(icon_path, 64, 64, True)
@@ -44,7 +44,8 @@ def send_download_notification(status, file_name="", game_name=None, icon_path=N
         print(f"libnotify failed: {e}")
 
 # Check import before uncommenting the method
-def download_with_progress(url, dest_folder):
+def download_popup(url, dest_folder, downloader):
+
     filename = url.split('/')[-1].split('?')[0] or "download"
     dest_path = os.path.join(dest_folder, filename)
     os.makedirs(dest_folder, exist_ok=True)
@@ -75,7 +76,6 @@ def download_with_progress(url, dest_folder):
         lbl_name = Gtk.Label(label=f"Downloading File: <b>{filename}</b>", use_markup=True, xalign=0)
         progress_bar = Gtk.ProgressBar(show_text=True)
         
-        # --- ADD THIS BLOCK ---
         stack = Gtk.Stack()
         stack.set_transition_type(Gtk.StackTransitionType.SLIDE_LEFT)
         stack.set_transition_duration(500) 
@@ -86,19 +86,16 @@ def download_with_progress(url, dest_folder):
         tip_label_b = Gtk.Label(label="", wrap=True, use_markup=True)
         
         for lbl in [tip_label_a, tip_label_b]:
-            lbl.add_css_class("caption") # Assuming you have this in your CSS
+            lbl.add_css_class("caption")
             lbl.set_justify(Gtk.Justification.CENTER)
 
         stack.add_named(tip_label_a, "a")
         stack.add_named(tip_label_b, "b")
-        # ----------------------
 
         box.append(lbl_name)
-        # box.append(lbl_dest) # Keep if you want it
         box.append(progress_bar)
-        box.append(stack) # Add the stack here
+        box.append(stack)
 
-        # --- ADD THE ROTATION LOGIC ---
         def rotate_tips():
             if status["finished"]:
                 return False
@@ -111,41 +108,37 @@ def download_with_progress(url, dest_folder):
             stack.set_visible_child_name(next_name)
             return True
 
-        GLib.timeout_add(6000, rotate_tips) # Rotate every 6 seconds
+        GLib.timeout_add(6000, rotate_tips)
         
         win.present()
         return win, progress_bar
 
     # Initialize UI on main thread
     window, pbar = create_ui()
+
+    def on_download_progress(downloader_inst, download_data):
+        pbar.set_fraction(download_data['progress'])
+
+    def on_download_done(downloader_inst, success):
+        print('finished')
+        status['finished'] = True
+        status['success'] = success
+        window.destroy()
+        return False
+            
+    def on_download_fail(downloader_inst, e):
+        status['finished'] = True
+        status['success'] = False
+        print(f'Error downloading the mod: {e}')
+        window.destroy()
+        return False
     
-    def run_download():
-        try:
-            response = requests.get(url, stream=True, timeout=15)
-            total_size = int(response.headers.get('content-length', 0))
+    downloader.connect('progress-changed', on_download_progress)
+    downloader.connect('download-complete', on_download_done)
+    downloader.connect('download-error', on_download_fail)
 
-            downloaded = 0
-            with open(dest_path, 'wb') as f:
-                for data in response.iter_content(chunk_size=4096):
-                    f.write(data)
-                    downloaded += len(data)
-                    if total_size > 0:
-                        percent = downloaded / total_size
-                        # Update UI Progress
-                        GLib.idle_add(pbar.set_fraction, percent)
-
-            status["success"] = True
-        except Exception as e:
-            print(f"Download error: {e}")
-            status["success"] = False
-        finally:
-            status["finished"] = True
-            GLib.idle_add(window.destroy) # Close window when done
-            event.set() # Wake up the calling thread
-
-    # Start download thread
-    thread = threading.Thread(target=run_download)
-    thread.start()
+    event.set()
+    threading.Thread(target=downloader.download_mod, args=(url, dest_folder), daemon=True).start()
 
     # We use a nested main loop to make this method "block" 
     # until the download finishes without freezing the UI.

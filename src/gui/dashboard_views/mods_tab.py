@@ -25,6 +25,8 @@ class ModsTab(Gtk.Box):
         
         self.dashboard = dashboard
         
+        self.sc = Gtk.ScrolledWindow(vexpand=True)
+        
         # Action bar top right
         action_bar = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
         self.mod_search_entry = Gtk.SearchEntry(placeholder_text=_("Search mods..."))
@@ -58,11 +60,13 @@ class ModsTab(Gtk.Box):
         
         self.populate_list()
         
-        sc = Gtk.ScrolledWindow(vexpand=True)
-        sc.set_child(self.mods_list_box)
-        self.append(sc)
+        self.sc = Gtk.ScrolledWindow(vexpand=True)
+        self.sc.set_child(self.mods_list_box)
+        self.append(self.sc)
 
     def populate_list(self):
+        valignment = self.sc.get_valign()
+        
         while child := self.mods_list_box.get_first_child():
             self.mods_list_box.remove(child)
 
@@ -272,6 +276,8 @@ class ModsTab(Gtk.Box):
             row.add_suffix(u_stack)
 
             self.mods_list_box.append(row)
+            
+        self.sc.set_valign(valignment)
 
     def find_text_file(self, mod_files):
         for file_path in mod_files:
@@ -288,6 +294,9 @@ class ModsTab(Gtk.Box):
         return search_text in getattr(row, 'mod_name', '')
 
     def on_mod_toggled(self, switch, state, mod_files: list, mod: str):
+        
+        
+        
         switch.set_sensitive(False)
         self.dashboard.currently_toggling.add(mod)
         def worker():

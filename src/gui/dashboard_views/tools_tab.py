@@ -7,18 +7,18 @@ from pathlib import Path
 from gi.repository import Adw, GLib, Gtk
 
 from core.mod_manager import deploy_essential_utility, is_utility_installed
-from core.downloader import download_file_async
 
 _ = gettext.gettext
 
 class ToolsTab(Gtk.Box):
-    def __init__(self, dashboard):
+    def __init__(self, dashboard, downloader):
         super().__init__(orientation=Gtk.Orientation.VERTICAL, spacing=10)
         self.set_margin_start(100)
         self.set_margin_end(100)
         self.set_margin_top(40)
         
         self.dashboard = dashboard
+        self.downloader = downloader
         
         utilities_cfg = self.dashboard.game_config.get("essential-utilities", {})
         
@@ -70,15 +70,35 @@ class ToolsTab(Gtk.Box):
 
                 stack = Gtk.Stack(transition_type=Gtk.StackTransitionType.CROSSFADE)
                 
+                dl_pbar = Gtk.ProgressBar()
+                dl_pbar.set_can_target(False)
+                dl_pbar.add_css_class('utility-pbar')
+                dl_pbar.set_vexpand(True)
+                dl_pbar.set_halign(Gtk.Align.FILL)
+                dl_pbar.set_valign(Gtk.Align.FILL)
+                dl_pbar.set_size_request(-1, -1)
+
                 dl_btn = Gtk.Button(label=_("Download"), css_classes=["suggested-action"], valign=Gtk.Align.CENTER)
-                dl_btn.connect("clicked", self.on_utility_download_clicked, util, stack)
+                dl_btn.connect("clicked", self.on_utility_download_clicked, util, stack, dl_pbar)
+                dl_btn.set_valign(Gtk.Align.FILL)
+                
+                # Overlay to display download progress on top of download button
+                overlay = Gtk.Overlay()
+                overlay.set_halign(Gtk.Align.CENTER) 
+                overlay.set_valign(Gtk.Align.CENTER)
+                overlay.set_child(dl_btn)
+                overlay.add_overlay(dl_pbar)
                 
                 inst_btn = Gtk.Button(label=_("Reinstall") if is_installed else "Install", valign=Gtk.Align.CENTER)
                 if not is_installed: 
                     inst_btn.add_css_class("suggested-action")
                 inst_btn.connect("clicked", self.on_utility_install_clicked, util)
+
+                height_group = Gtk.SizeGroup(mode=Gtk.SizeGroupMode.BOTH)
+                height_group.add_widget(dl_btn)
+                height_group.add_widget(dl_pbar)
                 
-                stack.add_named(dl_btn, "download")
+                stack.add_named(overlay, "download")
                 stack.add_named(inst_btn, "install")
                 stack.set_visible_child_name("install" if local_zip_path.exists() else "download")
                 
@@ -100,19 +120,32 @@ class ToolsTab(Gtk.Box):
             btn_container.set_center_widget(load_order_btn)
             self.append(btn_container)
 
-    def on_utility_download_clicked(self, btn, util, stack):
+    def on_utility_download_clicked(self, btn, util, stack, pbar):
         source_url = util.get("source")
         if not source_url: 
             return
 
+        btn.set_sensitive(False)
+        btn.add_css_class('btn-download-before')
+
         util_dir = os.path.join(self.dashboard.downloads_path, "utilities")
-
-        def on_success():
+        
+        def on_download_progress(downloader_inst, download_data):
+            pbar.set_fraction(download_data['progress'])
+        
+        def on_download_finished(downloader_inst, success):
             stack.set_visible_child_name("install")
-        def on_error(error_msg):
-            self.dashboard.show_message(_("Download Failed"), error_msg)
+            btn.set_sensitive(True)
+        
+        def on_download_error(downloader_inst, e):
+            self.dashboard.show_message(_("Download Failed"), e)
+            btn.set_sensitive(True)
 
-        download_file_async(source_url, util_dir, on_success, on_error)
+        self.downloader.connect('progress-changed', on_download_progress)
+        self.downloader.connect('download-complete', on_download_finished)
+        self.downloader.connect('download-error', on_download_error)
+            
+        threading.Thread(target=self.downloader.download_mod, args=(source_url, util_dir), daemon=True).start()
 
     def on_utility_install_clicked(self, btn, util: dict):
         # Base warning message

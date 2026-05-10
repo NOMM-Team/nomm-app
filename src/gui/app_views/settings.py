@@ -5,7 +5,7 @@ import threading
 import requests
 from gi.repository import Adw, Gio, GLib, Gtk
 
-from core.config import update_user_config
+from core.user_config import update_user_config
 from core.tools import load_yaml, translate_fuse_path
 
 _ = gettext.gettext

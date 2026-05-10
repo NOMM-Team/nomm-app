@@ -9,9 +9,9 @@ gi.require_version('Notify', '0.7')
 
 from gi.repository import Adw, Gdk, GdkPixbuf, GLib, Gtk, Pango, Gio
 
-from core.config import update_user_config
+from core.user_config import update_user_config, load_user_config, write_user_config
 from core.tools import load_yaml, write_yaml, translate_fuse_path, get_username_from_steam_id
-from core.scanner import get_steam_base_dir, scan_all_games
+from core.gamestore_scanner import get_steam_base_dir, scan_all_games
 from gui.app_views.library_view import LibraryView
 from gui.dashboard import GameDashboard
 
@@ -22,6 +22,9 @@ translation_system.install(names=['ngettext'])
 
 class Nomm(Adw.Application):
     def __init__(self, **kwargs):
+        
+        self.downloader = kwargs.pop('downloader', None)
+        
         super().__init__(application_id=APP_NAME, **kwargs)
         self.matches = []
         self.user_defined_paths = []
@@ -183,7 +186,6 @@ class Nomm(Adw.Application):
         self.temp_config["staging_path"] = selected_folder_path
         self.user_defined_paths.append(selected_folder_path)
         self.show_nexus_api_key_screen()
-
 
     def show_nexus_api_key_screen(self):
         self.remove_stack_child("api_key")
@@ -463,7 +465,8 @@ class Nomm(Adw.Application):
             app_id=game_info.get('app_id'),
             user_config_path=self.user_config_path,
             game_config_path=game_info["game_config_path"],
-            assets_path=self.assets_path
+            assets_path=self.assets_path,
+            downloader = self.downloader
         )
         update_user_config("last_selected_game", game_info["name"])
         self.remove_stack_child("dashboard")

@@ -5,8 +5,7 @@ from pathlib import Path
 import xml.etree.ElementTree as ET
 
 # Parsing the fomod from the XML
-def parse_fomod_xml(xml_data) -> dict :
-    fomod_data = {}
+def parse_fomod_xml(xml_data):
     try:
         
         # Fomod module name
