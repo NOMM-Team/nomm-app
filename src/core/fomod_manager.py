@@ -183,7 +183,6 @@ def parse_fomod_xml(xml_data) -> dict :
             'required_data': required_data
         }
         
-        dump_fomod_data(module_data)
         return parsed_fomod
     except Exception as e:
         print(f"Failed to parse FOMOD XML: {e}")
