@@ -473,7 +473,7 @@ class ModsTab(Gtk.Box):
         value = GObject.Value(GObject.TYPE_STRING, mod_name)
         return Gdk.ContentProvider.new_for_value(value)
     
-    def on_row_drop(self, target, _value, _x, _y, mod_name):
+    def on_row_drop(self, target, value, _x, _y, mod_name):
         if value == mod_name:
             return False
         
