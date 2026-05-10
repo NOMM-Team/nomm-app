@@ -106,17 +106,15 @@ def get_username_from_steam_id(steam_id: str, steam_base_path) -> str:
 
 def retrieve_casesensitive_paths(path:str):
     parts = path.split('/')
-    part_list = []
-    for part in parts:
+    part_list = ['/']
+    for part in parts[1:]:
         try:
-            if not part:
-                part_list.append('/')
-                continue
             new_path = os.path.join(*part_list) if part_list else '/'
-            found_item = next((f for f in os.listdir(new_path) if f.lower() == part.lower()), None)
-            if found_item:
-                part_list.append(found_item)
         except Exception as e:
-            return None
+            return None    
+        found_item = next((f for f in os.listdir(new_path) if f.lower() == part.lower()), None)
+        if found_item:
+            part_list.append(found_item)
     path = os.path.join(*part_list)
+    print(path)
     return path
