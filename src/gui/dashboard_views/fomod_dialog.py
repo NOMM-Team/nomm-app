@@ -316,8 +316,9 @@ class FomodSelectionDialog(Adw.Window):
             
             motion = Gtk.EventControllerMotion()
             row.add_controller(motion)
-            motion.connect('enter', lambda *_, btn=desc_btn: btn.set_visible(True))
-            motion.connect('leave', lambda *_, btn=desc_btn: btn.set_visible(False))
+            if len(clean_desc) > 100:
+                motion.connect('enter', lambda *_, btn=desc_btn: btn.set_visible(True))
+                motion.connect('leave', lambda *_, btn=desc_btn: btn.set_visible(False))
             
             row.radio_button = radio
             row.name_label = name
