@@ -110,18 +110,16 @@ def parse_fomod_xml(xml_data) -> dict :
             visible_data = None
             visible_tag = step.find('visible')
             if visible_tag is not None:
-                deps = visible_tag.find('dependencies')
-                if deps is not None:
-                    flags = []
-                    for flag_dep in deps.findall('flagDependency'):
-                        flags.append({
-                            'flag': flag_dep.get('flag'),
-                            'value': flag_dep.get('value')
-                        })
-                    visible_data = {
-                        'operator': deps.get('operator') or 'And',
-                        'flags': flags
-                    }
+                flags = []
+                for flag_dep in visible_tag.findall('flagDependency'):
+                    flags.append({
+                        'flag': flag_dep.get('flag'),
+                        'value': flag_dep.get('value')
+                    })
+                visible_data = {
+                    'operator': visible_tag.get('operator') or 'And',
+                    'flags': flags
+                }
             step_data = {
                 'step_name' : step_name,
                 'group' : group_list,
@@ -185,6 +183,7 @@ def parse_fomod_xml(xml_data) -> dict :
             'required_data': required_data
         }
         
+        dump_fomod_data(module_data)
         return parsed_fomod
     except Exception as e:
         print(f"Failed to parse FOMOD XML: {e}")
