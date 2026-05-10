@@ -41,18 +41,17 @@ def parse_fomod_xml(xml_data) -> dict :
                     plugin_desc = plugin.findtext('description', default='No description provided')
                     if plugin.find('image') != None:
                         image_tag = plugin.find('image')
-                        plugin_image_path = image_tag.get('path')
+                        plugin_image_path = image_tag.get('path').replace('\\', '/')
                     else:
                         plugin_image_path = ''
                     items = plugin.findall('.//folder') + plugin.findall('.//file')
                     folders_data = []
                     plugin_folder = {}
                     for index,item in enumerate(items):
-                        source = item.get('source') or ''
-                        dest = item.get('destination') or ''
-                        dest = dest.replace('\\', '/')
+                        source = item.get('source').replace('\\', '/') or ''
+                        dest = item.get('destination').replace('\\', '/') or ''
                         plugin_folder = {
-                            'source': source.replace('\\', '/'),
+                            'source': source.lstrip('\\/'),
                             'destination': dest.lstrip('\\/')
                         }
                         folders_data.append(plugin_folder)
@@ -147,7 +146,7 @@ def parse_fomod_xml(xml_data) -> dict :
                     source = item.get('source', '').replace('\\', '/')
                     dest = item.get('destination', '').replace('\\', '/')
                     files.append({
-                        'source': source,
+                        'source': source.lstrip('\\/'),
                         'destination': dest.lstrip('\\/')
                     })
                 flags_data.append({
@@ -165,11 +164,10 @@ def parse_fomod_xml(xml_data) -> dict :
             items = required_files.findall('.//folder') + required_files.findall('.//file')
             plugin_folder = {}
             for index,item in enumerate(items):
-                source = item.get('source', '')
-                dest = item.get('destination', '')
-                dest = dest.replace('\\', '/')
+                source = item.get('source', '').replace('\\', '/')
+                dest = item.get('destination', '').replace('\\', '/')
                 plugin_folder = {
-                    'source': source.replace('\\', '/'),
+                    'source': source.lstrip('\\/'),
                     'destination': dest.lstrip('\\/')
                 }
                 required_data.append(plugin_folder)
@@ -253,13 +251,13 @@ def apply_fomod_selection(mod_staging_dir: str, source_folder_name: str, dest_pa
             # Calculates relative root and replaces \\ for compatibility
             rel_root = os.path.relpath(root, mod_staging_dir).replace('\\', '/')
             #If we find the folder, then we break
-            if rel_root == normalized_source or rel_root.endswith('/' + normalized_source):
+            if rel_root.lower() == normalized_source.lower() or rel_root.lower().endswith('/' + normalized_source.lower()):
                 source_path = root
                 break
             # To comment
             for f in files:
                 rel_file = os.path.relpath(os.path.join(root, f), mod_staging_dir).replace('\\', '/')
-                if rel_file == normalized_source or rel_file.endswith('/' + normalized_source):
+                if rel_file.lower() == normalized_source.lower() or rel_file.lower().endswith('/' + normalized_source.lower()):
                     source_path = os.path.join(root, f)
                     break
             if source_path:
