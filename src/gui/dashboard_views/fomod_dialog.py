@@ -268,10 +268,6 @@ class FomodSelectionDialog(Adw.Window):
             elif desc != '' and len(desc) >= 250:
                 clean_desc = 'Plugin description is too long to be displayed here' 
             
-            if source == [] and not flags:
-                extracted_information.append(clean_desc)
-                continue
-            
             radio = Gtk.CheckButton(group=first_radio)
             if selection_type == 'SelectExactlyOne' or selection_type == 'SelectAtMostOne':    
                 if not first_radio:
