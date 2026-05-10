@@ -265,7 +265,7 @@ class FomodSelectionDialog(Adw.Window):
                 is_not_usable = True
             elif plugin_type == 'CouldBeUsable':
                 clean_desc = "Missing dependencies or conflict caused by previous selection"
-            elif desc != '' and len(desc) >= 65:
+            elif desc != '' and len(desc) >= 250:
                 clean_desc = 'Plugin description is too long to be displayed here' 
             
             if source == [] and not flags:
@@ -280,22 +280,23 @@ class FomodSelectionDialog(Adw.Window):
             # Setting up the row UI
             row_content = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
             row_content.set_margin_start(12)
-            row_content.set_margin_end(12)
-            row_content.set_margin_top(10)
+            row_content.set_margin_end(8)
+            row_content.set_margin_top(5)
             row_content.set_margin_bottom(10)
             
-            text_vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=2)
+            text_vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=5)
             text_vbox.set_hexpand(True)
             
             name_label = Gtk.Label(label=name, xalign=0, wrap=False)
             name_label.set_ellipsize(3)
             name_label.add_css_class("heading")
+            name_label.set_margin_bottom(2)
             
             desc_label = Gtk.Label(label=clean_desc, xalign=0, wrap=False)
             desc_label.add_css_class("dim-label")
             desc_label.add_css_class("caption")
             desc_label.set_ellipsize(3)
-            desc_label.set_lines(1)
+            desc_label.set_lines(2)
             
             text_vbox.append(name_label)
             text_vbox.append(desc_label)
@@ -620,4 +621,3 @@ class FomodSelectionDialog(Adw.Window):
     def on_show_desc_clicked(self, button, title, content):
         self.desc_window = TextWindow(self, title, content)
         self.desc_window.present()
-    
