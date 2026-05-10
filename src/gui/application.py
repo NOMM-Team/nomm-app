@@ -64,14 +64,19 @@ class Nomm(Adw.Application):
                 self._connect_release_on_finish()
                 handle_nexus_link(uri, self.downloader)
     
-    # Cancels downloads when shutting down the app            
+    # Cancels downloads when shutting down the app by switching 
+    # the download thread event with cancel_all empty event
     def do_shutdown(self):
         self.downloader.cancel_all()
         Adw.Application.do_shutdown(self)
     
+    # Release application.py from self.hold so the download stops happening as background task allowing you to 
+    # close the downloader while keeping the download active in the mod manager and disconnect the event once 
+    # download is done
     def _connect_release_on_finish(self):
         handler_ids = []
-        def on_done(*_):
+        def on_done():
+            print('release')
             self.release()
             for hid in handler_ids:
                 self.downloader.disconnect(hid)
