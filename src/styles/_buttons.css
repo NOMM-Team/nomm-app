@@ -21,21 +21,21 @@
 .dl-tabs-pbar{
     opacity: 1;
     margin: 0;
-    padding: 0;
+    padding: 0px 1px;
     min-width: 0;
     background-color: transparent;
 }
 
 .dl-tabs-pbar > trough {
     min-width: 0;
-    min-height: 32px;
-    border-radius: 10px;
+    min-height: 34px;
+    border-radius: 8px;
     background-color: transparent;
 }
 
 .dl-tabs-pbar > trough > progress {
     min-width: 0;
-    min-height: 32px;
+    min-height: 34px;
     border-radius: 0px;
-    background-color: red;
+    background-color: var(--accent-bg-color, #3584e4);
 }

@@ -30,31 +30,32 @@ class DownloadsTab(Gtk.Box):
         self.set_margin_top(40)
         
         self.dashboard = dashboard
-        self.current_filter = "all"
         
+        # Download signals used globally
         self.downloader = downloader
-        
-        self.scrolled = Gtk.ScrolledWindow(vexpand=True)
-        
+        self.downloader.connect('progress-changed', self.on_download_progress)
+        self.downloader.connect('download-complete', self.on_download_complete)
         self.download_maps = {}
+        self.download_lbl_maps = {}
+        self.currently_downloading = []
         
         # Action Bar
         action_bar = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
         filter_group = Gtk.Box(css_classes=["linked"])
         
+        # Filters
+        self.current_filter = "all"
         self.all_filter_btn = Gtk.ToggleButton(label=_("All"), active=True)
         self.all_filter_btn.connect("toggled", self.on_filter_toggled, "all")
         filter_group.append(self.all_filter_btn)
-        
-        self.downloader.connect('progress-changed', self.on_download_progress)
-        
         for n, l in [("uninstalled", _("Uninstalled")), ("installed", _("Installed"))]:
             b = Gtk.ToggleButton(label=l, group=self.all_filter_btn)
             b.connect("toggled", self.on_filter_toggled, n)
             filter_group.append(b)
-            
+        
         action_bar.append(filter_group)
         
+        # Folder button
         folder_btn = Gtk.Button(icon_name="folder-open-symbolic", css_classes=["flat"])
         folder_btn.set_halign(Gtk.Align.END)
         folder_btn.set_hexpand(True)
@@ -66,18 +67,19 @@ class DownloadsTab(Gtk.Box):
         # Downloads
         self.list_box = Gtk.ListBox(css_classes=["boxed-list"])
         self.list_box.set_filter_func(self.filter_list_rows)
-
+                
+        # Items that needs to be used globally
+        self.scrolled = Gtk.ScrolledWindow(vexpand=True)        
+        self.scrolled = Gtk.ScrolledWindow(vexpand=True)
+        self.scrolled.set_child(self.list_box)
+        self.append(self.scrolled)
+        
         # Drag and drop files into the download box
         drop_target = Gtk.DropTarget.new(Gdk.FileList, Gdk.DragAction.COPY)
         drop_target.connect("drop", self.on_file_drop)
         drop_target.connect("enter", self.on_drag_enter)
         drop_target.connect("leave", self.on_drag_leave)
-        
         self.add_controller(drop_target)
-        
-        self.scrolled = Gtk.ScrolledWindow(vexpand=True)
-        self.scrolled.set_child(self.list_box)
-        self.append(self.scrolled)
 
         if self.dashboard.downloads_path and os.path.exists(self.dashboard.downloads_path):
             self.setup_folder_monitor()
@@ -85,6 +87,9 @@ class DownloadsTab(Gtk.Box):
         self.populate_list()
 
     def populate_list(self):
+        self.download_maps.clear()
+        self.download_lbl_maps.clear()
+        
         valign = self.scrolled.get_valign()
         while child := self.list_box.get_first_child():
             self.list_box.remove(child)
@@ -104,6 +109,9 @@ class DownloadsTab(Gtk.Box):
                 with open(meta_path, 'r') as meta_f:
                     metadata = yaml.safe_load(meta_f)
             except: pass
+            
+        
+        install_btn_sizegroup = Gtk.SizeGroup(mode=Gtk.SizeGroupMode.HORIZONTAL)
             
         for file_name in files:
             installed = is_mod_installed(file_name, staging_metadata)
@@ -155,19 +163,25 @@ class DownloadsTab(Gtk.Box):
             # Progressbar
             dl_pbar = Gtk.ProgressBar()
             dl_pbar.set_can_target(False)
-            dl_pbar.add_css_class('utility-pbar')
+            dl_pbar.add_css_class('dl-tabs-pbar')
             dl_pbar.set_vexpand(True)
             dl_pbar.set_halign(Gtk.Align.FILL)
             dl_pbar.set_valign(Gtk.Align.FILL)
             dl_pbar.set_size_request(-1, -1)
             self.download_maps[file_name] = dl_pbar
             
+            # Download label
+            download_lbl = Gtk.Label(label='0%', valign=Gtk.Align.CENTER, halign=Gtk.Align.CENTER)
+            download_lbl.add_css_class("heading")
+            download_lbl.add_css_class("dim-label")
+            self.download_lbl_maps[file_name] = download_lbl
+            
             # Install Button
             install_btn = Gtk.Button(label=_("Reinstall") if installed else _("Install"), valign=Gtk.Align.CENTER)
             if not installed: install_btn.add_css_class("suggested-action")
             install_btn.set_cursor_from_name("pointer")
             install_btn.connect("clicked", self.on_install_clicked, file_name, display_name)
-            if file_name in self.dashboard.currently_installing:
+            if (file_name in self.dashboard.currently_installing) or (file_name in self.currently_downloading):
                 install_btn.set_sensitive(False)
                 
             # Overlay to display download progress on top of download button
@@ -176,7 +190,16 @@ class DownloadsTab(Gtk.Box):
             overlay.set_valign(Gtk.Align.CENTER)
             overlay.set_child(install_btn)
             overlay.add_overlay(dl_pbar)
+            overlay.add_overlay(download_lbl)
             
+            if file_name in self.currently_downloading:
+                install_btn.add_css_class('btn-download-before')
+                install_btn.set_label('')
+                download_lbl.set_visible(True)
+            else:
+                download_lbl.set_visible(False)
+            
+            install_btn_sizegroup.add_widget(overlay)
             row.add_suffix(overlay)
 
             # Trash Button
@@ -204,7 +227,6 @@ class DownloadsTab(Gtk.Box):
             if self.current_filter == "uninstalled": return not row.is_installed
         return True
 
-# def dashboard.py/on_filter_toggled
     def on_filter_toggled(self, btn, f_name):
         if btn.get_active():
             self.current_filter = f_name
@@ -454,7 +476,17 @@ class DownloadsTab(Gtk.Box):
         
     def on_download_progress(self, downloader, data):
         filename = data['filename']
-        print(f"Looking for: {filename}")
         progress = data['progress']
+        if filename not in self.currently_downloading:
+            self.currently_downloading.append(filename)
+            self.populate_list()
+        if filename not in self.download_maps:
+          self.populate_list()
+          return
         if filename in self.download_maps:
             self.download_maps[filename].set_fraction(progress)
+            self.download_lbl_maps[filename].set_text(f"{round(progress*100)}%")
+            
+    def on_download_complete(self, downloader, filename):
+        self.currently_downloading.remove(filename)
+        self.populate_list()

@@ -7,6 +7,8 @@ import requests
 import yaml
 
 gi.require_version('Notify', '0.7')
+gi.require_version('Gtk', '4.0')
+gi.require_version('GdkPixbuf', '2.0')
 from gi.repository import GdkPixbuf, GLib, Gtk, Notify
 
 # This function handle notifications when downloading mods from Nexusmods
@@ -56,10 +58,11 @@ def download_popup(url, dest_folder, downloader):
 
     # State tracking
     status = {"success": False, "finished": False}
-    event = threading.Event()
+    
+    download_maps = {}
 
     def create_ui():
-        win = Gtk.Window(title="Downloader", modal=True, deletable=False, decorated=False)
+        win = Gtk.Window(title="Downloader", modal=False, deletable=False, decorated=False)
         win.set_default_size(400, 150)
 
         box = Gtk.Box(
@@ -115,16 +118,19 @@ def download_popup(url, dest_folder, downloader):
 
     # Initialize UI on main thread
     window, pbar = create_ui()
-
+    download_maps[filename] = pbar
+    
     def on_download_progress(downloader_inst, download_data):
-        pbar.set_fraction(download_data['progress'])
+        file = download_data['filename']
+        if file in download_maps:
+            pbar.set_fraction(download_data['progress'])
 
-    def on_download_done(downloader_inst, success):
-        print('finished')
-        status['finished'] = True
-        status['success'] = success
-        window.destroy()
-        return False
+    def on_download_done(downloader_inst, filename):
+        if filename in download_maps:
+            status['finished'] = True
+            status['success'] = True
+            window.destroy()
+            return False
             
     def on_download_fail(downloader_inst, e):
         status['finished'] = True
@@ -137,12 +143,6 @@ def download_popup(url, dest_folder, downloader):
     downloader.connect('download-complete', on_download_done)
     downloader.connect('download-error', on_download_fail)
 
-    event.set()
     threading.Thread(target=downloader.download_mod, args=(url, dest_folder), daemon=True).start()
-
-    # We use a nested main loop to make this method "block" 
-    # until the download finishes without freezing the UI.
-    while not status["finished"]:
-        GLib.MainContext.default().iteration(True)
 
     return status["success"]

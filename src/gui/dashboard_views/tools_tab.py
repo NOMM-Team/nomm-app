@@ -133,7 +133,7 @@ class ToolsTab(Gtk.Box):
         def on_download_progress(downloader_inst, download_data):
             pbar.set_fraction(download_data['progress'])
         
-        def on_download_finished(downloader_inst, success):
+        def on_download_finished(downloader_inst, filename):
             stack.set_visible_child_name("install")
             btn.set_sensitive(True)
         

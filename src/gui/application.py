@@ -12,6 +12,7 @@ from gi.repository import Adw, Gdk, GdkPixbuf, GLib, Gtk, Pango, Gio
 from core.user_config import update_user_config, load_user_config, write_user_config
 from core.tools import load_yaml, write_yaml, translate_fuse_path, get_username_from_steam_id
 from core.gamestore_scanner import get_steam_base_dir, scan_all_games
+from core.nexus_api import handle_nexus_link
 from gui.app_views.library_view import LibraryView
 from gui.dashboard import GameDashboard
 
@@ -25,7 +26,7 @@ class Nomm(Adw.Application):
         
         self.downloader = kwargs.pop('downloader', None)
         
-        super().__init__(application_id=APP_NAME, **kwargs)
+        super().__init__(application_id=APP_NAME, flags=Gio.ApplicationFlags.HANDLES_OPEN, **kwargs)
         self.matches = []
         self.user_defined_paths = []
         self.steam_base = get_steam_base_dir()
@@ -44,7 +45,39 @@ class Nomm(Adw.Application):
             self.default_game_config_path = os.path.join(base_path, "default_game_configs")
             
         self.win = None
-
+    
+    # Choose either to launch the popup_download, the app or both 
+    def do_open(self, files, n_files, hint):
+        config = load_yaml(self.user_config_path)
+        for f in files:
+            uri = f.get_uri()
+            if not uri.startswith("nxm://"):
+                continue
+            
+            if config.get('disable_download_window'):
+                self.do_activate()
+                
+            if self.win:
+                handle_nexus_link(uri, self.downloader)
+            else:
+                self.hold()
+                self._connect_release_on_finish()
+                handle_nexus_link(uri, self.downloader)
+    
+    # Cancels downloads when shutting down the app            
+    def do_shutdown(self):
+        self.downloader.cancel_all()
+        Adw.Application.do_shutdown(self)
+    
+    def _connect_release_on_finish(self):
+        handler_ids = []
+        def on_done(*_):
+            self.release()
+            for hid in handler_ids:
+                self.downloader.disconnect(hid)
+        handler_ids.append(self.downloader.connect('download-complete', on_done))
+        handler_ids.append(self.downloader.connect('download-error', on_done))
+                  
     def sync_configs(self):
         """Synchronises game configs from bundled YAMLs to user YAMLs"""
         # This should only be run if it's the app's first run OR it's a manual refresh

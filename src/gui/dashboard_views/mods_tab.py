@@ -295,8 +295,6 @@ class ModsTab(Gtk.Box):
 
     def on_mod_toggled(self, switch, state, mod_files: list, mod: str):
         
-        
-        
         switch.set_sensitive(False)
         self.dashboard.currently_toggling.add(mod)
         def worker():

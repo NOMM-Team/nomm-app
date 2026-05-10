@@ -277,7 +277,7 @@ class FomodSelectionDialog(Adw.Window):
             
             plugin_index += 1
             
-            plugin_type = get_plugin_type(self.fomod_metadata, name, self.current_step, self.current_group)
+            plugin_type = get_plugin_type(self.module_data, name, self.current_step, self.current_group)
             
             clean_desc = desc.replace('\n', ' ').replace('\r', '').strip()
             clean_desc = re.sub(' +', ' ', clean_desc)
