@@ -38,11 +38,13 @@ class DownloadsTab(Gtk.Box):
         self.download_lbl_maps = {}
         self.currently_downloading = []
         
+        # Download signals used globally
         self.downloader = downloader
-        
-        self.scrolled = Gtk.ScrolledWindow(vexpand=True)
-        
+        self.downloader.connect('progress-changed', self.on_download_progress)
+        self.downloader.connect('download-complete', self.on_download_complete)
         self.download_maps = {}
+        self.download_lbl_maps = {}
+        self.currently_downloading = []
         
         # Action Bar
         action_bar = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
