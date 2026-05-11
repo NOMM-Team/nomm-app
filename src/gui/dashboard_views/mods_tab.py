@@ -2,16 +2,18 @@ import gettext
 import os
 import webbrowser
 import threading
+
 from datetime import datetime
 from pathlib import Path
 
-from gi.repository import Adw, Gdk, GLib, GObject, Gtk, Gio, GdkPixbuf
+from gi.repository import Adw, Gdk, GLib, GObject, Gtk, Gio, GdkPixbuf, Pango
 
 from core.mod_manager import (change_mod_index, check_for_conflicts,
                               deploy_all_ordered_mods, load_staging_metadata,
                               read_index, toggle_mod_state)
 from core.nexus_api import check_for_mod_updates_async
 from core.tools import timestamp_converter, write_yaml, process_bbcode
+from gui.text_window import TextWindow
 
 _ = gettext.gettext
 ngettext = gettext.ngettext
@@ -74,56 +76,119 @@ class ModsTab(Gtk.Box):
         self.populate_list()
 
     def setup_preview_pane(self):
-        self.preview_pane = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=5)
+        self.preview_pane = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=5, margin_start=15)
         self.preview_pane.set_size_request(390, -1)
-        self.preview_pane.set_hexpand(True)
+        self.preview_pane.set_hexpand(False)
         self.preview_pane.add_css_class("background")
 
         # Container for the image to handle centering and potential rounding
-        self.thumb_container = Gtk.Box(halign=Gtk.Align.CENTER, margin_start=20)
+        self.thumb_container = Gtk.Box(halign=Gtk.Align.CENTER)
         self.thumb_container.set_size_request(300, 168)
         self.thumb_container.add_css_class("rounded-thumb")
         self.thumb_container.set_overflow(Gtk.Overflow.HIDDEN)
+        self.thumb_container.set_hexpand(False)
         self.preview_pane.append(self.thumb_container)
 
         # Header with close button
         header = Gtk.CenterBox(margin_top=10)
-        self.preview_title = Gtk.Label(css_classes=["title-2"])
+        self.preview_title = Gtk.Label(css_classes=["title-1"])
+        self.preview_title.set_ellipsize(Pango.EllipsizeMode.END)
+        self.preview_title.set_max_width_chars(38)
+        #self.preview_title.set_width_chars(35)
         header.set_center_widget(self.preview_title)
-        close_btn = Gtk.Button(icon_name="window-close-symbolic", css_classes=["flat"])
-        close_btn.connect("clicked", lambda x: self.revealer.set_reveal_child(False))
-        header.set_end_widget(close_btn)
+        
         self.preview_pane.append(header)
 
         # Metadata Display
-        self.preview_version = Gtk.Label(css_classes=["dim-label"])
-        self.preview_pane.append(self.preview_version)
+        self.details_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=5, margin_start=10)
 
-        # Description Box
-        # ScrolledWindow to handle long description
-        self.desc_scroll = Gtk.ScrolledWindow(
-            vexpand=True, 
-            propagate_natural_height=True,
-            min_content_height=150,
-            margin_start=15,
-            margin_bottom=15
-        )
+        # Info Row
+        self.info_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
+        self.info_row.set_margin_top(10)
+        self.info_row.set_visible(False)
+        # Info Row title
+        info_row_label = Gtk.Label(label=_("More Info:"), css_classes=["dim-label"])
+        self.info_row.append(info_row_label)
+        # Description button
+        self.description_btn = Gtk.Button(label=_("Mod Description"))
+        self.description_btn.set_cursor_from_name("pointer")
+        self.description_btn.add_css_class("badge-action-row")
+        self.info_row.append(self.description_btn)
+        # Nexus button
+        self.nexus_btn = Gtk.Button(label=_("Nexus"))
+        self.nexus_btn.set_cursor_from_name("pointer")
+        self.nexus_btn.add_css_class("badge-action-row")
+        self.info_row.append(self.nexus_btn)
+        self.details_box.append(self.info_row)
 
-        # TextView for the actual text
-        self.preview_description = Gtk.Label(
-            wrap=True,
-            xalign=0,
-            yalign=0,
-            selectable=True,
-            use_markup=True
-        )
-        # This one line handles opening links in the default browser!
-        self.preview_description.connect("activate-link", lambda label, uri: webbrowser.open(uri))
-        #self.preview_description.add_css_class("dim-label") # Optional styling
+        # Contents Row
+        self.contents_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
+        self.contents_row.set_visible(False)
+        contents_row_label = Gtk.Label(label=_("Mod Contents:"), css_classes=["dim-label"])
+        self.contents_row.append(contents_row_label)
+        # File counter
+        self.files_btn = Gtk.Button()
+        self.files_btn.set_cursor_from_name("pointer")
+        self.files_btn.add_css_class("badge-action-row")
+        self.contents_row.append(self.files_btn)
+        self.details_box.append(self.contents_row)
+
+        # Version Row
+        self.version_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
+        self.version_row.set_visible(False)
+        version_row_label = Gtk.Label(label=_("Versioning:"), css_classes=["dim-label"])
+        self.version_row.append(version_row_label)
+        # Version Badge
+        self.version_btn = Gtk.Button()
+        self.version_btn.set_cursor_from_name("pointer")
+        button_content = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
+        button_content.set_halign(Gtk.Align.CENTER)
+        self.version_btn_icon = Gtk.Image.new_from_icon_name("help-about-symbolic")
+        self.version_btn_icon.set_visible(False)
+        self.version_btn_label = Gtk.Label()
+        button_content.append(self.version_btn_label)
+        button_content.append(self.version_btn_icon)
+        self.version_btn.set_child(button_content)
+        self.version_btn.add_css_class("badge-action-row")
+        self.version_row.append(self.version_btn)
+        self.details_box.append(self.version_row)
         
-        self.desc_scroll.set_child(self.preview_description)
-        self.preview_pane.append(self.desc_scroll)
+        # Deployment Row
+        self.deployment_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
+        self.deployment_row.set_visible(False)
+        deployment_row_label = Gtk.Label(label=_("Deployment Path:"), css_classes=["dim-label"])
+        self.deployment_row.append(deployment_row_label)
+        # Deployment path button
+        self.deployment_btn = Gtk.Button()
+        self.deployment_btn.set_cursor_from_name("pointer")
+        self.deployment_btn.add_css_class("badge-action-row")
+        self.deployment_label = Gtk.Label()
+        self.deployment_label.set_ellipsize(Pango.EllipsizeMode.START)
+        self.deployment_label.set_max_width_chars(25)
+        self.deployment_btn.set_child(self.deployment_label)
+        self.deployment_row.append(self.deployment_btn)
+        self.details_box.append(self.deployment_row)
 
+        # Uploader Row
+        self.uploader_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
+        self.uploader_row.set_visible(False)
+        uploader_row_label = Gtk.Label(label=_("Uploaded by:"), css_classes=["dim-label"])
+        self.uploader_row.append(uploader_row_label)
+        # File counter
+        self.uploader_btn = Gtk.Button()
+        self.uploader_btn.set_cursor_from_name("pointer")
+        self.uploader_btn.add_css_class("badge-action-row")
+        self.uploader_row.append(self.uploader_btn)
+        self.details_box.append(self.uploader_row)
+
+        self.preview_pane.append(self.details_box)
+
+        # Close button
+        close_btn = Gtk.Button(icon_name="window-close-symbolic", css_classes=["flat"], halign=Gtk.Align.CENTER)
+        close_btn.connect("clicked", lambda x: self.revealer.set_reveal_child(False))
+        self.preview_pane.append(close_btn)
+
+        
         self.revealer.set_child(self.preview_pane)
 
     def on_row_clicked(self, listbox, row):
@@ -134,9 +199,6 @@ class ModsTab(Gtk.Box):
 
         # Update labels
         self.preview_title.set_label(mod_name)
-        version = mod_info.get("version", "Unknown")
-        self.preview_version.set_label(f"Version: {version}")
-        
 
         # Add thumbnail
         thumbnail_path = mod_info.get("thumbnail")
@@ -146,29 +208,91 @@ class ModsTab(Gtk.Box):
             thumb_path = self.dashboard.assets_path + "/nomm.png"
 
         pixbuf = GdkPixbuf.Pixbuf.new_from_file_at_scale(
-            thumb_path, 300, 168, True
+            thumb_path, 405, 1000, True
         )
         texture = Gdk.Texture.new_for_pixbuf(pixbuf)
-        
         self.preview_thumbnail = Gtk.Picture.new_for_paintable(texture)
         self.preview_thumbnail.set_hexpand(False)
         self.preview_thumbnail.set_vexpand(False)
-        # clear previous image
+        # Clear previous image
         while child := self.thumb_container.get_first_child():
             self.thumb_container.remove(child)
-        # add new one
+        # Add new one
         self.thumb_container.append(self.preview_thumbnail)
 
-        # Description
+        # Info Row
         if "description" in mod_info and mod_info["description"]:
+            # Description button
             with open(mod_info["description"]) as f:
                 description = f.read()
+            self.info_row.set_visible(True)
+            title = _(f"Mod Description for {mod_info["name"]}")
+            if hasattr(self, "_desc_handler_id"):
+                self.description_btn.disconnect(self._desc_handler_id)    
+            self._desc_handler_id = self.description_btn.connect("clicked", self.on_description_btn_clicked, title, description)
+            # Nexus button
+            if hasattr(self, "_nexus_link_handler_id"):
+                self.nexus_btn.disconnect(self._nexus_link_handler_id)    
+            self._nexus_link_handler_id = self.nexus_btn.connect("clicked", lambda b: webbrowser.open(mod_info["mod_link"]))
         else:
-            description = "Description not found in metadata"
-        self.preview_description.set_markup(description)
+            self.info_row.set_visible(False)
 
+        # Contents row
+        if "mod_files" in mod_info:
+            number_of_files = len(mod_info["mod_files"])
+            self.files_btn.set_tooltip_text("\n".join(mod_info["mod_files"]))
+            self.files_btn.set_label(ngettext("{} File", "{} Files", number_of_files).format(number_of_files))
+            folder_path = self.dashboard.staging_path / mod_info["name"]
+            # Disconnect previous connect
+            if hasattr(self, "_files_handler_id") and self._files_handler_id:
+                self.files_btn.disconnect(self._files_handler_id)
+            # Connect and store new ID
+            self._files_handler_id = self.files_btn.connect("clicked", lambda x: webbrowser.open(f"file://{folder_path}"))
+            self.contents_row.set_visible(True)
+        else:
+            self.contents_row.set_visible(False)
 
+        # Version Row
+        if "version" in mod_info:
+            self.version_btn_label.set_label(mod_info["version"])
+            self.version_row.set_visible(True)
+            if "changelog" in mod_info and mod_info["changelog"]:
+                self.version_btn_icon.set_visible(True)
+                self.version_btn.set_tooltip_text(mod_info["changelog"])
+            else:
+                self.version_btn_icon.set_visible(False)
+        else:
+            self.version_row.set_visible(False)
+
+        # Deployment Row
+        if "deployment_path" in mod_info:
+            self.deployment_label.set_label(mod_info["deployment_path"])
+            self.deployment_label.set_tooltip_text(mod_info["deployment_path"])
+            if hasattr(self, "_deployment_handler_id") and self._deployment_handler_id:
+                self.deployment_btn.disconnect(self._deployment_handler_id)
+            # Connect and store new ID
+            self._deployment_handler_id = self.deployment_btn.connect("clicked", lambda x: webbrowser.open(f"file://{mod_info["deployment_path"]}"))
+            self.deployment_row.set_visible(True)
+        else:
+            self.deployment_row.set_visible(False)
+
+        # Uploader Row
+        if "uploader" in mod_info:
+            self.uploader_btn.set_label(mod_info["uploader"])
+            uploader_link = f"https://www.nexusmods.com/profile/{mod_info["uploader"]}"
+            if hasattr(self, "_uploader_link_handler_id"):
+                self.uploader_btn.disconnect(self._uploader_link_handler_id)    
+            self._uploader_link_handler_id = self.uploader_btn.connect("clicked", lambda b: webbrowser.open(uploader_link))
+            self.uploader_row.set_visible(True)
+        else:
+            self.uploader_row.set_visible(False)
+
+        # Display the pane!
         self.revealer.set_reveal_child(True)
+
+    def on_description_btn_clicked(self, button, title, description):
+        desc_win = TextWindow(self.dashboard.app.win, title, description, text_type="markup")
+        desc_win.present()
 
     def populate_list(self):
         while child := self.mods_list_box.get_first_child():
@@ -182,9 +306,7 @@ class ModsTab(Gtk.Box):
             return
 
         conflicts = check_for_conflicts(self.dashboard.staging_metadata_path)
-        file_badge_sizegroup = Gtk.SizeGroup(mode=Gtk.SizeGroupMode.HORIZONTAL)
         load_index_sizegroup = Gtk.SizeGroup(mode=Gtk.SizeGroupMode.HORIZONTAL)
-        version_badge_sizegroup = Gtk.SizeGroup(mode=Gtk.SizeGroupMode.HORIZONTAL)
         
         indexed_mods = read_index(self.dashboard.staging_metadata_path)
 
@@ -199,12 +321,11 @@ class ModsTab(Gtk.Box):
             if mod not in staging_metadata["mods"]:
                 continue
             
-            
             mod_metadata = staging_metadata["mods"][mod]
 
-            display_name = mod_metadata.get("display_name", mod)
-            version_text = mod_metadata.get("version", "—")
-            new_version = mod_metadata.get("new_version", "")
+            display_name = mod_metadata.get("name", mod)
+            version_current = mod_metadata.get("version", "—")
+            version_new = mod_metadata.get("version_new", "")
             changelog = mod_metadata.get("changelog", "")
             mod_link = mod_metadata.get("mod_link", "")
             mod_files = mod_metadata.get("mod_files", [])
@@ -234,20 +355,7 @@ class ModsTab(Gtk.Box):
                 drag_source.connect("prepare", self.on_drag_prepare, mod)
                 drag_handle.add_controller(drag_source)
                 row.add_prefix(drag_handle)
-            
-            if enable_file_counter:
-                number_of_files = len(mod_files)
-                file_list_badge = Gtk.CenterBox(orientation=Gtk.Orientation.HORIZONTAL)
-                file_list_badge.set_tooltip_text("\n".join(mod_files))
-                file_list_badge.add_css_class("badge-action-row")
-                file_list_badge.set_valign(Gtk.Align.CENTER)
-                file_list_badge.set_margin_end(row_element_margin)
-                label_text = ngettext("{} file", "{} files", number_of_files).format(number_of_files)
-                file_list_badge.set_center_widget(Gtk.Label(label=label_text))
-                file_badge_sizegroup.add_widget(file_list_badge)
-                row.add_prefix(file_list_badge)
-                
-            if conflicts:
+
                 # Load Index
                 index_label = Gtk.Label(label=f"{index}")
                 index_label.add_css_class("dim-label")
@@ -319,33 +427,16 @@ class ModsTab(Gtk.Box):
 
             
 
-            # Version
-            version_badge = Gtk.Button()
-            button_content = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
-            button_content.set_halign(Gtk.Align.CENTER)
-            button_content.append(Gtk.Label(label=version_text))
-
-            if changelog:
-                version_badge.set_tooltip_text(changelog)
-                q_icon = Gtk.Image.new_from_icon_name("help-about-symbolic")
-                q_icon.set_pixel_size(14)
-                button_content.append(q_icon)
-            
-            version_badge.set_child(button_content)
-            if new_version and new_version != version_text:
+            # Update available badge
+            if version_new and version_new != version_current:
+                version_badge = Gtk.Button()
+                button_content = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
+                button_content.set_halign(Gtk.Align.CENTER)
+                version_badge.set_child(button_content)
                 version_badge.add_css_class("badge-action-row-accent")
-            else:
-                version_badge.add_css_class("badge-action-row")
-            
-            version_badge.set_cursor_from_name("pointer")
-            version_badge.set_valign(Gtk.Align.CENTER)
-            version_badge.set_margin_end(row_element_margin)
-            if mod_link: 
-                version_badge.connect("clicked", lambda b, l=mod_link: webbrowser.open(l))
-            
-            if len(version_text) < 10:
-                version_badge_sizegroup.add_widget(version_badge)
-            row.add_suffix(version_badge)
+                row.add_suffix(version_badge)
+                version_badge.set_cursor_from_name("pointer")
+                
 
             # Timestamps
             if "install_timestamp" in mod_metadata or "enabled_timestamp" in mod_metadata:
