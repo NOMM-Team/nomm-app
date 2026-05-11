@@ -12,6 +12,7 @@ from core.fomod_manager import (check_for_dependencies,
                                 get_plugin_image_path, get_plugin_type,
                                 have_plugins_images, is_step_visible)
 from gui.text_window import TextWindow
+from core.tools import retrieve_casesensitive_paths
 
 
 class FomodSelectionDialog(Adw.Window):
@@ -265,12 +266,8 @@ class FomodSelectionDialog(Adw.Window):
                 is_not_usable = True
             elif plugin_type == 'CouldBeUsable':
                 clean_desc = "Missing dependencies or conflict caused by previous selection"
-            elif desc != '' and len(desc) >= 65:
+            elif desc != '' and len(desc) >= 250:
                 clean_desc = 'Plugin description is too long to be displayed here' 
-            
-            if source == [] and not flags:
-                extracted_information.append(clean_desc)
-                continue
             
             radio = Gtk.CheckButton(group=first_radio)
             if selection_type == 'SelectExactlyOne' or selection_type == 'SelectAtMostOne':    
@@ -280,22 +277,23 @@ class FomodSelectionDialog(Adw.Window):
             # Setting up the row UI
             row_content = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
             row_content.set_margin_start(12)
-            row_content.set_margin_end(12)
-            row_content.set_margin_top(10)
+            row_content.set_margin_end(8)
+            row_content.set_margin_top(5)
             row_content.set_margin_bottom(10)
             
-            text_vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=2)
+            text_vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=5)
             text_vbox.set_hexpand(True)
             
             name_label = Gtk.Label(label=name, xalign=0, wrap=False)
             name_label.set_ellipsize(3)
             name_label.add_css_class("heading")
+            name_label.set_margin_bottom(2)
             
             desc_label = Gtk.Label(label=clean_desc, xalign=0, wrap=False)
             desc_label.add_css_class("dim-label")
             desc_label.add_css_class("caption")
             desc_label.set_ellipsize(3)
-            desc_label.set_lines(1)
+            desc_label.set_lines(2)
             
             text_vbox.append(name_label)
             text_vbox.append(desc_label)
@@ -319,8 +317,9 @@ class FomodSelectionDialog(Adw.Window):
             
             motion = Gtk.EventControllerMotion()
             row.add_controller(motion)
-            motion.connect('enter', lambda *_, btn=desc_btn: btn.set_visible(True))
-            motion.connect('leave', lambda *_, btn=desc_btn: btn.set_visible(False))
+            if len(clean_desc) > 100:
+                motion.connect('enter', lambda *_, btn=desc_btn: btn.set_visible(True))
+                motion.connect('leave', lambda *_, btn=desc_btn: btn.set_visible(False))
             
             row.radio_button = radio
             row.name_label = name
@@ -587,13 +586,22 @@ class FomodSelectionDialog(Adw.Window):
         if image_path != '':
             clean_relative_path = image_path.replace('\\', '/')
             full_image_path = os.path.join(self.fomod_staging_dir, clean_relative_path)
-            pixbuf = GdkPixbuf.Pixbuf.new_from_file_at_scale(
-                full_image_path, 
-                width=800,
-                height=800,
-                preserve_aspect_ratio=True
-            )
-            
+            try:
+                pixbuf = GdkPixbuf.Pixbuf.new_from_file_at_scale(
+                    full_image_path, 
+                    width=800,
+                    height=800,
+                    preserve_aspect_ratio=True
+                )
+            except:
+                full_image_path = retrieve_casesensitive_paths(full_image_path)
+                pixbuf = GdkPixbuf.Pixbuf.new_from_file_at_scale(
+                    full_image_path, 
+                    width=800,
+                    height=800,
+                    preserve_aspect_ratio=True
+                )
+
             texture = Gdk.Texture.new_for_pixbuf(pixbuf)
             picture = Gtk.Picture.new_for_paintable(texture)
             picture.set_overflow(Gtk.Overflow.HIDDEN)
@@ -620,4 +628,3 @@ class FomodSelectionDialog(Adw.Window):
     def on_show_desc_clicked(self, button, title, content):
         self.desc_window = TextWindow(self, title, content)
         self.desc_window.present()
-    

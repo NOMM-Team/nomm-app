@@ -105,6 +105,21 @@ def get_username_from_steam_id(steam_id: str, steam_base_path) -> str:
         return None
     return steam_username
 
+def retrieve_casesensitive_paths(path:str):
+    parts = path.split('/')
+    part_list = ['/']
+    for part in parts[1:]:
+        try:
+            new_path = os.path.join(*part_list) if part_list else '/'
+        except Exception as e:
+            return None    
+        found_item = next((f for f in os.listdir(new_path) if f.lower() == part.lower()), None)
+        if found_item:
+            part_list.append(found_item)
+    path = os.path.join(*part_list)
+    print(path)
+    return path
+
 def download_image(url: str, save_path: str) -> bool:
     # Send a GET request to the URL
     response = requests.get(url, stream=True)
