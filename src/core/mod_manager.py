@@ -14,14 +14,16 @@ from core.tools import load_yaml, write_yaml, load_user_config
 meta_lock = threading.Lock()
 
 #TODO:Change the logic to deploy last mods from the index first
-def deploy_mod_files(staging_dir: str, dest_dir: str, mod_name: str) -> bool:
+def deploy_mod_files(staging_dir: str, dest_dir: str, mod_info: dict) -> bool:
     dest_path = Path(dest_dir)
+    if "name" in mod_info:
+        mod_name = mod_info["name"]
+
     staging_mod_path = os.path.join(Path(staging_dir), mod_name)
     
     staging_meta_path = os.path.join(Path(staging_dir), ".staging.nomm.yaml")
     staging_metadata = load_staging_metadata(staging_meta_path)
     
-    mod_info = staging_metadata["mods"][mod_name]
     mod_files = mod_info.get("mod_files", [])
     
     is_success = True
@@ -88,7 +90,7 @@ def deploy_all_ordered_mods(staging_dir: str, dest_dir: str) -> bool:
                 if not deploy_mod_files(
                     staging_dir,
                     dest_dir,
-                    mod_name
+                    mod_info
                 ):
                     error_count += 1
     if error_count:
@@ -285,11 +287,8 @@ def toggle_mod_state(mod_name: str, mod_files: list, state: bool, staging_dir: s
         
         mod_info = staging_metadata["mods"][mod_name]
 
-        if "deployment_target" in mod_info:
-            for target in deployment_targets:
-                if target["name"] == mod_info["deployment_target"]:
-                    dest_dir = target["path"]
-                    break
+        if "deployment_path" in mod_info:
+            dest_dir = mod_info["deployment_path"]
 
         staging_mod_dir = os.path.join(staging_dir, mod_name)
 
@@ -302,7 +301,7 @@ def toggle_mod_state(mod_name: str, mod_files: list, state: bool, staging_dir: s
             if check_for_conflicts(staging_meta_path):
                 success = deploy_all_ordered_mods(staging_dir, dest_dir)
             else:
-                success = deploy_mod_files(staging_dir, dest_dir, mod_name)
+                success = deploy_mod_files(staging_dir, dest_dir, mod_info)
             if success:
                 #TODO: Remove status data as there already is a timestamp
                 print(f"Successfully deployed mod: {mod_name}")
@@ -377,9 +376,11 @@ def finalise_mod_metadata(filename: str, mod_files: list, deployment_target: dic
                 mod_name = mod_data.get("name", mod_name)
                 current_staging_metadata["mods"][mod_name] = mod_data
 
+
         # Catch-all check in case we don't have the metadata initialised for that mod
         if mod_name not in current_staging_metadata["mods"]:
             current_staging_metadata["mods"][mod_name] = {}
+            current_staging_metadata["mods"][mod_name]["name"] = mod_name
 
         current_staging_metadata["mods"][mod_name]["mod_files"] = mod_files
         current_staging_metadata["mods"][mod_name]["status"] = "disabled"
