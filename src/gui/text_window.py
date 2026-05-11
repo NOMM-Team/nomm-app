@@ -1,3 +1,4 @@
+import webbrowser
 import gi
 from gi.repository import Gtk, Adw
 
@@ -23,15 +24,14 @@ class TextWindow(Adw.Window):
         # Body
         body = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
         body.add_css_class('tw-body')
-        
         body_content = Gtk.Label(xalign=0, wrap=True)
         if text_type == "text":
             body_content.set_label(content)
         if text_type == "markup":
             body_content.set_markup(content)
+            body_content.connect("activate-link", lambda label, uri: webbrowser.open(uri))
         body_content.add_css_class('tw-body-content')
         body_content.set_valign(Gtk.Align.START)
-        
         scrolled = Gtk.ScrolledWindow(vexpand=True, hexpand=True)
         scrolled.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
         scrolled.add_css_class("tw-scrolled")
