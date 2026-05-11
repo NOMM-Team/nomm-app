@@ -102,7 +102,7 @@ def handle_nexus_link(nxm_link: str, downloader: Downloader) -> bool:
 
     if not game_folder_name:
         print(f"Game {nexus_id} could not be found in game_configs!")
-        send_download_notification("failure-game-not-found", file_name=None, game_name=nexus_id, icon_path=None)
+        GLib.idle_add(send_download_notification, "failure-game-not-found", file_name=None, game_name=nexus_id, icon_path=None)
         return
 
     final_download_dir = Path(base_download_path) / game_folder_name

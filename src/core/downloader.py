@@ -34,9 +34,8 @@ class Downloader(GObject.Object):
         dest_path = os.path.join(dest_folder, filename)
         os.makedirs(dest_folder, exist_ok=True)
         
-        # Send a notification when downloading
-        send_download_notification("started", file_name=filename)
-          
+        GLib.idle_add(send_download_notification, "started", filename)
+
         try:
             # Background task: downloading
             response = requests.get(url, stream=True, timeout=(15, 120))
@@ -44,7 +43,8 @@ class Downloader(GObject.Object):
             response.raise_for_status()
             downloaded = 0
             with open(dest_path, 'wb') as f:
-                for data in response.iter_content(chunk_size=4096):
+                last_reported = 0.0
+                for data in response.iter_content(chunk_size=65536):
                     if self._cancel.is_set():
                           response.close()
                           os.remove(dest_path)
@@ -52,18 +52,20 @@ class Downloader(GObject.Object):
                     f.write(data)
                     downloaded += len(data)
                     if total_size > 0:
-                            dl_ratio = downloaded / total_size
+                        dl_ratio = downloaded / total_size
+                        if dl_ratio - last_reported >= 0.01:
+                            last_reported = dl_ratio
                             download_data = {
                                 'filename' : filename,
                                 'progress' : dl_ratio
                             }
                             GLib.idle_add(self.emit, 'progress-changed', download_data)
-            send_download_notification("success", file_name=filename)
-            
+            GLib.idle_add(send_download_notification, "success", filename)
+
             GLib.idle_add(self.emit, 'download-complete', filename)
             return True
         except Exception as e:
-            send_download_notification("failure-game-not-found", file_name=filename)
+            GLib.idle_add(send_download_notification, "failure-game-not-found", filename)
             print(f"Download error: {e}")
             error_data = {
                 'filename' : filename,

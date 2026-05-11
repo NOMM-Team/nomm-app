@@ -481,8 +481,8 @@ class DownloadsTab(Gtk.Box):
             self.currently_downloading.append(filename)
             self.populate_list()
         if filename not in self.download_maps:
-          self.populate_list()
-          return
+            self.populate_list()
+            return
         if filename in self.download_maps:
             self.download_maps[filename].set_fraction(progress)
             self.download_lbl_maps[filename].set_text(f"{round(progress*100)}%")

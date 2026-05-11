@@ -1,5 +1,6 @@
 import gettext
 import os
+import threading
 
 import gi
 
@@ -7,12 +8,14 @@ gi.require_version('Gtk', '4.0')
 gi.require_version('Adw', '1')
 gi.require_version('Notify', '0.7')
 
-from gi.repository import Adw, Gdk, GdkPixbuf, GLib, Gtk, Pango, Gio
+from gi.repository import Adw, Gdk, GdkPixbuf, Gio, GLib, Gtk, Pango
 
-from core.user_config import update_user_config, load_user_config, write_user_config
-from core.tools import load_yaml, write_yaml, translate_fuse_path, get_username_from_steam_id
 from core.gamestore_scanner import get_steam_base_dir, scan_all_games
 from core.nexus_api import handle_nexus_link
+from core.tools import (get_username_from_steam_id, load_yaml,
+                        translate_fuse_path, write_yaml)
+from core.user_config import (load_user_config, update_user_config,
+                              write_user_config)
 from gui.app_views.library_view import LibraryView
 from gui.dashboard import GameDashboard
 
@@ -58,11 +61,11 @@ class Nomm(Adw.Application):
                 self.do_activate()
                 
             if self.win:
-                handle_nexus_link(uri, self.downloader)
+                threading.Thread(target=handle_nexus_link, args=(uri, self.downloader), daemon=True).start()
             else:
                 self.hold()
                 self._connect_release_on_finish()
-                handle_nexus_link(uri, self.downloader)
+                threading.Thread(target=handle_nexus_link, args=(uri, self.downloader), daemon=True).start()
     
     # Cancels downloads when shutting down the app by switching 
     # the download thread event with cancel_all empty event
