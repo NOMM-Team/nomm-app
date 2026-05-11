@@ -44,7 +44,7 @@ class Downloader(GObject.Object):
             downloaded = 0
             with open(dest_path, 'wb') as f:
                 last_reported = 0.0
-                for data in response.iter_content(chunk_size=65536):
+                for data in response.iter_content(chunk_size=4096):
                     if self._cancel.is_set():
                           response.close()
                           os.remove(dest_path)
@@ -53,7 +53,7 @@ class Downloader(GObject.Object):
                     downloaded += len(data)
                     if total_size > 0:
                         dl_ratio = downloaded / total_size
-                        if dl_ratio - last_reported >= 0.01:
+                        if dl_ratio - last_reported >= 0.001:
                             last_reported = dl_ratio
                             download_data = {
                                 'filename' : filename,
