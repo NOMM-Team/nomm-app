@@ -360,7 +360,7 @@ def remove_mod_from_metadata(path: str, mod_name: str) -> bool:
 
 # Writing the metadata with needed fields
 # dashboard.py/create_downloads_page (l:1339)
-def finalise_mod_metadata(filename: str, mod_files: list, deployment_target_name: str, staging_meta_path: str, downloads_meta_path: str):
+def finalise_mod_metadata(filename: str, mod_files: list, deployment_target: dict, staging_meta_path: str, downloads_meta_path: str):
     current_staging_metadata = load_staging_metadata(staging_meta_path)
     current_download_metadata = {}
 
@@ -385,7 +385,8 @@ def finalise_mod_metadata(filename: str, mod_files: list, deployment_target_name
         current_staging_metadata["mods"][mod_name]["status"] = "disabled"
         current_staging_metadata["mods"][mod_name]["archive_name"] = filename
         current_staging_metadata["mods"][mod_name]["install_timestamp"] = datetime.now()
-        current_staging_metadata["mods"][mod_name]["deployment_target"] = deployment_target_name
+        current_staging_metadata["mods"][mod_name]["deployment_target"] = deployment_target["name"]
+        current_staging_metadata["mods"][mod_name]["deployment_path"] = deployment_target["path"]
     
         if mod_name not in current_staging_metadata["index"]:
             current_staging_metadata["index"].append(mod_name)

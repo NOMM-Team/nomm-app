@@ -403,7 +403,7 @@ class DownloadsTab(Gtk.Box):
                 finalise_mod_metadata(
                     filename, 
                     extracted_roots, 
-                    deployment_target["name"], 
+                    deployment_target, 
                     self.dashboard.staging_metadata_path, 
                     self.dashboard.downloads_metadata_path
                 )
