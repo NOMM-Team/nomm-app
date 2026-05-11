@@ -5,13 +5,13 @@ import threading
 from datetime import datetime
 from pathlib import Path
 
-from gi.repository import Adw, Gdk, GLib, GObject, Gtk
+from gi.repository import Adw, Gdk, GLib, GObject, Gtk, Gio, GdkPixbuf
 
 from core.mod_manager import (change_mod_index, check_for_conflicts,
                               deploy_all_ordered_mods, load_staging_metadata,
                               read_index, toggle_mod_state)
 from core.nexus_api import check_for_mod_updates_async
-from core.tools import timestamp_converter, write_yaml
+from core.tools import timestamp_converter, write_yaml, process_bbcode
 
 _ = gettext.gettext
 ngettext = gettext.ngettext
@@ -19,8 +19,8 @@ ngettext = gettext.ngettext
 class ModsTab(Gtk.Box):
     def __init__(self, dashboard):
         super().__init__(orientation=Gtk.Orientation.VERTICAL, spacing=10)
-        self.set_margin_start(30)
-        self.set_margin_end(30)
+        self.set_margin_start(15)
+        self.set_margin_end(15)
         self.set_margin_top(20)
         
         self.dashboard = dashboard
@@ -51,16 +51,122 @@ class ModsTab(Gtk.Box):
         action_bar.append(launch_btn)
 
         self.append(action_bar)
+        
+        # Container for List + Preview
+        self.main_content = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=0)
+        self.append(self.main_content)
 
         # Mod list
         self.mods_list_box = Gtk.ListBox(css_classes=["boxed-list"])
         self.mods_list_box.set_filter_func(self.filter_mods_rows)
-        
+        self.mods_list_box.connect("row-activated", self.on_row_clicked) 
+        self.list_scroll = Gtk.ScrolledWindow(vexpand=True, hexpand=True)
+        self.list_scroll.set_child(self.mods_list_box)
+        self.main_content.append(self.list_scroll)
+
+        # Preview pane with Revealer
+        self.revealer = Gtk.Revealer(transition_type=Gtk.RevealerTransitionType.SLIDE_LEFT)
+        self.revealer.set_hexpand(False) 
+        self.revealer.set_halign(Gtk.Align.END)
+        self.main_content.append(self.revealer)
+
+        self.setup_preview_pane()
         self.populate_list()
+
+    def setup_preview_pane(self):
+        self.preview_pane = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=5)
+        self.preview_pane.set_size_request(390, -1)
+        self.preview_pane.set_hexpand(True)
+        self.preview_pane.add_css_class("background")
+
+        # Container for the image to handle centering and potential rounding
+        self.thumb_container = Gtk.Box(halign=Gtk.Align.CENTER, margin_start=20)
+        self.thumb_container.set_size_request(300, 168)
+        self.thumb_container.add_css_class("rounded-thumb")
+        self.thumb_container.set_overflow(Gtk.Overflow.HIDDEN)
+        self.preview_pane.append(self.thumb_container)
+
+        # Header with close button
+        header = Gtk.CenterBox(margin_top=10)
+        self.preview_title = Gtk.Label(css_classes=["title-2"])
+        header.set_center_widget(self.preview_title)
+        close_btn = Gtk.Button(icon_name="window-close-symbolic", css_classes=["flat"])
+        close_btn.connect("clicked", lambda x: self.revealer.set_reveal_child(False))
+        header.set_end_widget(close_btn)
+        self.preview_pane.append(header)
+
+        # Metadata Display
+        self.preview_version = Gtk.Label(css_classes=["dim-label"])
+        self.preview_pane.append(self.preview_version)
+
+        # Description Box
+        # ScrolledWindow to handle long description
+        self.desc_scroll = Gtk.ScrolledWindow(
+            vexpand=True, 
+            propagate_natural_height=True,
+            min_content_height=150,
+            margin_start=15,
+            margin_bottom=15
+        )
+
+        # TextView for the actual text
+        self.preview_description = Gtk.Label(
+            wrap=True,
+            xalign=0,
+            yalign=0,
+            selectable=True,
+            use_markup=True
+        )
+        # This one line handles opening links in the default browser!
+        self.preview_description.connect("activate-link", lambda label, uri: webbrowser.open(uri))
+        #self.preview_description.add_css_class("dim-label") # Optional styling
         
-        sc = Gtk.ScrolledWindow(vexpand=True)
-        sc.set_child(self.mods_list_box)
-        self.append(sc)
+        self.desc_scroll.set_child(self.preview_description)
+        self.preview_pane.append(self.desc_scroll)
+
+        self.revealer.set_child(self.preview_pane)
+
+    def on_row_clicked(self, listbox, row):
+        # We need to fetch the metadata associated with this row
+
+        mod_name = row.get_title() # ActionRow title
+        mod_info = row.mod_data
+
+        # Update labels
+        self.preview_title.set_label(mod_name)
+        version = mod_info.get("version", "Unknown")
+        self.preview_version.set_label(f"Version: {version}")
+        
+
+        # Add thumbnail
+        thumbnail_path = mod_info.get("thumbnail")
+        if thumbnail_path and os.path.exists(thumbnail_path):
+            thumb_path = thumbnail_path
+        else:
+            thumb_path = self.dashboard.assets_path + "/nomm.png"
+
+        pixbuf = GdkPixbuf.Pixbuf.new_from_file_at_scale(
+            thumb_path, 300, 168, True
+        )
+        texture = Gdk.Texture.new_for_pixbuf(pixbuf)
+        
+        self.preview_thumbnail = Gtk.Picture.new_for_paintable(texture)
+        self.preview_thumbnail.set_hexpand(False)
+        self.preview_thumbnail.set_vexpand(False)
+        # clear previous image
+        while child := self.thumb_container.get_first_child():
+            self.thumb_container.remove(child)
+        # add new one
+        self.thumb_container.append(self.preview_thumbnail)
+
+        # Description
+        if "description" in mod_info and mod_info["description"]:
+            with open(mod_info["description"]) as f:
+                description = f.read()
+        self.preview_description.set_markup(description)
+
+
+        self.revealer.set_reveal_child(True)
 
     def populate_list(self):
         while child := self.mods_list_box.get_first_child():
@@ -91,9 +197,10 @@ class ModsTab(Gtk.Box):
             if mod not in staging_metadata["mods"]:
                 continue
             
-            display_name = mod
-            mod_metadata = staging_metadata["mods"][mod]
             
+            mod_metadata = staging_metadata["mods"][mod]
+
+            display_name = mod_metadata.get("display_name", mod)
             version_text = mod_metadata.get("version", "—")
             new_version = mod_metadata.get("new_version", "")
             changelog = mod_metadata.get("changelog", "")
@@ -101,10 +208,10 @@ class ModsTab(Gtk.Box):
             mod_files = mod_metadata.get("mod_files", [])
 
             row = Adw.ActionRow(title=display_name)
-            
-            if len(mod_files) == 1:
-                row.set_subtitle(mod_files[0])
-            row.mod_name = display_name.lower()
+            row.set_activatable(True)
+            row.mod_data = mod_metadata
+            row.set_subtitle(mod_metadata.get("author", ""))
+            row.mod_name = mod_metadata.get(display_name.lower)
 
             row_element_margin = 10
 
@@ -208,27 +315,7 @@ class ModsTab(Gtk.Box):
                 info_text_badge.set_margin_end(row_element_margin)
                 row.add_suffix(info_text_badge)
 
-            # Timestamps
-            if "install_timestamp" in mod_metadata or "enabled_timestamp" in mod_metadata:
-                timestamp_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=2, valign=Gtk.Align.CENTER, margin_end=15)
-
-                # Enabled Timestamp
-                if "enabled_timestamp" in mod_metadata:
-                    enabled_timestamp_label = timestamp_converter(mod_metadata["enabled_timestamp"])
-                    enabled_tooltip = _("Enabled: {}").format(timestamp_converter(mod_metadata["enabled_timestamp"], "long"))
-                    
-                    enabled_row = self.dashboard.create_timestamp_row(enabled_timestamp_label, enabled_tooltip, "enabled.svg")
-                    timestamp_box.append(enabled_row)
-
-                # Installed Timestamp
-                if "install_timestamp" in mod_metadata:
-                    installed_timestamp_label = timestamp_converter(mod_metadata["install_timestamp"])
-                    installed_tooltip = _("Installed: {}").format(timestamp_converter(mod_metadata["install_timestamp"], "long"))
-                    
-                    installed_row = self.dashboard.create_timestamp_row(installed_timestamp_label, installed_tooltip, "installed.svg")
-                    timestamp_box.append(installed_row)
-                
-                row.add_suffix(timestamp_box)
+            
 
             # Version
             version_badge = Gtk.Button()
@@ -257,6 +344,27 @@ class ModsTab(Gtk.Box):
             if len(version_text) < 10:
                 version_badge_sizegroup.add_widget(version_badge)
             row.add_suffix(version_badge)
+
+            # Timestamps
+            if "install_timestamp" in mod_metadata or "enabled_timestamp" in mod_metadata:
+                timestamp_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=2, valign=Gtk.Align.CENTER, margin_end=15)
+
+                # Enabled Timestamp
+                if "enabled_timestamp" in mod_metadata:
+                    enabled_timestamp_label = timestamp_converter(mod_metadata["enabled_timestamp"])
+                    enabled_tooltip = _("Enabled: {}").format(timestamp_converter(mod_metadata["enabled_timestamp"], "long"))
+                    
+                    enabled_row = self.dashboard.create_timestamp_row(enabled_timestamp_label, enabled_tooltip, "enabled.svg")
+                    timestamp_box.append(enabled_row)
+
+                # Installed Timestamp
+                if "install_timestamp" in mod_metadata:
+                    installed_timestamp_label = timestamp_converter(mod_metadata["install_timestamp"])
+                    installed_tooltip = _("Installed: {}").format(timestamp_converter(mod_metadata["install_timestamp"], "long"))
+                    
+                    installed_row = self.dashboard.create_timestamp_row(installed_timestamp_label, installed_tooltip, "installed.svg")
+                    timestamp_box.append(installed_row)
+                row.add_suffix(timestamp_box)
 
             # Trash
             u_stack = Gtk.Stack(transition_type=Gtk.StackTransitionType.CROSSFADE, hhomogeneous=False, interpolate_size=True)
@@ -320,7 +428,7 @@ class ModsTab(Gtk.Box):
         value = GObject.Value(GObject.TYPE_STRING, mod_name)
         return Gdk.ContentProvider.new_for_value(value)
     
-    def on_row_drop(self, target, _value, _x, _y, mod_name):
+    def on_row_drop(self, target, value, _x, _y, mod_name):
         if value == mod_name:
             return False
         
@@ -345,9 +453,13 @@ class ModsTab(Gtk.Box):
 
     def check_for_updates(self, btn):
         staging_metadata = load_staging_metadata(self.dashboard.staging_metadata_path)
-        if not staging_metadata: return
-        game_id = staging_metadata.get("info", {}).get("nexus_id")
-        if not game_id: return
+        if not staging_metadata:
+            print(f"Staging metadata not found at: {self.dashboard.staging_metadata_path}. Aborting update process.")
+            return
+        nexus_id = staging_metadata.get("info", {}).get("nexus_id")
+        if not nexus_id:
+            print(f"nexus_id not found in staging metadata. Aborting update process.")
+            return
 
         btn.set_sensitive(False)
 
@@ -357,4 +469,4 @@ class ModsTab(Gtk.Box):
                 self.populate_list()
             btn.set_sensitive(True)
 
-        check_for_mod_updates_async(staging_metadata, self.dashboard.headers, game_id, on_updates_checked)
+        check_for_mod_updates_async(staging_metadata, self.dashboard.headers, nexus_id, on_updates_checked)
