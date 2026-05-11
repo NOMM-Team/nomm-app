@@ -26,26 +26,25 @@ def get_mod_info(headers: dict, game_id: str, mod_id: str, download_dir: Path) -
 
     remote_data = resp.json()
     metadata = {}
-    metadata["display_name"] = remote_data.get("name")
+    metadata["name"] = remote_data.get("name")
     metadata["author"] = remote_data.get("author")
     metadata["created"] = remote_data.get("created")
     metadata["endorsements"] = remote_data.get("endorsement_count")
     metadata["downloads"] = remote_data.get("download_count")
     metadata["version"] = remote_data.get("version")
     metadata["thumbnail"] = remote_data.get("picture_url")
-    #metadata["description"] = remote_data.get("description")
 
     # Download thumbnail to have a local copy
     thumbnail_folder = download_dir.resolve() / f"thumbnails/"
     thumbnail_folder.mkdir(parents=True, exist_ok=True)
-    thumbnail_path = str(thumbnail_folder / (f"{metadata["display_name"]}.png"))
+    thumbnail_path = str(thumbnail_folder / (f"{metadata["name"]}.png"))
     download_image(metadata["thumbnail"], thumbnail_path)
     metadata["thumbnail"] = thumbnail_path
 
     # Save description separately to not pollute metadata file
     description_folder = download_dir.resolve() / f"descriptions/"
     description_folder.mkdir(parents=True, exist_ok=True)
-    description_path = str(description_folder / (f"{metadata["display_name"]}.html"))
+    description_path = str(description_folder / (f"{metadata["name"]}.html"))
     with open(description_path, 'w') as f:
         f.write(process_bbcode(remote_data.get("description")))
     metadata["description"] = description_path
@@ -88,8 +87,6 @@ def check_for_mod_updates_async(staging_metadata: dict, headers: dict, game_id: 
                             if new_log:
                                 # Join list of changes into a single string if necessary
                                 mod_metadata["changelog"] = "\n".join(new_log) if isinstance(new_log, list) else new_log
-                    
-                    mod_metadata["test"] = "testy"
 
                 else:
                     print(f"Error getting update info for {mod_name}: {resp.status_code}")
@@ -213,7 +210,8 @@ def _download_nexus_mod(nxm_link: str, headers: dict, final_download_dir: Path, 
 
     # obtain additional metadata on the mod
     mod_metadata = get_mod_info(headers, nexus_id, mod_id, final_download_dir)
-    mod_metadata["name"] = file_info_data.get("name", "Unknown Mod")
+    if "name" not in mod_metadata:
+        mod_metadata["name"] = file_info_data.get("name", "Unknown Mod")
     mod_metadata["changelog"] = file_info_data.get("changelog_html", "")
     mod_metadata["mod_id"] = mod_id
     mod_metadata["file_id"] = file_id

@@ -103,7 +103,7 @@ class DownloadsTab(Gtk.Box):
 
             if file_name in metadata.get("mods", {}):
                 # order of preference: official display_name > deprecated name (from before metadata rework) > file name
-                display_name = metadata["mods"][file_name].get("display_name", metadata["mods"][file_name].get("name", file_name))
+                display_name = metadata["mods"][file_name].get("name", file_name)
                 version_text = metadata["mods"][file_name].get("version", "—")
                 changelog = metadata["mods"][file_name].get("changelog", "")
             
