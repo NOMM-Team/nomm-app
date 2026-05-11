@@ -260,11 +260,8 @@ class GameDashboard(Gtk.Box):
         
         # get the mod deployment path
         dest_dir = self.deployment_targets[0]["path"]
-        if mod_name in staging_metadata["mods"] and "deployment_target" in staging_metadata["mods"][mod_name]:
-            for target in self.deployment_targets:
-                if target["name"] == staging_metadata["mods"][mod_name]["deployment_target"]:
-                    dest_dir = target["path"]
-                    break
+        if mod_name in staging_metadata["mods"] and "deployment_path" in staging_metadata["mods"][mod_name]:
+            dest_dir = staging_metadata["mods"][mod_name]["deployment_path"]
 
         staging_mod_dir = os.path.join(self.staging_path, mod_name)
 
