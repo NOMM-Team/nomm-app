@@ -344,7 +344,6 @@ class ModsTab(Gtk.Box):
 
                         installed_row = self.dashboard.create_timestamp_row(installed_timestamp_label, installed_tooltip, "installed.svg")
                         timestamp_box.append(installed_row)
-
                     row.add_suffix(timestamp_box)
 
                 # Version
