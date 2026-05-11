@@ -128,6 +128,13 @@ def process_bbcode(raw_desc: str) -> str:
     pango_text = pango_text.replace("[u]", "<u>").replace("[/u]", "</u>")
     pango_text = pango_text.replace("[i]", "<i>").replace("[/i]", "</i>")
     
+    # Handle centering
+    pango_text = pango_text.replace("[center]", "").replace("[/center]", "")
+    
+    # Handle fonts
+    pango_text = re.sub(r'\[font=([^\]]+)\]', r'<span font_family="\1">', pango_text)
+    pango_text = pango_text.replace("[/font]", "</span>")
+
     # Handle lists
     pango_text = pango_text.replace("[*]", "  • ").replace("[list]", "").replace("[/list]", "").replace("[/*]", "")
 
