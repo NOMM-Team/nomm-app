@@ -28,6 +28,7 @@ def get_mod_info(headers: dict, game_id: str, mod_id: str, download_dir: Path) -
     metadata = {}
     metadata["name"] = remote_data.get("name")
     metadata["author"] = remote_data.get("author")
+    metadata["uploader"] = remote_data.get("uploaded_by")
     metadata["created"] = remote_data.get("created")
     metadata["endorsements"] = remote_data.get("endorsement_count")
     metadata["downloads"] = remote_data.get("download_count")
