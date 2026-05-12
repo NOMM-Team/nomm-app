@@ -546,6 +546,12 @@ class ModsTab(Gtk.Box):
     def on_mod_toggled(self, switch, state, mod_files: list, mod: str):
         switch.set_sensitive(False)
         self.dashboard.currently_toggling.add(mod)
+
+        if state:
+            self.deployment_update_btn.set_visible(False)
+        else:
+            self.deployment_update_btn.set_visible(True)
+        
         def worker():
             success = toggle_mod_state(
                 mod_name=mod,
