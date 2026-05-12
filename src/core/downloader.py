@@ -53,13 +53,11 @@ class Downloader(GObject.Object):
                     downloaded += len(data)
                     if total_size > 0:
                         dl_ratio = downloaded / total_size
-                        if dl_ratio - last_reported >= 0.001:
-                            last_reported = dl_ratio
-                            download_data = {
-                                'filename' : filename,
-                                'progress' : dl_ratio
-                            }
-                            GLib.idle_add(self.emit, 'progress-changed', download_data)
+                        download_data = {
+                            'filename' : filename,
+                            'progress' : dl_ratio
+                        }
+                        GLib.idle_add(self.emit, 'progress-changed', download_data)
             GLib.idle_add(send_download_notification, "success", filename)
 
             GLib.idle_add(self.emit, 'download-complete', filename)

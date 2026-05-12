@@ -1,24 +1,25 @@
 import os
 import threading
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
+from typing import Callable, Optional
 from urllib.parse import urlsplit, urlunsplit
 
 import requests
 import yaml
 from gi.repository import GLib
 
-from core.mod_manager import get_metadata_path, load_staging_metadata
 from core.downloader import Downloader
-from gui.notifications import send_download_notification, download_popup
+from core.mod_manager import get_metadata_path, load_staging_metadata, meta_lock
 from core.tools import load_yaml, write_yaml
-from typing import Optional, Callable
+from gui.notifications import download_popup, send_download_notification
 
-# TODO: compare with check_for_update because it's almost the same but async
 def check_for_mod_updates_async(staging_metadata: dict, headers: dict, game_id: str, on_complete_callback: Optional[Callable]) -> None:
     def worker():
         print("Checking for updates in background...")
         mods_updated = False
-
+        
+        
         for mod_name, details in staging_metadata.get("mods", {}).items():
             mod_id = details.get("mod_id")
             local_version = str(details.get("version", ""))
@@ -110,7 +111,7 @@ def handle_nexus_link(nxm_link: str, downloader: Downloader) -> bool:
 
     if "collections" in nxm_link:
         print("Downloading collection")
-        _download_nexus_collection(nxm_link, headers, final_download_dir)
+        _download_nexus_collection(nxm_link, headers, final_download_dir, downloader)
     else:
         print("Downloading single mod")
         _download_nexus_mod(nxm_link, headers, final_download_dir, nexus_id, game_folder_name, user_config_dir, downloader)
@@ -165,7 +166,6 @@ def _download_nexus_mod(nxm_link: str, headers: dict, final_download_dir: Path, 
             download_inst.disconnect_by_func(on_download_complete)
             threading.Thread(target=_fetch_and_write_mod_metadata, args=(nxm_link, headers, final_download_dir, nexus_id, game_folder_name, file_name), daemon=True).start()
         
-        
         downloader.connect('download-complete', on_download_complete)
 
     except Exception as e:
@@ -201,8 +201,19 @@ def _download_nexus_collection(nxm_link: str, headers: dict, final_download_dir:
             
             if links:
                 direct_url = links[0]['URI']
-                if downloader.download_mod(direct_url, str(final_download_dir)):
-                    success_count += 1
+                
+                # Asyncio instead of threads to retrieve the succes var and download/write faster on the disk
+                executor = ThreadPoolExecutor()
+                future = executor.submit(downloader.download_mod, direct_url, str(final_download_dir))
+                
+                def on_done(f):
+                    success = f.result()
+                    if success:
+                        success_count += 1
+
+                future.add_done_callback(on_done)
+                
+                    
         except Exception as e:
             print(f"Failed to download mod {mod_id}: {e}")
 
@@ -289,16 +300,17 @@ def _fetch_and_write_mod_metadata(nxm_link: str, headers: dict, final_download_d
         }
 
         downloads_metadata_path = get_metadata_path(str(final_download_dir), is_staging=False)
-        downloads_metadata = load_yaml(downloads_metadata_path)
-        
-        if "mods" not in downloads_metadata:
-            downloads_metadata["mods"] = {}
-        downloads_metadata["info"] = {}
-        downloads_metadata["info"]["game"] = game_folder_name
-        downloads_metadata["info"]["nexus_id"] = nexus_id
-        downloads_metadata["mods"][file_name] = mod_metadata
+        with meta_lock:
+            downloads_metadata = load_yaml(downloads_metadata_path)
 
-        write_yaml(downloads_metadata, downloads_metadata_path)
+            if "mods" not in downloads_metadata:
+                downloads_metadata["mods"] = {}
+            downloads_metadata["info"] = {}
+            downloads_metadata["info"]["game"] = game_folder_name
+            downloads_metadata["info"]["nexus_id"] = nexus_id
+            downloads_metadata["mods"][file_name] = mod_metadata
+
+            write_yaml(downloads_metadata, downloads_metadata_path)
     except Exception as e:
         print(f"Warning: Could not retrieve mod metadata: {e}")
 
