@@ -10,7 +10,7 @@ gi.require_version('Notify', '0.7')
 
 from gi.repository import Adw, Gdk, GdkPixbuf, Gio, GLib, Gtk, Pango
 
-from core.gamestore_scanner import get_steam_base_dir, scan_all_games
+from core.game_scanner import get_steam_base_dir, scan_all_games
 from core.nexus_api import handle_nexus_link
 from core.tools import (get_username_from_steam_id, load_yaml,
                         translate_fuse_path, write_yaml)
