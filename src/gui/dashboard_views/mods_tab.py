@@ -156,7 +156,7 @@ class ModsTab(Gtk.Box):
         # Deployment Row
         self.deployment_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
         self.deployment_row.set_visible(False)
-        deployment_row_label = Gtk.Label(label=_("Deployment Path:"), css_classes=["dim-label"])
+        deployment_row_label = Gtk.Label(label=_("Deploy to Path:"), css_classes=["dim-label"])
         self.deployment_row.append(deployment_row_label)
         # Deployment path button
         self.deployment_btn = Gtk.Button()
@@ -167,6 +167,13 @@ class ModsTab(Gtk.Box):
         self.deployment_label.set_max_width_chars(25)
         self.deployment_btn.set_child(self.deployment_label)
         self.deployment_row.append(self.deployment_btn)
+        # Deployment path change button
+        self.deployment_update_btn = Gtk.Button()
+        self.deployment_update_btn.set_cursor_from_name("pointer")
+        self.deployment_update_btn.add_css_class("badge-action-row")
+        deployment_update_btn_icon = Gtk.Image.new_from_icon_name("edit-symbolic")
+        self.deployment_update_btn.set_child(deployment_update_btn_icon)
+        self.deployment_row.append(self.deployment_update_btn)
         self.details_box.append(self.deployment_row)
 
         # Uploader Row
@@ -174,7 +181,7 @@ class ModsTab(Gtk.Box):
         self.uploader_row.set_visible(False)
         uploader_row_label = Gtk.Label(label=_("Uploaded by:"), css_classes=["dim-label"])
         self.uploader_row.append(uploader_row_label)
-        # File counter
+        # Uploader button
         self.uploader_btn = Gtk.Button()
         self.uploader_btn.set_cursor_from_name("pointer")
         self.uploader_btn.add_css_class("badge-action-row")
@@ -273,6 +280,15 @@ class ModsTab(Gtk.Box):
             # Connect and store new ID
             self._deployment_handler_id = self.deployment_btn.connect("clicked", lambda x: webbrowser.open(f"file://{mod_info["deployment_path"]}"))
             self.deployment_row.set_visible(True)
+            if mod_info["status"] == "disabled": # only show modify button if the mod is disabled
+                self.deployment_update_btn.set_visible(True)
+                if hasattr(self, "_update_handler_id") and self._update_handler_id:
+                    self.deployment_update_btn.disconnect(self._update_handler_id)
+                self._update_handler_id = self.deployment_update_btn.connect(
+                    "clicked",
+                    lambda x: self.pick_new_deployment_path(mod_info, row.mod_data_index))
+            else:
+                self.deployment_update_btn.set_visible(False)
         else:
             self.deployment_row.set_visible(False)
 
@@ -290,9 +306,47 @@ class ModsTab(Gtk.Box):
         # Display the pane!
         self.revealer.set_reveal_child(True)
 
+
     def on_description_btn_clicked(self, button, title, description):
         desc_win = TextWindow(self.dashboard.app.win, title, description, text_type="markup")
         desc_win.present()
+
+    def pick_new_deployment_path(self, mod_info, mod_index):
+        # Create the FileChooserNative
+        picker = Gtk.FileChooserNative(
+            title=_("Select New Deployment Directory"),
+            transient_for=self.get_root(), # 'self' assumes you are in a widget/window
+            action=Gtk.FileChooserAction.SELECT_FOLDER,
+            accept_label=_("_Select"),
+            cancel_label=_("_Cancel"),
+        )
+
+        # Pre-select the existing path
+        current_path = mod_info.get("deployment_path")
+        if current_path:
+            # Convert string path to a Gio.File object
+            folder = Gio.File.new_for_path(current_path)
+            picker.set_current_folder(folder)
+
+        # Handle the response
+        def on_response(dialog, response_id):
+            if response_id == Gtk.ResponseType.ACCEPT:
+                selected_file = dialog.get_file()
+                new_path = selected_file.get_path()
+                
+                # Logic to save the new path
+                staging_metadata = load_staging_metadata(self.dashboard.staging_metadata_path)
+                staging_metadata["mods"][mod_index]["deployment_path"] = new_path
+                write_yaml(staging_metadata, self.dashboard.staging_metadata_path)
+                
+                # Update UI label immediately
+                self.deployment_label.set_label(new_path)
+                self.deployment_label.set_tooltip_text(new_path)
+                
+            dialog.destroy()
+
+        picker.connect("response", on_response)
+        picker.show()
 
     def populate_list(self):
         while child := self.mods_list_box.get_first_child():
@@ -333,6 +387,7 @@ class ModsTab(Gtk.Box):
             row = Adw.ActionRow(title=display_name)
             row.set_activatable(True)
             row.mod_data = mod_metadata
+            row.mod_data_index = mod
             row.set_subtitle(mod_metadata.get("author", ""))
             row.mod_name = mod_metadata.get(display_name.lower)
 
