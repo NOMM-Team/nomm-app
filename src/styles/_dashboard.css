@@ -1,0 +1,27 @@
+.dashboard-list {
+    background-color: shade(rgb(57, 57, 57), 0.8);
+    border-radius: 15px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.dashboard-list row {
+    border-radius: 0;
+    outline: none;
+    transition: background-color 300ms ease-in-out;
+}
+
+.dashboard-list row:first-child {
+    border-radius: 15px 15px 0 0;
+}
+
+.dashboard-list row:hover {
+    background-color: alpha(var(--accent-bg-color), 0.1);
+}
+
+.dashboard-list row:selected {
+    background-color: alpha(var(--accent-bg-color), 0.3);
+}
+
+.shadow-box {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}

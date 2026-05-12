@@ -2,19 +2,6 @@
 
 }
 
-.title-1 {
-    font-size: 18px;
-}
-
-.title-2 {
-    font-size: 12px;
-    font-weight: normal;
-}
-
-.desc {
-    font-size: 12px;
-}
-
 .description-btn {
     margin: 0px;
     border-radius: 0;
@@ -45,24 +32,13 @@
 }
 
 .boxed-list row:focus {
-    outline: none; /* Supprime le liseré bleu par défaut */
+    outline: none;
 }
 
 .boxed-preview {
     background-color: shade(@card_bg_color, 0.6);
     border-radius: 0px 10px 0px 0px;
     min-width: 200px;
-}
-
-.footer-box {
-    background-color: @card_bg_color;
-    padding: 15px 30px;
-    border-radius: 0px 0px 10px 10px;
-}
-
-.install-btn {
-    background-color: var(--accent-bg-color, #3584e4);
-    color: @window_fg_color;
 }
 
 .fomod-preview-image {
