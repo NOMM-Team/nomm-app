@@ -79,7 +79,7 @@ class ToolsTab(Gtk.Box):
                 dl_pbar.set_size_request(-1, -1)
 
                 dl_btn = Gtk.Button(label=_("Download"), css_classes=["suggested-action"], valign=Gtk.Align.CENTER)
-                dl_btn.connect("clicked", self.on_utility_download_clicked, util, stack, dl_pbar)
+                dl_btn.connect("clicked", self.on_utility_download_clicked, util, stack, dl_pbar, filename)
                 dl_btn.set_valign(Gtk.Align.FILL)
                 
                 # Overlay to display download progress on top of download button
@@ -120,7 +120,7 @@ class ToolsTab(Gtk.Box):
             btn_container.set_center_widget(load_order_btn)
             self.append(btn_container)
 
-    def on_utility_download_clicked(self, btn, util, stack, pbar):
+    def on_utility_download_clicked(self, btn, util, stack, pbar, filename):
         source_url = util.get("source")
         if not source_url: 
             return
@@ -131,11 +131,14 @@ class ToolsTab(Gtk.Box):
         util_dir = os.path.join(self.dashboard.downloads_path, "utilities")
         
         def on_download_progress(downloader_inst, download_data):
-            pbar.set_fraction(download_data['progress'])
+            updated_filename = download_data['filename']
+            if updated_filename == filename:
+                pbar.set_fraction(download_data['progress'])
         
-        def on_download_finished(downloader_inst, filename):
-            stack.set_visible_child_name("install")
-            btn.set_sensitive(True)
+        def on_download_finished(downloader_inst, finished_filename):
+            if finished_filename == filename:
+                stack.set_visible_child_name("install")
+                btn.set_sensitive(True)
         
         def on_download_error(downloader_inst, e):
             self.dashboard.show_message(_("Download Failed"), e)
