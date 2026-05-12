@@ -192,11 +192,14 @@ class ModsTab(Gtk.Box):
 
         # Close button
         close_btn = Gtk.Button(icon_name="window-close-symbolic", css_classes=["flat"], halign=Gtk.Align.CENTER)
-        close_btn.connect("clicked", lambda x: self.revealer.set_reveal_child(False))
+        close_btn.connect("clicked", lambda x: self.on_close_preview())
         self.preview_pane.append(close_btn)
-
         
         self.revealer.set_child(self.preview_pane)
+
+    def on_close_preview(self):
+        self.mods_list_box.select_row(None)
+        self.revealer.set_reveal_child(False)
 
     def on_row_clicked(self, listbox, row):
         # We need to fetch the metadata associated with this row
