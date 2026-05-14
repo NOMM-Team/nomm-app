@@ -122,6 +122,7 @@ class DownloadsTab(Gtk.Box):
                 self.list_box.remove(child)
             
             install_btn_sizegroup = Gtk.SizeGroup(mode=Gtk.SizeGroupMode.HORIZONTAL)
+            version_badge_sizegroup = Gtk.SizeGroup(mode=Gtk.SizeGroupMode.HORIZONTAL)
             
             for file_name in files:
                 installed = is_mod_installed(file_name, staging_metadata)
@@ -137,21 +138,6 @@ class DownloadsTab(Gtk.Box):
                 row = Adw.ActionRow(title=display_name)
                 row.is_installed = installed
                 if display_name != file_name: row.set_subtitle(file_name)
-
-                # Version badge
-                version_badge = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
-                version_badge.add_css_class("badge-action-row")
-                version_badge.set_valign(Gtk.Align.CENTER)
-                version_badge.set_margin_end(20) 
-
-                v_label = Gtk.Label(label=version_text)
-                version_badge.append(v_label)
-                if changelog:
-                    version_badge.set_tooltip_text(changelog)
-                    q_icon = Gtk.Image.new_from_icon_name("help-about-symbolic")
-                    q_icon.set_pixel_size(14)
-                    version_badge.append(q_icon)
-                row.add_suffix(version_badge)
 
                 # Timestamps
                 timestamp_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=2, valign=Gtk.Align.CENTER, margin_end=15)
@@ -170,6 +156,24 @@ class DownloadsTab(Gtk.Box):
                             break
                         
                 row.add_suffix(timestamp_box)
+                
+                # Version badge
+                version_badge = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
+                version_badge.add_css_class("badge-action-row")
+                version_badge.set_valign(Gtk.Align.CENTER)
+                version_badge.set_halign(Gtk.Align.CENTER)
+                version_badge.set_margin_end(20)
+
+                v_label = Gtk.Label(label=version_text, hexpand=True, halign=Gtk.Align.CENTER)
+                version_badge.set_hexpand(False)
+                version_badge.append(v_label)
+                if changelog:
+                    version_badge.set_tooltip_text(changelog)
+                    q_icon = Gtk.Image.new_from_icon_name("help-about-symbolic")
+                    q_icon.set_pixel_size(14)
+                    version_badge.append(q_icon)
+                version_badge_sizegroup.add_widget(version_badge)
+                row.add_suffix(version_badge)
 
                 # Progressbar
                 dl_pbar = Gtk.ProgressBar()

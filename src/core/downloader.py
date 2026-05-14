@@ -38,7 +38,7 @@ class Downloader(GObject.Object):
 
         try:
             # Background task: downloading
-            response = requests.get(url, stream=True, timeout=(15, 120))
+            response = requests.get(url, stream=True, timeout=(15, None))
             total_size = int(response.headers.get('content-length', 0))
             response.raise_for_status()
             downloaded = 0
