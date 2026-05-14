@@ -9,4 +9,4 @@ python3 build/flatpak/flatpak-pip-generator.py requests PyYAML vdf rarfile --out
 flatpak-builder --user --install --force-clean --repo=repo build-dir ./build/flatpak/com.nomm.Nomm.yaml 
 
 # Once you have all the files/folders generated, you package it into a neat little flatpak file :)
-flatpak build-bundle ./repo nomm.flatpak com.nomm.Nomm
+flatpak build-bundle ./repo NOMM.flatpak com.nomm.Nomm
