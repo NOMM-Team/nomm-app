@@ -123,10 +123,6 @@ class ModsTab(Gtk.Box):
         self.preview_description.connect("activate-link", lambda label, uri: webbrowser.open(uri))
         #self.preview_description.add_css_class("dim-label") # Optional styling
         
-        self.sc = Gtk.ScrolledWindow(vexpand=True)
-        self.sc.set_child(self.mods_list_box)
-        self.append(self.sc)
-        
         self.desc_scroll.set_child(self.preview_description)
         self.preview_pane.append(self.desc_scroll)
 
@@ -166,6 +162,7 @@ class ModsTab(Gtk.Box):
         self.thumb_container.append(self.preview_thumbnail)
 
         # Description
+        description = ''
         if "description" in mod_info and mod_info["description"]:
             with open(mod_info["description"]) as f:
                 description = f.read()
