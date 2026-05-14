@@ -224,6 +224,11 @@ class ModsTab(Gtk.Box):
                 mod_files = mod_metadata.get("mod_files", [])
 
                 row = Adw.ActionRow(title=display_name)
+                row.set_activatable(True)
+                row.mod_data = mod_metadata
+                if len(mod_files) == 1:
+                    row.set_subtitle(mod_files[0])
+                row.mod_name = display_name.lower()
                 row_element_margin = 10
 
                 # Toggle Switch
