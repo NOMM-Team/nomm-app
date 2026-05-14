@@ -1,6 +1,5 @@
 .mod-thumbnail-container {
     min-width: 300px;
-    max-height: 168px;
 }
 
 .mod-thumbnail-container image {
@@ -10,10 +9,7 @@
 /* This targets the Gtk.Box we named "rounded-thumb" */
 .rounded-thumb {
     border-radius: 12px;
-    
-    clip-path: border-box; 
-    overflow: hidden;
 
-    background-color: var(--card_bg_color);          /* Fallback color if image fails */
+    background-color: var(--card_bg_color);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }

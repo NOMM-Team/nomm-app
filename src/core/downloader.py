@@ -10,7 +10,8 @@ class Downloader(GObject.Object):
     __gsignals__ = {
         'progress-changed': (GObject.SignalFlags.RUN_FIRST, None, (object,)),
         'download-complete': (GObject.SignalFlags.RUN_FIRST, None, (object,)),
-        'download-error': (GObject.SignalFlags.RUN_FIRST, None, (str,))
+        'download-error': (GObject.SignalFlags.RUN_FIRST, None, (str,)),
+        'download-metadata-ready': (GObject.SignalFlags.RUN_FIRST, None, ())
     }
     
     def __init__(self):

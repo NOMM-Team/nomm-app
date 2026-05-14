@@ -204,7 +204,7 @@ def _download_nexus_mod(nxm_link: str, headers: dict, final_download_dir: Path, 
             if downloaded_filename != file_name:
                 return
             download_inst.disconnect_by_func(on_download_complete)
-            threading.Thread(target=_fetch_and_write_mod_metadata, args=(nxm_link, headers, final_download_dir, nexus_id, game_folder_name, file_name), daemon=True).start()
+            threading.Thread(target=_fetch_and_write_mod_metadata, args=(nxm_link, headers, final_download_dir, nexus_id, game_folder_name, file_name, downloader), daemon=True).start()
         
         downloader.connect('download-complete', on_download_complete)
 
@@ -318,7 +318,7 @@ def _get_files_from_collection(game_domain: str, collection_id: str, revision_id
         print(f"GraphQL Query Failed: {e}")
         return []
     
-def _fetch_and_write_mod_metadata(nxm_link: str, headers: dict, final_download_dir: Path, nexus_id: str, game_folder_name: str, file_name: str):
+def _fetch_and_write_mod_metadata(nxm_link: str, headers: dict, final_download_dir: Path, nexus_id: str, game_folder_name: str, file_name: str, downloader: Downloader):
     splitted_nxm = urlsplit(nxm_link)
     nxm_path = splitted_nxm.path.split('/')
     
@@ -351,6 +351,7 @@ def _fetch_and_write_mod_metadata(nxm_link: str, headers: dict, final_download_d
             downloads_metadata["mods"][file_name] = mod_metadata
 
             write_yaml(downloads_metadata, downloads_metadata_path)
+        GLib.idle_add(downloader.emit, 'download-metadata-ready')
     except Exception as e:
         print(f"Warning: Could not retrieve mod metadata: {e}")
 

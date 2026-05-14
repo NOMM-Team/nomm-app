@@ -34,17 +34,10 @@ class DownloadsTab(Gtk.Box):
         self.downloader = downloader
         self.downloader.connect('progress-changed', self.on_download_progress)
         self.downloader.connect('download-complete', self.on_download_complete)
+        self.downloader.connect('download-metadata-ready', self.on_metadata_ready)
         self.download_maps = {}
         self.download_lbl_maps = {}
-        self.currently_downloading = []
-        
-        # Download signals used globally
-        self.downloader = downloader
-        self.downloader.connect('progress-changed', self.on_download_progress)
-        self.downloader.connect('download-complete', self.on_download_complete)
-        self.download_maps = {}
-        self.download_lbl_maps = {}
-        self.currently_downloading = []
+        self.currently_downloading = set()
         
         # Action Bar
         action_bar = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
@@ -495,12 +488,15 @@ class DownloadsTab(Gtk.Box):
         filename = data['filename']
         progress = data['progress']
         if filename not in self.currently_downloading:
-            self.currently_downloading.append(filename)
+            self.currently_downloading.add(filename)
             self.populate_list()
         if filename in self.download_maps:
             self.download_maps[filename].set_fraction(progress)
             self.download_lbl_maps[filename].set_text(f"{round(progress*100)}%")
             
     def on_download_complete(self, downloader, filename):
-        self.currently_downloading.remove(filename)
+        self.currently_downloading.discard(filename)
+        self.download_lbl_maps[filename].set_text("Finalizing...")
+        
+    def on_metadata_ready(self, downloader):
         self.populate_list()
