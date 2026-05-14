@@ -1,0 +1,49 @@
+# Maintainer: Allexio <x.allexio@gmail.com>
+pkgname=nomm
+pkgver=0.8.0
+pkgrel=1
+pkgdesc="Native Open Mod Manager - a mod manager for Linux"
+arch=('any')
+url="https://github.com/Allexio/nomm"
+license=('GPL3')
+depends=(
+    'python'
+    'python-gobject'
+    'gtk4'
+    'libadwaita'
+    'python-requests'
+    'python-yaml'
+    'p7zip'
+    'unrar'
+    'python-vdf'
+    'python-rarfile'
+)
+makedepends=(
+    'gettext'
+)
+source=("$pkgname-$pkgver.tar.gz::https://github.com/Allexio/nomm/archive/refs/tags/$pkgver.tar.gz")
+sha256sums=('54b90cd921e9b7aee800d0cd3e149b523a48517a8fcbb084f180daabfec42e50')
+
+package() {
+    cd "nomm-$pkgver"
+
+    # App files
+    install -dm755 "$pkgdir/usr/lib/nomm"
+    cp src/*.py src/*.css src/*.yaml "$pkgdir/usr/lib/nomm/"
+    cp -r assets default_game_configs "$pkgdir/usr/lib/nomm/"
+
+    # Entry point
+    install -Dm755 src/launcher.py "$pkgdir/usr/bin/nomm"
+
+    # Desktop file
+    install -Dm644 com.nomm.Nomm.desktop \
+        "$pkgdir/usr/share/applications/com.nomm.Nomm.desktop"
+
+    # Icon
+    install -Dm644 assets/nomm.png \
+        "$pkgdir/usr/share/icons/hicolor/64x64/apps/com.nomm.Nomm.png"
+
+    # Localisation
+    install -dm755 "$pkgdir/usr/share/locale/fr/LC_MESSAGES"
+    msgfmt locale/fr.po -o "$pkgdir/usr/share/locale/fr/LC_MESSAGES/com.nomm.Nomm.mo"
+}

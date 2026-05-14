@@ -12,3 +12,7 @@ build/flatpak/python3-modules.json
 
 # Flatpak package
 NOMM.flatpak
+
+# AUR build
+build/aur/*.tar.zst
+build/aur/*.tar.gz

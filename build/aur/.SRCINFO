@@ -1,0 +1,22 @@
+pkgbase = nomm
+	pkgdesc = Native Open Mod Manager - a mod manager for Linux
+	pkgver = 0.8.0
+	pkgrel = 1
+	url = https://github.com/Allexio/nomm
+	arch = any
+	license = GPL3
+	makedepends = gettext
+	depends = python
+	depends = python-gobject
+	depends = gtk4
+	depends = libadwaita
+	depends = python-requests
+	depends = python-yaml
+	depends = p7zip
+	depends = unrar
+	depends = python-vdf
+	depends = python-rarfile
+	source = nomm-0.8.0.tar.gz::https://github.com/Allexio/nomm/archive/refs/tags/0.8.0.tar.gz
+	sha256sums = 54b90cd921e9b7aee800d0cd3e149b523a48517a8fcbb084f180daabfec42e50
+
+pkgname = nomm
