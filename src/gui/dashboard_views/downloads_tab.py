@@ -103,7 +103,8 @@ class DownloadsTab(Gtk.Box):
 
             if file_name in metadata.get("mods", {}):
                 # order of preference: official display_name > deprecated name (from before metadata rework) > file name
-                display_name = metadata["mods"][file_name].get("name", file_name)
+                display_name = metadata["mods"][file_name].get("display_name", file_name)
+                folder_name = metadata["mods"][file_name].get("folder_name", file_name)
                 version_text = metadata["mods"][file_name].get("version", "—")
                 changelog = metadata["mods"][file_name].get("changelog", "")
             
@@ -214,9 +215,9 @@ class DownloadsTab(Gtk.Box):
         return datetime.fromtimestamp(os.path.getmtime(os.path.join(self.dashboard.downloads_path, f)))
 
     # Install
-    def on_install_clicked(self, btn, filename, display_name):
-        display_name = display_name.replace(".zip", "").replace(".rar", "").replace(".7z", "")
-        mod_staging_dir = os.path.join(self.dashboard.staging_path, display_name)
+    def on_install_clicked(self, btn, filename, folder_name):
+        folder_name = folder_name.replace(".zip", "").replace(".rar", "").replace(".7z", "")
+        mod_staging_dir = os.path.join(self.dashboard.staging_path, folder_name)
         archive_full_path = os.path.join(self.dashboard.downloads_path, filename)
         btn.set_sensitive(False)
         

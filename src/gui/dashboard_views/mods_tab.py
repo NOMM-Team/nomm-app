@@ -24,9 +24,9 @@ class ModsTab(Gtk.Box):
         self.set_margin_start(15)
         self.set_margin_end(15)
         self.set_margin_top(20)
-        
+
         self.dashboard = dashboard
-        
+
         # Action bar top right
         action_bar = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
         self.mod_search_entry = Gtk.SearchEntry(placeholder_text=_("Search mods..."))
@@ -380,7 +380,8 @@ class ModsTab(Gtk.Box):
             
             mod_metadata = staging_metadata["mods"][mod]
 
-            display_name = mod_metadata.get("name", mod)
+            display_name = mod_metadata.get("display_name", mod)
+            folder_name = mod_metadata.get("folder_name", mod)
             version_current = mod_metadata.get("version", "—")
             version_new = mod_metadata.get("version_new", "")
             changelog = mod_metadata.get("changelog", "")
@@ -429,7 +430,7 @@ class ModsTab(Gtk.Box):
             
             # Suffix: Missing Files
             missing_files = []
-            mod_dir = staging_path / display_name
+            mod_dir = staging_path / folder_name
             for mod_file in mod_files:    
                 if not os.path.exists(mod_dir/mod_file):
                     missing_files.append(mod_file)
@@ -626,4 +627,4 @@ class ModsTab(Gtk.Box):
                 self.populate_list()
             btn.set_sensitive(True)
 
-        check_for_mod_updates_async(staging_metadata, self.dashboard.headers, nexus_id, on_updates_checked)
+        check_for_mod_updates_async(staging_metadata, self.dashboard.headers, nexus_id, Path(self.dashboard.downloads_path), on_updates_checked)

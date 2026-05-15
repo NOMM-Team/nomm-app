@@ -381,6 +381,7 @@ def finalise_mod_metadata(filename: str, mod_files: list, deployment_target: dic
         if mod_name not in current_staging_metadata["mods"]:
             current_staging_metadata["mods"][mod_name] = {}
             current_staging_metadata["mods"][mod_name]["name"] = mod_name
+            current_staging_metadata["mods"][mod_name]["display_name"] = mod_name
 
         current_staging_metadata["mods"][mod_name]["mod_files"] = mod_files
         current_staging_metadata["mods"][mod_name]["status"] = "disabled"
