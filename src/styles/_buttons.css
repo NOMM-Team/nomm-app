@@ -39,3 +39,7 @@
     border-radius: 0px;
     background-color: var(--accent-bg-color, #3584e4);
 }
+
+.btn-download-before {
+    background-color: shade(@card_bg_color, 0.6);
+}

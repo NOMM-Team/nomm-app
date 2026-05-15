@@ -8,10 +8,11 @@ from gui.notifications import send_download_notification
 
 class Downloader(GObject.Object):
     __gsignals__ = {
+        'download-started': (GObject.SignalFlags.RUN_FIRST, None, (str,)),
         'progress-changed': (GObject.SignalFlags.RUN_FIRST, None, (object,)),
-        'download-complete': (GObject.SignalFlags.RUN_FIRST, None, (object,)),
+        'download-complete': (GObject.SignalFlags.RUN_FIRST, None, (str,)),
         'download-error': (GObject.SignalFlags.RUN_FIRST, None, (str,)),
-        'download-metadata-ready': (GObject.SignalFlags.RUN_FIRST, None, ())
+        'download-metadata-ready': (GObject.SignalFlags.RUN_FIRST, None, (str,))
     }
     
     def __init__(self):
@@ -43,6 +44,7 @@ class Downloader(GObject.Object):
             total_size = int(response.headers.get('content-length', 0))
             response.raise_for_status()
             downloaded = 0
+            GLib.idle_add(self.emit, 'download-started', filename)
             with open(dest_path, 'wb') as f:
                 last_reported = 0.0
                 for data in response.iter_content(chunk_size=4096):
@@ -54,11 +56,13 @@ class Downloader(GObject.Object):
                     downloaded += len(data)
                     if total_size > 0:
                         dl_ratio = downloaded / total_size
-                        download_data = {
-                            'filename' : filename,
-                            'progress' : dl_ratio
-                        }
-                        GLib.idle_add(self.emit, 'progress-changed', download_data)
+                        if dl_ratio - last_reported >= 0.01:
+                            last_reported = dl_ratio
+                            download_data = {
+                                'filename' : filename,
+                                'progress' : dl_ratio
+                            }
+                            GLib.idle_add(self.emit, 'progress-changed', download_data)
             GLib.idle_add(send_download_notification, "success", filename)
 
             GLib.idle_add(self.emit, 'download-complete', filename)

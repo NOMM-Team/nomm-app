@@ -19,7 +19,3 @@
     border-radius: 0px;
     background-color: var(--accent-bg-color);
 }
-
-.btn-download-before {
-    background-color: shade(@card_bg_color, 0.8);
-}

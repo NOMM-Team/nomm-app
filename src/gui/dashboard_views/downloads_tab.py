@@ -32,6 +32,7 @@ class DownloadsTab(Gtk.Box):
         
         # Download signals used globally
         self.downloader = downloader
+        self.downloader.connect('download-started', self.on_download_started)
         self.downloader.connect('progress-changed', self.on_download_progress)
         self.downloader.connect('download-complete', self.on_download_complete)
         self.downloader.connect('download-metadata-ready', self.on_metadata_ready)
@@ -106,8 +107,6 @@ class DownloadsTab(Gtk.Box):
             GLib.idle_add(on_data_prepared, files, staging_metadata, meta_path, metadata)
         
         def on_data_prepared(files, staging_metadata, meta_path, metadata):
-            self.download_maps.clear()
-            self.download_lbl_maps.clear()
 
             valign = self.scrolled.get_valign()
             
@@ -167,7 +166,12 @@ class DownloadsTab(Gtk.Box):
                     version_badge.append(q_icon)
                 version_badge_sizegroup.add_widget(version_badge)
                 row.add_suffix(version_badge)
-
+                
+                # Last progress
+                current_ratio = None
+                if file_name in self.download_maps:
+                    current_ratio = self.download_maps[file_name].get_fraction()
+                
                 # Progressbar
                 dl_pbar = Gtk.ProgressBar()
                 dl_pbar.set_can_target(False)
@@ -176,10 +180,17 @@ class DownloadsTab(Gtk.Box):
                 dl_pbar.set_halign(Gtk.Align.FILL)
                 dl_pbar.set_valign(Gtk.Align.FILL)
                 dl_pbar.set_size_request(-1, -1)
+                if current_ratio:
+                    dl_pbar.set_fraction(current_ratio)
                 self.download_maps[file_name] = dl_pbar
-
+                
+                # Last progress
+                current_ratio_label = None
+                if file_name in self.download_lbl_maps:
+                    current_ratio_label = self.download_lbl_maps[file_name].get_label()
+                
                 # Download label
-                download_lbl = Gtk.Label(label='0%', valign=Gtk.Align.CENTER, halign=Gtk.Align.CENTER)
+                download_lbl = Gtk.Label(label=current_ratio_label if current_ratio_label else '0%', valign=Gtk.Align.CENTER, halign=Gtk.Align.CENTER)
                 download_lbl.add_css_class("heading")
                 download_lbl.add_css_class("dim-label")
                 self.download_lbl_maps[file_name] = download_lbl
@@ -290,8 +301,8 @@ class DownloadsTab(Gtk.Box):
             GLib.idle_add(on_extraction_done, data)
                 
         def on_extraction_done(data):
-            btn.set_sensitive(True)
             if not data:
+                btn.set_sensitive(True)
                 return False
             if data['fomod']:
                 dialog = FomodSelectionDialog(self.dashboard.app.win, data['fomod'], mod_staging_dir, self.dashboard.deployment_targets[0]['path'])
@@ -299,6 +310,7 @@ class DownloadsTab(Gtk.Box):
                 dialog.present()
                 return False
             self.resolve_deployment_path(filename, data['files'])
+            btn.set_sensitive(True)
             return False
         
         threading.Thread(target=worker, daemon=True).start()
@@ -484,6 +496,11 @@ class DownloadsTab(Gtk.Box):
         
         threading.Thread(target=finalise_metadata, daemon=True).start()
         
+    def on_download_started(self, downloader, filename):
+        if filename not in self.currently_downloading:
+            self.currently_downloading.add(filename)
+            self.populate_list()
+    
     def on_download_progress(self, downloader, data):
         filename = data['filename']
         progress = data['progress']
@@ -491,12 +508,17 @@ class DownloadsTab(Gtk.Box):
             self.currently_downloading.add(filename)
             self.populate_list()
         if filename in self.download_maps:
+            print(f"{filename}: {progress}%")
             self.download_maps[filename].set_fraction(progress)
             self.download_lbl_maps[filename].set_text(f"{round(progress*100)}%")
             
     def on_download_complete(self, downloader, filename):
+        print(self.currently_downloading)
         self.currently_downloading.discard(filename)
-        self.download_lbl_maps[filename].set_text("Finalizing...")
+        print(self.currently_downloading)
+        self.download_lbl_maps[filename].set_text("Fetching...")
         
-    def on_metadata_ready(self, downloader):
+    def on_metadata_ready(self, downloader, filename):
+        self.download_maps[filename].set_fraction(0.0)
+        self.download_lbl_maps.pop(filename)
         self.populate_list()

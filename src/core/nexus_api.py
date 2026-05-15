@@ -351,7 +351,7 @@ def _fetch_and_write_mod_metadata(nxm_link: str, headers: dict, final_download_d
             downloads_metadata["mods"][file_name] = mod_metadata
 
             write_yaml(downloads_metadata, downloads_metadata_path)
-        GLib.idle_add(downloader.emit, 'download-metadata-ready')
+        GLib.idle_add(downloader.emit, 'download-metadata-ready', file_name)
     except Exception as e:
         print(f"Warning: Could not retrieve mod metadata: {e}")
 
