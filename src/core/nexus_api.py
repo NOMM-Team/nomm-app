@@ -67,7 +67,7 @@ def check_for_mod_updates_async(staging_metadata: dict, headers: dict, game_id: 
             print(f"Checking for update for mod: {mod_name}")
             try:
                 mod_url = f"https://api.nexusmods.com/v1/games/{game_id}/mods/{mod_id}.json"
-                resp = requests.get(mod_url, headers=headers, timeout=120)
+                resp = requests.get(mod_url, headers=headers, timeout=10)
                 print(resp.content)
                 if resp.status_code == 200:
                     remote_data = resp.json()
@@ -78,7 +78,7 @@ def check_for_mod_updates_async(staging_metadata: dict, headers: dict, game_id: 
                         mods_updated = True
 
                         changelog_url = f"https://api.nexusmods.com/v1/games/{game_id}/mods/{mod_id}/changelogs.json"
-                        changelog_resp = requests.get(changelog_url, headers=headers, timeout=120)
+                        changelog_resp = requests.get(changelog_url, headers=headers, timeout=10)
                         
                         if changelog_resp.status_code == 200:
                             logs = changelog_resp.json()
@@ -173,7 +173,7 @@ def _download_nexus_mod(nxm_link: str, headers: dict, final_download_dir: Path, 
     download_api_url = f"https://api.nexusmods.com/v1/games/{nexus_id}/mods/{mod_id}/files/{file_id}/download_link.json"
 
     try:
-        response = requests.get(download_api_url, headers=headers, params=params, timeout=120)
+        response = requests.get(download_api_url, headers=headers, params=params, timeout=10)
         if response.status_code != 200:
             print(f"Nexus API Error: {response.json()}")
         response.raise_for_status()
@@ -202,7 +202,7 @@ def _download_nexus_mod(nxm_link: str, headers: dict, final_download_dir: Path, 
     
     try:
         info_api_url = f"https://api.nexusmods.com/v1/games/{nexus_id}/mods/{mod_id}/files/{file_id}.json"
-        info_response = requests.get(info_api_url, headers=headers, timeout=120)
+        info_response = requests.get(info_api_url, headers=headers, timeout=(10, None))
         info_response.raise_for_status()
         file_info_data = info_response.json()
 
