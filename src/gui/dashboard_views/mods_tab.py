@@ -11,7 +11,7 @@ from gi.repository import Adw, Gdk, GLib, GObject, Gtk, Gio, GdkPixbuf, Pango
 from core.mod_manager import (change_mod_index, check_for_conflicts,
                               deploy_all_ordered_mods, load_staging_metadata,
                               read_index, toggle_mod_state)
-from core.nexus_api import check_for_mod_updates_async
+from core.nexus_api import check_for_mod_updates_async, endorse_nexus_mod
 from core.tools import timestamp_converter, write_yaml, process_bbcode
 from gui.text_window import TextWindow
 
@@ -188,6 +188,26 @@ class ModsTab(Gtk.Box):
         self.uploader_row.append(self.uploader_btn)
         self.details_box.append(self.uploader_row)
 
+        # Endorsement Row
+        self.endorsement_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
+        self.endorsement_row.set_visible(False)
+        endorsement_row_label = Gtk.Label(label=_("# of Endorsements:"), css_classes=["dim-label"])
+        self.endorsement_row.append(endorsement_row_label)
+        # Endorse button
+        self.endorse_btn = Gtk.Button()
+        self.endorse_btn.set_cursor_from_name("pointer")
+        endorse_button_content = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
+        endorse_button_content.set_halign(Gtk.Align.CENTER)
+        self.endorse_btn_icon = Gtk.Image.new_from_icon_name("go-up-symbolic")
+        self.endorse_btn_icon.set_visible(False)
+        self.endorse_btn_label = Gtk.Label()
+        endorse_button_content.append(self.endorse_btn_label)
+        endorse_button_content.append(self.endorse_btn_icon)
+        self.endorse_btn.set_child(endorse_button_content)
+        self.endorse_btn.add_css_class("badge-action-row")
+        self.endorsement_row.append(self.endorse_btn)
+        self.details_box.append(self.endorsement_row)
+
         self.preview_pane.append(self.details_box)
 
         # Close button
@@ -306,6 +326,21 @@ class ModsTab(Gtk.Box):
         else:
             self.uploader_row.set_visible(False)
 
+        # Endorsement Row
+        if "endorsements" in mod_info and mod_info["endorsements"]:
+            self.endorse_btn_label.set_label(str(mod_info["endorsements"]))
+            if hasattr(self, "_endorse_link_handler_id"):
+                self.endorse_btn.disconnect(self._endorse_link_handler_id)
+            if "endorsed" in mod_info and mod_info["endorsed"]:
+                self.endorse_btn.add_css_class("badge-action-row-accent")
+            else:
+                self.endorse_btn.remove_css_class("badge-action-row-accent")
+                self._endorse_link_handler_id = self.endorse_btn.connect("clicked", self.on_endorse_button_clicked, mod_info)
+                self.endorse_btn_icon.set_visible(True)
+            self.endorsement_row.set_visible(True)
+        else:
+            self.endorsement_row.set_visible(False)
+
         # Display the pane!
         self.revealer.set_reveal_child(True)
 
@@ -350,6 +385,15 @@ class ModsTab(Gtk.Box):
 
         picker.connect("response", on_response)
         picker.show()
+
+    def on_endorse_button_clicked(self, button, mod_info: dict):
+        endorsement_count = str(int(mod_info["endorsements"]) + 1)
+        if endorse_nexus_mod(self.dashboard.headers, self.dashboard.game_config["nexus_id"], mod_info["mod_id"], unendorse=False):
+            self.endorse_btn_label.set_label(str(mod_info["endorsements"]))
+            self.endorse_btn.add_css_class("badge-action-row-accent")
+            self.endorse_btn_icon.set_visible(False)
+        else:
+            self.dashboard.show_message(_("Failed to endorse"), _("Could not endorse the selected mod, please make sure you have provided your API key and are connected to the internet."))
 
     def populate_list(self):
         while child := self.mods_list_box.get_first_child():

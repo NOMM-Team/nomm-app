@@ -13,6 +13,39 @@ from gui.notifications import send_download_notification, download_with_progress
 from core.tools import load_yaml, write_yaml, download_image, process_bbcode
 from typing import Optional, Callable
 
+import requests
+
+def endorse_nexus_mod(headers: dict, game_domain: str, mod_id: str, unendorse=False):
+    """
+    Sends an endorsement (or unendorse action) to the Nexus Mods API.
+
+    :param headers: Standard headers including the API key
+    :param game_domain: The domain name of the game (e.g., 'witcher3').
+    :param mod_id: The ID of the mod to endorse.
+    :param unendorse: Set to True if you want to remove an endorsement.
+    :return: Bool to indicate success or failure
+    """
+    # Determine the endpoint based on action
+    action = "unendorse" if unendorse else "endorse"
+    url = f"https://api.nexusmods.com/v1/games/{game_domain}/mods/{mod_id}/{action}.json"
+    
+    try:
+        # Nexus API expects a POST request for endorsements
+        response = requests.post(url, headers=headers, timeout=10)
+        
+        # Handle the response
+        if response.status_code == 200:
+            msg = "Mod unendorsed successfully." if unendorse else "Mod endorsed successfully!"
+            return True
+        else:
+            # Handle generic API errors (e.g., Mod not found, internal server issues)
+            error_data = response.json() if response.text else {}
+            error_msg = error_data.get("message", f"HTTP Error {response.status_code}")
+            return False, f"Failed to process request: {error_msg}"
+            
+    except requests.exceptions.RequestException as e:
+        # Catches connection timeouts, DNS errors, offline status, etc.
+        return False, f"Network error encountered: {str(e)}"
 
 def get_mod_info(headers: dict, game_id: str, mod_id: str, download_dir: Path, current_mod_staging_folder: str = "") -> dict:
     print(f"Obtaining mod information for mod: {mod_id}")

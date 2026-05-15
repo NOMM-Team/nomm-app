@@ -274,8 +274,8 @@ class GameDashboard(Gtk.Box):
         self.update_indicators()
 
     # Replaced errorbox by MessageDialog
-    def show_message(self, h, b):
-        d = Adw.MessageDialog(transient_for=self.app.win, heading=h, body=b)
+    def show_message(self, header, body):
+        d = Adw.MessageDialog(transient_for=self.app.win, heading=header, body=body)
         d.add_response("ok", "OK")
         d.connect("response", lambda d, r: d.close())
         d.present()
