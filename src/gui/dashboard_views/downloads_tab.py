@@ -399,7 +399,6 @@ class DownloadsTab(Gtk.Box):
     def finalise_installation(self, filename, extracted_roots, deployment_target):
         
         def worker():
-            error = None
             try:
                 finalise_mod_metadata(
                     filename, 
@@ -409,8 +408,8 @@ class DownloadsTab(Gtk.Box):
                     self.dashboard.downloads_metadata_path
                 )
             except Exception as error:
-                pass
-            GLib.idle_add(on_metadata_finalised, error)
+                GLib.idle_add(on_metadata_finalised, error)
+            GLib.idle_add(on_metadata_finalised, None)
         
         def on_metadata_finalised(error):
             self.dashboard.currently_installing.discard(filename)
