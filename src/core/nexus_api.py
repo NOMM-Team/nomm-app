@@ -32,7 +32,6 @@ def endorse_nexus_mod(headers: dict, game_domain: str, mod_id: str, unendorse: b
     try:
         # Nexus API expects a POST request for endorsements
         response = requests.post(url, headers=headers, timeout=10)
-        print(response.content)
         # Handle the response
         if response.status_code == 200:
             return True
@@ -64,7 +63,7 @@ def get_mod_info(headers: dict, game_id: str, mod_id: str, download_dir: Path, c
     metadata["created"] = remote_data.get("created")
     metadata["endorsements"] = remote_data.get("endorsement_count")
     metadata["downloads"] = remote_data.get("download_count")
-    metadata["version"] = remote_data.get("version")
+    metadata["new_version"] = remote_data.get("version")
     metadata["thumbnail"] = remote_data.get("picture_url")
 
     if current_mod_staging_folder:
@@ -94,7 +93,6 @@ def get_mod_info(headers: dict, game_id: str, mod_id: str, download_dir: Path, c
 def check_for_mod_updates_async(staging_metadata: dict, headers: dict, game_id: str, download_dir: Path, on_complete_callback: Optional[Callable]) -> None:
     def worker():
         print("Checking for updates in background...")
-        mods_updated = False
 
         for mod_name, mod_metadata in staging_metadata.get("mods", {}).items():
             mod_id = mod_metadata.get("mod_id")
@@ -106,12 +104,10 @@ def check_for_mod_updates_async(staging_metadata: dict, headers: dict, game_id: 
             print(f"Checking for update for mod: {mod_name}")
             new_metatadata = get_mod_info(headers, game_id, mod_id, download_dir, mod_metadata["folder_name"] if "folder_name" in mod_metadata else mod_metadata["name"])
 
-            remote_version = str(new_metatadata.get("version", ""))
+            remote_version = str(new_metatadata.get("new_version", ""))
 
             if remote_version and remote_version != local_version:
-                mod_metadata["new_version"] = remote_version
-                mods_updated = True
-
+                print("New version available!")
                 try:
                     changelog_url = f"https://api.nexusmods.com/v1/games/{game_id}/mods/{mod_id}/changelogs.json"
                     changelog_resp = requests.get(changelog_url, headers=headers, timeout=10)
@@ -127,13 +123,12 @@ def check_for_mod_updates_async(staging_metadata: dict, headers: dict, game_id: 
                     if new_log:
                         # Join list of changes into a single string if necessary
                         new_changelog = "\n".join(new_log) if isinstance(new_log, list) else new_log
+                        staging_metadata["mods"][mod_name]["changelog"] = new_changelog
             
             # update mod_metadata with new metadata values
             staging_metadata["mods"][mod_name] |= new_metatadata
-            # restore current version to actual value
-            staging_metadata["mods"][mod_name]["version"] = local_version
 
-        GLib.idle_add(on_complete_callback, mods_updated, staging_metadata)
+        GLib.idle_add(on_complete_callback, staging_metadata)
 
     threading.Thread(target=worker, daemon=True).start()
 
@@ -257,7 +252,7 @@ def _download_nexus_mod(nxm_link: str, headers: dict, final_download_dir: Path, 
     mod_metadata["mod_id"] = mod_id
     mod_metadata["file_id"] = file_id
     mod_metadata["mod_link"] = f"https://www.nexusmods.com/{nexus_id}/mods/{mod_id}" 
-    mod_metadata["file_version"] = file_info_data.get("version", "")
+    mod_metadata["version"] = file_info_data.get("version", "")
 
     # Handle saving all of this data
     downloads_metadata_path = get_metadata_path(str(final_download_dir), is_staging=False)

@@ -285,11 +285,18 @@ class ModsTab(Gtk.Box):
         if "version" in mod_info:
             self.version_btn_label.set_label(mod_info["version"])
             self.version_row.set_visible(True)
+            # Changelog Tooltip
             if "changelog" in mod_info and mod_info["changelog"]:
                 self.version_btn_icon.set_visible(True)
                 self.version_btn.set_tooltip_text(mod_info["changelog"])
             else:
                 self.version_btn_icon.set_visible(False)
+            # Update management
+            if "new_version" in mod_info and mod_info["version"] != mod_info["new_version"]:
+                self.version_btn.add_css_class("badge-action-row-accent")
+                self.version_btn_label.set_label(mod_info["version"] + " -> " + mod_info["new_version"])
+            else:
+                self.version_btn.remove_css_class("badge-action-row-accent")
         else:
             self.version_row.set_visible(False)
 
@@ -441,8 +448,7 @@ class ModsTab(Gtk.Box):
 
             display_name = mod_metadata.get("display_name", mod)
             folder_name = mod_metadata.get("folder_name", mod)
-            version_current = mod_metadata.get("version", "—")
-            version_new = mod_metadata.get("version_new", "")
+            
             changelog = mod_metadata.get("changelog", "")
             mod_link = mod_metadata.get("mod_link", "")
             mod_files = mod_metadata.get("mod_files", [])
@@ -538,7 +544,7 @@ class ModsTab(Gtk.Box):
                 info_text_badge.set_tooltip_text(_("This mod contains a text file, click to view."))
                 info_text_badge.set_child(button_content)
                 info_text_badge.set_cursor_from_name("pointer")
-                info_text_badge.connect("clicked", self.dashboard.load_text_file, Path(staging_path) / mod / text_file)
+                info_text_badge.connect("clicked", self.dashboard.load_text_file, Path(staging_path) / mod_metadata["folder_name"] / text_file)
                 info_text_badge.set_valign(Gtk.Align.CENTER)
                 info_text_badge.set_margin_end(row_element_margin)
                 row.add_suffix(info_text_badge)
@@ -546,15 +552,16 @@ class ModsTab(Gtk.Box):
             
 
             # Update available badge
+            version_current = mod_metadata.get("version", "—")
+            version_new = mod_metadata.get("new_version", "")
             if version_new and version_new != version_current:
-                version_badge = Gtk.Button()
-                button_content = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
-                button_content.set_halign(Gtk.Align.CENTER)
-                version_badge.set_child(button_content)
-                version_badge.add_css_class("badge-action-row-accent")
-                row.add_suffix(version_badge)
-                version_badge.set_cursor_from_name("pointer")
-                
+                update_badge = Gtk.Button(margin_top=10, margin_bottom=10)
+                update_badge_icon = Gtk.Image.new_from_icon_name("software-update-available-symbolic")
+                update_badge_icon.set_pixel_size(22)
+                update_badge_icon.add_css_class("mod-update-icon")
+                update_badge.set_child(update_badge_icon)
+                update_badge.set_cursor_from_name("pointer")
+                row.add_suffix(update_badge)
 
             # Timestamps
             if "install_timestamp" in mod_metadata or "enabled_timestamp" in mod_metadata:
@@ -680,10 +687,9 @@ class ModsTab(Gtk.Box):
 
         btn.set_sensitive(False)
 
-        def on_updates_checked(mods_updated, updated_metadata):
-            if mods_updated:
-                write_yaml(updated_metadata, self.dashboard.staging_metadata_path)
-                self.populate_list()
+        def on_updates_checked(updated_metadata):
+            write_yaml(updated_metadata, self.dashboard.staging_metadata_path)
+            self.populate_list()
             btn.set_sensitive(True)
 
         check_for_mod_updates_async(staging_metadata, self.dashboard.headers, nexus_id, Path(self.dashboard.downloads_path), on_updates_checked)

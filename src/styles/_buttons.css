@@ -17,3 +17,12 @@
 .refresh-fab image {
     -gtk-icon-size: 32px;
 }
+
+.mod-update-icon {
+    color: var(--accent-bg-color); /* Set your custom color (e.g., orange) */
+}
+
+/* Optional: Change the color when the row is hovered */
+row:hover .mod-update-icon {
+    color: var(--accent-bg-color); /* Lighter orange on hover */
+}
