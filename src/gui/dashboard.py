@@ -49,8 +49,6 @@ class GameDashboard(Gtk.Box):
         self.downloads_metadata_path = get_metadata_path(self.downloads_path, is_staging=False)
 
         self.deployment_targets = parse_deployment_paths(self.game_config, self.platform, str(self.app_id))
-        
-        temp_path_ft = os.path.join(self.staging_path, "staging.nomm.yaml")
 
         self.headers = {
             'apikey': self.user_config["nexus_api_key"],
