@@ -271,7 +271,7 @@ class ModsTab(Gtk.Box):
             number_of_files = len(mod_info["mod_files"])
             self.files_btn.set_tooltip_text("\n".join(mod_info["mod_files"]))
             self.files_btn.set_label(ngettext("{} File", "{} Files", number_of_files).format(number_of_files))
-            folder_path = self.dashboard.staging_path / mod_info["folder_name"]
+            folder_path = self.dashboard.staging_path / mod_info.get("folder_name", mod_info.get("display_name"))
             # Disconnect previous connect
             if hasattr(self, "_files_handler_id") and self._files_handler_id:
                 self.files_btn.disconnect(self._files_handler_id)
