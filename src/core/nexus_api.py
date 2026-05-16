@@ -15,7 +15,7 @@ from typing import Optional, Callable
 
 import requests
 
-def endorse_nexus_mod(headers: dict, game_domain: str, mod_id: str, unendorse=False):
+def endorse_nexus_mod(headers: dict, game_domain: str, mod_id: str, unendorse: bool):
     """
     Sends an endorsement (or unendorse action) to the Nexus Mods API.
 
@@ -26,16 +26,15 @@ def endorse_nexus_mod(headers: dict, game_domain: str, mod_id: str, unendorse=Fa
     :return: Bool to indicate success or failure
     """
     # Determine the endpoint based on action
-    action = "unendorse" if unendorse else "endorse"
+    action = "abstain" if unendorse else "endorse"
     url = f"https://api.nexusmods.com/v1/games/{game_domain}/mods/{mod_id}/{action}.json"
     
     try:
         # Nexus API expects a POST request for endorsements
         response = requests.post(url, headers=headers, timeout=10)
-        
+        print(response.content)
         # Handle the response
         if response.status_code == 200:
-            msg = "Mod unendorsed successfully." if unendorse else "Mod endorsed successfully!"
             return True
         else:
             # Handle generic API errors (e.g., Mod not found, internal server issues)

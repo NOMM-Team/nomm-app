@@ -198,8 +198,7 @@ class ModsTab(Gtk.Box):
         self.endorse_btn.set_cursor_from_name("pointer")
         endorse_button_content = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
         endorse_button_content.set_halign(Gtk.Align.CENTER)
-        self.endorse_btn_icon = Gtk.Image.new_from_icon_name("go-up-symbolic")
-        self.endorse_btn_icon.set_visible(False)
+        self.endorse_btn_icon = Gtk.Image()
         self.endorse_btn_label = Gtk.Label()
         endorse_button_content.append(self.endorse_btn_label)
         endorse_button_content.append(self.endorse_btn_icon)
@@ -256,7 +255,7 @@ class ModsTab(Gtk.Box):
             with open(mod_info["description"]) as f:
                 description = f.read()
             self.info_row.set_visible(True)
-            title = _(f"Mod Description for {mod_info["name"]}")
+            title = _(f"Mod Description for {mod_info.get("display_name", mod_info.get("name"))}")
             if hasattr(self, "_desc_handler_id"):
                 self.description_btn.disconnect(self._desc_handler_id)    
             self._desc_handler_id = self.description_btn.connect("clicked", self.on_description_btn_clicked, title, description)
@@ -272,7 +271,7 @@ class ModsTab(Gtk.Box):
             number_of_files = len(mod_info["mod_files"])
             self.files_btn.set_tooltip_text("\n".join(mod_info["mod_files"]))
             self.files_btn.set_label(ngettext("{} File", "{} Files", number_of_files).format(number_of_files))
-            folder_path = self.dashboard.staging_path / mod_info["name"]
+            folder_path = self.dashboard.staging_path / mod_info["folder_name"]
             # Disconnect previous connect
             if hasattr(self, "_files_handler_id") and self._files_handler_id:
                 self.files_btn.disconnect(self._files_handler_id)
@@ -329,14 +328,19 @@ class ModsTab(Gtk.Box):
         # Endorsement Row
         if "endorsements" in mod_info and mod_info["endorsements"]:
             self.endorse_btn_label.set_label(str(mod_info["endorsements"]))
+            # Remove any current link on button
             if hasattr(self, "_endorse_link_handler_id"):
                 self.endorse_btn.disconnect(self._endorse_link_handler_id)
-            if "endorsed" in mod_info and mod_info["endorsed"]:
-                self.endorse_btn.add_css_class("badge-action-row-accent")
-            else:
+            if "endorsed" not in mod_info or not mod_info.get("endorsed"):
+                # Not endorsed yet
+                self.endorse_btn_icon.set_from_icon_name("go-up-symbolic")
                 self.endorse_btn.remove_css_class("badge-action-row-accent")
-                self._endorse_link_handler_id = self.endorse_btn.connect("clicked", self.on_endorse_button_clicked, mod_info)
-                self.endorse_btn_icon.set_visible(True)
+                self._endorse_link_handler_id = self.endorse_btn.connect("clicked", self.on_endorse_button_clicked, mod_info, row.mod_data_index, False)
+            else:
+                # Already endorsed
+                self.endorse_btn_icon.set_from_icon_name("go-down-symbolic")
+                self.endorse_btn.add_css_class("badge-action-row-accent")
+                self._endorse_link_handler_id = self.endorse_btn.connect("clicked", self.on_endorse_button_clicked, mod_info, row.mod_data_index, True)
             self.endorsement_row.set_visible(True)
         else:
             self.endorsement_row.set_visible(False)
@@ -386,12 +390,23 @@ class ModsTab(Gtk.Box):
         picker.connect("response", on_response)
         picker.show()
 
-    def on_endorse_button_clicked(self, button, mod_info: dict):
-        endorsement_count = str(int(mod_info["endorsements"]) + 1)
-        if endorse_nexus_mod(self.dashboard.headers, self.dashboard.game_config["nexus_id"], mod_info["mod_id"], unendorse=False):
-            self.endorse_btn_label.set_label(str(mod_info["endorsements"]))
-            self.endorse_btn.add_css_class("badge-action-row-accent")
-            self.endorse_btn_icon.set_visible(False)
+    def on_endorse_button_clicked(self, button, mod_info: dict, mod_index: str, unendorse: bool):
+        if endorse_nexus_mod(self.dashboard.headers, self.dashboard.game_config["nexus_id"], mod_info["mod_id"], unendorse):
+            if unendorse: # we just unendorsed the mod
+                print(f"Successfully unendorsed mod {mod_info.get("display_name", mod_info.get("name"))}")
+                self.endorse_btn_label.set_label(str(mod_info["endorsements"]))
+                self.endorse_btn.remove_css_class("badge-action-row-accent")
+                self.endorse_btn_icon.set_from_icon_name("go-up-symbolic")
+            else: # we just endorsed the mod
+                print(f"Successfully endorsed mod {mod_info.get("display_name", mod_info.get("name"))}")
+                self.endorse_btn_label.set_label(str(mod_info["endorsements"] + 1))
+                self.endorse_btn.add_css_class("badge-action-row-accent")
+                self.endorse_btn_icon.set_from_icon_name("go-down-symbolic")
+            # Save state to metadata
+            staging_metadata = load_staging_metadata(self.dashboard.staging_metadata_path)
+            staging_metadata["mods"][mod_index]["endorsed"] = not unendorse
+            write_yaml(staging_metadata, self.dashboard.staging_metadata_path)
+            self.populate_list()
         else:
             self.dashboard.show_message(_("Failed to endorse"), _("Could not endorse the selected mod, please make sure you have provided your API key and are connected to the internet."))
 
