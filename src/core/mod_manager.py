@@ -16,8 +16,8 @@ meta_lock = threading.Lock()
 #TODO:Change the logic to deploy last mods from the index first
 def deploy_mod_files(staging_dir: str, dest_dir: str, mod_info: dict) -> bool:
     dest_path = Path(dest_dir)
-    if "name" in mod_info:
-        mod_name = mod_info["name"]
+    
+    mod_name = mod_info.get("folder_name", mod_info.get("display_name", mod_info.get("name")))
 
     staging_mod_path = os.path.join(Path(staging_dir), mod_name)
     
@@ -380,16 +380,18 @@ def finalise_mod_metadata(filename: str, mod_files: list, deployment_target: dic
         # Catch-all check in case we don't have the metadata initialised for that mod
         if mod_name not in current_staging_metadata["mods"]:
             current_staging_metadata["mods"][mod_name] = {}
-            current_staging_metadata["mods"][mod_name]["name"] = mod_name
+            current_staging_metadata["mods"][mod_name]["folder_name"] = mod_name
             current_staging_metadata["mods"][mod_name]["display_name"] = mod_name
 
         current_staging_metadata["mods"][mod_name]["mod_files"] = mod_files
         current_staging_metadata["mods"][mod_name]["status"] = "disabled"
         current_staging_metadata["mods"][mod_name]["archive_name"] = filename
         current_staging_metadata["mods"][mod_name]["install_timestamp"] = datetime.now()
-        current_staging_metadata["mods"][mod_name]["deployment_target"] = deployment_target["name"]
+        #current_staging_metadata["mods"][mod_name]["deployment_target"] = deployment_target["name"]
         current_staging_metadata["mods"][mod_name]["deployment_path"] = deployment_target["path"]
-    
+        if "folder_name" not in current_staging_metadata["mods"][mod_name]:
+            current_staging_metadata["mods"][mod_name]["folder_name"] = current_staging_metadata["mods"][mod_name]["display_name"]
+
         if mod_name not in current_staging_metadata["index"]:
             current_staging_metadata["index"].append(mod_name)
 
