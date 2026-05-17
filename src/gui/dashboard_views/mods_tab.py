@@ -216,8 +216,18 @@ class ModsTab(Gtk.Box):
         self.endorsement_row.append(self.endorse_btn)
         self.details_box.append(self.endorsement_row)
 
-        self.preview_pane.append(self.details_box)
+        # Mod ID matcher Row
+        self.mod_id_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
+        mod_id_row_label = Gtk.Label(label=_("Mod ID:"), css_classes=["dim-label"])
+        self.mod_id_row.append(mod_id_row_label)
+        # Mod ID update button
+        self.mod_id_btn = Gtk.Button()
+        self.mod_id_btn.set_cursor_from_name("pointer")
+        self.mod_id_btn.add_css_class("badge-action-row")
+        self.mod_id_row.append(self.mod_id_btn)
+        self.details_box.append(self.mod_id_row)
 
+        self.preview_pane.append(self.details_box)
         self.preview_overlay.set_child(self.preview_pane)
 
         # Close button
@@ -373,6 +383,19 @@ class ModsTab(Gtk.Box):
         else:
             self.endorsement_row.set_visible(False)
 
+        # Mod Info Row
+        if "mod_id" in mod_info and mod_info["mod_id"]:
+            self.mod_id_btn.remove_css_class("badge-action-row-accent")
+            self.mod_id_btn.set_label(mod_info["mod_id"])
+        else:
+            self.mod_id_btn.add_css_class("badge-action-row-accent")
+            self.mod_id_btn.set_label(_("No mod ID registered"))
+        self.mod_id_btn.set_tooltip_text(_("Change currently linked mod ID.\nThis will require a refresh of the metadata and will be reset if you reinstall the mod."))
+        if hasattr(self, "_mod_id_handler_id") and self._mod_id_handler_id:
+            self.mod_id_btn.disconnect(self._mod_id_handler_id)
+        # Connect and store new ID
+        self._mod_id_handler_id = self.mod_id_btn.connect("clicked", lambda x: self.pick_new_mod_id(mod_info, mod_name))
+
         # Display the pane!
         self.revealer.set_reveal_child(True)
 
@@ -380,6 +403,59 @@ class ModsTab(Gtk.Box):
     def on_description_btn_clicked(self, button, title, description):
         desc_win = TextWindow(self.dashboard.app.win, title, description, text_type="markup")
         desc_win.present()
+
+    def pick_new_mod_id(self, mod_info, mod_index):
+        dialog = Adw.MessageDialog(
+            transient_for=self.get_root(),
+            heading=_("Change Mod ID"),
+            body=_("Enter the new Nexus ID for this mod. The next time you do a metadata update (top right button on the mods tab), this will completely replace the existing metadata for this mod.\nKeep in mind that if you reinstall this mod from its archive file, the metadata will be overwritten and you will have to change this value again."),
+        )
+
+        dialog.add_response("cancel", _("Cancel"))
+        dialog.add_response("save", _("Save"))
+        
+        # Style the 'Save' button using your theme's primary accent color
+        dialog.set_response_appearance("save", Adw.ResponseAppearance.SUGGESTED)
+        
+        # Set 'Save' as the default action when hitting Enter
+        dialog.set_default_response("save")
+
+        entry_box = Gtk.ListBox()
+        entry_box.add_css_class("boxed-list") # Crucial Adwaita styling class
+
+        entry_row = Adw.EntryRow(title=_("Mod ID"))
+        entry_row.set_activates_default(True) # Pressing Enter triggers the default dialog action
+        
+        # Pre-populate with current tracking ID
+        current_id = str(mod_info.get("mod_id", ""))
+        if current_id:
+            entry_row.set_text(current_id)
+
+        entry_box.append(entry_row)
+
+        dialog.set_extra_child(entry_box)
+
+        def on_response(source_dialog, response_id):
+            if response_id == "save":
+                new_id = entry_row.get_text().strip()
+                if not new_id:
+                    return # Skip if blank
+
+                # Write changes back out to your YAML file context
+                staging_metadata = load_staging_metadata(self.dashboard.staging_metadata_path)
+                staging_metadata["mods"][mod_index]["mod_id"] = new_id
+                write_yaml(staging_metadata, self.dashboard.staging_metadata_path)
+
+                # Instantly reflect the change on the UI badge element
+                self.mod_id_btn.set_label(new_id)
+                self.mod_id_btn.remove_css_class("badge-action-row-accent")
+
+            # Cleanly destroy the dialog window tracking allocation
+            source_dialog.destroy()
+            self.populate_list()
+        dialog.connect("response", on_response)
+        # Bring the layout cleanly into focus
+        dialog.present()
 
     def pick_new_deployment_path(self, mod_info, mod_index):
         # Create the FileChooserNative
