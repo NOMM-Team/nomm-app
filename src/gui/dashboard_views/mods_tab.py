@@ -310,6 +310,9 @@ class ModsTab(Gtk.Box):
         if "version" in mod_info:
             self.version_btn_label.set_label(mod_info["version"])
             self.version_row.set_visible(True)
+            if hasattr(self, "_version_link_handler_id"):
+                self.version_btn.disconnect(self._version_link_handler_id)    
+            self._version_link_handler_id = self.version_btn.connect("clicked", lambda b: webbrowser.open(mod_info["mod_link"] + "?tab=files"))
             # Changelog Tooltip
             if "changelog" in mod_info and mod_info["changelog"]:
                 self.version_btn_changelog_icon.set_visible(True)
@@ -645,8 +648,6 @@ class ModsTab(Gtk.Box):
                 info_text_badge.set_valign(Gtk.Align.CENTER)
                 info_text_badge.set_margin_end(row_element_margin)
                 row.add_suffix(info_text_badge)
-
-            
 
             # Update available badge
             version_current = mod_metadata.get("version", "—")
