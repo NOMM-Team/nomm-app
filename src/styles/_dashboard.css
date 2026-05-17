@@ -25,3 +25,46 @@
 .shadow-box {
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
+
+.dot-leader {
+    /* Height controls the vertical bounds of the dot track */
+    height: 4px; 
+    
+    /* Create a repeating circle dot pattern */
+    background-image: radial-gradient(
+        circle, 
+        alpha(currentColor, 0.25) 1.5px, 
+        transparent 1.5px
+    );
+    
+    /* Space out the dots horizontally (every 8px) */
+    background-size: 8px 100%;
+    background-repeat: repeat-x;
+    
+    /* Give it a slight breathing room on either side of text/button */
+    margin-left: 4px;
+    margin-right: 4px;
+}
+
+/* Optional: Make the dots change opacity or color when hovering the row */
+row:hover .dot-leader {
+    background-image: radial-gradient(
+        circle, 
+        alpha(var(--accent-color), 0.4) 1.5px, 
+        transparent 1.5px
+    );
+}
+
+.floating-close-btn {
+    border-radius: 9999px; /* Turns the button structure into a crisp circle */
+    padding: 8px;
+    background-color: var(--window-bg-color);
+    transition: background-color 3000ms ease-in-out;
+    
+    /* move button to outside of the preview on the left. */
+    margin-left: -13px; 
+}
+
+.floating-close-btn:hover {
+    color: var(--accent-color);
+}

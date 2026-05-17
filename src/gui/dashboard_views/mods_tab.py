@@ -81,6 +81,9 @@ class ModsTab(Gtk.Box):
         self.preview_pane.set_hexpand(False)
         self.preview_pane.add_css_class("background")
 
+        # This is used for the close button left of the preview
+        self.preview_overlay = Gtk.Overlay()
+
         # Container for the image to handle centering and potential rounding
         self.thumb_container = Gtk.Box(halign=Gtk.Align.CENTER)
         self.thumb_container.set_size_request(300, 168)
@@ -100,7 +103,7 @@ class ModsTab(Gtk.Box):
         self.preview_pane.append(header)
 
         # Metadata Display
-        self.details_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=5, margin_start=10)
+        self.details_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=5, margin_start=10, margin_end=10)
 
         # Info Row
         self.info_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
@@ -143,11 +146,17 @@ class ModsTab(Gtk.Box):
         self.version_btn.set_cursor_from_name("pointer")
         button_content = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
         button_content.set_halign(Gtk.Align.CENTER)
-        self.version_btn_icon = Gtk.Image.new_from_icon_name("help-about-symbolic")
-        self.version_btn_icon.set_visible(False)
+        self.version_btn_changelog_icon = Gtk.Image.new_from_icon_name("help-about-symbolic")
+        self.version_btn_changelog_icon.set_visible(False)
         self.version_btn_label = Gtk.Label()
+        self.version_btn_upgrade_icon = Gtk.Image.new_from_icon_name("software-update-available-symbolic")
+        self.version_btn_upgrade_icon.set_visible(False)
+        self.version_btn_label_new = Gtk.Label()
+        self.version_btn_label_new.set_visible(False)
+        button_content.append(self.version_btn_changelog_icon)
         button_content.append(self.version_btn_label)
-        button_content.append(self.version_btn_icon)
+        button_content.append(self.version_btn_upgrade_icon)
+        button_content.append(self.version_btn_label_new)
         self.version_btn.set_child(button_content)
         self.version_btn.add_css_class("badge-action-row")
         self.version_row.append(self.version_btn)
@@ -209,12 +218,18 @@ class ModsTab(Gtk.Box):
 
         self.preview_pane.append(self.details_box)
 
+        self.preview_overlay.set_child(self.preview_pane)
+
         # Close button
-        close_btn = Gtk.Button(icon_name="window-close-symbolic", css_classes=["flat"], halign=Gtk.Align.CENTER)
+        close_btn = Gtk.Button(icon_name="go-next-symbolic", css_classes=["flat"], halign=Gtk.Align.CENTER)
+        close_btn.set_cursor_from_name("pointer")
+        close_btn.add_css_class("floating-close-btn")
         close_btn.connect("clicked", lambda x: self.on_close_preview())
-        self.preview_pane.append(close_btn)
+        close_btn.set_valign(Gtk.Align.CENTER)
+        close_btn.set_halign(Gtk.Align.START)
+        self.preview_overlay.add_overlay(close_btn)
         
-        self.revealer.set_child(self.preview_pane)
+        self.revealer.set_child(self.preview_overlay)
 
     def on_close_preview(self):
         self.mods_list_box.select_row(None)
@@ -287,16 +302,22 @@ class ModsTab(Gtk.Box):
             self.version_row.set_visible(True)
             # Changelog Tooltip
             if "changelog" in mod_info and mod_info["changelog"]:
-                self.version_btn_icon.set_visible(True)
+                self.version_btn_changelog_icon.set_visible(True)
                 self.version_btn.set_tooltip_text(mod_info["changelog"])
             else:
-                self.version_btn_icon.set_visible(False)
+                self.version_btn_changelog_icon.set_visible(False)
+                self.version_btn.set_tooltip_text("")
             # Update management
             if "new_version" in mod_info and mod_info["version"] != mod_info["new_version"]:
                 self.version_btn.add_css_class("badge-action-row-accent")
-                self.version_btn_label.set_label(mod_info["version"] + " -> " + mod_info["new_version"])
+                self.version_btn_label.set_label(mod_info["version"])
+                self.version_btn_label_new.set_label(mod_info["new_version"])
+                self.version_btn_label_new.set_visible(True)
+                self.version_btn_upgrade_icon.set_visible(True)
             else:
                 self.version_btn.remove_css_class("badge-action-row-accent")
+                self.version_btn_label_new.set_visible(False)
+                self.version_btn_upgrade_icon.set_visible(False)
         else:
             self.version_row.set_visible(False)
 
