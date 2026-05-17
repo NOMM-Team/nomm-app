@@ -652,7 +652,7 @@ class ModsTab(Gtk.Box):
             # Update available badge
             version_current = mod_metadata.get("version", "—")
             version_new = mod_metadata.get("new_version", "")
-            if version_new and version_new != version_current:
+            if version and version_new and version_new != version_current:
                 update_badge = Gtk.Button(margin_top=10, margin_bottom=10)
                 update_badge_icon = Gtk.Image.new_from_icon_name("software-update-available-symbolic")
                 update_badge_icon.set_pixel_size(22)
