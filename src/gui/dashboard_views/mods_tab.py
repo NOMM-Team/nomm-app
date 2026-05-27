@@ -650,13 +650,14 @@ class ModsTab(Gtk.Box):
                 row.add_suffix(info_text_badge)
 
             # Update available badge
-            version_current = mod_metadata.get("version", "—")
+            version_current = mod_metadata.get("version", "")
             version_new = mod_metadata.get("new_version", "")
-            if version and version_new and version_new != version_current:
+            if version_current and version_new and (version_new != version_current):
                 update_badge = Gtk.Button(margin_top=10, margin_bottom=10)
                 update_badge_icon = Gtk.Image.new_from_icon_name("software-update-available-symbolic")
                 update_badge_icon.set_pixel_size(22)
-                update_badge_icon.add_css_class("mod-update-icon")
+                update_badge.connect("clicked", lambda b, link=mod_link: webbrowser.open(link + "?tab=files"))
+                update_badge_icon.add_css_class("transparent-bg-accent-icon")
                 update_badge.set_child(update_badge_icon)
                 update_badge.set_cursor_from_name("pointer")
                 row.add_suffix(update_badge)
