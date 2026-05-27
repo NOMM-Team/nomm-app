@@ -1,38 +1,36 @@
+/* A whole bunch of stuff for the main mods list */
 .dashboard-list {
     background-color: shade(rgb(57, 57, 57), 0.8);
     border-radius: 15px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
-
 .dashboard-list row {
     transition: background-color 300ms ease-in-out;
 }
-
 .dashboard-list row:first-child {
     border-radius: 15px 15px 0 0;
 }
-
 .dashboard-list row:last-child {
     border-radius: 0 0 15px 15px;
 }
-
 .dashboard-list row:hover {
     background-color: alpha(var(--accent-bg-color), 0.1);
 }
-
 .dashboard-list row:selected {
     background-color: alpha(var(--accent-bg-color), 0.3);
 }
 
+/* Used for the scroll box around the main list (otherwise the shadow doesn't show up)*/
 .shadow-box {
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 
+
+
 .floating-close-btn {
-    border-radius: 9999px; /* Turns the button structure into a crisp circle */
+    border-radius: 9999px;
     padding: 8px;
     background-color: var(--window-bg-color);
-    /* move button to outside of the preview on the left. */
+    /* move button to outside of the preview on the left */
     margin-left: -13px; 
 }
 

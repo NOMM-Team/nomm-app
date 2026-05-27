@@ -18,11 +18,12 @@
     -gtk-icon-size: 32px;
 }
 
-.mod-update-icon {
-    color: var(--accent-bg-color); /* Set your custom color (e.g., orange) */
+/* Icons in the main dashboard list such as the update available icon or warning icons */
+.transparent-bg-accent-icon {
+    color: var(--accent-bg-color);
+    background: transparent;
 }
-
-/* Optional: Change the color when the row is hovered */
-row:hover .mod-update-icon {
-    color: var(--accent-bg-color); /* Lighter orange on hover */
+.transparent-bg-accent-icon:hover {
+    color: var(--accent-bg-color);
+    background: transparent;
 }
