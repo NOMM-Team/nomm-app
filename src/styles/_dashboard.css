@@ -6,11 +6,11 @@
 .dashboard-list row {
     transition: background-color 300ms ease-in-out;
 }
-.dashboard-list row:first-child {
-    border-radius: 15px 15px 0 0;
-}
 .dashboard-list row:last-child {
     border-radius: 0 0 15px 15px;
+}
+.dashboard-list row:first-child {
+    border-radius: 15px 15px 0 0;
 }
 .dashboard-list row:hover {
     background-color: alpha(var(--accent-bg-color), 0.1);
