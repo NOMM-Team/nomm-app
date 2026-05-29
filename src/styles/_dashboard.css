@@ -1,7 +1,8 @@
 /* A whole bunch of stuff for the main mods list */
 .dashboard-list {
-    background-color: shade(rgb(57, 57, 57), 0.8);
     border-radius: 15px;
+    background-color: shade(rgb(57, 57, 57), 0.8);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 .dashboard-list row {
     transition: background-color 300ms ease-in-out;
