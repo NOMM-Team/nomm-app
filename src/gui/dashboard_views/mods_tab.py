@@ -616,9 +616,9 @@ class ModsTab(Gtk.Box):
             # Conflits
             conflicting_mods = []
             for conflict_list in conflicts:
-                if display_name in conflict_list:
+                if mod in conflict_list:
                     other_mods = conflict_list.copy()
-                    other_mods.remove(display_name)
+                    other_mods.remove(mod)
                     conflicting_mods.extend(other_mods)
             if conflicting_mods:
                 conflicts_badge = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
