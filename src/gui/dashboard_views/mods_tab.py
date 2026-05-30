@@ -79,7 +79,6 @@ class ModsTab(Gtk.Box):
         self.preview_pane = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=5, margin_start=15)
         self.preview_pane.set_size_request(390, -1)
         self.preview_pane.set_hexpand(False)
-        self.preview_pane.add_css_class("background")
 
         # This is used for the close button left of the preview
         self.preview_overlay = Gtk.Overlay()
