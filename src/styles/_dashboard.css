@@ -1,7 +1,7 @@
 /* A whole bunch of stuff for the main mods list */
 .dashboard-list {
     border-radius: 15px;
-    background-color: shade(rgb(57, 57, 57), 0.8);
+    background-color: shade(var(--card-bg-color), 0.4);
 }
 .dashboard-list row {
     transition: background-color 300ms ease-in-out;
@@ -24,8 +24,6 @@
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
     border-radius: 15px;
 }
-
-
 
 .floating-close-btn {
     border-radius: 9999px;
