@@ -63,6 +63,7 @@ def get_mod_info(headers: dict, game_id: str, mod_id: str, download_dir: Path, c
     metadata["endorsements"] = remote_data.get("endorsement_count")
     metadata["new_version"] = remote_data.get("version")
     metadata["thumbnail"] = remote_data.get("picture_url")
+    metadata["summary"] = remote_data.get("summary")
 
     if current_mod_staging_folder:
         # If this is called as part of a metadata update, use the current folder
