@@ -17,3 +17,13 @@
 .refresh-fab image {
     -gtk-icon-size: 32px;
 }
+
+/* Icons in the main dashboard list such as the update available icon or warning icons */
+.transparent-bg-accent-icon {
+    color: var(--accent-bg-color);
+    background: transparent;
+}
+.transparent-bg-accent-icon:hover {
+    color: var(--accent-bg-color);
+    background: transparent;
+}

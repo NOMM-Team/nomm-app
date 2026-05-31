@@ -13,3 +13,7 @@
 .setup-page.visible {
     opacity: 1;
 }
+
+.window-background {
+    color: rgba(255, 255, 255, 0.1);
+}

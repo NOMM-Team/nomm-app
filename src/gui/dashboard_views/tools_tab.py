@@ -54,7 +54,7 @@ class ToolsTab(Gtk.Box):
                 version_badge.set_valign(Gtk.Align.CENTER)
                 version_badge.set_margin_end(15)
                 
-                v_label = Gtk.Label(label=util_version)
+                v_label = Gtk.Label(label=str(util_version))
                 v_label.add_css_class("badge-action-row")
                 
                 version_badge.append(v_label)

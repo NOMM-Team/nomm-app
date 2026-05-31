@@ -43,9 +43,9 @@
 }
 
 .badge-grey {
-background-color: #333333;
-color: white;
-border-radius: 6px;
-padding: 2px 10px;
-font-weight: bold;
+    background-color: #333333;
+    color: white;
+    border-radius: 6px;
+    padding: 2px 10px;
+    font-weight: bold;
 }

@@ -2,16 +2,18 @@ import gettext
 import os
 import webbrowser
 import threading
+
 from datetime import datetime
 from pathlib import Path
 
-from gi.repository import Adw, Gdk, GLib, GObject, Gtk, Gio, GdkPixbuf
+from gi.repository import Adw, Gdk, GLib, GObject, Gtk, Gio, GdkPixbuf, Pango
 
 from core.mod_manager import (change_mod_index, check_for_conflicts,
                               deploy_all_ordered_mods, load_staging_metadata,
                               read_index, toggle_mod_state)
-from core.nexus_api import check_for_mod_updates_async
+from core.nexus_api import check_for_mod_updates_async, endorse_nexus_mod
 from core.tools import timestamp_converter, write_yaml, process_bbcode
+from gui.text_window import TextWindow
 
 _ = gettext.gettext
 ngettext = gettext.ngettext
@@ -22,9 +24,9 @@ class ModsTab(Gtk.Box):
         self.set_margin_start(15)
         self.set_margin_end(15)
         self.set_margin_top(20)
-        
+
         self.dashboard = dashboard
-        
+
         # Action bar top right
         action_bar = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
         self.mod_search_entry = Gtk.SearchEntry(placeholder_text=_("Search mods..."))
@@ -57,10 +59,11 @@ class ModsTab(Gtk.Box):
         self.append(self.main_content)
 
         # Mod list
-        self.mods_list_box = Gtk.ListBox(css_classes=["boxed-list"])
+        self.mods_list_box = Gtk.ListBox(css_classes=["dashboard-list"])
         self.mods_list_box.set_filter_func(self.filter_mods_rows)
         self.mods_list_box.connect("row-activated", self.on_row_clicked) 
-        self.list_scroll = Gtk.ScrolledWindow(vexpand=True, hexpand=True)
+        self.mods_list_box.set_overflow(Gtk.Overflow.HIDDEN)
+        self.list_scroll = Gtk.ScrolledWindow(vexpand=True, hexpand=True, css_classes=["shadow-box"])
         self.list_scroll.set_child(self.mods_list_box)
         self.main_content.append(self.list_scroll)
 
@@ -74,57 +77,173 @@ class ModsTab(Gtk.Box):
         self.populate_list()
 
     def setup_preview_pane(self):
-        self.preview_pane = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=5)
+        self.preview_pane = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=5, margin_start=15)
         self.preview_pane.set_size_request(390, -1)
-        self.preview_pane.set_hexpand(True)
-        self.preview_pane.add_css_class("background")
+        self.preview_pane.set_hexpand(False)
+
+        # This is used for the close button left of the preview
+        self.preview_overlay = Gtk.Overlay()
 
         # Container for the image to handle centering and potential rounding
-        self.thumb_container = Gtk.Box(halign=Gtk.Align.CENTER, margin_start=20)
+        self.thumb_container = Gtk.Box(halign=Gtk.Align.CENTER)
         self.thumb_container.set_size_request(300, 168)
         self.thumb_container.add_css_class("rounded-thumb")
         self.thumb_container.set_overflow(Gtk.Overflow.HIDDEN)
+        self.thumb_container.set_hexpand(False)
         self.preview_pane.append(self.thumb_container)
 
         # Header with close button
         header = Gtk.CenterBox(margin_top=10)
-        self.preview_title = Gtk.Label(css_classes=["title-2"])
+        self.preview_title = Gtk.Label(css_classes=["title-1"])
+        self.preview_title.set_ellipsize(Pango.EllipsizeMode.END)
+        self.preview_title.set_max_width_chars(38)
+        #self.preview_title.set_width_chars(35)
         header.set_center_widget(self.preview_title)
-        close_btn = Gtk.Button(icon_name="window-close-symbolic", css_classes=["flat"])
-        close_btn.connect("clicked", lambda x: self.revealer.set_reveal_child(False))
-        header.set_end_widget(close_btn)
+        
         self.preview_pane.append(header)
 
         # Metadata Display
-        self.preview_version = Gtk.Label(css_classes=["dim-label"])
-        self.preview_pane.append(self.preview_version)
+        self.details_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=5, margin_start=10, margin_end=10)
 
-        # Description Box
-        # ScrolledWindow to handle long description
-        self.desc_scroll = Gtk.ScrolledWindow(
-            vexpand=True, 
-            propagate_natural_height=True,
-            min_content_height=150,
-            margin_start=15,
-            margin_bottom=15
-        )
+        # Info Row
+        self.info_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
+        self.info_row.set_margin_top(10)
+        self.info_row.set_visible(False)
+        # Info Row title
+        info_row_label = Gtk.Label(label=_("More Info:"), css_classes=["dim-label"])
+        self.info_row.append(info_row_label)
+        # Description button
+        self.description_btn = Gtk.Button(label=_("Mod Description"))
+        self.description_btn.set_cursor_from_name("pointer")
+        self.description_btn.add_css_class("badge-action-row")
+        self.info_row.append(self.description_btn)
+        # Nexus button
+        self.nexus_btn = Gtk.Button(label=_("Nexus"))
+        self.nexus_btn.set_cursor_from_name("pointer")
+        self.nexus_btn.add_css_class("badge-action-row")
+        self.info_row.append(self.nexus_btn)
+        self.details_box.append(self.info_row)
 
-        # TextView for the actual text
-        self.preview_description = Gtk.Label(
-            wrap=True,
-            xalign=0,
-            yalign=0,
-            selectable=True,
-            use_markup=True
-        )
-        # This one line handles opening links in the default browser!
-        self.preview_description.connect("activate-link", lambda label, uri: webbrowser.open(uri))
-        #self.preview_description.add_css_class("dim-label") # Optional styling
+        # Contents Row
+        self.contents_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
+        self.contents_row.set_visible(False)
+        contents_row_label = Gtk.Label(label=_("Mod Contents:"), css_classes=["dim-label"])
+        self.contents_row.append(contents_row_label)
+        # File counter
+        self.files_btn = Gtk.Button()
+        self.files_btn.set_cursor_from_name("pointer")
+        self.files_btn.add_css_class("badge-action-row")
+        self.contents_row.append(self.files_btn)
+        self.details_box.append(self.contents_row)
+
+        # Version Row
+        self.version_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
+        self.version_row.set_visible(False)
+        version_row_label = Gtk.Label(label=_("Versioning:"), css_classes=["dim-label"])
+        self.version_row.append(version_row_label)
+        # Version Badge
+        self.version_btn = Gtk.Button()
+        self.version_btn.set_cursor_from_name("pointer")
+        button_content = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
+        button_content.set_halign(Gtk.Align.CENTER)
+        self.version_btn_changelog_icon = Gtk.Image.new_from_icon_name("help-about-symbolic")
+        self.version_btn_changelog_icon.set_visible(False)
+        self.version_btn_label = Gtk.Label()
+        self.version_btn_upgrade_icon = Gtk.Image.new_from_icon_name("software-update-available-symbolic")
+        self.version_btn_upgrade_icon.set_visible(False)
+        self.version_btn_label_new = Gtk.Label()
+        self.version_btn_label_new.set_visible(False)
+        button_content.append(self.version_btn_changelog_icon)
+        button_content.append(self.version_btn_label)
+        button_content.append(self.version_btn_upgrade_icon)
+        button_content.append(self.version_btn_label_new)
+        self.version_btn.set_child(button_content)
+        self.version_btn.add_css_class("badge-action-row")
+        self.version_row.append(self.version_btn)
+        self.details_box.append(self.version_row)
         
-        self.desc_scroll.set_child(self.preview_description)
-        self.preview_pane.append(self.desc_scroll)
+        # Deployment Row
+        self.deployment_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
+        self.deployment_row.set_visible(False)
+        deployment_row_label = Gtk.Label(label=_("Deploy to Path:"), css_classes=["dim-label"])
+        self.deployment_row.append(deployment_row_label)
+        # Deployment path button
+        self.deployment_btn = Gtk.Button()
+        self.deployment_btn.set_cursor_from_name("pointer")
+        self.deployment_btn.add_css_class("badge-action-row")
+        self.deployment_label = Gtk.Label()
+        self.deployment_label.set_ellipsize(Pango.EllipsizeMode.START)
+        self.deployment_label.set_max_width_chars(25)
+        self.deployment_btn.set_child(self.deployment_label)
+        self.deployment_row.append(self.deployment_btn)
+        # Deployment path change button
+        self.deployment_update_btn = Gtk.Button()
+        self.deployment_update_btn.set_cursor_from_name("pointer")
+        self.deployment_update_btn.add_css_class("badge-action-row")
+        deployment_update_btn_icon = Gtk.Image.new_from_icon_name("edit-symbolic")
+        self.deployment_update_btn.set_child(deployment_update_btn_icon)
+        self.deployment_row.append(self.deployment_update_btn)
+        self.details_box.append(self.deployment_row)
 
-        self.revealer.set_child(self.preview_pane)
+        # Uploader Row
+        self.uploader_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
+        self.uploader_row.set_visible(False)
+        uploader_row_label = Gtk.Label(label=_("Uploader:"), css_classes=["dim-label"])
+        self.uploader_row.append(uploader_row_label)
+        # Uploader button
+        self.uploader_btn = Gtk.Button()
+        self.uploader_btn.set_cursor_from_name("pointer")
+        self.uploader_btn.add_css_class("badge-action-row")
+        self.uploader_row.append(self.uploader_btn)
+        self.details_box.append(self.uploader_row)
+
+        # Endorsement Row
+        self.endorsement_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
+        self.endorsement_row.set_visible(False)
+        endorsement_row_label = Gtk.Label(label=_("Endorsements:"), css_classes=["dim-label"])
+        self.endorsement_row.append(endorsement_row_label)
+        # Endorse button
+        self.endorse_btn = Gtk.Button()
+        self.endorse_btn.set_cursor_from_name("pointer")
+        endorse_button_content = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
+        endorse_button_content.set_halign(Gtk.Align.CENTER)
+        self.endorse_btn_icon = Gtk.Image()
+        self.endorse_btn_label = Gtk.Label()
+        endorse_button_content.append(self.endorse_btn_label)
+        endorse_button_content.append(self.endorse_btn_icon)
+        self.endorse_btn.set_child(endorse_button_content)
+        self.endorse_btn.add_css_class("badge-action-row")
+        self.endorsement_row.append(self.endorse_btn)
+        self.details_box.append(self.endorsement_row)
+
+        # Mod ID matcher Row
+        self.mod_id_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
+        mod_id_row_label = Gtk.Label(label=_("Mod ID:"), css_classes=["dim-label"])
+        self.mod_id_row.append(mod_id_row_label)
+        # Mod ID update button
+        self.mod_id_btn = Gtk.Button()
+        self.mod_id_btn.set_cursor_from_name("pointer")
+        self.mod_id_btn.add_css_class("badge-action-row")
+        self.mod_id_row.append(self.mod_id_btn)
+        self.details_box.append(self.mod_id_row)
+
+        self.preview_pane.append(self.details_box)
+        self.preview_overlay.set_child(self.preview_pane)
+
+        # Close button
+        close_btn = Gtk.Button(icon_name="go-next-symbolic", css_classes=["flat"], halign=Gtk.Align.CENTER)
+        close_btn.set_cursor_from_name("pointer")
+        close_btn.add_css_class("floating-close-btn")
+        close_btn.connect("clicked", lambda x: self.on_close_preview())
+        close_btn.set_valign(Gtk.Align.CENTER)
+        close_btn.set_halign(Gtk.Align.START)
+        self.preview_overlay.add_overlay(close_btn)
+        
+        self.revealer.set_child(self.preview_overlay)
+
+    def on_close_preview(self):
+        self.mods_list_box.select_row(None)
+        self.revealer.set_reveal_child(False)
 
     def on_row_clicked(self, listbox, row):
         # We need to fetch the metadata associated with this row
@@ -134,9 +253,6 @@ class ModsTab(Gtk.Box):
 
         # Update labels
         self.preview_title.set_label(mod_name)
-        version = mod_info.get("version", "Unknown")
-        self.preview_version.set_label(f"Version: {version}")
-        
 
         # Add thumbnail
         thumbnail_path = mod_info.get("thumbnail")
@@ -146,27 +262,260 @@ class ModsTab(Gtk.Box):
             thumb_path = self.dashboard.assets_path + "/nomm.png"
 
         pixbuf = GdkPixbuf.Pixbuf.new_from_file_at_scale(
-            thumb_path, 300, 168, True
+            thumb_path, 405, 1000, True
         )
         texture = Gdk.Texture.new_for_pixbuf(pixbuf)
-        
         self.preview_thumbnail = Gtk.Picture.new_for_paintable(texture)
         self.preview_thumbnail.set_hexpand(False)
         self.preview_thumbnail.set_vexpand(False)
-        # clear previous image
+        # Clear previous image
         while child := self.thumb_container.get_first_child():
             self.thumb_container.remove(child)
-        # add new one
+        # Add new one
         self.thumb_container.append(self.preview_thumbnail)
 
-        # Description
+        # Info Row
         if "description" in mod_info and mod_info["description"]:
+            # Description button
             with open(mod_info["description"]) as f:
                 description = f.read()
-        self.preview_description.set_markup(description)
+            self.info_row.set_visible(True)
+            title = _(f"Mod Description for {mod_info.get("display_name", mod_info.get("name"))}")
+            if hasattr(self, "_desc_handler_id"):
+                self.description_btn.disconnect(self._desc_handler_id)    
+            self._desc_handler_id = self.description_btn.connect("clicked", self.on_description_btn_clicked, title, description)
+            # Nexus button
+            if hasattr(self, "_nexus_link_handler_id"):
+                self.nexus_btn.disconnect(self._nexus_link_handler_id)    
+            self._nexus_link_handler_id = self.nexus_btn.connect("clicked", lambda b: webbrowser.open(mod_info["mod_link"]))
+        else:
+            self.info_row.set_visible(False)
 
+        # Contents row
+        if "mod_files" in mod_info:
+            number_of_files = len(mod_info["mod_files"])
+            self.files_btn.set_tooltip_text("\n".join(mod_info["mod_files"]))
+            self.files_btn.set_label(ngettext("{} File", "{} Files", number_of_files).format(number_of_files))
+            folder_path = self.dashboard.staging_path / mod_info.get("folder_name", mod_info.get("display_name"))
+            # Disconnect previous connect
+            if hasattr(self, "_files_handler_id") and self._files_handler_id:
+                self.files_btn.disconnect(self._files_handler_id)
+            # Connect and store new ID
+            self._files_handler_id = self.files_btn.connect("clicked", lambda x: webbrowser.open(f"file://{folder_path}"))
+            self.contents_row.set_visible(True)
+        else:
+            self.contents_row.set_visible(False)
 
+        # Version Row
+        if "version" in mod_info:
+            self.version_btn_label.set_label(mod_info["version"])
+            self.version_row.set_visible(True)
+            if hasattr(self, "_version_link_handler_id"):
+                self.version_btn.disconnect(self._version_link_handler_id)    
+            self._version_link_handler_id = self.version_btn.connect("clicked", lambda b: webbrowser.open(mod_info["mod_link"] + "?tab=files"))
+            # Changelog Tooltip
+            if "changelog" in mod_info and mod_info["changelog"]:
+                self.version_btn_changelog_icon.set_visible(True)
+                self.version_btn.set_tooltip_text(mod_info["changelog"])
+            else:
+                self.version_btn_changelog_icon.set_visible(False)
+                self.version_btn.set_tooltip_text("")
+            # Update management
+            if "new_version" in mod_info and mod_info["version"] != mod_info["new_version"]:
+                self.version_btn.add_css_class("badge-action-row-accent")
+                self.version_btn_label.set_label(mod_info["version"])
+                self.version_btn_label_new.set_label(mod_info["new_version"])
+                self.version_btn_label_new.set_visible(True)
+                self.version_btn_upgrade_icon.set_visible(True)
+            else:
+                self.version_btn.remove_css_class("badge-action-row-accent")
+                self.version_btn_label_new.set_visible(False)
+                self.version_btn_upgrade_icon.set_visible(False)
+        else:
+            self.version_row.set_visible(False)
+
+        # Deployment Row
+        if "deployment_path" in mod_info:
+            self.deployment_label.set_label(mod_info["deployment_path"])
+            self.deployment_label.set_tooltip_text(mod_info["deployment_path"])
+            if hasattr(self, "_deployment_handler_id") and self._deployment_handler_id:
+                self.deployment_btn.disconnect(self._deployment_handler_id)
+            # Connect and store new ID
+            self._deployment_handler_id = self.deployment_btn.connect("clicked", lambda x: webbrowser.open(f"file://{mod_info["deployment_path"]}"))
+            self.deployment_row.set_visible(True)
+            if mod_info["status"] == "disabled": # only show modify button if the mod is disabled
+                self.deployment_update_btn.set_visible(True)
+                if hasattr(self, "_update_handler_id") and self._update_handler_id:
+                    self.deployment_update_btn.disconnect(self._update_handler_id)
+                self._update_handler_id = self.deployment_update_btn.connect(
+                    "clicked",
+                    lambda x: self.pick_new_deployment_path(mod_info, row.mod_data_index))
+            else:
+                self.deployment_update_btn.set_visible(False)
+        else:
+            self.deployment_row.set_visible(False)
+
+        # Uploader Row
+        if "uploader" in mod_info:
+            self.uploader_btn.set_label(mod_info["uploader"])
+            uploader_link = f"https://www.nexusmods.com/profile/{mod_info["uploader"]}"
+            if hasattr(self, "_uploader_link_handler_id"):
+                self.uploader_btn.disconnect(self._uploader_link_handler_id)    
+            self._uploader_link_handler_id = self.uploader_btn.connect("clicked", lambda b: webbrowser.open(uploader_link))
+            self.uploader_row.set_visible(True)
+        else:
+            self.uploader_row.set_visible(False)
+
+        # Endorsement Row
+        if "endorsements" in mod_info and mod_info["endorsements"]:
+            self.endorse_btn_label.set_label(str(mod_info["endorsements"]))
+            # Remove any current link on button
+            if hasattr(self, "_endorse_link_handler_id"):
+                self.endorse_btn.disconnect(self._endorse_link_handler_id)
+            if "endorsed" not in mod_info or not mod_info.get("endorsed"):
+                # Not endorsed yet
+                self.endorse_btn_icon.set_from_icon_name("go-up-symbolic")
+                self.endorse_btn.remove_css_class("badge-action-row-accent")
+                self._endorse_link_handler_id = self.endorse_btn.connect("clicked", self.on_endorse_button_clicked, mod_info, row.mod_data_index, False)
+            else:
+                # Already endorsed
+                self.endorse_btn_icon.set_from_icon_name("go-down-symbolic")
+                self.endorse_btn.add_css_class("badge-action-row-accent")
+                self._endorse_link_handler_id = self.endorse_btn.connect("clicked", self.on_endorse_button_clicked, mod_info, row.mod_data_index, True)
+            self.endorsement_row.set_visible(True)
+        else:
+            self.endorsement_row.set_visible(False)
+
+        # Mod Info Row
+        if "mod_id" in mod_info and mod_info["mod_id"]:
+            self.mod_id_btn.remove_css_class("badge-action-row-accent")
+            self.mod_id_btn.set_label(mod_info["mod_id"])
+        else:
+            self.mod_id_btn.add_css_class("badge-action-row-accent")
+            self.mod_id_btn.set_label(_("No mod ID registered"))
+        self.mod_id_btn.set_tooltip_text(_("Change currently linked mod ID.\nThis will require a refresh of the metadata and will be reset if you reinstall the mod."))
+        if hasattr(self, "_mod_id_handler_id") and self._mod_id_handler_id:
+            self.mod_id_btn.disconnect(self._mod_id_handler_id)
+        # Connect and store new ID
+        self._mod_id_handler_id = self.mod_id_btn.connect("clicked", lambda x: self.pick_new_mod_id(mod_info, mod_name))
+
+        # Display the pane!
         self.revealer.set_reveal_child(True)
+
+
+    def on_description_btn_clicked(self, button, title, description):
+        desc_win = TextWindow(self.dashboard.app.win, title, description, text_type="markup")
+        desc_win.present()
+
+    def pick_new_mod_id(self, mod_info, mod_index):
+        dialog = Adw.MessageDialog(
+            transient_for=self.get_root(),
+            heading=_("Change Mod ID"),
+            body=_("Enter the new Nexus ID for this mod. The next time you do a metadata update (top right button on the mods tab), this will completely replace the existing metadata for this mod.\nKeep in mind that if you reinstall this mod from its archive file, the metadata will be overwritten and you will have to change this value again."),
+        )
+
+        dialog.add_response("cancel", _("Cancel"))
+        dialog.add_response("save", _("Save"))
+        
+        # Style the 'Save' button using your theme's primary accent color
+        dialog.set_response_appearance("save", Adw.ResponseAppearance.SUGGESTED)
+        
+        # Set 'Save' as the default action when hitting Enter
+        dialog.set_default_response("save")
+
+        entry_box = Gtk.ListBox()
+        entry_box.add_css_class("boxed-list") # Crucial Adwaita styling class
+
+        entry_row = Adw.EntryRow(title=_("Mod ID"))
+        entry_row.set_activates_default(True) # Pressing Enter triggers the default dialog action
+        
+        # Pre-populate with current tracking ID
+        current_id = str(mod_info.get("mod_id", ""))
+        if current_id:
+            entry_row.set_text(current_id)
+
+        entry_box.append(entry_row)
+
+        dialog.set_extra_child(entry_box)
+
+        def on_response(source_dialog, response_id):
+            if response_id == "save":
+                new_id = entry_row.get_text().strip()
+                if not new_id:
+                    return # Skip if blank
+
+                # Write changes back out to your YAML file context
+                staging_metadata = load_staging_metadata(self.dashboard.staging_metadata_path)
+                staging_metadata["mods"][mod_index]["mod_id"] = new_id
+                write_yaml(staging_metadata, self.dashboard.staging_metadata_path)
+
+                # Instantly reflect the change on the UI badge element
+                self.mod_id_btn.set_label(new_id)
+                self.mod_id_btn.remove_css_class("badge-action-row-accent")
+
+            # Cleanly destroy the dialog window tracking allocation
+            source_dialog.destroy()
+            self.populate_list()
+        dialog.connect("response", on_response)
+        # Bring the layout cleanly into focus
+        dialog.present()
+
+    def pick_new_deployment_path(self, mod_info, mod_index):
+        # Create the FileChooserNative
+        picker = Gtk.FileChooserNative(
+            title=_("Select New Deployment Directory"),
+            transient_for=self.get_root(), # 'self' assumes you are in a widget/window
+            action=Gtk.FileChooserAction.SELECT_FOLDER,
+            accept_label=_("_Select"),
+            cancel_label=_("_Cancel"),
+        )
+
+        # Pre-select the existing path
+        current_path = mod_info.get("deployment_path")
+        if current_path:
+            # Convert string path to a Gio.File object
+            folder = Gio.File.new_for_path(current_path)
+            picker.set_current_folder(folder)
+
+        # Handle the response
+        def on_response(dialog, response_id):
+            if response_id == Gtk.ResponseType.ACCEPT:
+                selected_file = dialog.get_file()
+                new_path = selected_file.get_path()
+                
+                # Logic to save the new path
+                staging_metadata = load_staging_metadata(self.dashboard.staging_metadata_path)
+                staging_metadata["mods"][mod_index]["deployment_path"] = new_path
+                write_yaml(staging_metadata, self.dashboard.staging_metadata_path)
+                
+                # Update UI label immediately
+                self.deployment_label.set_label(new_path)
+                self.deployment_label.set_tooltip_text(new_path)
+                
+            dialog.destroy()
+
+        picker.connect("response", on_response)
+        picker.show()
+
+    def on_endorse_button_clicked(self, button, mod_info: dict, mod_index: str, unendorse: bool):
+        if endorse_nexus_mod(self.dashboard.headers, self.dashboard.game_config["nexus_id"], mod_info["mod_id"], unendorse):
+            if unendorse: # we just unendorsed the mod
+                print(f"Successfully unendorsed mod {mod_info.get("display_name", mod_info.get("name"))}")
+                self.endorse_btn_label.set_label(str(mod_info["endorsements"]))
+                self.endorse_btn.remove_css_class("badge-action-row-accent")
+                self.endorse_btn_icon.set_from_icon_name("go-up-symbolic")
+            else: # we just endorsed the mod
+                print(f"Successfully endorsed mod {mod_info.get("display_name", mod_info.get("name"))}")
+                self.endorse_btn_label.set_label(str(mod_info["endorsements"] + 1))
+                self.endorse_btn.add_css_class("badge-action-row-accent")
+                self.endorse_btn_icon.set_from_icon_name("go-down-symbolic")
+            # Save state to metadata
+            staging_metadata = load_staging_metadata(self.dashboard.staging_metadata_path)
+            staging_metadata["mods"][mod_index]["endorsed"] = not unendorse
+            write_yaml(staging_metadata, self.dashboard.staging_metadata_path)
+            self.populate_list()
+        else:
+            self.dashboard.show_message(_("Failed to endorse"), _("Could not endorse the selected mod, please make sure you have provided your API key and are connected to the internet."))
 
     def populate_list(self):
         while child := self.mods_list_box.get_first_child():
@@ -180,9 +529,7 @@ class ModsTab(Gtk.Box):
             return
 
         conflicts = check_for_conflicts(self.dashboard.staging_metadata_path)
-        file_badge_sizegroup = Gtk.SizeGroup(mode=Gtk.SizeGroupMode.HORIZONTAL)
         load_index_sizegroup = Gtk.SizeGroup(mode=Gtk.SizeGroupMode.HORIZONTAL)
-        version_badge_sizegroup = Gtk.SizeGroup(mode=Gtk.SizeGroupMode.HORIZONTAL)
         
         indexed_mods = read_index(self.dashboard.staging_metadata_path)
 
@@ -197,12 +544,11 @@ class ModsTab(Gtk.Box):
             if mod not in staging_metadata["mods"]:
                 continue
             
-            
             mod_metadata = staging_metadata["mods"][mod]
 
             display_name = mod_metadata.get("display_name", mod)
-            version_text = mod_metadata.get("version", "—")
-            new_version = mod_metadata.get("new_version", "")
+            folder_name = mod_metadata.get("folder_name", mod)
+            
             changelog = mod_metadata.get("changelog", "")
             mod_link = mod_metadata.get("mod_link", "")
             mod_files = mod_metadata.get("mod_files", [])
@@ -210,6 +556,7 @@ class ModsTab(Gtk.Box):
             row = Adw.ActionRow(title=display_name)
             row.set_activatable(True)
             row.mod_data = mod_metadata
+            row.mod_data_index = mod
             row.set_subtitle(mod_metadata.get("author", ""))
             row.mod_name = mod_metadata.get(display_name.lower)
 
@@ -232,20 +579,7 @@ class ModsTab(Gtk.Box):
                 drag_source.connect("prepare", self.on_drag_prepare, mod)
                 drag_handle.add_controller(drag_source)
                 row.add_prefix(drag_handle)
-            
-            if enable_file_counter:
-                number_of_files = len(mod_files)
-                file_list_badge = Gtk.CenterBox(orientation=Gtk.Orientation.HORIZONTAL)
-                file_list_badge.set_tooltip_text("\n".join(mod_files))
-                file_list_badge.add_css_class("badge-action-row")
-                file_list_badge.set_valign(Gtk.Align.CENTER)
-                file_list_badge.set_margin_end(row_element_margin)
-                label_text = ngettext("{} file", "{} files", number_of_files).format(number_of_files)
-                file_list_badge.set_center_widget(Gtk.Label(label=label_text))
-                file_badge_sizegroup.add_widget(file_list_badge)
-                row.add_prefix(file_list_badge)
-                
-            if conflicts:
+
                 # Load Index
                 index_label = Gtk.Label(label=f"{index}")
                 index_label.add_css_class("dim-label")
@@ -261,7 +595,7 @@ class ModsTab(Gtk.Box):
             
             # Suffix: Missing Files
             missing_files = []
-            mod_dir = staging_path / display_name
+            mod_dir = staging_path / folder_name
             for mod_file in mod_files:    
                 if not os.path.exists(mod_dir/mod_file):
                     missing_files.append(mod_file)
@@ -282,9 +616,9 @@ class ModsTab(Gtk.Box):
             # Conflits
             conflicting_mods = []
             for conflict_list in conflicts:
-                if display_name in conflict_list:
+                if mod in conflict_list:
                     other_mods = conflict_list.copy()
-                    other_mods.remove(display_name)
+                    other_mods.remove(mod)
                     conflicting_mods.extend(other_mods)
             if conflicting_mods:
                 conflicts_badge = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
@@ -310,40 +644,23 @@ class ModsTab(Gtk.Box):
                 info_text_badge.set_tooltip_text(_("This mod contains a text file, click to view."))
                 info_text_badge.set_child(button_content)
                 info_text_badge.set_cursor_from_name("pointer")
-                info_text_badge.connect("clicked", self.dashboard.load_text_file, Path(staging_path) / mod / text_file)
+                info_text_badge.connect("clicked", self.dashboard.load_text_file, Path(staging_path) / mod_metadata["folder_name"] / text_file)
                 info_text_badge.set_valign(Gtk.Align.CENTER)
                 info_text_badge.set_margin_end(row_element_margin)
                 row.add_suffix(info_text_badge)
 
-            
-
-            # Version
-            version_badge = Gtk.Button()
-            button_content = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
-            button_content.set_halign(Gtk.Align.CENTER)
-            button_content.append(Gtk.Label(label=version_text))
-
-            if changelog:
-                version_badge.set_tooltip_text(changelog)
-                q_icon = Gtk.Image.new_from_icon_name("help-about-symbolic")
-                q_icon.set_pixel_size(14)
-                button_content.append(q_icon)
-            
-            version_badge.set_child(button_content)
-            if new_version and new_version != version_text:
-                version_badge.add_css_class("badge-action-row-accent")
-            else:
-                version_badge.add_css_class("badge-action-row")
-            
-            version_badge.set_cursor_from_name("pointer")
-            version_badge.set_valign(Gtk.Align.CENTER)
-            version_badge.set_margin_end(row_element_margin)
-            if mod_link: 
-                version_badge.connect("clicked", lambda b, l=mod_link: webbrowser.open(l))
-            
-            if len(version_text) < 10:
-                version_badge_sizegroup.add_widget(version_badge)
-            row.add_suffix(version_badge)
+            # Update available badge
+            version_current = mod_metadata.get("version", "")
+            version_new = mod_metadata.get("new_version", "")
+            if version_current and version_new and (version_new != version_current):
+                update_badge = Gtk.Button(margin_top=10, margin_bottom=10)
+                update_badge_icon = Gtk.Image.new_from_icon_name("software-update-available-symbolic")
+                update_badge_icon.set_pixel_size(22)
+                update_badge.connect("clicked", lambda b, link=mod_link: webbrowser.open(link + "?tab=files"))
+                update_badge_icon.add_css_class("transparent-bg-accent-icon")
+                update_badge.set_child(update_badge_icon)
+                update_badge.set_cursor_from_name("pointer")
+                row.add_suffix(update_badge)
 
             # Timestamps
             if "install_timestamp" in mod_metadata or "enabled_timestamp" in mod_metadata:
@@ -398,6 +715,12 @@ class ModsTab(Gtk.Box):
     def on_mod_toggled(self, switch, state, mod_files: list, mod: str):
         switch.set_sensitive(False)
         self.dashboard.currently_toggling.add(mod)
+
+        if state:
+            self.deployment_update_btn.set_visible(False)
+        else:
+            self.deployment_update_btn.set_visible(True)
+        
         def worker():
             success = toggle_mod_state(
                 mod_name=mod,
@@ -463,10 +786,9 @@ class ModsTab(Gtk.Box):
 
         btn.set_sensitive(False)
 
-        def on_updates_checked(mods_updated, updated_metadata):
-            if mods_updated:
-                write_yaml(updated_metadata, self.dashboard.staging_metadata_path)
-                self.populate_list()
+        def on_updates_checked(updated_metadata):
+            write_yaml(updated_metadata, self.dashboard.staging_metadata_path)
+            self.populate_list()
             btn.set_sensitive(True)
 
-        check_for_mod_updates_async(staging_metadata, self.dashboard.headers, nexus_id, on_updates_checked)
+        check_for_mod_updates_async(staging_metadata, self.dashboard.headers, nexus_id, Path(self.dashboard.downloads_path), on_updates_checked)

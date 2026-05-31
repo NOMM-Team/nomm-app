@@ -102,10 +102,14 @@ class DownloadsTab(Gtk.Box):
             display_name, version_text, changelog = file_name, "—", ""
 
             if file_name in metadata.get("mods", {}):
-                # order of preference: official display_name > deprecated name (from before metadata rework) > file name
-                display_name = metadata["mods"][file_name].get("display_name", metadata["mods"][file_name].get("name", file_name))
+                # Order of preference: official display_name > deprecated name (from before metadata rework) > file name
+                display_name = metadata["mods"][file_name].get("display_name", file_name)
+                folder_name = metadata["mods"][file_name].get("folder_name", file_name)
                 version_text = metadata["mods"][file_name].get("version", "—")
                 changelog = metadata["mods"][file_name].get("changelog", "")
+            else:
+                # Case when there is no metadata in the downloads metadata file
+                folder_name = file_name
             
             row = Adw.ActionRow(title=display_name)
             row.is_installed = installed
@@ -148,7 +152,7 @@ class DownloadsTab(Gtk.Box):
             install_btn = Gtk.Button(label=_("Reinstall") if installed else _("Install"), valign=Gtk.Align.CENTER)
             if not installed: install_btn.add_css_class("suggested-action")
             install_btn.set_cursor_from_name("pointer")
-            install_btn.connect("clicked", self.on_install_clicked, file_name, display_name)
+            install_btn.connect("clicked", self.on_install_clicked, file_name, folder_name)
             if file_name in self.dashboard.currently_installing:
                 install_btn.set_sensitive(False)
             row.add_suffix(install_btn)
@@ -214,9 +218,9 @@ class DownloadsTab(Gtk.Box):
         return datetime.fromtimestamp(os.path.getmtime(os.path.join(self.dashboard.downloads_path, f)))
 
     # Install
-    def on_install_clicked(self, btn, filename, display_name):
-        display_name = display_name.replace(".zip", "").replace(".rar", "").replace(".7z", "")
-        mod_staging_dir = os.path.join(self.dashboard.staging_path, display_name)
+    def on_install_clicked(self, btn, filename, staging_folder_name):
+        staging_folder_name = staging_folder_name.replace(".zip", "").replace(".rar", "").replace(".7z", "")
+        mod_staging_dir = os.path.join(self.dashboard.staging_path, staging_folder_name)
         archive_full_path = os.path.join(self.dashboard.downloads_path, filename)
         btn.set_sensitive(False)
         
@@ -398,18 +402,17 @@ class DownloadsTab(Gtk.Box):
     def finalise_installation(self, filename, extracted_roots, deployment_target):
         
         def worker():
-            error = None
             try:
                 finalise_mod_metadata(
                     filename, 
                     extracted_roots, 
-                    deployment_target["name"], 
+                    deployment_target, 
                     self.dashboard.staging_metadata_path, 
                     self.dashboard.downloads_metadata_path
                 )
             except Exception as error:
-                pass
-            GLib.idle_add(on_metadata_finalised, error)
+                GLib.idle_add(on_metadata_finalised, error)
+            GLib.idle_add(on_metadata_finalised, None)
         
         def on_metadata_finalised(error):
             self.dashboard.currently_installing.discard(filename)
