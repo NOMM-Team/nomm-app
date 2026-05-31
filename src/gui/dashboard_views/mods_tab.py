@@ -62,6 +62,7 @@ class ModsTab(Gtk.Box):
         self.mods_list_box = Gtk.ListBox(css_classes=["dashboard-list"])
         self.mods_list_box.set_filter_func(self.filter_mods_rows)
         self.mods_list_box.connect("row-activated", self.on_row_clicked) 
+        self.mods_list_box.set_overflow(Gtk.Overflow.HIDDEN)
         self.list_scroll = Gtk.ScrolledWindow(vexpand=True, hexpand=True, css_classes=["shadow-box"])
         self.list_scroll.set_child(self.mods_list_box)
         self.main_content.append(self.list_scroll)

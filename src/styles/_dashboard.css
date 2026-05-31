@@ -6,12 +6,6 @@
 .dashboard-list row {
     transition: background-color 300ms ease-in-out;
 }
-.dashboard-list row:last-child {
-    border-radius: 0 0 15px 15px;
-}
-.dashboard-list row:first-child {
-    border-radius: 15px 15px 0 0;
-}
 .dashboard-list row:hover {
     background-color: alpha(var(--accent-bg-color), 0.1);
 }
@@ -22,6 +16,7 @@
 /* Used for the scroll box around the main list (otherwise the shadow doesn't show up)*/
 .shadow-box {
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    border-radius: 15px;
 }
 
 .floating-close-btn {
