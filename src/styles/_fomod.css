@@ -60,3 +60,7 @@
     -gtk-icon-style: symbolic;
     transition: background-color 200ms ease-in-out;
 }
+
+.footer-box {
+    padding: 10px;
+}
