@@ -187,7 +187,7 @@ class ModsTab(Gtk.Box):
         # Uploader Row
         self.uploader_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
         self.uploader_row.set_visible(False)
-        uploader_row_label = Gtk.Label(label=_("Uploaded by:"), css_classes=["dim-label"])
+        uploader_row_label = Gtk.Label(label=_("Uploader:"), css_classes=["dim-label"])
         self.uploader_row.append(uploader_row_label)
         # Uploader button
         self.uploader_btn = Gtk.Button()
@@ -199,7 +199,7 @@ class ModsTab(Gtk.Box):
         # Endorsement Row
         self.endorsement_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
         self.endorsement_row.set_visible(False)
-        endorsement_row_label = Gtk.Label(label=_("# of Endorsements:"), css_classes=["dim-label"])
+        endorsement_row_label = Gtk.Label(label=_("Endorsements:"), css_classes=["dim-label"])
         self.endorsement_row.append(endorsement_row_label)
         # Endorse button
         self.endorse_btn = Gtk.Button()
