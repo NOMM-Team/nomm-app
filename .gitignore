@@ -12,3 +12,8 @@ build/flatpak/python3-modules.json
 
 # Flatpak package
 NOMM.flatpak
+
+# AUR build
+build/aur/*
+!build/aur/.SRCINFO
+!build/aur/PKGBUILD

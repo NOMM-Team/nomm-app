@@ -188,9 +188,23 @@ The app is built with:
 
 ### Building the app
 
+#### Flatpak
+
 1. Make the `build.sh` file executable (if you don't know how to do this see [here](https://stackoverflow.com/questions/817060/creating-executable-files-in-linux))
 2. Place your `flatpak-pip-generator.py` file at the root of the app's directory
 3. Run `./build.sh`
 4. Wait for flatpak to be built
 5. You should now have a `nomm.flatpak` file in the directory
 6. To install your newly obtained flatpak, follow the steps in the "[Installing/Running](https://github.com/Allexio/nomm?tab=readme-ov-file#installingrunning)" section above
+
+#### AUR
+
+1. Clone the repository
+```
+git clone https://github.com/Allexio/nomm.git
+```
+2. Make the `build-aur.sh` file executable. from the downloaded folder use this command:
+```
+chmod +x ./build/build-aur.sh
+```
+3. Confirm the installation
