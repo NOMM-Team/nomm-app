@@ -362,7 +362,7 @@ def toggle_mod_state(mod_name: str, mod_files: list, state: bool, staging_dir: s
                 else:
                     success = True
             else:
-                success = deploy_mod_files(staging_dir, dest_dir, mod_file, mod_name)
+                success = deploy_mod_files(staging_dir, dest_dir, mod_info["mod_files"], mod_name)
             if success:
                 #TODO: Remove status data as there already is a timestamp
                 print(f"Successfully deployed mod: {mod_name}")
