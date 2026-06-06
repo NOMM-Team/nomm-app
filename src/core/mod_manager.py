@@ -185,10 +185,8 @@ def build_deployment_map(staging_metadata: dict) -> dict:
     if not staging_metadata:
         return []
     
-    mod_index = staging_metadata["index"]
-    
     deployment_map = {}
-    for mod in reversed(mod_index):
+    for mod in reversed(staging_metadata["index"]):
         if "enabled_timestamp" in staging_metadata["mods"][mod]:
             for file_path in staging_metadata["mods"][mod].get("mod_files", []):
                 if file_path not in deployment_map:
@@ -197,7 +195,6 @@ def build_deployment_map(staging_metadata: dict) -> dict:
     return deployment_map
 
 def check_for_deployment_map_change(new_deployment_map: dict, current_deployment_map: dict) -> list:
-    # Initialize a dict
     changes = {
         'additions': {},
         'deletions': {}
