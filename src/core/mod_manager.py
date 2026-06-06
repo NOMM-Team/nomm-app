@@ -9,27 +9,26 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional
 from datetime import datetime
+from gi.repository import GLib
 from core.tools import load_yaml, write_yaml, load_user_config
 
 meta_lock = threading.Lock()
 
 #TODO:Change the logic to deploy last mods from the index first
-def deploy_mod_files(staging_dir: str, dest_dir: str, mod_info: dict) -> bool:
+def deploy_mod_files(staging_dir: str, dest_dir: str, mod_files: list, mod_name: str) -> bool:
     dest_path = Path(dest_dir)
-    
-    mod_name = mod_info.get("folder_name", mod_info.get("display_name", mod_info.get("name")))
-
-    staging_mod_path = os.path.join(Path(staging_dir), mod_name)
     
     staging_meta_path = os.path.join(Path(staging_dir), ".staging.nomm.yaml")
     staging_metadata = load_staging_metadata(staging_meta_path)
     
-    mod_files = mod_info.get("mod_files", [])
+    folder_name=staging_metadata["mods"][mod_name].get("folder_name", staging_metadata["mods"][mod_name].get("display_name"))
+
+    staging_mod_dir = Path(staging_dir) / folder_name
     
     is_success = True
 
     for mod_file in mod_files:
-        source_item = Path(staging_mod_path) / mod_file
+        source_item = Path(staging_mod_dir) / mod_file
         link_item = Path(dest_path) / mod_file
 
         if not source_item.exists():
@@ -56,52 +55,20 @@ def deploy_mod_files(staging_dir: str, dest_dir: str, mod_info: dict) -> bool:
             try:
                 # symlink
                 os.symlink(source_item, link_item)
+                print(f"[+] Successfully linked {source_item}")
             except Exception as sym_e:
                 print(f"Error creating a Symlink {link_item}: {sym_e}")
                 is_success = False
     
     # Update game status
     if not is_success:
-        unlink_mod_files(staging_mod_path, dest_dir, mod_files)
+        unlink_mod_files(staging_mod_dir, dest_dir, mod_files)
         staging_metadata["mods"][mod_name]["status"] = "disabled"
-        mod_info.pop("enabled_timestamp", None)
+        staging_metadata["mods"][mod_name].pop("enabled_timestamp", None)
         write_yaml(staging_metadata, staging_meta_path)
         return is_success
     
     return is_success
-
-# Just a loop that deploy mods following the index list
-def deploy_all_ordered_mods(staging_dir: str, dest_dir: str) -> bool:
-    staging_meta_path = os.path.join(staging_dir, ".staging.nomm.yaml")
-    indexed_mods = read_index(staging_meta_path)
-    staging_metadata = load_staging_metadata(staging_meta_path)
-    
-    for mod_name in staging_metadata["mods"]:
-        if staging_metadata["mods"][mod_name]["status"] == "enabled":
-            staging_mod_path = os.path.join(staging_dir, mod_name)
-            unlink_mod_files(staging_mod_path, dest_dir, staging_metadata["mods"][mod_name].get("mod_files"))
-    
-    # Loop from item in index metadata, first on the list is deployed first etc...
-    error_count = 0
-    for mod_name in indexed_mods:
-        if mod_name in staging_metadata.get("mods", {}):
-            mod_info = staging_metadata["mods"][mod_name]
-            if mod_info.get("status") == "enabled":
-                if not deploy_mod_files(
-                    staging_dir,
-                    dest_dir,
-                    mod_info
-                ):
-                    error_count += 1
-    if error_count:
-        show_message(_("Error"), _("Installation failed: {}"))
-        show_message(_("Error"), ngettext(
-                    "{} installation failed, see logs for more details",
-                    "{} installations failed, see logs for more details",
-                    error_count)
-                )
-        return False
-    return True
 
 # dashboard.py/update_indicators with available downloads and mods grouped but logic is the same
 def get_mod_statistics(staging_meta_path: str, downloads_path: str) -> dict:
@@ -148,11 +115,12 @@ def is_mod_installed(archive_filename, staging_metadata) -> bool:
     return False
 
 # Checks if mod files from staging and dest folders are the same and remove the symlink if they are
-# dashboard.py (l: 1069)
-def unlink_mod_files(staging_dir: str, dest_dir: str, mod_files: list[str]):
+def unlink_mod_files(staging_dir: str, dest_dir: str, mod_files: list[str]) -> bool:
     dest_path = Path(dest_dir)
     staging_path = Path(staging_dir)
-
+    
+    success = True
+    
     for mod_file in mod_files:
         link_item = dest_path / mod_file
         source_item = staging_path / mod_file
@@ -164,7 +132,9 @@ def unlink_mod_files(staging_dir: str, dest_dir: str, mod_files: list[str]):
             try:
                 if os.path.samefile(source_item, link_item):
                     link_item.unlink()
+                    print(f"[-] Successfully unlinked {source_item}")
             except Exception as e:
+                success = False
                 print(f"Failed to unlink {link_item}: {e}")
 
         current_dir = link_item.parent
@@ -174,6 +144,8 @@ def unlink_mod_files(staging_dir: str, dest_dir: str, mod_files: list[str]):
             except OSError:
                 break
             current_dir = current_dir.parent
+    
+    return success
 
 # Previous function + delete mod from staging folder
 def completely_uninstall_mod(staging_dir: str, dest_dir: str, mod_files: list[str]):
@@ -207,6 +179,88 @@ def check_for_conflicts(staging_meta_path: str) -> list:
                 conflicts.append(unique_mods)
 
     return conflicts
+
+def build_deployment_map(staging_metadata: dict) -> dict:
+    
+    if not staging_metadata:
+        return []
+    
+    deployment_map = {}
+    for mod in reversed(staging_metadata["index"]):
+        if "enabled_timestamp" in staging_metadata["mods"][mod]:
+            for file_path in staging_metadata["mods"][mod].get("mod_files", []):
+                if file_path not in deployment_map:
+                    deployment_map[file_path] = mod
+    
+    return deployment_map
+
+def check_for_deployment_map_change(new_deployment_map: dict, current_deployment_map: dict) -> list:
+    changes = {
+        'additions': {},
+        'deletions': {}
+    }
+    
+    for file in new_deployment_map:
+        if file not in current_deployment_map or current_deployment_map.get(file) != new_deployment_map.get(file) :
+            additional_change = {
+                'current_source' : current_deployment_map.get(file), 
+                'new_source' : new_deployment_map.get(file)
+            }
+            changes['additions'][file] = additional_change
+            
+    for file in current_deployment_map:
+        if file not in new_deployment_map:
+            changes['deletions'][file] = current_deployment_map.get(file)
+    
+    return changes
+
+def apply_deployment_map_changes(staging_dir: str, dest_dir: str, changes: dict, mod_name: str) -> bool:
+    files_to_unlink = {}
+    files_to_link = {}
+    
+    # Apply additions
+    for change in changes['additions']:
+        deleting_mod_name = changes['additions'][change].get('current_source')
+        deploying_mod_name = changes['additions'][change].get('new_source')
+        
+        if deleting_mod_name:
+            if not files_to_unlink.get(deleting_mod_name, []):
+                files_to_unlink[deleting_mod_name] = []
+            files_to_unlink[deleting_mod_name].append(change)
+        
+        if not files_to_link.get(deploying_mod_name, []):
+            files_to_link[deploying_mod_name] = []
+        
+        files_to_link[deploying_mod_name].append(change)
+    
+    # Apply deletions
+    for file in changes['deletions']:
+        deploying_mod_name = changes['deletions'][file]
+        if not files_to_unlink.get(deploying_mod_name, []):
+            files_to_unlink[deploying_mod_name] = []    
+        
+        files_to_unlink[deploying_mod_name].append(file)
+    
+    # Starts unlinking files
+    def unlink_files(staging_dir, dest_dir, files_to_unlink, files_to_link):
+        metadata = load_staging_metadata(os.path.join(staging_dir, ".staging.nomm.yaml"))
+        for mod in files_to_unlink:
+            mod_info = metadata["mods"].get(mod, {})
+            folder_name = mod_info.get("folder_name", mod_info.get("display_name", mod))
+            staging_mod_dir = Path(staging_dir) / folder_name
+            unlink_mod_files(staging_mod_dir, dest_dir, files_to_unlink[mod])
+        GLib.idle_add(on_unlink_finish, staging_dir, dest_dir, files_to_link)
+    
+    # Starts deploying files
+    def on_unlink_finish(staging_dir, dest_dir, files_to_link):
+        for mod in files_to_link:
+            if deploy_mod_files(staging_dir, dest_dir, files_to_link[mod], mod) == False:
+                print(f"Error while deploying: {mod}")
+                return False
+    
+    threading.Thread(target=unlink_files, args=(staging_dir, dest_dir, files_to_unlink, files_to_link), daemon=True).start()
+    
+    return True
 
 # Dashboard.py/find_text_file
 def find_text_file(mod_files: list) -> str:
@@ -276,7 +330,7 @@ def steam_launch_option_merger(current_launch_options: str, new_option: str) -> 
     merged_launch_option = current_launch_options + " " + new_option
     return merged_launch_option
 
-def toggle_mod_state(mod_name: str, mod_files: list, state: bool, staging_dir: str, deployment_targets: list) -> bool:
+def toggle_mod_state(mod_name: str, mod_files: list, state: bool, staging_dir: str, deployment_targets: list, deployment_map: list) -> dict:
     staging_meta_path = os.path.join(staging_dir, ".staging.nomm.yaml")
     dest_dir = deployment_targets[0]["path"]
     
@@ -287,37 +341,72 @@ def toggle_mod_state(mod_name: str, mod_files: list, state: bool, staging_dir: s
         
         mod_info = staging_metadata["mods"][mod_name]
 
-        if "deployment_path" in mod_info:
-            dest_dir = mod_info["deployment_path"]
+        if "deployment_target" in mod_info:
+            for target in deployment_targets:
+                if target["name"] == mod_info["deployment_target"]:
+                    dest_dir = target["path"]
+                    break
 
         staging_mod_dir = os.path.join(staging_dir, mod_name)
+        
+        mod_files = mod_info.get("mod_files", [])
+            
+        success = True
+        
+        conflicts_exist = check_for_conflicts(staging_meta_path)
+        
+        new_deployment_map = {}
 
         # state is true so the mod has to be installed/deployed
         if state:
             # deploy_mod_files return true if it worked, false if it doesn't
+            #TODO: Remove status data as there already is a timestamp
             mod_info["status"] = "enabled"
             mod_info["enabled_timestamp"] = datetime.now()
             write_yaml(staging_metadata, staging_meta_path)
-            if check_for_conflicts(staging_meta_path):
-                success = deploy_all_ordered_mods(staging_dir, dest_dir)
+            if conflicts_exist:
+                new_deployment_map = build_deployment_map(staging_metadata)
+                if deployment_map != new_deployment_map:
+                    changes = check_for_deployment_map_change(new_deployment_map, deployment_map)
+                    success = apply_deployment_map_changes(staging_dir, dest_dir, changes, mod_name)
             else:
-                success = deploy_mod_files(staging_dir, dest_dir, mod_info)
-            if success:
-                #TODO: Remove status data as there already is a timestamp
-                print(f"Successfully deployed mod: {mod_name}")
-                return True
-            return False
+                if deploy_mod_files(staging_dir, dest_dir, mod_files, mod_name):
+                    for mod_file in mod_files:
+                        deployment_map[mod_file] = mod_name
+                    print(f"Successfully deployed mod: {mod_name}")
+                else:
+                    success = False
         # state is false, deleting the datas and ensure metadata are set to proper value
         else:
-            unlink_mod_files(staging_mod_dir, dest_dir, mod_files)
             mod_info["status"] = "disabled"
             # Pop is a safety measure to prevent a crash for a missing key
             mod_info.pop("enabled_timestamp", None)
             write_yaml(staging_metadata, staging_meta_path)
             # If there is a conflict mods have to be reloaded in case you unloaded a mod that did an override
-            if check_for_conflicts(staging_meta_path):
-                success = deploy_all_ordered_mods(staging_dir, dest_dir)
-            return True
+            if conflicts_exist:
+                # Recalculating mod files
+                new_deployment_map = build_deployment_map(staging_metadata)
+                if deployment_map != new_deployment_map:
+                    changes = check_for_deployment_map_change(new_deployment_map, deployment_map)
+                    success = apply_deployment_map_changes(staging_dir, dest_dir, changes, mod_name)
+            else:
+                if unlink_mod_files(staging_mod_dir, dest_dir, mod_files):
+                    for mod_file in mod_files:
+                        del deployment_map[mod_file]
+                    print(f"Successfully removed mod: {mod_name}")
+                else:
+                    success = False
+        
+        # Update deployment map
+        if success and conflicts_exist:
+            deployment_map = new_deployment_map
+        
+        deployment_output = {
+            'success': success,
+            'deployment_map': deployment_map
+        }
+        
+        return deployment_output
 
 # method to get the metadata path that is used everywhere in the app
 def get_metadata_path(base_folder: str, is_staging: bool = True) -> str:
@@ -341,7 +430,6 @@ def load_staging_metadata(path: str) -> dict:
     return data
 
 # Removes the mod from the staging metadata -- metadata allows to list mods that are installed
-# Dashboard.py (l:216)
 def remove_mod_from_metadata(path: str, mod_name: str) -> bool:
     data = load_staging_metadata(path)
 
@@ -358,7 +446,6 @@ def remove_mod_from_metadata(path: str, mod_name: str) -> bool:
     return False
 
 # Writing the metadata with needed fields
-# dashboard.py/create_downloads_page (l:1339)
 def finalise_mod_metadata(filename: str, mod_files: list, deployment_target: dict, staging_meta_path: str, downloads_meta_path: str):
     current_staging_metadata = load_staging_metadata(staging_meta_path)
     current_download_metadata = {}
@@ -399,14 +486,12 @@ def finalise_mod_metadata(filename: str, mod_files: list, deployment_target: dic
         write_yaml(current_staging_metadata, staging_meta_path)
 
 # Mostly returns index, will very likely disappear in the future
-# New
 def read_index(staging_meta_path: str) -> List[str]:
     current_staging_metadata = load_staging_metadata(staging_meta_path)
     return current_staging_metadata["index"]
 
 # Change the mod index from the index list
-# New
-def change_mod_index(staging_meta_path: str, mod_name: str, index: int):
+def change_mod_index(staging_meta_path: str, mod_name: str, index: int) -> dict:
     current_staging_metadata=load_staging_metadata(staging_meta_path)
     
     if mod_name in current_staging_metadata["index"]:
@@ -414,7 +499,6 @@ def change_mod_index(staging_meta_path: str, mod_name: str, index: int):
         mod = current_staging_metadata["index"].pop(pos)
         current_staging_metadata["index"].insert(index, mod)
         
-        return   write_yaml(current_staging_metadata, staging_meta_path) 
-    return False
-
-# Implement a check file method to resync mod metadata if needed
+        write_yaml(current_staging_metadata, staging_meta_path) 
+    
+    return current_staging_metadata

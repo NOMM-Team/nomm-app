@@ -8,9 +8,11 @@ from pathlib import Path
 
 from gi.repository import Adw, Gdk, GLib, GObject, Gtk, Gio, GdkPixbuf, Pango
 
-from core.mod_manager import (change_mod_index, check_for_conflicts,
-                              deploy_all_ordered_mods, load_staging_metadata,
-                              read_index, toggle_mod_state)
+from core.mod_manager import (apply_deployment_map_changes, build_deployment_map,
+                              change_mod_index, check_for_conflicts,
+                              check_for_deployment_map_change,
+                              load_staging_metadata, read_index,
+                              toggle_mod_state)
 from core.nexus_api import check_for_mod_updates_async, endorse_nexus_mod
 from core.tools import timestamp_converter, write_yaml, process_bbcode
 from gui.text_window import TextWindow
@@ -26,6 +28,10 @@ class ModsTab(Gtk.Box):
         self.set_margin_top(20)
 
         self.dashboard = dashboard
+
+        # Deployment map is used to redeploy files while moving items
+        staging_metadata = load_staging_metadata(self.dashboard.staging_metadata_path)
+        self.deployment_map = build_deployment_map(staging_metadata)
 
         # Action bar top right
         action_bar = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
@@ -722,21 +728,24 @@ class ModsTab(Gtk.Box):
             self.deployment_update_btn.set_visible(True)
         
         def worker():
-            success = toggle_mod_state(
+            deployment_output = toggle_mod_state(
                 mod_name=mod,
                 mod_files=mod_files,
                 state=state,
                 staging_dir=str(self.dashboard.staging_path),
-                deployment_targets=self.dashboard.deployment_targets
+                deployment_targets=self.dashboard.deployment_targets,
+                deployment_map=self.deployment_map
             )
-            GLib.idle_add(on_toggle_done, success)
+            GLib.idle_add(on_toggle_done, deployment_output)
             
-        def on_toggle_done(success):
+        def on_toggle_done(deployment_output):
+            if deployment_output["success"] == True:
+                self.deployment_map = deployment_output['deployment_map']
             # UI Fallback if toggle fail
             self.dashboard.currently_toggling.discard(mod)
             switch.set_sensitive(True)
-            if state and not success:
-                switch.set_active(False) 
+            if state and not deployment_output['success']:
+                switch.set_active(False)
                 return False
             
             # UI Refresh
@@ -768,8 +777,16 @@ class ModsTab(Gtk.Box):
         
         if mod_name in current_mods:
             target_index = current_mods.index(mod_name)
-            change_mod_index(self.dashboard.staging_metadata_path, value, target_index)
-            deploy_all_ordered_mods(self.dashboard.staging_path, dest_dir)
+            new_staging_metadata = change_mod_index(self.dashboard.staging_metadata_path, value, target_index)
+            
+            # Redeploy the files that changed
+            new_deployment_map = build_deployment_map(new_staging_metadata)
+            if new_deployment_map != self.deployment_map:
+                changes = check_for_deployment_map_change(new_deployment_map, self.deployment_map)
+                apply_deployment_map_changes(self.dashboard.staging_path, dest_dir, changes, mod_name)
+                self.deployment_map = new_deployment_map
+            
+            # Refresh UI
             self.populate_list()
             return True
         return False
