@@ -353,7 +353,7 @@ def toggle_mod_state(mod_name: str, mod_files: list, state: bool, staging_dir: s
             
         success = True
         
-        conflicts_exists = check_for_conflicts(staging_meta_path)
+        conflicts_exist = check_for_conflicts(staging_meta_path)
         
         new_deployment_map = {}
 
@@ -364,7 +364,7 @@ def toggle_mod_state(mod_name: str, mod_files: list, state: bool, staging_dir: s
             mod_info["status"] = "enabled"
             mod_info["enabled_timestamp"] = datetime.now()
             write_yaml(staging_metadata, staging_meta_path)
-            if conflicts_exists:
+            if conflicts_exist:
                 new_deployment_map = build_deployment_map(staging_metadata)
                 if deployment_map != new_deployment_map:
                     changes = check_for_deployment_map_change(new_deployment_map, deployment_map)
@@ -383,7 +383,7 @@ def toggle_mod_state(mod_name: str, mod_files: list, state: bool, staging_dir: s
             mod_info.pop("enabled_timestamp", None)
             write_yaml(staging_metadata, staging_meta_path)
             # If there is a conflict mods have to be reloaded in case you unloaded a mod that did an override
-            if conflicts_exists:
+            if conflicts_exist:
                 # Recalculating mod files
                 new_deployment_map = build_deployment_map(staging_metadata)
                 if deployment_map != new_deployment_map:
@@ -398,7 +398,7 @@ def toggle_mod_state(mod_name: str, mod_files: list, state: bool, staging_dir: s
                     success = False
         
         # Update deployment map
-        if success and conflicts_exists:
+        if success and conflicts_exist:
             deployment_map = new_deployment_map
         
         deployment_output = {
