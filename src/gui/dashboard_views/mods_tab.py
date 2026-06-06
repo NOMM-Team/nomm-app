@@ -30,7 +30,8 @@ class ModsTab(Gtk.Box):
         self.dashboard = dashboard
 
         # Deployment map is used to redeploy files while moving items
-        self.deployment_map = build_deployment_map(self.dashboard.staging_metadata_path)
+        staging_metadata = load_staging_metadata(self.dashboard.staging_metadata_path)
+        self.deployment_map = build_deployment_map(staging_metadata)
 
         # Action bar top right
         action_bar = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
@@ -727,7 +728,7 @@ class ModsTab(Gtk.Box):
             self.deployment_update_btn.set_visible(True)
         
         def worker():
-            success = toggle_mod_state(
+            deployment_output = toggle_mod_state(
                 mod_name=mod,
                 mod_files=mod_files,
                 state=state,
@@ -735,16 +736,16 @@ class ModsTab(Gtk.Box):
                 deployment_targets=self.dashboard.deployment_targets,
                 deployment_map=self.deployment_map
             )
-            GLib.idle_add(on_toggle_done, success)
+            GLib.idle_add(on_toggle_done, deployment_output)
             
-        def on_toggle_done(success):
-            if success:
-                self.deployment_map = build_deployment_map(self.dashboard.staging_metadata_path)
+        def on_toggle_done(deployment_output):
+            if deployment_output["success"] == True:
+                self.deployment_map = deployment_output['deployment_map']
             # UI Fallback if toggle fail
             self.dashboard.currently_toggling.discard(mod)
             switch.set_sensitive(True)
-            if state and not success:
-                switch.set_active(False) 
+            if state and not deployment_output['success']:
+                switch.set_active(False)
                 return False
             
             # UI Refresh
@@ -776,9 +777,10 @@ class ModsTab(Gtk.Box):
         
         if mod_name in current_mods:
             target_index = current_mods.index(mod_name)
-            change_mod_index(self.dashboard.staging_metadata_path, value, target_index)
+            new_staging_metadata = change_mod_index(self.dashboard.staging_metadata_path, value, target_index)
+            
             # Redeploy the files that changed
-            new_deployment_map = build_deployment_map(self.dashboard.staging_metadata_path)
+            new_deployment_map = build_deployment_map(new_staging_metadata)
             if new_deployment_map != self.deployment_map:
                 changes = check_for_deployment_map_change(new_deployment_map, self.deployment_map)
                 apply_deployment_map_changes(self.dashboard.staging_path, dest_dir, changes, mod_name)
