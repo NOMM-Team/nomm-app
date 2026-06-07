@@ -565,9 +565,8 @@ class ModsTab(Gtk.Box):
 
             for index, mod in enumerate(indexed_mods, start=1):
 
-                # Why did we add that?
-                # if mod not in staging_metadata["mods"]:
-                #     continue
+                if mod not in staging_metadata["mods"]:
+                    continue
                 
                 display_name = mod
                 mod_metadata = staging_metadata["mods"][mod]
@@ -613,6 +612,11 @@ class ModsTab(Gtk.Box):
                     index_label.set_valign(Gtk.Align.CENTER)
                     load_index_sizegroup.add_widget(index_label)
                     row.add_prefix(index_label)
+                
+                drop_target = Gtk.DropTarget(actions=Gdk.DragAction.MOVE)
+                drop_target.set_gtypes([GObject.TYPE_STRING])
+                drop_target.connect("drop", self.on_row_drop, mod)
+                row.add_controller(drop_target)
 
                 if enable_file_counter:
                     number_of_files = len(mod_files)
@@ -625,12 +629,7 @@ class ModsTab(Gtk.Box):
                     file_list_badge.set_center_widget(Gtk.Label(label=label_text))
                     file_badge_sizegroup.add_widget(file_list_badge)
                     row.add_prefix(file_list_badge)
-
-                drop_target = Gtk.DropTarget(actions=Gdk.DragAction.MOVE)
-                drop_target.set_gtypes([GObject.TYPE_STRING])
-                drop_target.connect("drop", self.on_row_drop, mod)
-                row.add_controller(drop_target)
-
+                
                 # Suffix: Missing Files
                 missing_files = missing_files_per_mod.get(display_name, [])
                 if missing_files:
@@ -678,12 +677,11 @@ class ModsTab(Gtk.Box):
                     info_text_badge.set_tooltip_text(_("This mod contains a text file, click to view."))
                     info_text_badge.set_child(button_content)
                     info_text_badge.set_cursor_from_name("pointer")
-                    info_text_badge.connect("clicked", self.dashboard.load_text_file, Path(staging_path) / mod / text_file)
+                    info_text_badge.connect("clicked", self.dashboard.load_text_file, Path(staging_path) / mod_metadata["folder_name"] / text_file)
                     info_text_badge.set_valign(Gtk.Align.CENTER)
                     info_text_badge.set_margin_end(row_element_margin)
                     row.add_suffix(info_text_badge)
                     
-                
                 # Update available badge
                 version_current = mod_metadata.get("version", "")
                 version_new = mod_metadata.get("new_version", "")
@@ -717,34 +715,6 @@ class ModsTab(Gtk.Box):
                         installed_row = self.dashboard.create_timestamp_row(installed_timestamp_label, installed_tooltip, "installed.svg")
                         timestamp_box.append(installed_row)
                     row.add_suffix(timestamp_box)
-
-                # Version
-                version_badge = Gtk.Button()
-                button_content = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
-                button_content.set_halign(Gtk.Align.CENTER)
-                button_content.append(Gtk.Label(label=version_text))
-
-                if changelog:
-                    version_badge.set_tooltip_text(changelog)
-                    q_icon = Gtk.Image.new_from_icon_name("help-about-symbolic")
-                    q_icon.set_pixel_size(14)
-                    button_content.append(q_icon)
-
-                version_badge.set_child(button_content)
-                if new_version and new_version != version_text:
-                    version_badge.add_css_class("badge-action-row-accent")
-                else:
-                    version_badge.add_css_class("badge-action-row")
-
-                version_badge.set_cursor_from_name("pointer")
-                version_badge.set_valign(Gtk.Align.CENTER)
-                version_badge.set_margin_end(row_element_margin)
-                if mod_link: 
-                    version_badge.connect("clicked", lambda b, l=mod_link: webbrowser.open(l))
-
-                if len(version_text) < 10:
-                    version_badge_sizegroup.add_widget(version_badge)
-                row.add_suffix(version_badge)
 
                 # Trash
                 u_stack = Gtk.Stack(transition_type=Gtk.StackTransitionType.CROSSFADE, hhomogeneous=False, interpolate_size=True)

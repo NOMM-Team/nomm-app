@@ -436,7 +436,6 @@ def remove_mod_from_metadata(path: str, mod_name: str) -> bool:
 
 # Writing the metadata with needed fields
 def finalise_mod_metadata(filename: str, mod_files: list, deployment_target: dict, staging_meta_path: str, downloads_meta_path: str):
-    current_staging_metadata = load_staging_metadata(staging_meta_path)
     current_download_metadata = {}
 
     mod_name = filename.replace(".zip", "").replace(".rar", "").replace(".7z", "")

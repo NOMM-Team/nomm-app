@@ -414,7 +414,5 @@ def _fetch_and_write_mod_metadata(nxm_link: str, headers: dict, final_download_d
     write_yaml(downloads_metadata, downloads_metadata_path)
 
     send_download_notification("success", file_name=file_name, game_name=game_folder_name, icon_path=None)
-
-    print(f"Done! Saved to {full_file_path}")
     
     return True
