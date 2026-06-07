@@ -511,17 +511,16 @@ class DownloadsTab(Gtk.Box):
             self.currently_downloading.add(filename)
             self.populate_list()
         if filename in self.download_maps:
-            print(f"{filename}: {progress}%")
             self.download_maps[filename].set_fraction(progress)
             self.download_lbl_maps[filename].set_text(f"{round(progress*100)}%")
             
     def on_download_complete(self, downloader, filename):
-        print(self.currently_downloading)
-        self.currently_downloading.discard(filename)
-        print(self.currently_downloading)
-        self.download_lbl_maps[filename].set_text("Fetching...")
+        if filename in self.download_maps:
+            self.currently_downloading.discard(filename)
+            self.download_lbl_maps[filename].set_text("Fetching...")
         
     def on_metadata_ready(self, downloader, filename):
-        self.download_maps[filename].set_fraction(0.0)
-        self.download_lbl_maps.pop(filename)
-        self.populate_list()
+        if filename in self.download_maps:
+            self.download_maps[filename].set_fraction(0.0)
+            self.download_lbl_maps.pop(filename)
+            self.populate_list()
