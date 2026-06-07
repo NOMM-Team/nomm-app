@@ -26,8 +26,9 @@ class ToolsTab(Gtk.Box):
         if not utilities_cfg or not isinstance(utilities_cfg, dict):
             self.append(Gtk.Label(label=_("No utilities defined."), css_classes=["dim-label"]))
         else:
-            list_box = Gtk.ListBox(css_classes=["boxed-list"])
+            list_box = Gtk.ListBox(css_classes=["dashboard-list"])
             list_box.set_selection_mode(Gtk.SelectionMode.NONE)
+            list_box.set_overflow(Gtk.Overflow.HIDDEN)
 
             for util_id, util in utilities_cfg.items():
                 row = Adw.ActionRow(title=util.get("name", util_id))

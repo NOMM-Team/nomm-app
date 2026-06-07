@@ -66,8 +66,9 @@ class DownloadsTab(Gtk.Box):
         self.append(action_bar)
 
         # Downloads
-        self.list_box = Gtk.ListBox(css_classes=["boxed-list"])
+        self.list_box = Gtk.ListBox(css_classes=["dashboard-list"])
         self.list_box.set_filter_func(self.filter_list_rows)
+        self.list_box.set_overflow(Gtk.Overflow.HIDDEN)
                 
         # Items that needs to be used globally       
         self.scrolled = Gtk.ScrolledWindow(vexpand=True)
