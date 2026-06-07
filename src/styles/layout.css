@@ -7,5 +7,6 @@
  @import url("_drop_hover.css");
  @import url("_fomod.css");
  @import url("_text_window.css");
- @import url("_utility.css");
- @import url("_thumbnails.css")
+ @import url("_thumbnails.css");
+ @import url("_generic.css");
+ @import url("_dashboard.css");

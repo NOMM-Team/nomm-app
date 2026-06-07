@@ -50,8 +50,6 @@ class GameDashboard(Gtk.Box):
         self.downloads_metadata_path = get_metadata_path(self.downloads_path, is_staging=False)
 
         self.deployment_targets = parse_deployment_paths(self.game_config, self.platform, str(self.app_id))
-        
-        temp_path_ft = os.path.join(self.staging_path, "staging.nomm.yaml")
 
         self.headers = {
             'apikey': self.user_config["nexus_api_key"],
@@ -259,15 +257,16 @@ class GameDashboard(Gtk.Box):
     def on_uninstall_item(self, btn, mod_files: list, mod_name: str):
         staging_metadata = load_staging_metadata(self.staging_metadata_path)
         
-        # get the mod deployment path
+        
         dest_dir = self.deployment_targets[0]["path"]
-        if mod_name in staging_metadata["mods"] and "deployment_target" in staging_metadata["mods"][mod_name]:
-            for target in self.deployment_targets:
-                if target["name"] == staging_metadata["mods"][mod_name]["deployment_target"]:
-                    dest_dir = target["path"]
-                    break
-
-        staging_mod_dir = os.path.join(self.staging_path, mod_name)
+        # if mod metadata is in NOMM 0.10 format
+        if mod_name in staging_metadata["mods"] and "deployment_path" in staging_metadata["mods"][mod_name]:
+            dest_dir = staging_metadata["mods"][mod_name]["deployment_path"]
+            staging_mod_dir = os.path.join(self.staging_path, staging_metadata["mods"][mod_name]["folder_name"])
+        else:
+            # legacy format
+            # TODO: remove this if/else condition in later versions and keep only the top part
+            staging_mod_dir = os.path.join(self.staging_path, mod_name)
 
         completely_uninstall_mod(staging_mod_dir, dest_dir, mod_files)
 
@@ -278,8 +277,8 @@ class GameDashboard(Gtk.Box):
         self.update_indicators()
 
     # Replaced errorbox by MessageDialog
-    def show_message(self, h, b):
-        d = Adw.MessageDialog(transient_for=self.app.win, heading=h, body=b)
+    def show_message(self, header, body):
+        d = Adw.MessageDialog(transient_for=self.app.win, heading=header, body=body)
         d.add_response("ok", "OK")
         d.connect("response", lambda d, r: d.close())
         d.present()

@@ -7,7 +7,6 @@ import re
 from typing import List, Dict, Any
 from gi.repository import GLib, Gio
 
-
 def get_contrast_color(hex_code: str) -> str:
     hex_code = hex_code.lstrip('#')
     
@@ -92,18 +91,15 @@ def get_username_from_steam_id(steam_id: str, steam_base_path) -> str:
 
 def retrieve_casesensitive_paths(path:str):
     parts = path.split('/')
-    part_list = []
-    for part in parts:
+    part_list = ['/']
+    for part in parts[1:]:
         try:
-            if not part:
-                part_list.append('/')
-                continue
             new_path = os.path.join(*part_list) if part_list else '/'
-            found_item = next((f for f in os.listdir(new_path) if f.lower() == part.lower()), None)
-            if found_item:
-                part_list.append(found_item)
         except Exception as e:
-            return None
+            return None    
+        found_item = next((f for f in os.listdir(new_path) if f.lower() == part.lower()), None)
+        if found_item:
+            part_list.append(found_item)
     path = os.path.join(*part_list)
     return path
 
@@ -130,6 +126,13 @@ def process_bbcode(raw_desc: str) -> str:
     pango_text = pango_text.replace("[u]", "<u>").replace("[/u]", "</u>")
     pango_text = pango_text.replace("[i]", "<i>").replace("[/i]", "</i>")
     
+    # Handle centering
+    pango_text = pango_text.replace("[center]", "").replace("[/center]", "")
+    
+    # Handle fonts
+    pango_text = re.sub(r'\[font=([^\]]+)\]', r'<span font_family="\1">', pango_text)
+    pango_text = pango_text.replace("[/font]", "</span>")
+
     # Handle lists
     pango_text = pango_text.replace("[*]", "  • ").replace("[list]", "").replace("[/list]", "").replace("[/*]", "")
 
@@ -171,20 +174,3 @@ def process_bbcode(raw_desc: str) -> str:
 
     print("BBCode successfuly parsed into HTML")
     return pango_text
-
-def retrieve_casesensitive_paths(path:str):
-    parts = path.split('/')
-    part_list = []
-    for part in parts:
-        try:
-            if not part:
-                part_list.append('/')
-                continue
-            new_path = os.path.join(*part_list) if part_list else '/'
-            found_item = next((f for f in os.listdir(new_path) if f.lower() == part.lower()), None)
-            if found_item:
-                part_list.append(found_item)
-        except Exception as e:
-            return None
-    path = os.path.join(*part_list)
-    return path

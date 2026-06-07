@@ -41,5 +41,14 @@
 }
 
 .btn-download-before {
-    background-color: shade(@card_bg_color, 0.6);
+    background-color: shade(--card_bg_color, 0.6);
+
+/* Icons in the main dashboard list such as the update available icon or warning icons */
+.transparent-bg-accent-icon {
+    color: var(--accent-bg-color);
+    background: transparent;
+}
+.transparent-bg-accent-icon:hover {
+    color: var(--accent-bg-color);
+    background: transparent;
 }

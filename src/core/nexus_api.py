@@ -9,53 +9,91 @@ import requests
 import yaml
 from gi.repository import GLib
 
-from core.downloader import Downloader
 from core.mod_manager import get_metadata_path, load_staging_metadata, meta_lock
-from core.tools import load_yaml, write_yaml, download_image, process_bbcode
+from core.downloader import Downloader
 from gui.notifications import download_popup, send_download_notification
+from core.tools import load_yaml, write_yaml, download_image, process_bbcode
+from typing import Optional, Callable
 
-def get_mod_info(headers: dict, game_id: str, mod_id: str, download_dir: Path) -> dict:
+import requests
+
+def endorse_nexus_mod(headers: dict, game_domain: str, mod_id: str, unendorse: bool):
+    """
+    Sends an endorsement (or unendorse action) to the Nexus Mods API.
+
+    :param headers: Standard headers including the API key
+    :param game_domain: The domain name of the game (e.g., 'witcher3').
+    :param mod_id: The ID of the mod to endorse.
+    :param unendorse: Set to True if you want to remove an endorsement.
+    :return: Bool to indicate success or failure
+    """
+    # Determine the endpoint based on action
+    action = "abstain" if unendorse else "endorse"
+    url = f"https://api.nexusmods.com/v1/games/{game_domain}/mods/{mod_id}/{action}.json"
+    
+    try:
+        # Nexus API expects a POST request for endorsements
+        response = requests.post(url, headers=headers, timeout=10)
+        # Handle the response
+        if response.status_code == 200:
+            return True
+        else:
+            # Handle generic API errors (e.g., Mod not found, internal server issues)
+            error_data = response.json() if response.text else {}
+            error_msg = error_data.get("message", f"HTTP Error {response.status_code}")
+            return False, f"Failed to process request: {error_msg}"
+            
+    except requests.exceptions.RequestException as e:
+        # Catches connection timeouts, DNS errors, offline status, etc.
+        return False, f"Network error encountered: {str(e)}"
+
+def get_mod_info(headers: dict, game_id: str, mod_id: str, download_dir: Path, current_mod_staging_folder: str = "") -> dict:
     print(f"Obtaining mod information for mod: {mod_id}")
 
     try:
         mod_url = f"https://api.nexusmods.com/v1/games/{game_id}/mods/{mod_id}.json"
         resp = requests.get(mod_url, headers=headers, timeout=10)
         resp.raise_for_status()
-    except Exception as e:
+    except HTTPError as e:
         print(f"Failed to obtain mod information: {e}")
 
     remote_data = resp.json()
     metadata = {}
     metadata["display_name"] = remote_data.get("name")
     metadata["author"] = remote_data.get("author")
-    metadata["created"] = remote_data.get("created")
+    metadata["uploader"] = remote_data.get("uploaded_by")
     metadata["endorsements"] = remote_data.get("endorsement_count")
-    metadata["downloads"] = remote_data.get("download_count")
-    metadata["version"] = remote_data.get("version")
+    metadata["new_version"] = remote_data.get("version")
     metadata["thumbnail"] = remote_data.get("picture_url")
-    #metadata["description"] = remote_data.get("description")
+    metadata["summary"] = remote_data.get("summary")
+
+    if current_mod_staging_folder:
+        # If this is called as part of a metadata update, use the current folder
+        dest_folder = current_mod_staging_folder
+    else:
+        # If this is called as part of a mod download, use the name of the mod
+        dest_folder = metadata["display_name"]
 
     # Download thumbnail to have a local copy
     thumbnail_folder = download_dir.resolve() / f"thumbnails/"
     thumbnail_folder.mkdir(parents=True, exist_ok=True)
-    thumbnail_path = str(thumbnail_folder / (f"{metadata["display_name"]}.png"))
+    thumbnail_path = str(thumbnail_folder / (f"{dest_folder}.png"))
     download_image(metadata["thumbnail"], thumbnail_path)
     metadata["thumbnail"] = thumbnail_path
 
     # Save description separately to not pollute metadata file
     description_folder = download_dir.resolve() / f"descriptions/"
     description_folder.mkdir(parents=True, exist_ok=True)
-    description_path = str(description_folder / (f"{metadata["display_name"]}.html"))
+    description_path = str(description_folder / (f"{dest_folder}.html"))
     with open(description_path, 'w') as f:
         f.write(process_bbcode(remote_data.get("description")))
     metadata["description"] = description_path
 
     return metadata
 
-def check_for_mod_updates_async(staging_metadata: dict, headers: dict, game_id: str, on_complete_callback: Optional[Callable]) -> None:
+def check_for_mod_updates_async(staging_metadata: dict, headers: dict, game_id: str, download_dir: Path, on_complete_callback: Optional[Callable]) -> None:
     def worker():
         print("Checking for updates in background...")
-        mods_updated = False
 
         for mod_name, mod_metadata in staging_metadata.get("mods", {}).items():
             mod_id = mod_metadata.get("mod_id")
@@ -65,39 +103,33 @@ def check_for_mod_updates_async(staging_metadata: dict, headers: dict, game_id: 
                 continue
 
             print(f"Checking for update for mod: {mod_name}")
-            try:
-                mod_url = f"https://api.nexusmods.com/v1/games/{game_id}/mods/{mod_id}.json"
-                resp = requests.get(mod_url, headers=headers, timeout=10)
-                print(resp.content)
-                if resp.status_code == 200:
-                    remote_data = resp.json()
-                    remote_version = str(remote_data.get("version", ""))
+            new_metatadata = get_mod_info(headers, game_id, mod_id, download_dir, mod_metadata["folder_name"] if "folder_name" in mod_metadata else mod_metadata["name"])
 
-                    if remote_version and remote_version != local_version:
-                        mod_metadata["new_version"] = remote_version
-                        mods_updated = True
+            remote_version = str(new_metatadata.get("new_version", ""))
 
-                        changelog_url = f"https://api.nexusmods.com/v1/games/{game_id}/mods/{mod_id}/changelogs.json"
-                        changelog_resp = requests.get(changelog_url, headers=headers, timeout=10)
-                        
-                        if changelog_resp.status_code == 200:
-                            logs = changelog_resp.json()
-                            # Nexus returns a dict where keys are version numbers
-                            # We grab the log for the specific remote version found
-                            new_log = logs.get(remote_version)
-                            if new_log:
-                                # Join list of changes into a single string if necessary
-                                mod_metadata["changelog"] = "\n".join(new_log) if isinstance(new_log, list) else new_log
-                    
-                    mod_metadata["test"] = "testy"
+            if remote_version and remote_version != local_version:
+                print("New version available!")
+                try:
+                    changelog_url = f"https://api.nexusmods.com/v1/games/{game_id}/mods/{mod_id}/changelogs.json"
+                    changelog_resp = requests.get(changelog_url, headers=headers, timeout=10)
+                except Exception as e:
+                    print(f"Error checking {mod_name}: {e}")
+                    continue
+                
+                if changelog_resp.status_code == 200:
+                    logs = changelog_resp.json()
+                    # Nexus returns a dict where keys are version numbers
+                    # We grab the log for the specific remote version found
+                    new_log = logs.get(remote_version)
+                    if new_log:
+                        # Join list of changes into a single string if necessary
+                        new_changelog = "\n".join(new_log) if isinstance(new_log, list) else new_log
+                        staging_metadata["mods"][mod_name]["changelog"] = new_changelog
+            
+            # update mod_metadata with new metadata values
+            staging_metadata["mods"][mod_name] |= new_metatadata
 
-                else:
-                    print(f"Error getting update info for {mod_name}: {resp.status_code}")
-
-            except Exception as e:
-                print(f"Error checking {mod_name}: {e}")
-
-        GLib.idle_add(on_complete_callback, mods_updated, staging_metadata)
+        GLib.idle_add(on_complete_callback, staging_metadata)
 
     threading.Thread(target=worker, daemon=True).start()
 
@@ -354,5 +386,35 @@ def _fetch_and_write_mod_metadata(nxm_link: str, headers: dict, final_download_d
         GLib.idle_add(downloader.emit, 'download-metadata-ready', file_name)
     except Exception as e:
         print(f"Warning: Could not retrieve mod metadata: {e}")
+        
+    
+    # obtain additional metadata on the mod
+    mod_metadata = get_mod_info(headers, nexus_id, mod_id, final_download_dir)
+    if "display_name" in mod_metadata:
+        mod_metadata["folder_name"] = mod_metadata["display_name"]
+    else:
+        mod_metadata["folder_name"] = file_info_data.get("name")
+    mod_metadata["changelog"] = file_info_data.get("changelog_html", "")
+    mod_metadata["mod_id"] = mod_id
+    mod_metadata["file_id"] = file_id
+    mod_metadata["mod_link"] = f"https://www.nexusmods.com/{nexus_id}/mods/{mod_id}" 
+    mod_metadata["version"] = file_info_data.get("version", "")
 
+    # Handle saving all of this data
+    downloads_metadata_path = get_metadata_path(str(final_download_dir), is_staging=False)
+    downloads_metadata = load_yaml(downloads_metadata_path)
+
+    if "mods" not in downloads_metadata:
+        downloads_metadata["mods"] = {}
+    downloads_metadata["info"] = {}
+    downloads_metadata["info"]["game"] = game_folder_name
+    downloads_metadata["info"]["nexus_id"] = nexus_id
+    downloads_metadata["mods"][file_name] = mod_metadata
+
+    write_yaml(downloads_metadata, downloads_metadata_path)
+
+    send_download_notification("success", file_name=file_name, game_name=game_folder_name, icon_path=None)
+
+    print(f"Done! Saved to {full_file_path}")
+    
     return True
