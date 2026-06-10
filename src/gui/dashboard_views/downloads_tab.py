@@ -51,6 +51,7 @@ class DownloadsTab(Gtk.Box):
         folder_btn.set_halign(Gtk.Align.END)
         folder_btn.set_hexpand(True)
         folder_btn.connect("clicked", lambda x: webbrowser.open(f"file://{self.dashboard.downloads_path}"))
+        folder_btn.set_tooltip_text(_("Open downloads folder"))
         action_bar.append(folder_btn)
         
         self.append(action_bar)
