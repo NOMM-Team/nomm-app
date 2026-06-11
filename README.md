@@ -66,10 +66,10 @@ Phase 2 Development Progress:
 - [x] Detect conflicts
 
 Phase 3 Development Progress:
-- [ ] Manage conflicts (for sure this will be hard without an actually good developer)
-- [ ] Review access rights to be more restrictive
+- [x] Manage conflicts (for sure this will be hard without an actually good developer)
+- [x] Review access rights to be more restrictive
 - [ ] Make a Flathub build
-- [ ] Handle more complex FOMOD, and handle them cleanly
+- [x] Handle more complex FOMOD, and handle them cleanly
 
 Bonus (nice to have)
 - [ ] Game profiles?
