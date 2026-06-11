@@ -41,21 +41,37 @@ class ModsTab(Gtk.Box):
         action_bar.append(self.mod_search_entry)
 
         folder_btn = Gtk.Button(icon_name="folder-open-symbolic", css_classes=["flat"])
-        folder_btn.set_halign(Gtk.Align.END); folder_btn.set_hexpand(True)
+        folder_btn.set_halign(Gtk.Align.END); 
         folder_btn.set_cursor_from_name("pointer")
         folder_btn.connect("clicked", lambda x: webbrowser.open(f"file://{self.dashboard.staging_path}"))
-        action_bar.append(folder_btn)
-
+        folder_btn.set_tooltip_text(_("Open staging folder"))
+        
         update_btn = Gtk.Button(icon_name="view-refresh-symbolic", css_classes=["flat"])
         update_btn.set_halign(Gtk.Align.END)
         update_btn.set_cursor_from_name("pointer")
         update_btn.connect("clicked", self.check_for_updates)
-        action_bar.append(update_btn)
-
+        update_btn.set_tooltip_text(_("Refresh Metadata & Check for updates\nThis will replace all current mod metadata with fresh data coming straight from the modding platform."))
+        
         launch_btn = Gtk.Button(icon_name="media-playback-start", css_classes=["flat"])
         launch_btn.set_halign(Gtk.Align.END)
         launch_btn.set_cursor_from_name("pointer")
         launch_btn.connect("clicked", self.dashboard.on_launch_clicked)
+        launch_btn.set_tooltip_text(_(f"Launch {dashboard.game_name}"))
+        
+        if "wiki_link" in dashboard.game_config:
+            wiki_btn = Gtk.Button(icon_name="info-symbolic", css_classes=["flat"])
+            wiki_btn.set_halign(Gtk.Align.END); wiki_btn.set_hexpand(True)
+            wiki_btn.set_cursor_from_name("pointer")
+            wiki_btn.connect("clicked", lambda x: webbrowser.open(f"https://nomm.moe/docs/game-guides/{dashboard.game_config["wiki_link"]}"))
+            wiki_btn.set_tooltip_text(_("Open wiki page"))
+            action_bar.append(wiki_btn)
+        else:
+            # This is so that the buttons all show up on the right side, even if there is no wiki button
+            folder_btn.set_hexpand(True)
+
+        # Add all the buttons
+        action_bar.append(folder_btn)
+        action_bar.append(update_btn)
         action_bar.append(launch_btn)
 
         self.append(action_bar)
