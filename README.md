@@ -18,10 +18,9 @@ Instead, think of NOMM as more of a general purpose tool for most games that jus
 > [!WARNING]
 > This project is partially made with the help of Gemini (especially on the GUI side of things).
 > 
-> If you hate AI, that makes two of us, _however_, I would never have been able to make something like this without it (simply because of the amount of work and research it would have required).
-> <br>I want to be clear that even if coding is not my job, I _do_ have a computer science background and understand all of the code that Gemini has created. 
+> For the full AI disclaimer head to the [dedicated page on our website](https://nomm.moe/docs/about/values).
 
-### My Guiding Principles
+### Our Guiding Principles
 
 - No Ads
 - No Telemetry
