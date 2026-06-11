@@ -113,28 +113,31 @@ The app is built with:
 
 ### Prerequisites
 
-- Obviously to build a flatpak you need to have a distro with flatpak support (most of them do) -> this should normally include the `flatpak-builder` utility
-- You need to download the [flatpak-pip-generator](https://github.com/flatpak/flatpak-builder-tools/blob/master/pip/flatpak-pip-generator) tool
+To build a flatpak you need to have a distro with flatpak support (most of them do) -> this should normally include the `flatpak-builder` utility.
 
 ### Building the app
 
+1. Clone the repository
+```
+git clone https://github.com/Allexio/nomm.git
+```
+
 #### Flatpak
 
-1. Make the `build.sh` file executable (if you don't know how to do this see [here](https://stackoverflow.com/questions/817060/creating-executable-files-in-linux))
-2. Place your `flatpak-pip-generator.py` file at the root of the app's directory
-3. Run `./build.sh`
+2. Make the `build.sh` file executable. From the downloaded folder use this command:
+```bash
+chmod +x ./build/build-flatpak.sh
+```
+3. Run `./build.sh flatpak`
 4. Wait for flatpak to be built
 5. You should now have a `nomm.flatpak` file in the directory
 6. To install your newly obtained flatpak, follow the steps in the "[Installing/Running](https://github.com/Allexio/nomm?tab=readme-ov-file#installingrunning)" section above
 
 #### AUR
 
-1. Clone the repository
-```
-git clone https://github.com/Allexio/nomm.git
-```
 2. Make the `build-aur.sh` file executable. from the downloaded folder use this command:
-```
+```bash
 chmod +x ./build/build-aur.sh
 ```
-3. Confirm the installation
+3. Run `./build.sh aur`
+4. Wait for AUR package to be installed
