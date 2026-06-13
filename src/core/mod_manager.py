@@ -102,6 +102,8 @@ def get_mod_statistics(staging_meta_path: str, downloads_path: str) -> dict:
         for f in archives:
             total_downloads += 1
         stats["downloads_available"] = total_downloads - stats["downloads_installed"]
+        if stats["downloads_available"] < 0:
+            stats["downloads_available"] = 0
     return stats
 
 # Reworked during the refactor, loops on the mods in staging_metadata and checks
