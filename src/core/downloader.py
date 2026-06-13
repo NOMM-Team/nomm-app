@@ -63,7 +63,6 @@ class Downloader(GObject.Object):
                                 'progress' : dl_ratio
                             }
                             GLib.idle_add(self.emit, 'progress-changed', download_data)
-            GLib.idle_add(send_download_notification, "success", filename)
 
             GLib.idle_add(self.emit, 'download-complete', filename)
             return True
