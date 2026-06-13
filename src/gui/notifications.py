@@ -16,14 +16,14 @@ def send_download_notification(status, file_name="", game_name=None, icon_path=N
     Notify.init("NOMM")
     
     if status == "success":
-        title = "Download Successful"
-        full_body = f"File {file_name} successfully downloaded for {game_name}"
+        title = _("Download Successful")
+        full_body = _(f"File {file_name} successfully downloaded for {game_name}")
     elif status == "failure-game-not-found":
-        title = "Download Failed"
-        full_body = f"Game {game_name} could not be found in game_configs, are you sure it is defined?"
+        title = _("Download Failed")
+        full_body = _(f"Game {game_name} could not be found in game_configs, are you sure it is defined?")
     elif status == "started":
-        title = "Downloading..."
-        full_body = f"{file_name} download started as a background task"
+        title = _("Downloading...")
+        full_body = _(f"{file_name} download started as a background task")
     else:
         return
 
