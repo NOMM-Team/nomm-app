@@ -56,16 +56,11 @@ class Nomm(Adw.Application):
             uri = f.get_uri()
             if not uri.startswith("nxm://"):
                 continue
-            
-            if config.get('disable_download_window'):
-                self.do_activate()
                 
-            if self.win:
-                threading.Thread(target=handle_nexus_link, args=(uri, self.downloader), daemon=True).start()
-            else:
+            if not self.win:
                 self.hold()
                 self._connect_release_on_finish()
-                threading.Thread(target=handle_nexus_link, args=(uri, self.downloader), daemon=True).start()
+            threading.Thread(target=handle_nexus_link, args=(uri, self.downloader), daemon=True).start()
     
     # Cancels downloads when shutting down the app by switching 
     # the download thread event with cancel_all empty event
@@ -78,8 +73,7 @@ class Nomm(Adw.Application):
     # download is done
     def _connect_release_on_finish(self):
         handler_ids = []
-        def on_done():
-            print('release')
+        def on_done(*_args):
             self.release()
             for hid in handler_ids:
                 self.downloader.disconnect(hid)

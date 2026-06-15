@@ -11,7 +11,7 @@ class Downloader(GObject.Object):
         'download-started': (GObject.SignalFlags.RUN_FIRST, None, (str,)),
         'progress-changed': (GObject.SignalFlags.RUN_FIRST, None, (object,)),
         'download-complete': (GObject.SignalFlags.RUN_FIRST, None, (str,)),
-        'download-error': (GObject.SignalFlags.RUN_FIRST, None, (str,)),
+        'download-error': (GObject.SignalFlags.RUN_FIRST, None, (object,)),
         'download-metadata-ready': (GObject.SignalFlags.RUN_FIRST, None, (str,))
     }
     

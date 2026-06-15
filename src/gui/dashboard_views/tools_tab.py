@@ -151,7 +151,7 @@ class ToolsTab(Gtk.Box):
                 self.download_maps[filename].set_visible(False)
         
         def on_download_error(downloader_inst, e):
-            self.dashboard.show_message(_("Download Failed"), e)
+            self.dashboard.show_message(_("Download Failed"), str(e.get('error')))
             btn.set_sensitive(True)
 
         self.downloader.connect('progress-changed', on_download_progress)
