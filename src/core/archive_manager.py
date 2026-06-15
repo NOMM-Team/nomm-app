@@ -17,10 +17,11 @@ rarfile.UNRAR_TOOL = "/app/bin/unrar"
 
 def get_archive_type(file_path: str) -> str:
     lower_path = file_path.lower()
-    if lower_path.endswith('.zip'): return 'zip'
-    if lower_path.endswith('.rar'): return 'rar'
-    if lower_path.endswith('.7z'): return '7z'
-    return 'unknown'
+    if lower_path.endswith('.zip'):
+        return 'zip'
+    elif lower_path.endswith('.rar'):
+        return 'rar'
+    return 'other'
 
 # Cleaning method after extracting the archive
 def delete_downloaded_archive(widget, btn, file_name):
@@ -39,15 +40,13 @@ def extract_archive(archive_path: str, destination_path: str) -> bool:
         elif arc_type == 'rar':
             with rarfile.RarFile(archive_path, 'r') as rf:
                 rf.extractall(destination_path)
-        elif arc_type == '7z':
+        else:
             subprocess.run(
                 ["7z", "x", archive_path, f"-o{destination_path}", "-y"],
                 capture_output=True, 
                 text=True,
                 check=True
             )
-        else:
-            raise ValueError(f"Unknown archive type {archive_path}")
         return True
     except Exception as e:
         raise Exception(f"Error while extracting {arc_type} : {e}")

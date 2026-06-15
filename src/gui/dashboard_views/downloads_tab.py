@@ -93,7 +93,36 @@ class DownloadsTab(Gtk.Box):
             return
         
         def prepare_data():
-            files = [f for f in os.listdir(self.dashboard.downloads_path) if f.lower().endswith(('.zip', '.rar', '.7z'))]
+
+            ARCHIVE_MIME_TYPES = {
+                "application/zip",
+                "application/x-zip-compressed",
+                "application/x-rar",
+                "application/vnd.rar",
+                "application/x-rar-compressed",
+                "application/x-7z-compressed"
+            }
+
+            files = []
+
+            for f in os.listdir(self.dashboard.downloads_path):
+                full_path = os.path.join(self.dashboard.downloads_path, f)
+                
+                if not os.path.isfile(full_path):
+                    continue
+                    
+                try:
+                    gio_file = Gio.File.new_for_path(full_path)
+                    file_info = gio_file.query_info("standard::content-type", Gio.FileQueryInfoFlags.NONE, None)
+                    mime_type = file_info.get_content_type()
+                    print(mime_type)
+                    
+                    # If the OS identifies it as a known archive file type, pull it in
+                    if mime_type in ARCHIVE_MIME_TYPES:
+                        files.append(f)
+                except Exception as e:
+                    print(f"Error reading file metadata for {f}: {e}")
+
             files.sort(key=lambda f: os.path.getmtime(os.path.join(self.dashboard.downloads_path, f)), reverse=True)
 
             staging_metadata = load_staging_metadata(self.dashboard.staging_metadata_path)
