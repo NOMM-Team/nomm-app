@@ -68,7 +68,7 @@ class LibraryView(Gtk.Box):
             
         img_overlay.set_child(poster)
         
-        # --- 1. BADGE PLATEFORME ---
+        # platform badge
         platform = game.get('platform')
         icon_path = ""
         if platform == "steam":
@@ -93,7 +93,7 @@ class LibraryView(Gtk.Box):
             except Exception as e:
                 print(f"Error rendering SVG badge: {e}")
 
-        # Version badge
+        # mod total badge
         mod_total_badge = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=4)
         mod_total_badge.set_halign(Gtk.Align.START)
         mod_total_badge.set_valign(Gtk.Align.END)
