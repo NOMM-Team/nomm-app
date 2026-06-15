@@ -47,9 +47,24 @@ def extract_archive(archive_path: str, destination_path: str) -> bool:
                 text=True,
                 check=True
             )
-        return True
     except Exception as e:
         raise Exception(f"Error while extracting {arc_type} : {e}")
+        return False
+
+    for root, dirs, files in os.walk(destination_path):
+        for file_name in files:
+            if "\\" in file_name:
+                broken_file_path = os.path.join(root, file_name)
+                relative_segments = file_name.split("\\")
+                
+                correct_file_path = os.path.join(root, *relative_segments)
+                correct_dir_path = os.path.dirname(correct_file_path)
+                
+                os.makedirs(correct_dir_path, exist_ok=True)
+                
+                shutil.move(broken_file_path, correct_file_path)
+                print(_(f"[!] Corrected path malformation: {file_name} -> {os.path.join(*relative_segments)}"))
+    return True
 
 # Builds path toward the desired file by returning the files one by one in a list of string
 def get_all_relative_files(directory_path: str) -> list[str]:
