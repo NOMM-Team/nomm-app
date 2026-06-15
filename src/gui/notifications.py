@@ -78,6 +78,7 @@ def download_popup(url, dest_folder, downloader):
 
         lbl_name = Gtk.Label(label=f"Downloading File: <b>{filename}</b>", use_markup=True, xalign=0)
         progress_bar = Gtk.ProgressBar(show_text=True)
+        download_maps[filename] = progress_bar
         
         stack = Gtk.Stack()
         stack.set_transition_type(Gtk.StackTransitionType.SLIDE_LEFT)
@@ -114,35 +115,31 @@ def download_popup(url, dest_folder, downloader):
         GLib.timeout_add(6000, rotate_tips)
         
         win.present()
-        return win, progress_bar
+        
+        def on_download_progress(downloader_inst, download_data):
+            file = download_data['filename']
+            if file in download_maps:
+                progress_bar.set_fraction(download_data['progress'])
 
-    # Initialize UI on main thread
-    window, pbar = create_ui()
-    download_maps[filename] = pbar
-    
-    def on_download_progress(downloader_inst, download_data):
-        file = download_data['filename']
-        if file in download_maps:
-            pbar.set_fraction(download_data['progress'])
+        def on_download_done(downloader_inst, filename):
+            if filename in download_maps:
+                status['finished'] = True
+                status['success'] = True
+                win.destroy()
+                return False
 
-    def on_download_done(downloader_inst, filename):
-        if filename in download_maps:
+        def on_download_fail(downloader_inst, e):
             status['finished'] = True
-            status['success'] = True
-            window.destroy()
+            status['success'] = False
+            print(f'Error downloading the mod: {e}')
+            win.destroy()
             return False
-            
-    def on_download_fail(downloader_inst, e):
-        status['finished'] = True
-        status['success'] = False
-        print(f'Error downloading the mod: {e}')
-        window.destroy()
+
+        downloader.connect('progress-changed', on_download_progress)
+        downloader.connect('download-complete', on_download_done)
+        downloader.connect('download-error', on_download_fail)
+
+        threading.Thread(target=downloader.download_mod, args=(url, dest_folder), daemon=True).start()
         return False
     
-    downloader.connect('progress-changed', on_download_progress)
-    downloader.connect('download-complete', on_download_done)
-    downloader.connect('download-error', on_download_fail)
-
-    threading.Thread(target=downloader.download_mod, args=(url, dest_folder), daemon=True).start()
-
-    return status["success"]
+    GLib.idle_add(create_ui)

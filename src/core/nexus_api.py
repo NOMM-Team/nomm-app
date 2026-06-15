@@ -176,19 +176,19 @@ def handle_nexus_link(nxm_link: str, downloader: Downloader) -> bool:
     if not game_folder_name:
         print(f"Game {nexus_id} could not be found in game_configs!")
         GLib.idle_add(send_download_notification, "failure-game-not-found", file_name=None, game_name=nexus_id, icon_path=None)
-        return
+        return False
 
     final_download_dir = Path(base_download_path) / game_folder_name
     final_download_dir.mkdir(parents=True, exist_ok=True)
 
     if "collections" in nxm_link:
         print("Downloading collection")
-        _download_nexus_collection(nxm_link, headers, final_download_dir, downloader)
+        return _download_nexus_collection(nxm_link, headers, final_download_dir, downloader)
     else:
         print("Downloading single mod")
-        _download_nexus_mod(nxm_link, headers, final_download_dir, nexus_id, game_folder_name, user_config_dir, downloader)
+        return _download_nexus_mod(nxm_link, headers, final_download_dir, nexus_id, game_folder_name, user_config_dir, downloader)
 
-def _download_nexus_mod(nxm_link: str, headers: dict, final_download_dir: Path, nexus_id: str, game_folder_name: str, user_config_dir, downloader: Downloader):
+def _download_nexus_mod(nxm_link: str, headers: dict, final_download_dir: Path, nexus_id: str, game_folder_name: str, user_config_dir, downloader: Downloader) -> bool:
     
     splitted_nxm = urlsplit(nxm_link)
     nxm_path = splitted_nxm.path.split('/')
@@ -251,8 +251,10 @@ def _download_nexus_mod(nxm_link: str, headers: dict, final_download_dir: Path, 
             
     downloader.connect('download-complete', on_download_complete)
     downloader.connect('download-error', on_download_error)
+    
+    return True
 
-def _download_nexus_collection(nxm_link: str, headers: dict, final_download_dir: Path, downloader: Downloader):
+def _download_nexus_collection(nxm_link: str, headers: dict, final_download_dir: Path, downloader: Downloader) -> bool:
     parts = nxm_link.replace("nxm://", "").split("/")
     game_domain = parts[0]
     collection_id = parts[2]

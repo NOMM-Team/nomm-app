@@ -51,34 +51,43 @@ class Nomm(Adw.Application):
     
     # Choose either to launch the popup_download, the app or both 
     def do_open(self, files, n_files, hint):
-        config = load_yaml(self.user_config_path)
         for f in files:
             uri = f.get_uri()
             if not uri.startswith("nxm://"):
                 continue
-                
-            if not self.win:
-                self.hold()
-                self._connect_release_on_finish()
-            threading.Thread(target=handle_nexus_link, args=(uri, self.downloader), daemon=True).start()
+            self.hold()
+            threading.Thread(target=self._process_nxm_link, args=(uri,), daemon=True).start()
+
+    def _process_nxm_link(self, uri):
+        started = False
+        try:
+            started = handle_nexus_link(uri, self.downloader)
+        except Exception as e:
+            print(f"Error while treating nxm link {uri}: {e}")
+        GLib.idle_add(self._connect_release_on_finish if started else self.release)
+    
+    # Release application.py from self.hold so the download stops happening as background task allowing you to 
+    # close the downloader while keeping the download active in the mod manager and disconnect the event once 
+    # download is done
+    def _connect_release_on_finish(self, *_args):
+        state = {"released": False}
+        handler_ids = []
+
+        def on_finished(downloader, _payload):
+            if state["released"] or downloader.active_count() > 0:
+                return
+            state["released"] = True
+            self.release()
+            for hid in handler_ids:
+                downloader.disconnect(hid)
+        handler_ids.append(self.downloader.connect("download-complete", on_finished))
+        handler_ids.append(self.downloader.connect("download-error", on_finished))
     
     # Cancels downloads when shutting down the app by switching 
     # the download thread event with cancel_all empty event
     def do_shutdown(self):
         self.downloader.cancel_all()
         Adw.Application.do_shutdown(self)
-    
-    # Release application.py from self.hold so the download stops happening as background task allowing you to 
-    # close the downloader while keeping the download active in the mod manager and disconnect the event once 
-    # download is done
-    def _connect_release_on_finish(self):
-        handler_ids = []
-        def on_done(*_args):
-            self.release()
-            for hid in handler_ids:
-                self.downloader.disconnect(hid)
-        handler_ids.append(self.downloader.connect('download-complete', on_done))
-        handler_ids.append(self.downloader.connect('download-error', on_done))
                   
     def sync_configs(self):
         """Synchronises game configs from bundled YAMLs to user YAMLs"""

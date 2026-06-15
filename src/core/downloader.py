@@ -16,13 +16,17 @@ class Downloader(GObject.Object):
     }
     
     def __init__(self):
-            super().__init__()
-            self._cancel = threading.Event()
-            self._active_downloads = set()
-            self._downloads_lock = threading.Lock()
+        super().__init__()
+        self._cancel = threading.Event()
+        self._active_downloads = set()
+        self._downloads_lock = threading.Lock()
     
     def cancel_all(self):
             self._cancel.set()
+            
+    def active_count(self) -> int:
+        with self._downloads_lock:
+            return len(self._active_downloads)
 
     def download_mod(self, url: str, dest_folder: str) -> bool:
         filename = url.split('/')[-1].split('?')[0] or "download"
