@@ -1,0 +1,15 @@
+essential-utilities:
+  tobey-bepinex:
+    creator: toebeann
+    creator-link: https://github.com/toebeann
+    name: Tobey's BepInEx Pack for Subnautica
+    source: https://github.com/toebeann/BepInEx.Subnautica/releases/download/v5.4.23-pack.3.1.1/Tobey.s.BepInEx.Pack.for.Subnautica.zip
+    steam_launch_options: WINEDLLOVERRIDES='winhttp=n,b' %command%
+    utility_path: ''
+    version: 5.4.23-pack.3.1.1
+game_path: /home/crasben/Games/Heroic/Subnautica
+mods_path: BepInEx/plugins/
+name: Subnautica
+nexus_id: subnautica
+platform: heroic-epic
+steam_id: 264710
