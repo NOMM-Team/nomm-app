@@ -16,7 +16,7 @@ from core.archive_manager import (delete_downloaded_archive, extract_archive,
 from core.fomod_manager import apply_fomod_selection, parse_fomod_xml
 from core.mod_manager import (finalise_mod_metadata, is_mod_installed,
                               load_staging_metadata, remove_mod_from_metadata)
-from core.tools import timestamp_converter
+from core.tools import timestamp_converter, list_archives
 from gui.dashboard_views.fomod_dialog import FomodSelectionDialog
 
 _ = gettext.gettext
@@ -94,34 +94,7 @@ class DownloadsTab(Gtk.Box):
         
         def prepare_data():
 
-            ARCHIVE_MIME_TYPES = {
-                "application/zip",
-                "application/x-zip-compressed",
-                "application/x-rar",
-                "application/vnd.rar",
-                "application/x-rar-compressed",
-                "application/x-7z-compressed"
-            }
-
-            files = []
-
-            for f in os.listdir(self.dashboard.downloads_path):
-                full_path = os.path.join(self.dashboard.downloads_path, f)
-                
-                if not os.path.isfile(full_path):
-                    continue
-                    
-                try:
-                    gio_file = Gio.File.new_for_path(full_path)
-                    file_info = gio_file.query_info("standard::content-type", Gio.FileQueryInfoFlags.NONE, None)
-                    mime_type = file_info.get_content_type()
-                    print(mime_type)
-                    
-                    # If the OS identifies it as a known archive file type, pull it in
-                    if mime_type in ARCHIVE_MIME_TYPES:
-                        files.append(f)
-                except Exception as e:
-                    print(f"Error reading file metadata for {f}: {e}")
+            files = list_archives(self.dashboard.downloads_path)
 
             files.sort(key=lambda f: os.path.getmtime(os.path.join(self.dashboard.downloads_path, f)), reverse=True)
 
