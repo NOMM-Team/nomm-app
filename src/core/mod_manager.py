@@ -323,32 +323,24 @@ def steam_launch_option_merger(current_launch_options: str, new_option: str) -> 
     merged_launch_option = current_launch_options + " " + new_option
     return merged_launch_option
 
-def toggle_mod_state(mod_name: str, mod_files: list, state: bool, staging_dir: str, deployment_targets: list, deployment_map: list) -> dict:
+def toggle_mod_state(mod_name: str, mod_files: list, state: bool, staging_dir: str, deployment_map: list) -> dict:
     staging_meta_path = os.path.join(staging_dir, ".staging.nomm.yaml")
-    dest_dir = deployment_targets[0]["path"]
-    
+
     with meta_lock:
         staging_metadata = load_staging_metadata(staging_meta_path)
-        if not deployment_targets or not staging_metadata or mod_name not in staging_metadata.get("mods", {}):
+
+        if not staging_metadata or mod_name not in staging_metadata.get("mods", {}):
             return False
-        
+
         mod_info = staging_metadata["mods"][mod_name]
-
-        if "deployment_target" in mod_info:
-            for target in deployment_targets:
-                if target["name"] == mod_info["deployment_target"]:
-                    dest_dir = target["path"]
-                    break
-
-        staging_mod_dir = os.path.join(staging_dir, mod_name)
-        
+        dest_dir = mod_info["deployment_path"]
+        staging_mod_dir = os.path.join(staging_dir, mod_info["folder_name"])
         mod_files = mod_info.get("mod_files", [])
-            
-        success = True
-        
+
         conflicts_exist = check_for_conflicts(staging_meta_path)
-        
+
         new_deployment_map = {}
+        success = True
 
         # state is true so the mod has to be installed/deployed
         if state:

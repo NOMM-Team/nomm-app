@@ -749,7 +749,7 @@ class ModsTab(Gtk.Box):
         if not search_text: return True
         return search_text in getattr(row, 'mod_name', '')
 
-    def on_mod_toggled(self, switch, state, mod_files: list, mod: str):
+    def on_mod_toggled(self, switch, state: bool, mod_files: list, mod: str):
         
         switch.set_sensitive(False)
         self.dashboard.currently_toggling.add(mod)
@@ -765,7 +765,6 @@ class ModsTab(Gtk.Box):
                 mod_files=mod_files,
                 state=state,
                 staging_dir=str(self.dashboard.staging_path),
-                deployment_targets=self.dashboard.deployment_targets,
                 deployment_map=self.deployment_map
             )
             GLib.idle_add(on_toggle_done, deployment_output)
@@ -798,15 +797,9 @@ class ModsTab(Gtk.Box):
         
         current_mods = read_index(self.dashboard.staging_metadata_path)
         staging_metadata = load_staging_metadata(self.dashboard.staging_metadata_path)
-        
-        # get the mod deployment path
-        dest_dir = self.dashboard.deployment_targets[0]["path"]
-        if mod_name in staging_metadata["mods"] and "deployment_target" in staging_metadata["mods"][mod_name]:
-            for target in self.dashboard.deployment_targets:
-                if target["name"] == staging_metadata["mods"][mod_name]["deployment_target"]:
-                    dest_dir = target["path"]
-                    break
-        
+
+        dest_dir = staging_metadata["mods"][mod_name]["deployment_path"]
+
         if mod_name in current_mods:
             target_index = current_mods.index(mod_name)
             new_staging_metadata = change_mod_index(self.dashboard.staging_metadata_path, value, target_index)

@@ -257,16 +257,8 @@ class GameDashboard(Gtk.Box):
     def on_uninstall_item(self, btn, mod_files: list, mod_name: str):
         staging_metadata = load_staging_metadata(self.staging_metadata_path)
         
-        
-        dest_dir = self.deployment_targets[0]["path"]
-        # if mod metadata is in NOMM 0.10 format
-        if mod_name in staging_metadata["mods"] and "deployment_path" in staging_metadata["mods"][mod_name]:
-            dest_dir = staging_metadata["mods"][mod_name]["deployment_path"]
-            staging_mod_dir = os.path.join(self.staging_path, staging_metadata["mods"][mod_name]["folder_name"])
-        else:
-            # legacy format
-            # TODO: remove this if/else condition in later versions and keep only the top part
-            staging_mod_dir = os.path.join(self.staging_path, mod_name)
+        dest_dir = staging_metadata["mods"][mod_name]["deployment_path"]
+        staging_mod_dir = os.path.join(self.staging_path, staging_metadata["mods"][mod_name]["folder_name"])
 
         completely_uninstall_mod(staging_mod_dir, dest_dir, mod_files)
 
