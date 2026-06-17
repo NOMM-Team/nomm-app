@@ -551,6 +551,9 @@ class ModsTab(Gtk.Box):
             
         def on_data_prepared(staging_path, staging_metadata, indexed_mods, enable_file_counter, conflicts, missing_files_per_mod):
             valignment = self.sc.get_valign()
+            srow = None
+            if self.mods_list_box.get_selected_row() != None:
+                srow = self.mods_list_box.get_selected_row().mod_data_index
 
             while child := self.mods_list_box.get_first_child():
                 self.mods_list_box.remove(child)
@@ -731,6 +734,9 @@ class ModsTab(Gtk.Box):
 
                 self.mods_list_box.append(row)
 
+                if mod == srow:
+                    self.mods_list_box.select_row(row)
+                
             self.sc.set_valign(valignment)
         
         threading.Thread(target=prepare_data, daemon=True).start()
