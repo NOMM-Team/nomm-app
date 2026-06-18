@@ -127,7 +127,7 @@ class Nomm(Adw.Application):
             return
 
         self.win = Adw.ApplicationWindow(application=self)
-        self.win.set_title("Nomm")
+        self.win.set_title("NOMM")
         self.win.set_default_size(1230, 900)
 
         self.stack = Gtk.Stack()
@@ -378,7 +378,7 @@ class Nomm(Adw.Application):
         status_page = Adw.StatusPage(
             icon_name="system-lock-screen-symbolic",
             title=_("Permissions Missing"),
-            description=_("Nomm needs some extra permissions to read/write to specific folders.\n"
+            description=_("NOMM needs some extra permissions to read/write to specific folders.\n"
                         "This is used so that NOMM can find your games and install &amp; deploy mods properly.\n"
                         "Please copy the command below and run it in your terminal.")
         )
@@ -422,7 +422,7 @@ class Nomm(Adw.Application):
         action_box.append(cmd_container)
 
         # Footer
-        restart_hint = Gtk.Label(label=_("Restart Nomm after running the command."))
+        restart_hint = Gtk.Label(label=_("Restart NOMM after running the command."))
         restart_hint.add_css_class("dim-label")
         action_box.append(restart_hint)
 
