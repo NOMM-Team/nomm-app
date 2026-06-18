@@ -195,11 +195,14 @@ def list_archives(archives_directory: str):
             gio_file = Gio.File.new_for_path(full_path)
             file_info = gio_file.query_info("standard::content-type", Gio.FileQueryInfoFlags.NONE, None)
             mime_type = file_info.get_content_type()
-            print(mime_type)
+            
             
             # If the OS identifies it as a known archive file type, pull it in
             if mime_type in ARCHIVE_MIME_TYPES:
                 archive_list.append(file)
+            else:
+                if "yaml" not in mime_type:
+                    print(f"[!] Could not identify mime type in download folder: {mime_type}")
         except Exception as e:
             print(f"Error reading file metadata for {file}: {e}")
     
