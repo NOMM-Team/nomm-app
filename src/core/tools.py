@@ -39,6 +39,7 @@ def write_yaml(data: dict, path: str) -> bool:
 
 def timestamp_converter(timestamp: str, timestamp_type="short") -> str:
     """Converts standard time timestamps (2026-04-28 15:52:14.249614) into localised text"""
+    
     #TODO: review this method to produce a nicer timestamp format
     legible_timestamp = timestamp
     try:
@@ -51,26 +52,6 @@ def timestamp_converter(timestamp: str, timestamp_type="short") -> str:
     if timestamp_type == "short": # used for the base UI
         return timestamp.strftime("%x %H:%M")
     return legible_timestamp
-
-def load_user_config() -> dict:
-    """Returns the user's NOMM configuration file data as a dictionary"""
-    user_config_path = os.path.join(GLib.get_user_data_dir (), 'nomm', 'user_config.yaml')
-    try:
-        data = load_yaml(user_config_path)
-    except:
-        print("Error: could not load user config.")
-        return None
-    return data
-
-def write_user_config(data: dict) -> dict:
-    """Writes to the user's NOMM configuration file"""
-    try: 
-        user_config_path = os.path.join(GLib.get_user_data_dir (), 'nomm', 'user_config.yaml')
-        write_yaml(data, user_config_path)
-    except:
-        print("Error: could not write to user config.")
-        return False
-    return True
 
 def translate_fuse_path(folder_info) -> str:
     folder_path = folder_info.get_path()
@@ -117,7 +98,6 @@ def retrieve_casesensitive_paths(path:str):
         if found_item:
             part_list.append(found_item)
     path = os.path.join(*part_list)
-    print(path)
     return path
 
 def download_image(url: str, save_path: str) -> bool:
@@ -191,3 +171,39 @@ def process_bbcode(raw_desc: str) -> str:
 
     print("BBCode successfuly parsed into HTML")
     return pango_text
+
+def list_archives(archives_directory: str):
+
+    ARCHIVE_MIME_TYPES = {
+                "application/zip",
+                "application/x-zip-compressed",
+                "application/x-rar",
+                "application/vnd.rar",
+                "application/x-rar-compressed",
+                "application/x-7z-compressed"
+            }
+
+    archive_list = []
+
+    for file in os.listdir(archives_directory):
+        full_path = os.path.join(archives_directory, file)
+        
+        if not os.path.isfile(full_path):
+            continue
+            
+        try:
+            gio_file = Gio.File.new_for_path(full_path)
+            file_info = gio_file.query_info("standard::content-type", Gio.FileQueryInfoFlags.NONE, None)
+            mime_type = file_info.get_content_type()
+            
+            
+            # If the OS identifies it as a known archive file type, pull it in
+            if mime_type in ARCHIVE_MIME_TYPES:
+                archive_list.append(file)
+            else:
+                if "yaml" not in mime_type:
+                    print(f"[!] Could not identify mime type in download folder: {mime_type}")
+        except Exception as e:
+            print(f"Error reading file metadata for {file}: {e}")
+    
+    return archive_list

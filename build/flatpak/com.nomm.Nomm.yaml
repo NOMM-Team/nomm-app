@@ -14,9 +14,9 @@ finish-args:
   - --filesystem=~/.config/heroic:ro # Standard
   - --filesystem=~/.var/app/com.heroicgameslauncher.hgl/config/heroic:ro # Flatpak
   # Steam
-  - --filesystem=~/.steam/debian-installation:ro" # Debian
-  - --filesystem=~/.local/share/Steam:ro # Standard
-  - --filesystem=~/.var/app/com.valvesoftware.Steam:ro # Flatpak
+  - --filesystem=~/.local/share/Steam:rw # Standard
+  - --filesystem=~/.var/app/com.valvesoftware.Steam:rw # Flatpak
+  - --filesystem=~/.steam/debian-installation:rw" # Debian
 
 modules:
   # Python dependencies (generated via flatpak-pip-generator)

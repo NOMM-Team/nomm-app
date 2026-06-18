@@ -6,15 +6,33 @@ from core.tools import load_yaml, write_yaml
 from typing import List, Dict, Any
 
 # changes user setting by changing/writing the value for an associated key string
-# new useful method for the future if we need to add another setting
 def update_user_config(key: str, value: Any) -> None:
     user_config_path = os.path.join(GLib.get_user_data_dir (), 'nomm', 'user_config.yaml') 
     config = load_yaml(user_config_path)
     config[key] = value
     write_yaml(config, user_config_path)
+    
+def load_user_config() -> dict:
+    """Returns the user's NOMM configuration file data as a dictionary"""
+    user_config_path = os.path.join(GLib.get_user_data_dir (), 'nomm', 'user_config.yaml')
+    try:
+        data = load_yaml(user_config_path)
+    except:
+        print("Error: could not load user config.")
+        return None
+    return data
+
+def write_user_config(data: dict) -> dict:
+    """Writes to the user's NOMM configuration file"""
+    try: 
+        user_config_path = os.path.join(GLib.get_user_data_dir (), 'nomm', 'user_config.yaml')
+        write_yaml(data, user_config_path)
+    except:
+        print("Error: could not write to user config.")
+        return False
+    return True
 
 # Returns both game path and steam/heroic(WIP) user data path
-# dashboard.py/parse_deployment_paths
 def parse_deployment_paths(game_config: dict, platform: str, app_id: str) -> List[Dict[str, str]]:
     game_path = game_config.get("game_path")
     deployment_dicts = game_config.get("mods_path", "")

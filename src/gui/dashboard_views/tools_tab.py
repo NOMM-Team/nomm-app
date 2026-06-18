@@ -7,29 +7,33 @@ from pathlib import Path
 from gi.repository import Adw, GLib, Gtk
 
 from core.mod_manager import deploy_essential_utility, is_utility_installed
-from core.downloader import download_file_async
 
 _ = gettext.gettext
 
 class ToolsTab(Gtk.Box):
-    def __init__(self, dashboard):
+    def __init__(self, dashboard, downloader):
         super().__init__(orientation=Gtk.Orientation.VERTICAL, spacing=10)
         self.set_margin_start(100)
         self.set_margin_end(100)
         self.set_margin_top(40)
         
         self.dashboard = dashboard
+        self.downloader = downloader
+        self.download_maps = {}
         
         utilities_cfg = self.dashboard.game_config.get("essential-utilities", {})
         
         if not utilities_cfg or not isinstance(utilities_cfg, dict):
             self.append(Gtk.Label(label=_("No utilities defined."), css_classes=["dim-label"]))
         else:
-            list_box = Gtk.ListBox(css_classes=["boxed-list"])
+            list_box = Gtk.ListBox(css_classes=["dashboard-list"])
             list_box.set_selection_mode(Gtk.SelectionMode.NONE)
+            list_box.set_overflow(Gtk.Overflow.HIDDEN)
 
             for util_id, util in utilities_cfg.items():
                 row = Adw.ActionRow(title=util.get("name", util_id))
+                
+                file_name = util.get("source").split("/")[-1]
                 
                 creator = util.get("creator", "Unknown")
                 link = util.get("creator-link", "#")
@@ -70,15 +74,39 @@ class ToolsTab(Gtk.Box):
 
                 stack = Gtk.Stack(transition_type=Gtk.StackTransitionType.CROSSFADE)
                 
+                # Last progress
+                current_ratio = None
+                if file_name in self.download_maps:
+                    current_ratio = self.download_maps[file_name].get_fraction()
+                
+                dl_pbar = Gtk.ProgressBar()
+                dl_pbar.set_can_target(False)
+                dl_pbar.add_css_class('dl-tabs-pbar')
+                dl_pbar.set_vexpand(True)
+                dl_pbar.set_halign(Gtk.Align.FILL)
+                dl_pbar.set_valign(Gtk.Align.FILL)
+                dl_pbar.set_size_request(-1, -1)
+
                 dl_btn = Gtk.Button(label=_("Download"), css_classes=["suggested-action"], valign=Gtk.Align.CENTER)
-                dl_btn.connect("clicked", self.on_utility_download_clicked, util, stack)
+                dl_btn.connect("clicked", self.on_utility_download_clicked, util, stack, dl_pbar, filename)
+                dl_btn.set_valign(Gtk.Align.FILL)
+                if current_ratio:
+                    dl_pbar.set_fraction(current_ratio)
+                self.download_maps[file_name] = dl_pbar
+                
+                # Overlay to display download progress on top of download button
+                overlay = Gtk.Overlay()
+                overlay.set_halign(Gtk.Align.CENTER) 
+                overlay.set_valign(Gtk.Align.CENTER)
+                overlay.set_child(dl_btn)
+                overlay.add_overlay(dl_pbar)
                 
                 inst_btn = Gtk.Button(label=_("Reinstall") if is_installed else "Install", valign=Gtk.Align.CENTER)
                 if not is_installed: 
                     inst_btn.add_css_class("suggested-action")
                 inst_btn.connect("clicked", self.on_utility_install_clicked, util)
                 
-                stack.add_named(dl_btn, "download")
+                stack.add_named(overlay, "download")
                 stack.add_named(inst_btn, "install")
                 stack.set_visible_child_name("install" if local_zip_path.exists() else "download")
                 
@@ -100,19 +128,37 @@ class ToolsTab(Gtk.Box):
             btn_container.set_center_widget(load_order_btn)
             self.append(btn_container)
 
-    def on_utility_download_clicked(self, btn, util, stack):
+    def on_utility_download_clicked(self, btn, util, stack, pbar, filename):
         source_url = util.get("source")
         if not source_url: 
             return
 
+        btn.set_sensitive(False)
+        btn.add_css_class('btn-download-before')
+
         util_dir = os.path.join(self.dashboard.downloads_path, "utilities")
+        
+        def on_download_progress(downloader_inst, download_data):
+            updated_filename = download_data['filename']
+            if updated_filename == filename:
+                self.download_maps[filename].set_visible(True)
+                self.download_maps[updated_filename].set_fraction(download_data['progress'])
+        
+        def on_download_finished(downloader_inst, finished_filename):
+            if finished_filename == filename:
+                stack.set_visible_child_name("install")
+                btn.set_sensitive(True)
+                self.download_maps[filename].set_visible(False)
+        
+        def on_download_error(downloader_inst, e):
+            self.dashboard.show_message(_("Download Failed"), str(e.get('error')))
+            btn.set_sensitive(True)
 
-        def on_success():
-            stack.set_visible_child_name("install")
-        def on_error(error_msg):
-            self.dashboard.show_message(_("Download Failed"), error_msg)
-
-        download_file_async(source_url, util_dir, on_success, on_error)
+        self.downloader.connect('progress-changed', on_download_progress)
+        self.downloader.connect('download-complete', on_download_finished)
+        self.downloader.connect('download-error', on_download_error)
+            
+        threading.Thread(target=self.downloader.download_mod, args=(source_url, util_dir), daemon=True).start()
 
     def on_utility_install_clicked(self, btn, util: dict):
         # Base warning message

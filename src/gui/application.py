@@ -1,5 +1,6 @@
 import gettext
 import os
+import threading
 
 import gi
 
@@ -7,11 +8,14 @@ gi.require_version('Gtk', '4.0')
 gi.require_version('Adw', '1')
 gi.require_version('Notify', '0.7')
 
-from gi.repository import Adw, Gdk, GdkPixbuf, GLib, Gtk, Pango, Gio
+from gi.repository import Adw, Gdk, GdkPixbuf, Gio, GLib, Gtk, Pango
 
-from core.config import update_user_config
-from core.tools import load_yaml, write_yaml, load_user_config, write_user_config, translate_fuse_path, get_username_from_steam_id
-from core.scanner import get_steam_base_dir, scan_all_games
+from core.game_scanner import get_steam_base_dir, scan_all_games
+from core.nexus_api import handle_nexus_link
+from core.tools import (get_username_from_steam_id, load_yaml,
+                        translate_fuse_path, write_yaml)
+from core.user_config import (load_user_config, update_user_config,
+                              write_user_config)
 from gui.app_views.library_view import LibraryView
 from gui.dashboard import GameDashboard
 
@@ -22,7 +26,10 @@ translation_system.install(names=['ngettext'])
 
 class Nomm(Adw.Application):
     def __init__(self, **kwargs):
-        super().__init__(application_id=APP_NAME, **kwargs)
+        
+        self.downloader = kwargs.pop('downloader', None)
+        
+        super().__init__(application_id=APP_NAME, flags=Gio.ApplicationFlags.HANDLES_OPEN, **kwargs)
         self.matches = []
         self.user_defined_paths = []
         self.steam_base = get_steam_base_dir()
@@ -41,7 +48,47 @@ class Nomm(Adw.Application):
             self.default_game_config_path = os.path.join(base_path, "default_game_configs")
             
         self.win = None
+    
+    # Choose either to launch the popup_download, the app or both 
+    def do_open(self, files, n_files, hint):
+        for f in files:
+            uri = f.get_uri()
+            if not uri.startswith("nxm://"):
+                continue
+            self.hold()
+            threading.Thread(target=self._process_nxm_link, args=(uri,), daemon=True).start()
 
+    def _process_nxm_link(self, uri):
+        started = False
+        try:
+            started = handle_nexus_link(uri, self.downloader)
+        except Exception as e:
+            print(f"Error while treating nxm link {uri}: {e}")
+        GLib.idle_add(self._connect_release_on_finish if started else self.release)
+    
+    # Release application.py from self.hold so the download stops happening as background task allowing you to 
+    # close the downloader while keeping the download active in the mod manager and disconnect the event once 
+    # download is done
+    def _connect_release_on_finish(self, *_args):
+        state = {"released": False}
+        handler_ids = []
+
+        def on_finished(downloader, _payload):
+            if state["released"] or downloader.active_count() > 0:
+                return
+            state["released"] = True
+            self.release()
+            for hid in handler_ids:
+                downloader.disconnect(hid)
+        handler_ids.append(self.downloader.connect("download-complete", on_finished))
+        handler_ids.append(self.downloader.connect("download-error", on_finished))
+    
+    # Cancels downloads when shutting down the app by switching 
+    # the download thread event with cancel_all empty event
+    def do_shutdown(self):
+        self.downloader.cancel_all()
+        Adw.Application.do_shutdown(self)
+                  
     def sync_configs(self):
         """Synchronises game configs from bundled YAMLs to user YAMLs"""
         # This should only be run if it's the app's first run OR it's a manual refresh
@@ -183,7 +230,6 @@ class Nomm(Adw.Application):
         self.temp_config["staging_path"] = selected_folder_path
         self.user_defined_paths.append(selected_folder_path)
         self.show_nexus_api_key_screen()
-
 
     def show_nexus_api_key_screen(self):
         self.remove_stack_child("api_key")
@@ -463,7 +509,8 @@ class Nomm(Adw.Application):
             app_id=game_info.get('app_id'),
             user_config_path=self.user_config_path,
             game_config_path=game_info["game_config_path"],
-            assets_path=self.assets_path
+            assets_path=self.assets_path,
+            downloader = self.downloader
         )
         update_user_config("last_selected_game", game_info["name"])
         self.remove_stack_child("dashboard")

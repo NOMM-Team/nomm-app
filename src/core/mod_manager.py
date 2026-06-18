@@ -10,7 +10,8 @@ from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional
 from datetime import datetime
 from gi.repository import GLib
-from core.tools import load_yaml, write_yaml, load_user_config
+from core.tools import load_yaml, write_yaml
+from core.user_config import load_user_config
 
 meta_lock = threading.Lock()
 
@@ -70,9 +71,7 @@ def deploy_mod_files(staging_dir: str, dest_dir: str, mod_files: list, mod_name:
     
     return is_success
 
-# dashboard.py/update_indicators with available downloads and mods grouped but logic is the same
 def get_mod_statistics(staging_meta_path: str, downloads_path: str) -> dict:
-    # Dictionary is initialized here
     stats = {
         "mods_inactive": 0,
         "mods_active": 0,
@@ -103,10 +102,11 @@ def get_mod_statistics(staging_meta_path: str, downloads_path: str) -> dict:
         for f in archives:
             total_downloads += 1
         stats["downloads_available"] = total_downloads - stats["downloads_installed"]
+        if stats["downloads_available"] < 0:
+            stats["downloads_available"] = 0
     return stats
 
 # Reworked during the refactor, loops on the mods in staging_metadata and checks
-# dashboard.py/is_mod_installed but f "archive_name" not in staging_metadata["mods"][mod] removed
 def is_mod_installed(archive_filename, staging_metadata) -> bool:
     if staging_metadata:
         for mod_val in staging_metadata.get("mods", {}).values():
@@ -126,9 +126,6 @@ def unlink_mod_files(staging_dir: str, dest_dir: str, mod_files: list[str]) -> b
         source_item = staging_path / mod_file
 
         if link_item.exists() or link_item.is_symlink():
-            # This try prevents nomm from unlinking files that are from another mod
-            # If texture_1 is installed by mod_1 and mod_2 did an override, texture_1
-            # wont be unlinked on mod_1 uninstall
             try:
                 if os.path.samefile(source_item, link_item):
                     link_item.unlink()
@@ -147,14 +144,12 @@ def unlink_mod_files(staging_dir: str, dest_dir: str, mod_files: list[str]) -> b
     
     return success
 
-# Previous function + delete mod from staging folder
 def completely_uninstall_mod(staging_dir: str, dest_dir: str, mod_files: list[str]):
     unlink_mod_files(staging_dir, dest_dir, mod_files)
     
     if os.path.exists(staging_dir):
         shutil.rmtree(staging_dir, ignore_errors=True)
 
-# dashboard.py/check_for_comflicts
 def check_for_conflicts(staging_meta_path: str) -> list:
     path_registry = {}
     staging_metadata = load_staging_metadata(staging_meta_path)
@@ -172,8 +167,6 @@ def check_for_conflicts(staging_meta_path: str) -> list:
     conflicts = []
     for mod_list in path_registry.values():
         if len(mod_list) > 1:
-            # We use set() then list() to ensure we don't 
-            # list the same mod twice if it has weird internal duplicates
             unique_mods = sorted(list(set(mod_list)))
             if unique_mods not in conflicts:
                 conflicts.append(unique_mods)
@@ -330,32 +323,24 @@ def steam_launch_option_merger(current_launch_options: str, new_option: str) -> 
     merged_launch_option = current_launch_options + " " + new_option
     return merged_launch_option
 
-def toggle_mod_state(mod_name: str, mod_files: list, state: bool, staging_dir: str, deployment_targets: list, deployment_map: list) -> dict:
+def toggle_mod_state(mod_name: str, mod_files: list, state: bool, staging_dir: str, deployment_map: list) -> dict:
     staging_meta_path = os.path.join(staging_dir, ".staging.nomm.yaml")
-    dest_dir = deployment_targets[0]["path"]
-    
+
     with meta_lock:
         staging_metadata = load_staging_metadata(staging_meta_path)
-        if not deployment_targets or not staging_metadata or mod_name not in staging_metadata.get("mods", {}):
+
+        if not staging_metadata or mod_name not in staging_metadata.get("mods", {}):
             return False
-        
+
         mod_info = staging_metadata["mods"][mod_name]
-
-        if "deployment_target" in mod_info:
-            for target in deployment_targets:
-                if target["name"] == mod_info["deployment_target"]:
-                    dest_dir = target["path"]
-                    break
-
-        staging_mod_dir = os.path.join(staging_dir, mod_name)
-        
+        dest_dir = mod_info["deployment_path"]
+        staging_mod_dir = os.path.join(staging_dir, mod_info["folder_name"])
         mod_files = mod_info.get("mod_files", [])
-            
-        success = True
-        
+
         conflicts_exist = check_for_conflicts(staging_meta_path)
-        
+
         new_deployment_map = {}
+        success = True
 
         # state is true so the mod has to be installed/deployed
         if state:
@@ -408,7 +393,6 @@ def toggle_mod_state(mod_name: str, mod_files: list, state: bool, staging_dir: s
         
         return deployment_output
 
-# method to get the metadata path that is used everywhere in the app
 def get_metadata_path(base_folder: str, is_staging: bool = True) -> str:
     filename = ".staging.nomm.yaml" if is_staging else ".downloads.nomm.yaml"
     return os.path.join(base_folder, filename)
@@ -417,7 +401,6 @@ def load_staging_metadata(path: str) -> dict:
     data = load_yaml(path)
     
     # load metadata also initialize the staging_metadata as a safety measure
-    # this is a change reviewed
     if not isinstance(data, dict):
         data = {}
     if "mods" not in data:
@@ -447,11 +430,11 @@ def remove_mod_from_metadata(path: str, mod_name: str) -> bool:
 
 # Writing the metadata with needed fields
 def finalise_mod_metadata(filename: str, mod_files: list, deployment_target: dict, staging_meta_path: str, downloads_meta_path: str):
-    current_staging_metadata = load_staging_metadata(staging_meta_path)
     current_download_metadata = {}
 
     mod_name = filename.replace(".zip", "").replace(".rar", "").replace(".7z", "")
     with meta_lock:
+        current_staging_metadata = load_staging_metadata(staging_meta_path)
         # This request should only fail if all previous files were manually added --> can be fixed with a rework of check_index
         if os.path.exists(downloads_meta_path):
             with open(downloads_meta_path, 'r') as f:

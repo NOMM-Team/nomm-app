@@ -8,15 +8,13 @@ import yaml
 
 from gi.repository import GLib
 
-from core.config import update_user_config
+from core.user_config import update_user_config
 from core.tools import  write_yaml, load_yaml
 from typing import List, Dict, Optional, Any
 
-# Launcher.py/slugify
 def slugify(text: str) -> str:
     return re.sub(r'[^a-z0-9]', '', text.lower())
 
-# launcher.py/get_steam_base_dir
 def get_steam_base_dir() -> Optional[str]:
     paths = [
         os.path.expanduser("~/.steam/debian-installation/"),
@@ -29,7 +27,6 @@ def get_steam_base_dir() -> Optional[str]:
             return p
     return None
 
-# launcher.py/get_steam_library_paths
 def get_steam_library_paths(vdf_path) -> List[str]:
     libraries = []
     try:
@@ -45,7 +42,6 @@ def get_steam_library_paths(vdf_path) -> List[str]:
         print(f"Error parsing VDF at {vdf_path}: {e}")
     return libraries
 
-# launcher.py/get_heroic_library_paths
 def get_heroic_config_paths() -> Dict[str, Optional[str]]:
     paths = {"epic": None, "gog": None}
     
@@ -64,9 +60,7 @@ def get_heroic_config_paths() -> Dict[str, Optional[str]]:
     # Returns the paths in a dictionary
     return paths
 
-# Now returns a dictionary so you don't need two methods to get 2 images
-# launcher.py/find_game_art + edition to return a dictionnary with 
-# both the banner and the game poster
+# Returns a dictionary so you don't need two methods to get 2 images
 def find_game_art(app_id: str | int, platform: str, steam_base: Optional[str]) -> dict:
     art = {"hero": None, "poster": None}
     if not app_id: return None
@@ -96,7 +90,6 @@ def find_game_art(app_id: str | int, platform: str, steam_base: Optional[str]) -
         return art if art else None
     return art
 
-# launcher.py/game_title_matcher (l:320)
 def scan_steam_game(yaml_data, yaml_path, game_title, found_libs, steam_base) -> List[Dict[str, Any]]:
     yaml_game_name = yaml_data.get("steam_folder_name", game_title)
     slug_yaml_name = slugify(yaml_game_name)
@@ -120,8 +113,6 @@ def scan_steam_game(yaml_data, yaml_path, game_title, found_libs, steam_base) ->
                 }
     return None
 
-# Same as previous one but for heroic epic
-# launcher.py/game_title_matcher
 def scan_heroic_epic_game(yaml_data, yaml_path, game_title, installed_epic, steam_base):
     for app_id, game_info in installed_epic.items():
         if slugify(game_info.get("title", "")) == slugify(game_title):
@@ -140,8 +131,6 @@ def scan_heroic_epic_game(yaml_data, yaml_path, game_title, installed_epic, stea
             }
     return None
 
-# Same as previous one but for heroic epic
-# launcher.py/game_title_matcher
 def scan_heroic_gog_game(yaml_data, yaml_path, game_title, installed_gog, steam_base):
     if not yaml_data.get("gog_id"):
         return None
@@ -163,7 +152,6 @@ def scan_heroic_gog_game(yaml_data, yaml_path, game_title, installed_gog, steam_
             }
     return None
 
-# launcher.py/run_background_workflow
 def scan_all_games(game_configs_dir):
     matches = []
     steam_base = get_steam_base_dir()
@@ -174,7 +162,6 @@ def scan_all_games(game_configs_dir):
     user_config = load_yaml(user_config_dir)
     found_libs = set(user_config.get("library_paths", []))
     
-
     # Update Steam Libraries
     if steam_base:
         found_libs = set(get_steam_library_paths(os.path.join(steam_base, "config/libraryfolders.vdf")))
@@ -225,14 +212,14 @@ def scan_all_games(game_configs_dir):
             
             game_title = yaml_data["name"]
 
-            # --- SCAN STEAM ---
+            # Scan Steam
             if found_libs:
                 match = scan_steam_game(yaml_data, yaml_path, game_title, found_libs, steam_base)
                 if match:
                     matches.append(match)
                     continue
 
-            # --- SCAN HEROIC EPIC ---
+            # Scan Heroic Epic
             if installed_epic:
                 match = scan_heroic_epic_game(yaml_data, yaml_path, game_title, installed_epic, steam_base)
                 if match:
@@ -240,15 +227,13 @@ def scan_all_games(game_configs_dir):
                     heroic_game_paths.append(match["path"])
                     continue
 
-            # --- SCAN HEROIC GOG ---
+            # Scan Heroic Gog
             if installed_gog:
                 match = scan_heroic_gog_game(yaml_data, yaml_path, game_title, installed_gog, steam_base)
                 if match:
                     matches.append(match)
                     heroic_game_paths.append(match["path"])
                     continue
-        
-        
 
         except Exception as e:
             print(f"Error processing {filename} during scan: {e}")
@@ -267,10 +252,8 @@ def obtain_heroic_libraries(game_paths: list) -> list:
             directory_paths.append(os.path.dirname(path))
     return directory_paths
     
-
 # Grabs the assets from heroic games launcher such as banner and game image
 # TODO: Needs to be cleaned
-# utils.py download_heroic_assets
 def download_heroic_assets(appName: str, platform: str):
     if isinstance(appName, list):
         appName = str(appName[0])

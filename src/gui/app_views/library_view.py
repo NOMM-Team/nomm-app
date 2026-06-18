@@ -2,7 +2,7 @@ import gettext
 import os
 
 from gi.repository import Adw, Gdk, GdkPixbuf, Gtk, GLib
-from core.tools import load_yaml
+from core.tools import load_yaml, list_archives
 
 _ = gettext.gettext
 
@@ -68,7 +68,7 @@ class LibraryView(Gtk.Box):
             
         img_overlay.set_child(poster)
         
-        # --- 1. BADGE PLATEFORME ---
+        # platform badge
         platform = game.get('platform')
         icon_path = ""
         if platform == "steam":
@@ -93,7 +93,7 @@ class LibraryView(Gtk.Box):
             except Exception as e:
                 print(f"Error rendering SVG badge: {e}")
 
-        # Version badge
+        # mod total badge
         mod_total_badge = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=4)
         mod_total_badge.set_halign(Gtk.Align.START)
         mod_total_badge.set_valign(Gtk.Align.END)
@@ -109,8 +109,7 @@ class LibraryView(Gtk.Box):
             if base_dl_path:
                 game_dl_path = os.path.join(base_dl_path, game["name"])
                 if os.path.exists(game_dl_path):
-                    exts = (".zip", ".rar", ".7z")
-                    count = sum(1 for f in os.scandir(game_dl_path) if f.is_file() and f.name.lower().endswith(exts))
+                    count = len(list_archives(game_dl_path))
         except Exception as e:
             print(f"Error loading user_config : {e}")
         

@@ -15,22 +15,20 @@ from core.fomod_manager import parse_fomod_xml
 # Point rarfile to the bundled binary
 rarfile.UNRAR_TOOL = "/app/bin/unrar"
 
-# dashboard.py/on_install_clicked
 def get_archive_type(file_path: str) -> str:
     lower_path = file_path.lower()
-    if lower_path.endswith('.zip'): return 'zip'
-    if lower_path.endswith('.rar'): return 'rar'
-    if lower_path.endswith('.7z'): return '7z'
-    return 'unknown'
+    if lower_path.endswith('.zip'):
+        return 'zip'
+    elif lower_path.endswith('.rar'):
+        return 'rar'
+    return 'other'
 
 # Cleaning method after extracting the archive
-# Dashboard.py/delete_download_package + downloads tab for the try/catch
 def delete_downloaded_archive(widget, btn, file_name):
     zip_path = os.path.join(widget.downloads_path, file_name)
     if os.path.exists(zip_path):
         os.remove(zip_path)
 
-# dashboard.py/on_install_clicked
 def extract_archive(archive_path: str, destination_path: str) -> bool:
     arc_type = get_archive_type(archive_path)
     os.makedirs(destination_path, exist_ok=True)
@@ -42,21 +40,33 @@ def extract_archive(archive_path: str, destination_path: str) -> bool:
         elif arc_type == 'rar':
             with rarfile.RarFile(archive_path, 'r') as rf:
                 rf.extractall(destination_path)
-        elif arc_type == '7z':
+        else:
             subprocess.run(
                 ["7z", "x", archive_path, f"-o{destination_path}", "-y"],
                 capture_output=True, 
                 text=True,
                 check=True
             )
-        else:
-            raise ValueError(f"Unknown archive type {archive_path}")
-        return True
     except Exception as e:
         raise Exception(f"Error while extracting {arc_type} : {e}")
+        return False
+
+    for root, dirs, files in os.walk(destination_path):
+        for file_name in files:
+            if "\\" in file_name:
+                broken_file_path = os.path.join(root, file_name)
+                relative_segments = file_name.split("\\")
+                
+                correct_file_path = os.path.join(root, *relative_segments)
+                correct_dir_path = os.path.dirname(correct_file_path)
+                
+                os.makedirs(correct_dir_path, exist_ok=True)
+                
+                shutil.move(broken_file_path, correct_file_path)
+                print(_(f"[!] Corrected path malformation: {file_name} -> {os.path.join(*relative_segments)}"))
+    return True
 
 # Builds path toward the desired file by returning the files one by one in a list of string
-# dashboard.py/on_install_clicked
 def get_all_relative_files(directory_path: str) -> list[str]:
     all_files = []
     for root, _, files in os.walk(directory_path):
@@ -67,7 +77,6 @@ def get_all_relative_files(directory_path: str) -> list[str]:
     return all_files
 
 # Drop file on the download tab to import mods
-# new
 def process_dropped_files(uri_list: list[str], destination_path: str) -> list[str]:
     # Init var
     copied_files = []

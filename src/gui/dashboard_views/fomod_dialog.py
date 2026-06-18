@@ -1,6 +1,9 @@
 import os
 import pathlib
 import re
+import os
+import pathlib
+import re
 
 from gi.repository import Adw, Gdk, GdkPixbuf, GObject, Gtk
 
@@ -11,6 +14,7 @@ from core.fomod_manager import (check_for_dependencies,
                                 get_fomod_group_options, get_fomod_step_count,
                                 get_plugin_image_path, get_plugin_type,
                                 have_plugins_images, is_step_visible)
+from core.tools import retrieve_casesensitive_paths
 from gui.text_window import TextWindow
 from core.tools import retrieve_casesensitive_paths
 
@@ -28,6 +32,13 @@ class FomodSelectionDialog(Adw.Window):
         
         self.module_data = fomod_metadata['module_data']
         self.flags_data = fomod_metadata['flags_data']
+        
+        # Sources registered for every step/group
+        self.global_sources = []
+        self.active_flags = {}
+        self.flags_history = []
+        self.required_data = fomod_metadata['required_data']
+        dependencies_data = fomod_metadata['dependencies_data']
         
         # Sources registered for every step/group
         self.global_sources = []
@@ -87,6 +98,11 @@ class FomodSelectionDialog(Adw.Window):
         spacer.set_hexpand(True)
         footer_box.append(spacer)
         footer_box.add_css_class('footer-box')
+        
+        # Instructions
+        self.fomod_desc = Gtk.Label(label='', xalign=0)
+        self.fomod_desc.add_css_class("desc")
+        self.fomod_desc.add_css_class("dim-label")
         
         # Instructions
         self.fomod_desc = Gtk.Label(label='', xalign=0)
@@ -229,6 +245,9 @@ class FomodSelectionDialog(Adw.Window):
         elif selection_type == 'SelectAll':
             self.group_label.set_markup(_("<i>This mod offers multiple variants but you must pick all of them</i>"))
             list_box.set_selection_mode(Gtk.SelectionMode.MULTIPLE)
+        elif selection_type == 'SelectAll':
+            self.group_label.set_markup(_("<i>This mod offers multiple variants but you must pick all of them</i>"))
+            list_box.set_selection_mode(Gtk.SelectionMode.MULTIPLE)
         
         first_radio = None
         
@@ -246,6 +265,10 @@ class FomodSelectionDialog(Adw.Window):
         
         is_not_usable = False
         
+        plugin_index = 0
+        
+        is_not_usable = False
+        
         # Looping on items to fill the list box
         for name, desc, source, flags in options:
             
@@ -253,6 +276,8 @@ class FomodSelectionDialog(Adw.Window):
             plugin_type = check_for_plugin_dependencies(self.module_data, self.game_dest, self.current_step, self.current_group, plugin_index, self.active_flags)
             
             plugin_index += 1
+            
+            plugin_type = get_plugin_type(self.module_data, name, self.current_step, self.current_group)
             
             clean_desc = desc.replace('\n', ' ').replace('\r', '').strip()
             clean_desc = re.sub(' +', ' ', clean_desc)
@@ -338,6 +363,17 @@ class FomodSelectionDialog(Adw.Window):
             elif plugin_type == 'NotUsable':
                 row.set_sensitive(False)
                 row.radio_button.set_active(False)
+            
+            radio.set_can_target(False)
+
+            if selection_type == 'SelectExactlyOne' or selection_type == 'SelectAtMostOne':
+                row.is_radio = True
+            else:
+                row.is_radio = False
+            
+            if plugin_type == 'Required':
+                row.set_can_target(False)
+                row.radio_button.set_active(True)
             
             # Adding row to the UI
             list_box.append(row)

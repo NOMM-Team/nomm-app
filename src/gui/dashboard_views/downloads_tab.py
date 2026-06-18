@@ -1,7 +1,6 @@
 import gettext
 import os
 import shutil
-import threading
 import webbrowser
 import threading
 import xml.etree.ElementTree as ET
@@ -17,36 +16,47 @@ from core.archive_manager import (delete_downloaded_archive, extract_archive,
 from core.fomod_manager import apply_fomod_selection, parse_fomod_xml
 from core.mod_manager import (finalise_mod_metadata, is_mod_installed,
                               load_staging_metadata, remove_mod_from_metadata)
-from core.tools import timestamp_converter
+from core.tools import timestamp_converter, list_archives
 from gui.dashboard_views.fomod_dialog import FomodSelectionDialog
 
 _ = gettext.gettext
 
 class DownloadsTab(Gtk.Box):
-    def __init__(self, dashboard):
+    def __init__(self, dashboard, downloader):
         super().__init__(orientation=Gtk.Orientation.VERTICAL, spacing=10)
         self.set_margin_start(100)
         self.set_margin_end(100)
         self.set_margin_top(40)
         
         self.dashboard = dashboard
-        self.current_filter = "all"
+        
+        # Download signals used globally
+        self.downloader = downloader
+        self.downloader.connect('download-started', self.on_download_started)
+        self.downloader.connect('progress-changed', self.on_download_progress)
+        self.downloader.connect('download-complete', self.on_download_complete)
+        self.downloader.connect('download-metadata-ready', self.on_metadata_ready)
+        self.download_maps = {}
+        self.download_lbl_maps = {}
+        self.currently_downloading = set()
         
         # Action Bar
         action_bar = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
         filter_group = Gtk.Box(css_classes=["linked"])
         
+        # Filters
+        self.current_filter = "all"
         self.all_filter_btn = Gtk.ToggleButton(label=_("All"), active=True)
         self.all_filter_btn.connect("toggled", self.on_filter_toggled, "all")
         filter_group.append(self.all_filter_btn)
-        
         for n, l in [("uninstalled", _("Uninstalled")), ("installed", _("Installed"))]:
             b = Gtk.ToggleButton(label=l, group=self.all_filter_btn)
             b.connect("toggled", self.on_filter_toggled, n)
             filter_group.append(b)
-            
+        
         action_bar.append(filter_group)
         
+        # Folder button
         folder_btn = Gtk.Button(icon_name="folder-open-symbolic", css_classes=["flat"])
         folder_btn.set_halign(Gtk.Align.END)
         folder_btn.set_hexpand(True)
@@ -57,122 +67,186 @@ class DownloadsTab(Gtk.Box):
         self.append(action_bar)
 
         # Downloads
-        self.list_box = Gtk.ListBox(css_classes=["boxed-list"])
+        self.list_box = Gtk.ListBox(css_classes=["dashboard-list"])
         self.list_box.set_filter_func(self.filter_list_rows)
-
+        self.list_box.set_overflow(Gtk.Overflow.HIDDEN)
+                
+        # Items that needs to be used globally       
+        self.scrolled = Gtk.ScrolledWindow(vexpand=True)
+        self.scrolled.set_child(self.list_box)
+        self.append(self.scrolled)
+        
         # Drag and drop files into the download box
         drop_target = Gtk.DropTarget.new(Gdk.FileList, Gdk.DragAction.COPY)
         drop_target.connect("drop", self.on_file_drop)
         drop_target.connect("enter", self.on_drag_enter)
         drop_target.connect("leave", self.on_drag_leave)
-        
         self.add_controller(drop_target)
-        
-        scrolled = Gtk.ScrolledWindow(vexpand=True)
-        scrolled.set_child(self.list_box)
-        self.append(scrolled)
 
         if self.dashboard.downloads_path and os.path.exists(self.dashboard.downloads_path):
             self.setup_folder_monitor()
-            
+        
         self.populate_list()
 
     def populate_list(self):
-        while child := self.list_box.get_first_child():
-            self.list_box.remove(child)
 
         if not (self.dashboard.downloads_path and os.path.exists(self.dashboard.downloads_path)):
             return
-
-        files = [f for f in os.listdir(self.dashboard.downloads_path) if f.lower().endswith(('.zip', '.rar', '.7z'))]
-        files.sort(key=lambda f: os.path.getmtime(os.path.join(self.dashboard.downloads_path, f)), reverse=True)
-
-        staging_metadata = load_staging_metadata(self.dashboard.staging_metadata_path)
         
-        meta_path = self.dashboard.downloads_metadata_path
-        metadata = {}
-        if os.path.exists(meta_path):
-            try:
-                with open(meta_path, 'r') as meta_f:
-                    metadata = yaml.safe_load(meta_f)
-            except: pass
-            
-        for file_name in files:
-            installed = is_mod_installed(file_name, staging_metadata)
-            
-            display_name, version_text, changelog = file_name, "—", ""
+        def prepare_data():
 
-            if file_name in metadata.get("mods", {}):
-                # Order of preference: official display_name > deprecated name (from before metadata rework) > file name
-                display_name = metadata["mods"][file_name].get("display_name", file_name)
-                folder_name = metadata["mods"][file_name].get("folder_name", file_name)
-                version_text = metadata["mods"][file_name].get("version", "—")
-                changelog = metadata["mods"][file_name].get("changelog", "")
-            else:
-                # Case when there is no metadata in the downloads metadata file
-                folder_name = file_name
-            
-            row = Adw.ActionRow(title=display_name)
-            row.is_installed = installed
-            if display_name != file_name: row.set_subtitle(file_name)
+            files = list_archives(self.dashboard.downloads_path)
 
-            # Version badge
-            version_badge = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
-            version_badge.add_css_class("badge-action-row")
-            version_badge.set_valign(Gtk.Align.CENTER)
-            version_badge.set_margin_end(20) 
-            
-            v_label = Gtk.Label(label=version_text)
-            version_badge.append(v_label)
-            if changelog:
-                version_badge.set_tooltip_text(changelog)
-                q_icon = Gtk.Image.new_from_icon_name("help-about-symbolic")
-                q_icon.set_pixel_size(14)
-                version_badge.append(q_icon)
-            row.add_suffix(version_badge)
+            files.sort(key=lambda f: os.path.getmtime(os.path.join(self.dashboard.downloads_path, f)), reverse=True)
 
-            # Timestamps
-            timestamp_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=2, valign=Gtk.Align.CENTER, margin_end=15)
-            download_timestamp_label = timestamp_converter(self.get_download_timestamp(file_name))
-            download_timestamp_tooltip = _("Downloaded: {}").format(timestamp_converter(self.get_download_timestamp(file_name), "long"))
-            download_timestamp_row = self.dashboard.create_timestamp_row(download_timestamp_label, download_timestamp_tooltip, "downloaded.svg")
-            timestamp_box.append(download_timestamp_row)
-            
-            if installed:
-                for mod_key, mod_val in staging_metadata.get("mods", {}).items():
-                    if mod_val.get("archive_name") == file_name:
-                        installed_timestamp_label = timestamp_converter(mod_val.get("install_timestamp"))
-                        installed_timestamp_tooltip = _("Installed: {}").format(timestamp_converter(mod_val.get("install_timestamp"), "long"))
-                        installed_timestamp_row = self.dashboard.create_timestamp_row(installed_timestamp_label, installed_timestamp_tooltip, "installed.svg")
-                        timestamp_box.append(installed_timestamp_row)
-                        break
-            
-            row.add_suffix(timestamp_box)
+            staging_metadata = load_staging_metadata(self.dashboard.staging_metadata_path)
 
-            # Install Button
-            install_btn = Gtk.Button(label=_("Reinstall") if installed else _("Install"), valign=Gtk.Align.CENTER)
-            if not installed: install_btn.add_css_class("suggested-action")
-            install_btn.set_cursor_from_name("pointer")
-            install_btn.connect("clicked", self.on_install_clicked, file_name, folder_name)
-            if file_name in self.dashboard.currently_installing:
-                install_btn.set_sensitive(False)
-            row.add_suffix(install_btn)
+            meta_path = self.dashboard.downloads_metadata_path
+            metadata = {}
+            if os.path.exists(meta_path):
+                try:
+                    with open(meta_path, 'r') as meta_f:
+                        metadata = yaml.safe_load(meta_f)
+                except: pass
+            GLib.idle_add(on_data_prepared, files, staging_metadata, meta_path, metadata)
+        
+        def on_data_prepared(files, staging_metadata, meta_path, metadata):
 
-            # Trash Button
-            d_stack = Gtk.Stack(transition_type=Gtk.StackTransitionType.CROSSFADE, hhomogeneous=False, interpolate_size=True)
-            b_btn = Gtk.Button(icon_name="user-trash-symbolic", valign=Gtk.Align.CENTER, css_classes=["flat"])
-            b_btn.set_cursor_from_name("pointer")
-            c_btn = Gtk.Button(label=_("Are you sure?"), valign=Gtk.Align.CENTER, css_classes=["destructive-action"])
-            c_btn.connect("clicked", self.on_delete_downloaded_archive, file_name)
+            valign = self.scrolled.get_valign()
             
-            b_btn.connect("clicked", lambda b, s=d_stack: [
-                s.set_visible_child_name("c"),
-                GLib.timeout_add_seconds(3, lambda: s.set_visible_child_name("b") or False)
-            ])
-            d_stack.add_named(b_btn, "b"); d_stack.add_named(c_btn, "c")
-            row.add_suffix(d_stack)
+            while child := self.list_box.get_first_child():
+                self.list_box.remove(child)
             
-            self.list_box.append(row)
+            install_btn_sizegroup = Gtk.SizeGroup(mode=Gtk.SizeGroupMode.HORIZONTAL)
+            version_badge_sizegroup = Gtk.SizeGroup(mode=Gtk.SizeGroupMode.HORIZONTAL)
+            
+            for file_name in files:
+                installed = is_mod_installed(file_name, staging_metadata)
+
+                display_name, version_text, changelog = file_name, "—", ""
+
+                if file_name in metadata.get("mods", {}):
+                    # Order of preference: official display_name > deprecated name (from before metadata rework) > file name
+                    display_name = metadata["mods"][file_name].get("display_name", file_name)
+                    folder_name = metadata["mods"][file_name].get("folder_name", file_name)
+                    version_text = metadata["mods"][file_name].get("version", "—")
+                    changelog = metadata["mods"][file_name].get("changelog", "")
+                else:
+                    # Case when there is no metadata in the downloads metadata file
+                    folder_name = file_name
+
+                row = Adw.ActionRow(title=display_name)
+                row.is_installed = installed
+                if display_name != file_name: row.set_subtitle(file_name)
+
+                # Timestamps
+                timestamp_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=2, valign=Gtk.Align.CENTER, margin_end=15)
+                download_timestamp_label = timestamp_converter(self.get_download_timestamp(file_name))
+                download_timestamp_tooltip = _("Downloaded: {}").format(timestamp_converter(self.get_download_timestamp(file_name), "long"))
+                download_timestamp_row = self.dashboard.create_timestamp_row(download_timestamp_label, download_timestamp_tooltip, "downloaded.svg")
+                timestamp_box.append(download_timestamp_row)
+
+                if installed:
+                    for mod_key, mod_val in staging_metadata.get("mods", {}).items():
+                        if mod_val.get("archive_name") == file_name:
+                            installed_timestamp_label = timestamp_converter(mod_val.get("install_timestamp"))
+                            installed_timestamp_tooltip = _("Installed: {}").format(timestamp_converter(mod_val.get("install_timestamp"), "long"))
+                            installed_timestamp_row = self.dashboard.create_timestamp_row(installed_timestamp_label, installed_timestamp_tooltip, "installed.svg")
+                            timestamp_box.append(installed_timestamp_row)
+                            break
+                        
+                row.add_suffix(timestamp_box)
+                
+                # Version badge
+                version_badge = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
+                version_badge.add_css_class("badge-action-row")
+                version_badge.set_valign(Gtk.Align.CENTER)
+                version_badge.set_halign(Gtk.Align.CENTER)
+                version_badge.set_margin_end(20)
+
+                v_label = Gtk.Label(label=version_text, hexpand=True, halign=Gtk.Align.CENTER)
+                version_badge.set_hexpand(False)
+                version_badge.append(v_label)
+                if changelog:
+                    version_badge.set_tooltip_text(changelog)
+                    q_icon = Gtk.Image.new_from_icon_name("help-about-symbolic")
+                    q_icon.set_pixel_size(14)
+                    version_badge.append(q_icon)
+                version_badge_sizegroup.add_widget(version_badge)
+                row.add_suffix(version_badge)
+                
+                # Last progress
+                current_ratio = None
+                if file_name in self.download_maps:
+                    current_ratio = self.download_maps[file_name].get_fraction()
+                
+                # Progressbar
+                dl_pbar = Gtk.ProgressBar()
+                dl_pbar.set_can_target(False)
+                dl_pbar.add_css_class('dl-tabs-pbar')
+                dl_pbar.set_vexpand(True)
+                dl_pbar.set_halign(Gtk.Align.FILL)
+                dl_pbar.set_valign(Gtk.Align.FILL)
+                dl_pbar.set_size_request(-1, -1)
+                if current_ratio:
+                    dl_pbar.set_fraction(current_ratio)
+                self.download_maps[file_name] = dl_pbar
+                
+                # Last progress
+                current_ratio_label = None
+                if file_name in self.download_lbl_maps:
+                    current_ratio_label = self.download_lbl_maps[file_name].get_label()
+                
+                # Download label
+                download_lbl = Gtk.Label(label=current_ratio_label if current_ratio_label else '0%', valign=Gtk.Align.CENTER, halign=Gtk.Align.CENTER)
+                download_lbl.add_css_class("heading")
+                download_lbl.add_css_class("dim-label")
+                self.download_lbl_maps[file_name] = download_lbl
+
+                # Install Button
+                install_btn = Gtk.Button(label=_("Reinstall") if installed else _("Install"), valign=Gtk.Align.CENTER)
+                if not installed: install_btn.add_css_class("suggested-action")
+                install_btn.set_cursor_from_name("pointer")
+                install_btn.connect("clicked", self.on_install_clicked, file_name, display_name)
+                if (file_name in self.dashboard.currently_installing) or (file_name in self.currently_downloading):
+                    install_btn.set_sensitive(False)
+
+                # Overlay to display download progress on top of download button
+                overlay = Gtk.Overlay()
+                overlay.set_halign(Gtk.Align.CENTER) 
+                overlay.set_valign(Gtk.Align.CENTER)
+                overlay.set_child(install_btn)
+                overlay.add_overlay(dl_pbar)
+                overlay.add_overlay(download_lbl)
+
+                if file_name in self.currently_downloading:
+                    install_btn.add_css_class('btn-download-before')
+                    install_btn.set_label('')
+                    download_lbl.set_visible(True)
+                else:
+                    download_lbl.set_visible(False)
+
+                install_btn_sizegroup.add_widget(overlay)
+                row.add_suffix(overlay)
+
+                # Trash Button
+                d_stack = Gtk.Stack(transition_type=Gtk.StackTransitionType.CROSSFADE, hhomogeneous=False, interpolate_size=True)
+                b_btn = Gtk.Button(icon_name="user-trash-symbolic", valign=Gtk.Align.CENTER, css_classes=["flat"])
+                b_btn.set_cursor_from_name("pointer")
+                c_btn = Gtk.Button(label=_("Are you sure?"), valign=Gtk.Align.CENTER, css_classes=["destructive-action"])
+                c_btn.connect("clicked", self.on_delete_downloaded_archive, file_name)
+
+                b_btn.connect("clicked", lambda b, s=d_stack: [
+                    s.set_visible_child_name("c"),
+                    GLib.timeout_add_seconds(3, lambda: s.set_visible_child_name("b") or False)
+                ])
+                d_stack.add_named(b_btn, "b"); d_stack.add_named(c_btn, "c")
+                row.add_suffix(d_stack)
+
+                self.list_box.append(row)
+            self.scrolled.set_valign(valign)
+        
+        threading.Thread(target=prepare_data, daemon=True).start()
 
     # Filter lists
     def filter_list_rows(self, row):
@@ -182,7 +256,6 @@ class DownloadsTab(Gtk.Box):
             if self.current_filter == "uninstalled": return not row.is_installed
         return True
 
-# def dashboard.py/on_filter_toggled
     def on_filter_toggled(self, btn, f_name):
         if btn.get_active():
             self.current_filter = f_name
@@ -202,12 +275,11 @@ class DownloadsTab(Gtk.Box):
         self.populate_list()
         self.dashboard.update_indicators()
 
-# dashboard.py/setup_folder_monitor
     def setup_folder_monitor(self):
         f = Gio.File.new_for_path(self.dashboard.downloads_path)
         self.monitor = f.monitor_directory(Gio.FileMonitorFlags.NONE, None)
         self.monitor.connect("changed", self.on_downloads_folder_changed)
-# dashboard.py/on_downloads_folder_changed
+
     def on_downloads_folder_changed(self, monitor, file, other_file, event_type):
         relevant_events = [Gio.FileMonitorEvent.CREATED, Gio.FileMonitorEvent.DELETED]
         if event_type in relevant_events:
@@ -219,9 +291,9 @@ class DownloadsTab(Gtk.Box):
         return datetime.fromtimestamp(os.path.getmtime(os.path.join(self.dashboard.downloads_path, f)))
 
     # Install
-    def on_install_clicked(self, btn, filename, staging_folder_name):
-        staging_folder_name = staging_folder_name.replace(".zip", "").replace(".rar", "").replace(".7z", "")
-        mod_staging_dir = os.path.join(self.dashboard.staging_path, staging_folder_name)
+    def on_install_clicked(self, btn, filename, display_name):
+        display_name = display_name.replace(".zip", "").replace(".rar", "").replace(".7z", "")
+        mod_staging_dir = os.path.join(self.dashboard.staging_path, display_name)
         archive_full_path = os.path.join(self.dashboard.downloads_path, filename)
         btn.set_sensitive(False)
         
@@ -237,8 +309,8 @@ class DownloadsTab(Gtk.Box):
             GLib.idle_add(on_extraction_done, data)
                 
         def on_extraction_done(data):
-            btn.set_sensitive(True)
             if not data:
+                btn.set_sensitive(True)
                 return False
             if data['fomod']:
                 dialog = FomodSelectionDialog(self.dashboard.app.win, data['fomod'], mod_staging_dir, self.dashboard.deployment_targets[0]['path'])
@@ -246,6 +318,7 @@ class DownloadsTab(Gtk.Box):
                 dialog.present()
                 return False
             self.resolve_deployment_path(filename, data['files'])
+            btn.set_sensitive(True)
             return False
         
         threading.Thread(target=worker, daemon=True).start()
@@ -402,7 +475,7 @@ class DownloadsTab(Gtk.Box):
 
     def finalise_installation(self, filename, extracted_roots, deployment_target):
         
-        def worker():
+        def finalise_metadata():
             try:
                 finalise_mod_metadata(
                     filename, 
@@ -428,4 +501,30 @@ class DownloadsTab(Gtk.Box):
             self.dashboard.update_indicators()
             return False
         
-        threading.Thread(target=worker, daemon=True).start()
+        threading.Thread(target=finalise_metadata, daemon=True).start()
+        
+    def on_download_started(self, downloader, filename):
+        if filename not in self.currently_downloading:
+            self.currently_downloading.add(filename)
+            self.populate_list()
+    
+    def on_download_progress(self, downloader, data):
+        filename = data['filename']
+        progress = data['progress']
+        if filename not in self.currently_downloading:
+            self.currently_downloading.add(filename)
+            self.populate_list()
+        if filename in self.download_maps:
+            self.download_maps[filename].set_fraction(progress)
+            self.download_lbl_maps[filename].set_text(f"{round(progress*100)}%")
+            
+    def on_download_complete(self, downloader, filename):
+        if filename in self.download_maps:
+            self.currently_downloading.discard(filename)
+            self.download_lbl_maps[filename].set_text("Fetching...")
+        
+    def on_metadata_ready(self, downloader, filename):
+        if filename in self.download_maps:
+            self.download_maps[filename].set_fraction(0.0)
+            self.download_lbl_maps.pop(filename)
+            self.populate_list()

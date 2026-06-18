@@ -12,12 +12,12 @@ import requests
 import yaml
 from gi.repository import Adw, Gdk, Gio, Gtk
 
-from core.config import parse_deployment_paths
+from core.user_config import parse_deployment_paths
 from core.tools import load_yaml, write_yaml
 from core.mod_manager import (completely_uninstall_mod, get_metadata_path,
                               get_mod_statistics, load_staging_metadata,
                               remove_mod_from_metadata)
-from core.scanner import find_game_art
+from core.game_scanner import find_game_art
 from core.tools import get_contrast_color
 from gui.dashboard_views.downloads_tab import DownloadsTab
 from gui.dashboard_views.mods_tab import ModsTab
@@ -26,7 +26,7 @@ from gui.dashboard_views.tools_tab import ToolsTab
 rarfile.UNRAR_TOOL = "/app/bin/unrar"
 
 class GameDashboard(Gtk.Box):
-    def __init__(self, game_name, game_path, application, steam_base=None, app_id=None, user_config_path=None, game_config_path=None, assets_path=None, **kwargs):
+    def __init__(self, game_name, game_path, application, steam_base=None, app_id=None, user_config_path=None, game_config_path=None, assets_path=None, downloader=None, **kwargs):
         super().__init__(orientation=Gtk.Orientation.VERTICAL, **kwargs)
         self.app = application
         self.game_name = game_name
@@ -44,6 +44,7 @@ class GameDashboard(Gtk.Box):
         self.platform = self.game_config.get("platform")
         self.currently_toggling = set()
         self.currently_installing = set()
+        self.downloader = downloader
         
         self.staging_metadata_path = get_metadata_path(self.staging_path, is_staging=True)
         self.downloads_metadata_path = get_metadata_path(self.downloads_path, is_staging=False)
@@ -53,7 +54,7 @@ class GameDashboard(Gtk.Box):
         self.headers = {
             'apikey': self.user_config["nexus_api_key"],
             'Application-Name': 'NOMM',
-            'Application-Version': '0.9'
+            'Application-Version': '0.10'
         }
 
         # Per game accent colour theming
@@ -122,7 +123,7 @@ class GameDashboard(Gtk.Box):
         back_btn.set_cursor_from_name("pointer")
         back_btn.connect("clicked", self.on_back_clicked)
         
-        # Mod count box -- Need a CSS
+        # Mod count box
         mods_badge_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=4)
         mods_badge_box.set_halign(Gtk.Align.END)
         mods_badge_box.set_valign(Gtk.Align.END)
@@ -218,14 +219,14 @@ class GameDashboard(Gtk.Box):
         if self.view_stack.get_child_by_name("downloads"):
             self.view_stack.remove(self.view_stack.get_child_by_name("downloads"))
 
-        self.downloads_tab = DownloadsTab(self)
+        self.downloads_tab = DownloadsTab(self, self.downloader)
         self.view_stack.add_named(self.downloads_tab, "downloads")
 
     def create_tools_page(self):
         if self.view_stack.get_child_by_name("tools"):
             self.view_stack.remove(self.view_stack.get_child_by_name("tools"))
 
-        self.tools_tab = ToolsTab(self)
+        self.tools_tab = ToolsTab(self, self.downloader)
         self.view_stack.add_named(self.tools_tab, "tools")
 
     def load_text_file(self, btn, path):        
@@ -256,16 +257,8 @@ class GameDashboard(Gtk.Box):
     def on_uninstall_item(self, btn, mod_files: list, mod_name: str):
         staging_metadata = load_staging_metadata(self.staging_metadata_path)
         
-        
-        dest_dir = self.deployment_targets[0]["path"]
-        # if mod metadata is in NOMM 0.10 format
-        if mod_name in staging_metadata["mods"] and "deployment_path" in staging_metadata["mods"][mod_name]:
-            dest_dir = staging_metadata["mods"][mod_name]["deployment_path"]
-            staging_mod_dir = os.path.join(self.staging_path, staging_metadata["mods"][mod_name]["folder_name"])
-        else:
-            # legacy format
-            # TODO: remove this if/else condition in later versions and keep only the top part
-            staging_mod_dir = os.path.join(self.staging_path, mod_name)
+        dest_dir = staging_metadata["mods"][mod_name]["deployment_path"]
+        staging_mod_dir = os.path.join(self.staging_path, staging_metadata["mods"][mod_name]["folder_name"])
 
         completely_uninstall_mod(staging_mod_dir, dest_dir, mod_files)
 
