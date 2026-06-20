@@ -108,20 +108,36 @@ class ModsTab(Gtk.Box):
         # This is used for the close button left of the preview
         self.preview_overlay = Gtk.Overlay()
 
+        thumb_overlay = Gtk.Overlay()
+        thumb_overlay.set_halign(Gtk.Align.CENTER)
+
         # Container for the image to handle centering and potential rounding
         self.thumb_container = Gtk.Box(halign=Gtk.Align.CENTER)
         self.thumb_container.set_size_request(300, 168)
         self.thumb_container.add_css_class("rounded-thumb")
         self.thumb_container.set_overflow(Gtk.Overflow.HIDDEN)
         self.thumb_container.set_hexpand(False)
-        self.preview_pane.append(self.thumb_container)
+        thumb_overlay.set_child(self.thumb_container)
+        self.preview_pane.append(thumb_overlay)
+
+        self.platform_btn = Gtk.Button()
+        self.platform_btn.set_cursor_from_name("pointer")
+        
+        nexus_icon = Gtk.Image.new_from_icon_name("web-browser-symbolic")
+        self.platform_btn.set_child(nexus_icon)
+        self.platform_btn.add_css_class("osd")
+        self.platform_btn.add_css_class("circular")
+        self.platform_btn.set_halign(Gtk.Align.END)
+        self.platform_btn.set_valign(Gtk.Align.END)
+        self.platform_btn.set_margin_bottom(8)
+        self.platform_btn.set_margin_end(8)
+        thumb_overlay.add_overlay(self.platform_btn)
 
         # Header with close button
         header = Gtk.CenterBox(margin_top=10)
         self.preview_title = Gtk.Label(css_classes=["title-1"])
         self.preview_title.set_ellipsize(Pango.EllipsizeMode.END)
         self.preview_title.set_max_width_chars(38)
-        #self.preview_title.set_width_chars(35)
         header.set_center_widget(self.preview_title)
         
         self.preview_pane.append(header)
@@ -141,11 +157,6 @@ class ModsTab(Gtk.Box):
         self.description_btn.set_cursor_from_name("pointer")
         self.description_btn.add_css_class("badge-action-row")
         self.info_row.append(self.description_btn)
-        # Nexus button
-        self.nexus_btn = Gtk.Button(label=_("Nexus"))
-        self.nexus_btn.set_cursor_from_name("pointer")
-        self.nexus_btn.add_css_class("badge-action-row")
-        self.info_row.append(self.nexus_btn)
         self.details_box.append(self.info_row)
 
         # Contents Row
@@ -308,10 +319,10 @@ class ModsTab(Gtk.Box):
             if hasattr(self, "_desc_handler_id"):
                 self.description_btn.disconnect(self._desc_handler_id)    
             self._desc_handler_id = self.description_btn.connect("clicked", self.on_description_btn_clicked, title, description)
-            # Nexus button
-            if hasattr(self, "_nexus_link_handler_id"):
-                self.nexus_btn.disconnect(self._nexus_link_handler_id)    
-            self._nexus_link_handler_id = self.nexus_btn.connect("clicked", lambda b: webbrowser.open(mod_info["mod_link"]))
+            # Platform button
+            if hasattr(self, "_platform_link_handler_id"):
+                self.platform_btn.disconnect(self._platform_link_handler_id)    
+            self._platform_link_handler_id = self.platform_btn.connect("clicked", lambda b: webbrowser.open(mod_info["mod_link"]))
         else:
             self.info_row.set_visible(False)
 
