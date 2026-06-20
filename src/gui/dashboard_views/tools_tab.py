@@ -6,7 +6,7 @@ from pathlib import Path
 
 from gi.repository import Adw, GLib, Gtk
 
-from core.mod_manager import deploy_essential_utility, is_utility_installed
+from core.mod_manager import deploy_essential_utility
 
 _ = gettext.gettext
 
@@ -67,10 +67,9 @@ class ToolsTab(Gtk.Box):
                 source = util.get("source", "")
                 filename = source.split("/")[-1] if "/" in source else f"{util_id}.zip"
                 util_dir = Path(self.dashboard.downloads_path) / "utilities"
+                staging_dir = Path(self.dashboard.staging_path) / "utilities" / util["name"]
                 local_zip_path = util_dir / filename
                 target_dir = Path(self.dashboard.game_path) / util.get("utility_path", "")
-
-                is_installed = is_utility_installed(local_zip_path, target_dir)
 
                 stack = Gtk.Stack(transition_type=Gtk.StackTransitionType.CROSSFADE)
                 
@@ -100,9 +99,9 @@ class ToolsTab(Gtk.Box):
                 overlay.set_valign(Gtk.Align.CENTER)
                 overlay.set_child(dl_btn)
                 overlay.add_overlay(dl_pbar)
-                
-                inst_btn = Gtk.Button(label=_("Reinstall") if is_installed else "Install", valign=Gtk.Align.CENTER)
-                if not is_installed: 
+
+                inst_btn = Gtk.Button(label=_("Reinstall") if staging_dir.exists() else _("Install"), valign=Gtk.Align.CENTER)
+                if not staging_dir.exists():
                     inst_btn.add_css_class("suggested-action")
                 inst_btn.connect("clicked", self.on_utility_install_clicked, util)
                 
@@ -233,12 +232,10 @@ class ToolsTab(Gtk.Box):
         dialog.present()
 
     def execute_utility_install(self, util):
-        try:
-            deploy_essential_utility(util, self.dashboard.downloads_path, self.dashboard.game_path, self.dashboard.steam_base, self.dashboard.game_config.get("steam_id"))
-            
-            self.dashboard.show_message(
-                _("Success"),
-                _("{} has been installed.").format(util.get('name'))
-            )
-        except Exception as e:
-            self.dashboard.show_message(_("Installation Error"), str(e))
+
+        deploy_essential_utility(util, self.dashboard.downloads_path, self.dashboard.staging_path, self.dashboard.game_path, self.dashboard.steam_base, self.dashboard.game_config.get("steam_id"))
+        
+        self.dashboard.show_message(
+            _("Success"),
+            _("{} has been installed.").format(util.get('name'))
+        )

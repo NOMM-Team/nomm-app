@@ -12,6 +12,7 @@ from datetime import datetime
 from gi.repository import GLib
 from core.tools import load_yaml, write_yaml
 from core.user_config import load_user_config
+from core.archive_manager import extract_archive
 
 meta_lock = threading.Lock()
 
@@ -262,47 +263,82 @@ def find_text_file(mod_files: list) -> str:
             return file_path
     return ""
 
-def is_utility_installed(local_zip_path: Path, target_dir: Path) -> bool:
-    if not local_zip_path.exists():
-        return False
-    try:
-        with zipfile.ZipFile(local_zip_path, 'r') as z:
-            return all((target_dir / name).exists() for name in z.namelist() if not name.endswith('/'))
-    except Exception: 
-        return False
-
-def deploy_essential_utility(util_config: dict, downloads_path: str, game_path: str, steam_base: str, steam_id: str):
+def deploy_essential_utility(util_config: dict, downloads_path: str, staging_path: str, game_path: str, steam_base: str, steam_id: str):
     source_url = util_config.get("source")
     filename = source_url.split("/")[-1]
-    zip_path = Path(downloads_path) / "utilities" / filename
+    archive_path = os.path.join(downloads_path, "utilities", filename)
+    staging_path = Path(staging_path) / "utilities" / util_config["name"]
     
     game_root = Path(game_path)
-    install_subpath = util_config.get("utility_path", "")
-    target_dir = game_root / install_subpath
-    target_dir.mkdir(parents=True, exist_ok=True)
 
+    # Archive extraction to staging
+    print("Extracting utility contents")
+    extract_archive(archive_path, staging_path)
+
+    # Whitelist and blacklist management
     whitelist = util_config.get("whitelist", [])
     blacklist = util_config.get("blacklist", [])
-    
-    print("Extracting utility contents")
-    # TODO:Replace function with extract_archive from archive_manager
-    with zipfile.ZipFile(zip_path, 'r') as z:
-        if not whitelist and not blacklist:
-            z.extractall(target_dir)
-        else:
-            for file_info in z.infolist():
-                file_name = file_info.filename
-                if whitelist and not any(allowed in file_name for allowed in whitelist):
-                    continue
-                if blacklist and any(blocked in file_name for blocked in blacklist):
-                    continue
-                z.extract(file_info, target_dir)
 
+    if whitelist or blacklist:
+        print("Applying whitelist/blacklist filters to extracted files...")
+        files_to_remove = []
+
+        for root, dirs, files in os.walk(staging_path):
+            for file_name in files:
+                file_full_path = Path(root) / file_name
+
+                if blacklist and file_name in blacklist:
+                    files_to_remove.append(file_full_path)
+                    continue
+
+                if whitelist and file_name not in whitelist:
+                    files_to_remove.append(file_full_path)
+
+        for file_to_remove in files_to_remove:
+            try:
+                file_to_remove.unlink()
+                print(f"[-] Filtered out: {file_to_remove.name}")
+            except Exception as e:
+                print(f"[!] Failed to remove filtered file {file_to_remove}: {e}")
+
+        # Empty folder cleanup
+        for root, dirs, files in os.walk(staging_path, topdown=False):
+            for dir_name in dirs:
+                dir_full_path = Path(root) / dir_name
+                try:
+                    if not any(dir_full_path.iterdir()):
+                        dir_full_path.rmdir()
+                except Exception:
+                    pass
+
+    # Actual deployment to game files if needed
+    is_internal = util_config.get("install_in_game_files", True)
+    if is_internal:
+        install_subpath = util_config["utility_path"]
+        target_dir = game_root / install_subpath        
+        target_dir.mkdir(parents=True, exist_ok=True)
+        print(f"Deploying utility files to game directory: {target_dir}")
+        for root, dirs, files in os.walk(str(staging_path)):
+            for file_name in files:
+                source_file = os.path.join(root, file_name)
+
+                relative_path = os.path.relpath(source_file, str(staging_path))
+                destination_file = target_dir / relative_path
+                destination_file.parent.mkdir(parents=True, exist_ok=True)
+
+                try:
+                    shutil.copy2(source_file, destination_file)
+                    print(f"[+] Deployed & overwrote: {relative_path}")
+                except Exception as e:
+                    print(f"[!] Failed to copy {relative_path} to game directory: {e}")
+
+    # Some utilities require a command to be launched as a one-shot to enable the utility
     command = util_config.get("enable_command")
     if command:
         print(f"Running utility enable command: {command}")
         subprocess.run(command, shell=True, cwd=game_root)
-    
+
+    # Some utilities require specific launch options to run properly
     steam_launch_options = util_config.get("steam_launch_options")
     if steam_launch_options:
         print(f"Adding Steam launch options: {steam_launch_options}")
