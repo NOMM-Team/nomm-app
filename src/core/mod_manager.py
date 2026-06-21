@@ -306,10 +306,9 @@ def deploy_essential_utility(util_config: dict, downloads_path: str, staging_pat
             for dir_name in dirs:
                 dir_full_path = Path(root) / dir_name
                 try:
-                    if not any(dir_full_path.iterdir()):
-                        dir_full_path.rmdir()
-                except Exception:
-                    pass
+                    dir_full_path.rmdir()
+                except OSError:
+                    pass # Folder is not empty, so skip it
 
     # Actual deployment to game files if needed
     is_internal = util_config.get("install_in_game_files", True)
