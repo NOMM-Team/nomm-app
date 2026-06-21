@@ -143,7 +143,7 @@ class DownloadsTab(Gtk.Box):
                 timestamp_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=2, valign=Gtk.Align.CENTER, margin_end=15)
                 download_timestamp_label = timestamp_converter(self.get_download_timestamp(file_name))
                 download_timestamp_tooltip = _("Downloaded: {}").format(timestamp_converter(self.get_download_timestamp(file_name), "long"))
-                download_timestamp_row = self.dashboard.create_timestamp_row(download_timestamp_label, download_timestamp_tooltip, "downloaded.svg")
+                download_timestamp_row = self.dashboard.create_timestamp_row(download_timestamp_label, download_timestamp_tooltip, "downloaded-symbolic")
                 timestamp_box.append(download_timestamp_row)
 
                 if installed:
@@ -151,7 +151,7 @@ class DownloadsTab(Gtk.Box):
                         if mod_val.get("archive_name") == file_name:
                             installed_timestamp_label = timestamp_converter(mod_val.get("install_timestamp"))
                             installed_timestamp_tooltip = _("Installed: {}").format(timestamp_converter(mod_val.get("install_timestamp"), "long"))
-                            installed_timestamp_row = self.dashboard.create_timestamp_row(installed_timestamp_label, installed_timestamp_tooltip, "installed.svg")
+                            installed_timestamp_row = self.dashboard.create_timestamp_row(installed_timestamp_label, installed_timestamp_tooltip, "installed-symbolic")
                             timestamp_box.append(installed_timestamp_row)
                             break
                         

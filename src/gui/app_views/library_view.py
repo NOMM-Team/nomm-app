@@ -72,26 +72,20 @@ class LibraryView(Gtk.Box):
         platform = game.get('platform')
         icon_path = ""
         if platform == "steam":
-            icon_path = os.path.join(self.app.assets_path, "platform_logos", "steam_logo.svg")
+            platform_badge = Gtk.Image.new_from_icon_name("steam-logo-symbolic")
         elif platform == "heroic-epic":
-            icon_path = os.path.join(self.app.assets_path, "platform_logos", "epic_logo.svg")
+            platform_badge = Gtk.Image.new_from_icon_name("epic-logo-symbolic")
         elif platform == "heroic-gog":
-            icon_path = os.path.join(self.app.assets_path, "platform_logos", "gog_logo.svg")
-
-        if os.path.exists(icon_path):
-            try:
-                platform_badge_pb = GdkPixbuf.Pixbuf.new_from_file_at_scale(icon_path, 32, 32, True)
-                platform_badge = Gtk.Picture.new_for_paintable(Gdk.Texture.new_for_pixbuf(platform_badge_pb))
-                
-                platform_badge.set_halign(Gtk.Align.END)
-                platform_badge.set_valign(Gtk.Align.END)
-                platform_badge.set_margin_end(10)
-                platform_badge.set_margin_bottom(10)
-                platform_badge.add_css_class("platform-badge")
-                
-                img_overlay.add_overlay(platform_badge)
-            except Exception as e:
-                print(f"Error rendering SVG badge: {e}")
+            platform_badge = Gtk.Image.new_from_icon_name("gog-logo-symbolic")
+        
+        platform_badge.set_pixel_size(32)
+        platform_badge.set_halign(Gtk.Align.END)
+        platform_badge.set_valign(Gtk.Align.END)
+        platform_badge.set_margin_end(10)
+        platform_badge.set_margin_bottom(10)
+        platform_badge.add_css_class("platform-badge")
+        
+        img_overlay.add_overlay(platform_badge)
 
         # mod total badge
         mod_total_badge = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=4)

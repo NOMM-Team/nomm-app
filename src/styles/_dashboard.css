@@ -30,3 +30,20 @@
 .floating-close-btn:hover {
     color: var(--accent-color);
 }
+
+.summary-button-overlay {
+    background: linear-gradient(to right, transparent 0%, var(--window-bg-color) 40%, var(--window-bg-color) 100%);
+    padding-left: 24px; 
+    padding-bottom: 4px;
+    
+    /* Lock layout interaction properties */
+    opacity: 0;
+    
+    /* Animate opacity smoothly both ways */
+    transition: opacity 150ms ease-in-out;
+}
+
+/* Explicit tracking against the parent hook class */
+.summary-overlay-parent:hover .summary-button-overlay.has-desc {
+    opacity: 1;
+}

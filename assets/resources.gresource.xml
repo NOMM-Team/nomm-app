@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gresources>
+  <gresource prefix="/com/nomm/Nomm/icons/scalable/apps">
+    <!-- nomm logo -->
+    <file>nomm-logo.svg</file>
+    <!-- modding platform icons -->
+    <file>nexus-logo.svg</file>
+    <!-- game platform icons -->
+    <file>gog-logo-symbolic.svg</file>
+    <file>steam-logo-symbolic.svg</file>
+    <file>epic-logo-symbolic.svg</file>
+    <!-- other platform icons -->
+    <file>discord-logo-symbolic.svg</file>
+    <file>github-logo-symbolic.svg</file>
+    <file>youtube-logo-symbolic.svg</file>
+    <file>matrix-logo-symbolic.svg</file>
+    <!-- generic UI icons -->
+    <file>breaking-news-symbolic.svg</file>
+    <file>downloaded-symbolic.svg</file>
+    <file>enabled-symbolic.svg</file>
+    <file>installed-symbolic.svg</file>
+  </gresource>
+</gresources>

@@ -108,20 +108,40 @@ class ModsTab(Gtk.Box):
         # This is used for the close button left of the preview
         self.preview_overlay = Gtk.Overlay()
 
+        thumb_overlay = Gtk.Overlay()
+        thumb_overlay.set_halign(Gtk.Align.CENTER)
+
         # Container for the image to handle centering and potential rounding
         self.thumb_container = Gtk.Box(halign=Gtk.Align.CENTER)
         self.thumb_container.set_size_request(300, 168)
         self.thumb_container.add_css_class("rounded-thumb")
         self.thumb_container.set_overflow(Gtk.Overflow.HIDDEN)
         self.thumb_container.set_hexpand(False)
-        self.preview_pane.append(self.thumb_container)
+        thumb_overlay.set_child(self.thumb_container)
+        self.preview_pane.append(thumb_overlay)
+
+        self.platform_btn = Gtk.Button()
+        self.platform_btn.set_cursor_from_name("pointer")
+        
+        self.platform_icon = Gtk.Image()
+        self.platform_icon.set_pixel_size(30)
+        self.platform_icon.set_margin_top(4)
+        self.platform_icon.set_margin_start(4)
+        self.platform_icon.set_margin_bottom(4)
+        self.platform_icon.set_margin_end(4)
+        self.platform_btn.set_child(self.platform_icon)
+        self.platform_btn.add_css_class("circular")
+        self.platform_btn.set_halign(Gtk.Align.END)
+        self.platform_btn.set_valign(Gtk.Align.END)
+        self.platform_btn.set_margin_bottom(8)
+        self.platform_btn.set_margin_end(8)
+        thumb_overlay.add_overlay(self.platform_btn)
 
         # Header with close button
         header = Gtk.CenterBox(margin_top=10)
         self.preview_title = Gtk.Label(css_classes=["title-1"])
         self.preview_title.set_ellipsize(Pango.EllipsizeMode.END)
         self.preview_title.set_max_width_chars(38)
-        #self.preview_title.set_width_chars(35)
         header.set_center_widget(self.preview_title)
         
         self.preview_pane.append(header)
@@ -129,23 +149,44 @@ class ModsTab(Gtk.Box):
         # Metadata Display
         self.details_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=5, margin_start=10, margin_end=10)
 
-        # Info Row
-        self.info_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
+        # Info Row Container (Now an Overlay)
+        self.info_row = Gtk.Overlay()
         self.info_row.set_margin_top(10)
         self.info_row.set_visible(False)
-        # Info Row title
-        info_row_label = Gtk.Label(label=_("More Info:"), css_classes=["dim-label"])
-        self.info_row.append(info_row_label)
-        # Description button
-        self.description_btn = Gtk.Button(label=_("Mod Description"))
+        self.info_row.add_css_class("summary-overlay-parent")
+
+        # The summary paragraph
+        self.summary_label = Gtk.Label()
+        self.summary_label.set_wrap(True)
+        self.summary_label.set_max_width_chars(45)
+        self.summary_label.set_wrap_mode(Pango.WrapMode.WORD_CHAR)
+        self.summary_label.set_xalign(0)
+        self.summary_label.set_hexpand(True)
+        self.summary_label.add_css_class("dim-label")
+        self.summary_label.set_margin_bottom(15)
+        
+        # Set the base widget for the overlay
+        self.info_row.set_child(self.summary_label)
+
+        # Full summary button overlay
+        self.btn_overlay_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
+        self.btn_overlay_box.set_halign(Gtk.Align.END)   # Anchor to the far right
+        self.btn_overlay_box.set_valign(Gtk.Align.START) # Anchor to the top
+        self.btn_overlay_box.add_css_class("summary-button-overlay")
+        self.btn_overlay_box.set_visible(False) # Entire overlay box hidden by default
+
+        # Full summary button
+        self.description_btn = Gtk.Button()
         self.description_btn.set_cursor_from_name("pointer")
-        self.description_btn.add_css_class("badge-action-row")
-        self.info_row.append(self.description_btn)
-        # Nexus button
-        self.nexus_btn = Gtk.Button(label=_("Nexus"))
-        self.nexus_btn.set_cursor_from_name("pointer")
-        self.nexus_btn.add_css_class("badge-action-row")
-        self.info_row.append(self.nexus_btn)
+        self.description_btn.add_css_class("flat")
+        self.description_btn.set_tooltip_text(_("Read full description"))
+        
+        desc_btn_icon = Gtk.Image.new_from_icon_name("list-add-symbolic") 
+        self.description_btn.set_child(desc_btn_icon)
+        
+        # Assemble overlay tree
+        self.btn_overlay_box.append(self.description_btn)
+        self.info_row.add_overlay(self.btn_overlay_box)
         self.details_box.append(self.info_row)
 
         # Contents Row
@@ -278,40 +319,68 @@ class ModsTab(Gtk.Box):
         # Update labels
         self.preview_title.set_label(mod_name)
 
-        # Add thumbnail
+        # Clear previous thumbnail
+        while child := self.thumb_container.get_first_child():
+            self.thumb_container.remove(child)
+        # Add new thumbnail
         thumbnail_path = mod_info.get("thumbnail")
         if thumbnail_path and os.path.exists(thumbnail_path):
             thumb_path = thumbnail_path
-        else:
-            thumb_path = self.dashboard.assets_path + "/nomm.png"
+            pixbuf = GdkPixbuf.Pixbuf.new_from_file_at_scale(
+                thumb_path, 405, 1000, True
+            )
+            texture = Gdk.Texture.new_for_pixbuf(pixbuf)
+            self.preview_thumbnail = Gtk.Picture.new_for_paintable(texture)
+            self.preview_thumbnail.set_hexpand(False)
+            self.preview_thumbnail.set_vexpand(False)        
+        else: # no thumbnail provided
+            self.preview_thumbnail = Gtk.Image.new_from_icon_name("nomm-logo")
+            self.preview_thumbnail.set_pixel_size(150)
+            self.preview_thumbnail.set_hexpand(True)
+            self.preview_thumbnail.set_halign(Gtk.Align.CENTER)
 
-        pixbuf = GdkPixbuf.Pixbuf.new_from_file_at_scale(
-            thumb_path, 405, 1000, True
-        )
-        texture = Gdk.Texture.new_for_pixbuf(pixbuf)
-        self.preview_thumbnail = Gtk.Picture.new_for_paintable(texture)
-        self.preview_thumbnail.set_hexpand(False)
-        self.preview_thumbnail.set_vexpand(False)
-        # Clear previous image
-        while child := self.thumb_container.get_first_child():
-            self.thumb_container.remove(child)
-        # Add new one
         self.thumb_container.append(self.preview_thumbnail)
 
-        # Info Row
-        if "description" in mod_info and mod_info["description"]:
-            # Description button
-            with open(mod_info["description"]) as f:
-                description = f.read()
+        # Platform Link Button
+        if "mod_link" in mod_info and mod_info["mod_link"]:
+            self.platform_icon.set_from_icon_name("nexus-logo")
+            self.platform_btn.set_visible(True)
+            if hasattr(self, "_platform_link_handler_id"):
+                self.platform_btn.disconnect(self._platform_link_handler_id)    
+            self._platform_link_handler_id = self.platform_btn.connect("clicked", lambda b: webbrowser.open(mod_info["mod_link"]))
+        else:
+            self.platform_btn.set_visible(False)
+
+        # Info Row Processing
+        summary_text = mod_info.get("summary", "").strip()
+        self._has_description = bool("description" in mod_info and mod_info["description"])
+
+        if summary_text or self._has_description:
             self.info_row.set_visible(True)
-            title = _(f"Mod Description for {mod_info.get("display_name", mod_info.get("name"))}")
-            if hasattr(self, "_desc_handler_id"):
-                self.description_btn.disconnect(self._desc_handler_id)    
-            self._desc_handler_id = self.description_btn.connect("clicked", self.on_description_btn_clicked, title, description)
-            # Nexus button
-            if hasattr(self, "_nexus_link_handler_id"):
-                self.nexus_btn.disconnect(self._nexus_link_handler_id)    
-            self._nexus_link_handler_id = self.nexus_btn.connect("clicked", lambda b: webbrowser.open(mod_info["mod_link"]))
+            self.summary_label.set_text(summary_text)
+            
+            if self._has_description:
+                self.btn_overlay_box.set_visible(True) 
+                self.btn_overlay_box.add_css_class("has-desc") # Tell CSS it's allowed to fade in
+                
+                try:
+                    with open(mod_info["description"]) as f:
+                        description_content = f.read()
+                except Exception as e:
+                    print(f"Error reading description: {e}")
+                    description_content = ""
+
+                title = _(f"Mod Description for {mod_info.get('display_name', mod_info.get('name'))}")
+                
+                if hasattr(self, "_desc_handler_id"):
+                    self.description_btn.disconnect(self._desc_handler_id)
+                
+                self._desc_handler_id = self.description_btn.connect(
+                    "clicked", self.on_description_btn_clicked, title, description_content
+                )
+            else:
+                self.btn_overlay_box.set_visible(False) # No description at all? Safe to hard-hide.
+                self.btn_overlay_box.remove_css_class("has-desc")
         else:
             self.info_row.set_visible(False)
 
@@ -425,7 +494,6 @@ class ModsTab(Gtk.Box):
 
         # Display the pane!
         self.revealer.set_reveal_child(True)
-
 
     def on_description_btn_clicked(self, button, title, description):
         desc_win = TextWindow(self.dashboard.app.win, title, description, text_type="markup")
@@ -548,12 +616,6 @@ class ModsTab(Gtk.Box):
             staging_metadata = load_staging_metadata(self.dashboard.staging_metadata_path)
             
             indexed_mods = read_index(self.dashboard.staging_metadata_path)
-            
-            enable_file_counter = False
-            for mod in staging_metadata.get("mods"):
-                if len(staging_metadata["mods"][mod]["mod_files"]) > 1:
-                    enable_file_counter = True
-                    break
                 
             missing_files_per_mod = {
                 mod: [f for f in staging_metadata["mods"][mod].get("mod_files", [])
@@ -563,9 +625,9 @@ class ModsTab(Gtk.Box):
             
             conflicts = check_for_conflicts(self.dashboard.staging_metadata_path)
             
-            GLib.idle_add(on_data_prepared, staging_path, staging_metadata, indexed_mods, enable_file_counter, conflicts, missing_files_per_mod)
+            GLib.idle_add(on_data_prepared, staging_path, staging_metadata, indexed_mods, conflicts, missing_files_per_mod)
             
-        def on_data_prepared(staging_path, staging_metadata, indexed_mods, enable_file_counter, conflicts, missing_files_per_mod):
+        def on_data_prepared(staging_path, staging_metadata, indexed_mods, conflicts, missing_files_per_mod):
             valignment = self.sc.get_valign()
             srow = None
             if self.mods_list_box.get_selected_row() != None:
@@ -636,18 +698,6 @@ class ModsTab(Gtk.Box):
                 drop_target.set_gtypes([GObject.TYPE_STRING])
                 drop_target.connect("drop", self.on_row_drop, mod)
                 row.add_controller(drop_target)
-
-                if enable_file_counter:
-                    number_of_files = len(mod_files)
-                    file_list_badge = Gtk.CenterBox(orientation=Gtk.Orientation.HORIZONTAL)
-                    file_list_badge.set_tooltip_text("\n".join(mod_files))
-                    file_list_badge.add_css_class("badge-action-row")
-                    file_list_badge.set_valign(Gtk.Align.CENTER)
-                    file_list_badge.set_margin_end(row_element_margin)
-                    label_text = ngettext("{} file", "{} files", number_of_files).format(number_of_files)
-                    file_list_badge.set_center_widget(Gtk.Label(label=label_text))
-                    file_badge_sizegroup.add_widget(file_list_badge)
-                    row.add_prefix(file_list_badge)
                 
                 # Suffix: Missing Files
                 missing_files = missing_files_per_mod.get(display_name, [])
@@ -689,7 +739,7 @@ class ModsTab(Gtk.Box):
                 if text_file:
                     info_text_badge = Gtk.Button()
                     button_content = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=2)
-                    info_icon = Gtk.Image.new_from_file(os.path.join(self.dashboard.assets_path, "ui_icons", "breaking_news.svg"))
+                    info_icon = Gtk.Image.new_from_icon_name("breaking-news-symbolic")
                     info_icon.set_pixel_size(22)
                     button_content.append(info_icon)
                     info_text_badge.add_css_class("help-about-symbolic")
@@ -723,7 +773,7 @@ class ModsTab(Gtk.Box):
                         enabled_timestamp_label = timestamp_converter(mod_metadata["enabled_timestamp"])
                         enabled_tooltip = _("Enabled: {}").format(timestamp_converter(mod_metadata["enabled_timestamp"], "long"))
 
-                        enabled_row = self.dashboard.create_timestamp_row(enabled_timestamp_label, enabled_tooltip, "enabled.svg")
+                        enabled_row = self.dashboard.create_timestamp_row(enabled_timestamp_label, enabled_tooltip, "enabled-symbolic")
                         timestamp_box.append(enabled_row)
 
                     # Installed Timestamp
@@ -731,7 +781,7 @@ class ModsTab(Gtk.Box):
                         installed_timestamp_label = timestamp_converter(mod_metadata["install_timestamp"])
                         installed_tooltip = _("Installed: {}").format(timestamp_converter(mod_metadata["install_timestamp"], "long"))
 
-                        installed_row = self.dashboard.create_timestamp_row(installed_timestamp_label, installed_tooltip, "installed.svg")
+                        installed_row = self.dashboard.create_timestamp_row(installed_timestamp_label, installed_tooltip, "installed-symbolic")
                         timestamp_box.append(installed_row)
                     row.add_suffix(timestamp_box)
 
