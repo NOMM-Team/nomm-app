@@ -123,9 +123,9 @@ class ModsTab(Gtk.Box):
         self.platform_btn = Gtk.Button()
         self.platform_btn.set_cursor_from_name("pointer")
         
-        nexus_icon = Gtk.Image.new_from_icon_name("web-browser-symbolic")
-        self.platform_btn.set_child(nexus_icon)
-        self.platform_btn.add_css_class("osd")
+        self.platform_icon = Gtk.Image()
+        self.platform_icon.set_pixel_size(30)
+        self.platform_btn.set_child(self.platform_icon)
         self.platform_btn.add_css_class("circular")
         self.platform_btn.set_halign(Gtk.Align.END)
         self.platform_btn.set_valign(Gtk.Align.END)
@@ -289,25 +289,37 @@ class ModsTab(Gtk.Box):
         # Update labels
         self.preview_title.set_label(mod_name)
 
-        # Add thumbnail
+        # Clear previous thumbnail
+        while child := self.thumb_container.get_first_child():
+            self.thumb_container.remove(child)
+        # Add new thumbnail
         thumbnail_path = mod_info.get("thumbnail")
         if thumbnail_path and os.path.exists(thumbnail_path):
             thumb_path = thumbnail_path
-        else:
-            thumb_path = self.dashboard.assets_path + "/nomm.png"
+            pixbuf = GdkPixbuf.Pixbuf.new_from_file_at_scale(
+                thumb_path, 405, 1000, True
+            )
+            texture = Gdk.Texture.new_for_pixbuf(pixbuf)
+            self.preview_thumbnail = Gtk.Picture.new_for_paintable(texture)
+            self.preview_thumbnail.set_hexpand(False)
+            self.preview_thumbnail.set_vexpand(False)        
+        else: # no thumbnail provided
+            self.preview_thumbnail = Gtk.Image.new_from_icon_name("nomm-logo")
+            self.preview_thumbnail.set_pixel_size(150)
+            self.preview_thumbnail.set_hexpand(True)
+            self.preview_thumbnail.set_halign(Gtk.Align.CENTER)
 
-        pixbuf = GdkPixbuf.Pixbuf.new_from_file_at_scale(
-            thumb_path, 405, 1000, True
-        )
-        texture = Gdk.Texture.new_for_pixbuf(pixbuf)
-        self.preview_thumbnail = Gtk.Picture.new_for_paintable(texture)
-        self.preview_thumbnail.set_hexpand(False)
-        self.preview_thumbnail.set_vexpand(False)
-        # Clear previous image
-        while child := self.thumb_container.get_first_child():
-            self.thumb_container.remove(child)
-        # Add new one
         self.thumb_container.append(self.preview_thumbnail)
+
+        # Platform Link Button
+        if "mod_link" in mod_info and mod_info["mod_link"]:
+            self.platform_icon.set_from_icon_name("nexus-logo")
+            self.platform_btn.set_visible(True)
+            if hasattr(self, "_platform_link_handler_id"):
+                self.platform_btn.disconnect(self._platform_link_handler_id)    
+            self._platform_link_handler_id = self.platform_btn.connect("clicked", lambda b: webbrowser.open(mod_info["mod_link"]))
+        else:
+            self.platform_btn.set_visible(False)
 
         # Info Row
         if "description" in mod_info and mod_info["description"]:
@@ -319,10 +331,6 @@ class ModsTab(Gtk.Box):
             if hasattr(self, "_desc_handler_id"):
                 self.description_btn.disconnect(self._desc_handler_id)    
             self._desc_handler_id = self.description_btn.connect("clicked", self.on_description_btn_clicked, title, description)
-            # Platform button
-            if hasattr(self, "_platform_link_handler_id"):
-                self.platform_btn.disconnect(self._platform_link_handler_id)    
-            self._platform_link_handler_id = self.platform_btn.connect("clicked", lambda b: webbrowser.open(mod_info["mod_link"]))
         else:
             self.info_row.set_visible(False)
 
@@ -559,12 +567,6 @@ class ModsTab(Gtk.Box):
             staging_metadata = load_staging_metadata(self.dashboard.staging_metadata_path)
             
             indexed_mods = read_index(self.dashboard.staging_metadata_path)
-            
-            enable_file_counter = False
-            for mod in staging_metadata.get("mods"):
-                if len(staging_metadata["mods"][mod]["mod_files"]) > 1:
-                    enable_file_counter = True
-                    break
                 
             missing_files_per_mod = {
                 mod: [f for f in staging_metadata["mods"][mod].get("mod_files", [])
@@ -574,9 +576,9 @@ class ModsTab(Gtk.Box):
             
             conflicts = check_for_conflicts(self.dashboard.staging_metadata_path)
             
-            GLib.idle_add(on_data_prepared, staging_path, staging_metadata, indexed_mods, enable_file_counter, conflicts, missing_files_per_mod)
+            GLib.idle_add(on_data_prepared, staging_path, staging_metadata, indexed_mods, conflicts, missing_files_per_mod)
             
-        def on_data_prepared(staging_path, staging_metadata, indexed_mods, enable_file_counter, conflicts, missing_files_per_mod):
+        def on_data_prepared(staging_path, staging_metadata, indexed_mods, conflicts, missing_files_per_mod):
             valignment = self.sc.get_valign()
             srow = None
             if self.mods_list_box.get_selected_row() != None:
@@ -647,18 +649,6 @@ class ModsTab(Gtk.Box):
                 drop_target.set_gtypes([GObject.TYPE_STRING])
                 drop_target.connect("drop", self.on_row_drop, mod)
                 row.add_controller(drop_target)
-
-                if enable_file_counter:
-                    number_of_files = len(mod_files)
-                    file_list_badge = Gtk.CenterBox(orientation=Gtk.Orientation.HORIZONTAL)
-                    file_list_badge.set_tooltip_text("\n".join(mod_files))
-                    file_list_badge.add_css_class("badge-action-row")
-                    file_list_badge.set_valign(Gtk.Align.CENTER)
-                    file_list_badge.set_margin_end(row_element_margin)
-                    label_text = ngettext("{} file", "{} files", number_of_files).format(number_of_files)
-                    file_list_badge.set_center_widget(Gtk.Label(label=label_text))
-                    file_badge_sizegroup.add_widget(file_list_badge)
-                    row.add_prefix(file_list_badge)
                 
                 # Suffix: Missing Files
                 missing_files = missing_files_per_mod.get(display_name, [])
