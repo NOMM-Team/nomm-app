@@ -81,8 +81,8 @@ def get_username_from_steam_id(steam_id: str, steam_base_path) -> str:
         localconfig_data = vdf.load(vdf_file)
     try:
         steam_username = localconfig_data["UserLocalConfigStore"]["friends"][steam_id]["name"]
-    except ValueError:
-        print("Could not find the Steam username")
+    except KeyError:
+        print(f"[!] Could not find the Steam username for steam ID: {steam_id}")
         return None
     return steam_username
 
