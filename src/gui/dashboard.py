@@ -239,11 +239,10 @@ class GameDashboard(Gtk.Box):
                 _("File not found at:\n {}").format(path)
             )
 
-    def create_timestamp_row(self, text: str, tooltip: str, icon_filename: str) -> Gtk.Box:
+    def create_timestamp_row(self, text: str, tooltip: str, icon_name: str) -> Gtk.Box:
         row_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6, halign=Gtk.Align.END)
         
-        icon_path = os.path.join(self.assets_path, "ui_icons", icon_filename)
-        icon = Gtk.Image.new_from_file(icon_path)
+        icon = Gtk.Image.new_from_icon_name(icon_name)
         icon.set_pixel_size(14)
         icon.add_css_class("dim-label")
         

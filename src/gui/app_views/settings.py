@@ -101,10 +101,10 @@ class SettingsWindow(Adw.Window):
         community_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=20, halign=Gtk.Align.CENTER)
         community_box.set_margin_top(10)
 
-        community_box.append(self.create_social_button("github_logo.svg", "https://github.com/allexio/nomm"))
-        community_box.append(self.create_social_button("discord_logo.svg", "https://discord.gg/WFRePSjEQY"))
-        community_box.append(self.create_social_button("matrix_logo.svg", "https://matrix.to/#/#nomm:matrix.org"))
-        community_box.append(self.create_social_button("youtube_logo.svg", "https://www.youtube.com/channel/UCNHRyvBXItOkBZN0rWqZVrA"))
+        community_box.append(self.create_social_button("github-logo-symbolic", "https://github.com/allexio/nomm"))
+        community_box.append(self.create_social_button("discord-logo-symbolic", "https://discord.gg/WFRePSjEQY"))
+        community_box.append(self.create_social_button("matrix-logo-symbolic", "https://matrix.to/#/#nomm:matrix.org"))
+        community_box.append(self.create_social_button("youtube-logo-symbolic", "https://www.youtube.com/channel/UCNHRyvBXItOkBZN0rWqZVrA"))
 
         content.append(community_box)
 
@@ -170,16 +170,12 @@ class SettingsWindow(Adw.Window):
     def toggle_setting(self, key, state):
         update_user_config(key, state)
 
-    def create_social_button(self, icon_filename, url):
+    def create_social_button(self, icon_name, url):
         btn_content = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
-        icon_path = os.path.join(self.assets_path, "platform_logos", icon_filename)
         
-        if os.path.exists(icon_path):
-            img = Gtk.Picture.new_for_filename(icon_path)
-            img.set_size_request(24, 24)
-            btn_content.append(img)
-        else:
-            btn_content.append(Gtk.Image(icon_name="action-unavailable-symbolic"))
+        img = Gtk.Image.new_from_icon_name(icon_name)
+        img.set_pixel_size(48)
+        btn_content.append(img)
         
         button = Gtk.Button(child=btn_content)
         button.add_css_class("flat")

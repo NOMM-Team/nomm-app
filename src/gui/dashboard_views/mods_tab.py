@@ -700,7 +700,7 @@ class ModsTab(Gtk.Box):
                 if text_file:
                     info_text_badge = Gtk.Button()
                     button_content = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=2)
-                    info_icon = Gtk.Image.new_from_file(os.path.join(self.dashboard.assets_path, "ui_icons", "breaking_news.svg"))
+                    info_icon = Gtk.Image.new_from_icon_name("breaking-news-symbolic")
                     info_icon.set_pixel_size(22)
                     button_content.append(info_icon)
                     info_text_badge.add_css_class("help-about-symbolic")
@@ -734,7 +734,7 @@ class ModsTab(Gtk.Box):
                         enabled_timestamp_label = timestamp_converter(mod_metadata["enabled_timestamp"])
                         enabled_tooltip = _("Enabled: {}").format(timestamp_converter(mod_metadata["enabled_timestamp"], "long"))
 
-                        enabled_row = self.dashboard.create_timestamp_row(enabled_timestamp_label, enabled_tooltip, "enabled.svg")
+                        enabled_row = self.dashboard.create_timestamp_row(enabled_timestamp_label, enabled_tooltip, "enabled-symbolic")
                         timestamp_box.append(enabled_row)
 
                     # Installed Timestamp
@@ -742,7 +742,7 @@ class ModsTab(Gtk.Box):
                         installed_timestamp_label = timestamp_converter(mod_metadata["install_timestamp"])
                         installed_tooltip = _("Installed: {}").format(timestamp_converter(mod_metadata["install_timestamp"], "long"))
 
-                        installed_row = self.dashboard.create_timestamp_row(installed_timestamp_label, installed_tooltip, "installed.svg")
+                        installed_row = self.dashboard.create_timestamp_row(installed_timestamp_label, installed_tooltip, "installed-symbolic")
                         timestamp_box.append(installed_row)
                     row.add_suffix(timestamp_box)
 

@@ -1,6 +1,7 @@
 import gettext
 import os
 import threading
+import subprocess
 
 import gi
 
@@ -40,15 +41,44 @@ class Nomm(Adw.Application):
         
         base_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
+        self.initialize_custom_icons(base_path)
+
         if os.path.exists(os.path.join(os.path.dirname(base_path), "assets")):
             self.assets_path = os.path.join(os.path.dirname(base_path), "assets")
             self.default_game_config_path = os.path.join(os.path.dirname(base_path), "default_game_configs")
         else:
             self.assets_path = os.path.join(base_path, "assets")
             self.default_game_config_path = os.path.join(base_path, "default_game_configs")
-            
+
+        self.initialize_custom_icons(self.assets_path)            
         self.win = None
-    
+
+    def initialize_custom_icons(self, assets_path):
+        # 1. Compile the XML into a .gresource bundle dynamically (if running in dev mode)
+        # In a production flatpak, this compilation step is handled automatically by Meson/Blueprint
+        xml_path = os.path.join(assets_path, "resources.gresource.xml")
+        gresource_path = "resources.gresource"
+
+        if os.path.exists(xml_path):
+            # Tell the compiler that files inside the XML are found inside assets/icons/
+            icons_dir = os.path.join(assets_path, "icons")
+            
+            subprocess.run([
+                "glib-compile-resources", 
+                xml_path, 
+                f"--sourcedir={icons_dir}", 
+                "--target", gresource_path
+            ])
+
+        # 2. Load and register the compiled resource file into memory
+        if os.path.exists(gresource_path):
+            resource = Gio.Resource.load(gresource_path)
+            Gio.resources_register(resource)
+            
+            icon_theme = Gtk.IconTheme.get_for_display(Gdk.Display.get_default())
+            icon_theme.add_resource_path("/com/nomm/Nomm/icons")
+            print("[+] Custom icon theme registered successfully!")
+
     # Choose either to launch the popup_download, the app or both 
     def do_open(self, files, n_files, hint):
         for f in files:
@@ -272,13 +302,8 @@ class Nomm(Adw.Application):
             title=_("Select Your Steam user ID"),
             description=_("Multiple Steam user IDs were detected in your Steam installation.\n"
             "Please select the one that you want to configure when using NOMM."),
+            icon_name="steam-logo-symbolic"
         )
-
-        # Usage in your StatusPage:
-        icon_path = self.assets_path + "/platform_logos/steam_logo.svg"
-        file_obj = Gio.File.new_for_path(icon_path)
-        paintable = Gtk.IconPaintable.new_for_file(file_obj, 128, 1) # file, size, scale
-        status_page.set_paintable(paintable)
 
         # Create a boxed list for the options
         list_box = Gtk.ListBox()
