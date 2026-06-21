@@ -125,6 +125,10 @@ class ModsTab(Gtk.Box):
         
         self.platform_icon = Gtk.Image()
         self.platform_icon.set_pixel_size(30)
+        self.platform_icon.set_margin_top(4)
+        self.platform_icon.set_margin_start(4)
+        self.platform_icon.set_margin_bottom(4)
+        self.platform_icon.set_margin_end(4)
         self.platform_btn.set_child(self.platform_icon)
         self.platform_btn.add_css_class("circular")
         self.platform_btn.set_halign(Gtk.Align.END)
