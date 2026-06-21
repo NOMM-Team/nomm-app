@@ -145,18 +145,44 @@ class ModsTab(Gtk.Box):
         # Metadata Display
         self.details_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=5, margin_start=10, margin_end=10)
 
-        # Info Row
-        self.info_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
+        # Info Row Container (Now an Overlay)
+        self.info_row = Gtk.Overlay()
         self.info_row.set_margin_top(10)
         self.info_row.set_visible(False)
-        # Info Row title
-        info_row_label = Gtk.Label(label=_("More Info:"), css_classes=["dim-label"])
-        self.info_row.append(info_row_label)
-        # Description button
-        self.description_btn = Gtk.Button(label=_("Mod Description"))
+        self.info_row.add_css_class("summary-overlay-parent")
+
+        # The summary paragraph
+        self.summary_label = Gtk.Label()
+        self.summary_label.set_wrap(True)
+        self.summary_label.set_max_width_chars(45)
+        self.summary_label.set_wrap_mode(Pango.WrapMode.WORD_CHAR)
+        self.summary_label.set_xalign(0)
+        self.summary_label.set_hexpand(True)
+        self.summary_label.add_css_class("dim-label")
+        self.summary_label.set_margin_bottom(15)
+        
+        # Set the base widget for the overlay
+        self.info_row.set_child(self.summary_label)
+
+        # Full summary button overlay
+        self.btn_overlay_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
+        self.btn_overlay_box.set_halign(Gtk.Align.END)   # Anchor to the far right
+        self.btn_overlay_box.set_valign(Gtk.Align.START) # Anchor to the top
+        self.btn_overlay_box.add_css_class("summary-button-overlay")
+        self.btn_overlay_box.set_visible(False) # Entire overlay box hidden by default
+
+        # Full summary button
+        self.description_btn = Gtk.Button()
         self.description_btn.set_cursor_from_name("pointer")
-        self.description_btn.add_css_class("badge-action-row")
-        self.info_row.append(self.description_btn)
+        self.description_btn.add_css_class("flat")
+        self.description_btn.set_tooltip_text(_("Read full description"))
+        
+        desc_btn_icon = Gtk.Image.new_from_icon_name("list-add-symbolic") 
+        self.description_btn.set_child(desc_btn_icon)
+        
+        # Assemble overlay tree
+        self.btn_overlay_box.append(self.description_btn)
+        self.info_row.add_overlay(self.btn_overlay_box)
         self.details_box.append(self.info_row)
 
         # Contents Row
@@ -321,16 +347,36 @@ class ModsTab(Gtk.Box):
         else:
             self.platform_btn.set_visible(False)
 
-        # Info Row
-        if "description" in mod_info and mod_info["description"]:
-            # Description button
-            with open(mod_info["description"]) as f:
-                description = f.read()
+        # Info Row Processing
+        summary_text = mod_info.get("summary", "").strip()
+        self._has_description = bool("description" in mod_info and mod_info["description"])
+
+        if summary_text or self._has_description:
             self.info_row.set_visible(True)
-            title = _(f"Mod Description for {mod_info.get("display_name", mod_info.get("name"))}")
-            if hasattr(self, "_desc_handler_id"):
-                self.description_btn.disconnect(self._desc_handler_id)    
-            self._desc_handler_id = self.description_btn.connect("clicked", self.on_description_btn_clicked, title, description)
+            self.summary_label.set_text(summary_text)
+            
+            if self._has_description:
+                self.btn_overlay_box.set_visible(True) 
+                self.btn_overlay_box.add_css_class("has-desc") # Tell CSS it's allowed to fade in
+                
+                try:
+                    with open(mod_info["description"]) as f:
+                        description_content = f.read()
+                except Exception as e:
+                    print(f"Error reading description: {e}")
+                    description_content = ""
+
+                title = _(f"Mod Description for {mod_info.get('display_name', mod_info.get('name'))}")
+                
+                if hasattr(self, "_desc_handler_id"):
+                    self.description_btn.disconnect(self._desc_handler_id)
+                
+                self._desc_handler_id = self.description_btn.connect(
+                    "clicked", self.on_description_btn_clicked, title, description_content
+                )
+            else:
+                self.btn_overlay_box.set_visible(False) # No description at all? Safe to hard-hide.
+                self.btn_overlay_box.remove_css_class("has-desc")
         else:
             self.info_row.set_visible(False)
 
@@ -444,7 +490,6 @@ class ModsTab(Gtk.Box):
 
         # Display the pane!
         self.revealer.set_reveal_child(True)
-
 
     def on_description_btn_clicked(self, button, title, description):
         desc_win = TextWindow(self.dashboard.app.win, title, description, text_type="markup")
