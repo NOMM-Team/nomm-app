@@ -11,11 +11,10 @@ from core.tools import load_yaml, translate_fuse_path
 _ = gettext.gettext
 
 class SettingsWindow(Adw.Window):
-    def __init__(self, app, parent_window, assets_path, **kwargs):
+    def __init__(self, app, parent_window, **kwargs):
         super().__init__(title=_("Settings"), transient_for=parent_window, modal=True, **kwargs)
         self.app = app
         self.set_default_size(500, -1)
-        self.assets_path = assets_path        
 
         self.user_config_dir = os.path.join(GLib.get_user_data_dir(), "nomm", "user_config.yaml")
 
