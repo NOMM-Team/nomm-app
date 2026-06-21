@@ -181,14 +181,9 @@ class Nomm(Adw.Application):
         status_page = Adw.StatusPage(
             title=_("Welcome to the Native Open Mod Manager (NOMM) app!"),
             description=_("This app is still in early development, so expect some bugs and missing features.\nI hope you can still enjoy what the app currently offers and please don't forget that you can report any bugs or request features on the Github!"),
+            icon_name="nomm-logo"
         )
         status_page.add_css_class("setup-page")
-        
-        logo_path = os.path.join(self.assets_path, "nomm.png")
-        if os.path.exists(logo_path):
-            pixbuf = GdkPixbuf.Pixbuf.new_from_file(logo_path)
-            texture = Gdk.Texture.new_for_pixbuf(pixbuf)
-            status_page.set_paintable(texture)
 
         btn = Gtk.Button(label="Let's go!")
         btn.set_halign(Gtk.Align.CENTER)
@@ -554,7 +549,7 @@ class Nomm(Adw.Application):
 
     def on_settings_clicked(self, button):
         from gui.app_views.settings import SettingsWindow
-        settings_win = SettingsWindow(self, parent_window=self.win, assets_path=self.assets_path)
+        settings_win = SettingsWindow(self, parent_window=self.win)
         settings_win.present()
 
     def manual_library_refresh(self):

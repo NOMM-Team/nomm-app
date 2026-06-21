@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <gresources>
   <gresource prefix="/com/nomm/Nomm/icons/scalable/apps">
+    <!-- nomm logo -->
+    <file>nomm-logo.svg</file>
     <!-- modding platform icons -->
     <file>nexus-logo-symbolic.svg</file>
     <!-- game platform icons -->
