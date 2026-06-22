@@ -520,7 +520,7 @@ class ModsTab(Gtk.Box):
     def pick_new_alias(self, mod_info, mod_index):
         dialog = Adw.MessageDialog(
             transient_for=self.get_root(),
-            heading=_('<span weight="bold" size="x-large">Change Mod Alias</span>'),
+            heading=_('Change Mod Alias'),
             body=_("Enter your desired alias for this mod. This will replace the currently visible name in the UI."),
         )
 
@@ -569,7 +569,7 @@ class ModsTab(Gtk.Box):
     def pick_new_mod_id(self, mod_info, mod_index):
         dialog = Adw.MessageDialog(
             transient_for=self.get_root(),
-            heading="Change Mod ID",
+            heading=_("Change Mod ID"),
             body=_("Enter the new Nexus ID for this mod. The next time you do a metadata update (top right button on the mods tab), this will completely replace the existing metadata for this mod.\nKeep in mind that if you reinstall this mod from its archive file, the metadata will be overwritten and you will have to change this value again."),
         )
         dialog.set_heading_use_markup(True)
