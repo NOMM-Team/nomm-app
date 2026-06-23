@@ -1,0 +1,21 @@
+name: "Palworld"
+steam_id: 
+nexus_id: palworld
+accent_colour: "#032396"
+
+mods_path:
+- path: "{user_data}/drive_c/users/steamuser/AppData/Local/Paralives/Paralives"
+  name: Logic Mods
+  description: Mods path for logic mods
+- path: "{game_data}/Palword/Pal/Content/Paks"
+  name: Lua Mods
+  description: Mods path for Lua mods. Keep in mind these mods SHOULD include the LogicMods folder. If they don't you will have to manually set the deployment path to the LogicMods folder.
+
+essential-utilities:
+  UE4SS:
+    name: RE-UE4SS
+    version: experimental-palworld
+    creator: Okaetsu
+    creator-link: https://github.com/okaetsu
+    source: https://github.com/Okaetsu/RE-UE4SS/releases/download/experimental-palworld/UE4SS-Palworld.zip
+    utility_path: "/Palword/Pal/Binaries/Win64"
