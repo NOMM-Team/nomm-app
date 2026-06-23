@@ -20,4 +20,4 @@ essential-utilities:
     creator-link: https://github.com/igromanru/AF-UE4SS
     source: "https://github.com/igromanru/AF-UE4SS/releases/download/1.21.0/UE4SS_v3.0.1-954-g272ce2f8_Abiotic-Factor.zip"
     utility_path: "{game_path}/AbioticFactor/Binaries/Win64/"
-    steam_launch_options: WINEDLLOVERRIDES='UE4SS=n,b;dwmapi=n,b' %command%
+    launch_options: WINEDLLOVERRIDES='UE4SS=n,b;dwmapi=n,b' %command%

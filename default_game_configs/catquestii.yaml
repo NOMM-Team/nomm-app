@@ -14,4 +14,4 @@ essential-utilities:
     creator-link: https://github.com/LavaGang
     source: "https://github.com/LavaGang/MelonLoader/releases/latest/download/MelonLoader.x86.zip"
     utility_path: ""
-    steam_launch_options: WINEDLLOVERRIDES='version=n,b' %command%
+    launch_options: WINEDLLOVERRIDES='version=n,b' %command%
