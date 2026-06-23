@@ -4,12 +4,12 @@ nexus_id: palworld
 accent_colour: "#032396"
 
 mods_path:
-- path: "{user_data}/drive_c/users/steamuser/AppData/Local/Paralives/Paralives"
+- path: "{game_data}/Pal/Content/Paks"
   name: Logic Mods
-  description: Mods path for logic mods
-- path: "{game_data}/Palword/Pal/Content/Paks"
+  description: Mods path for logic mods. Keep in mind these mods SHOULD include the LogicMods folder. If they don't you will have to manually set the deployment path to the LogicMods folder.
+- path: "{game_data}/Pal/Binaries/Win64/Mods"
   name: Lua Mods
-  description: Mods path for Lua mods. Keep in mind these mods SHOULD include the LogicMods folder. If they don't you will have to manually set the deployment path to the LogicMods folder.
+  description: Mods path for Lua mods.
 
 essential-utilities:
   UE4SS:
