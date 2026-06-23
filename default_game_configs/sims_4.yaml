@@ -1,0 +1,9 @@
+name: "The Sims 4"
+steam_id: 1222670
+nexus_id: thesims4
+accent_colour: "#a6e329" # attempt to match the sims gem colour
+
+mods_path:
+- path: "{user_data}/drive_c/users/steamuser/Documents/Electronic Arts/The Sims 4/Mods"
+  name: standard mods
+  description: Mods path for standard mods
