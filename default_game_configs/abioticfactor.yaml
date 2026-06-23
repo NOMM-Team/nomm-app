@@ -1,0 +1,23 @@
+name: Abiotic Factor
+steam_id: 427410
+
+mods_path:
+- path: "{game_path}/AbioticFactor/Content/Paks/~mods/"
+  name: Paks mods
+  description: "Used for Paks mods, such as the 'Better Backpacks' mod."
+- path: "{game_path}/AbioticFactor/Binaries/Win64/ue4ss/Mods/"
+  name: UE4SS mods
+  description: "Used for UE4SS mods, such as the 'Cheat Console Commands' mod"
+
+
+nexus_id: "abioticfactor"
+
+essential-utilities:
+  tobey-bepinex:
+    name: UE4SS for Abiotic Factor
+    version: v3.0.1-954-g272ce2f8
+    creator: igromanru
+    creator-link: https://github.com/igromanru/AF-UE4SS
+    source: "https://github.com/igromanru/AF-UE4SS/releases/download/1.21.0/UE4SS_v3.0.1-954-g272ce2f8_Abiotic-Factor.zip"
+    utility_path: "{game_path}/AbioticFactor/Binaries/Win64/"
+    steam_launch_options: WINEDLLOVERRIDES='UE4SS=n,b;dwmapi=n,b' %command%
