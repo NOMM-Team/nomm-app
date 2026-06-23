@@ -13,4 +13,4 @@ essential-utilities:
     creator-link: https://github.com/Chrisr0
     source: https://github.com/Chrisr0/RE-UE4SS/releases/download/3.1.0-6/UE4SS_v3.1.0-6.zip
     utility_path: "/GameName/Binaries/Win64/"
-    steam_launch_options: "WINEDLLOVERRIDES='dwmapi=n,b' %command%"
+    launch_options: "WINEDLLOVERRIDES='dwmapi=n,b' %command%"
