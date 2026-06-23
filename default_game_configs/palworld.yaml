@@ -10,6 +10,9 @@ mods_path:
 - path: "{game_data}/Mods/NativeMods/UE4SS/Mods/PalSchema/mods/"
   name: PalSchema Mods
   description: Mods path for PalSchema mods if UE4SS was installed from the Steam Workshop.
+- path: "{game_data}/Pal/Content/Paks/~mods"
+  name: Pak Mods
+  description: Mods path for Pak mods, this is not the same as logic pak mods.
 - path: "{game_data}/Pal/Content/Paks"
   name: Logic Mods
   description: Mods path for logic mods. Keep in mind these mods SHOULD include the LogicMods folder. If they don't you will have to manually set the deployment path to the LogicMods folder.
