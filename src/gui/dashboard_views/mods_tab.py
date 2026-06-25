@@ -13,7 +13,7 @@ from core.mod_manager import (apply_deployment_map_changes, build_deployment_map
                               check_for_deployment_map_change,
                               load_staging_metadata, read_index,
                               toggle_mod_state)
-from core.nexus_api import check_for_mod_updates_async, endorse_nexus_mod
+from platforms.nexus import check_for_mod_updates_async, endorse_nexus_mod
 from core.tools import timestamp_converter, write_yaml, process_bbcode
 from gui.text_window import TextWindow
 

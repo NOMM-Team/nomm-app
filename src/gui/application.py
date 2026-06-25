@@ -11,14 +11,15 @@ gi.require_version('Notify', '0.7')
 
 from gi.repository import Adw, Gdk, GdkPixbuf, Gio, GLib, Gtk, Pango
 
-from core.game_scanner import get_steam_base_dir, scan_all_games
-from core.nexus_api import handle_nexus_link
-from core.tools import (get_username_from_steam_id, load_yaml,
+from core.game_scanner import scan_all_games
+from core.tools import (load_yaml,
                         translate_fuse_path, write_yaml)
 from core.user_config import (load_user_config, update_user_config,
                               write_user_config)
 from gui.app_views.library_view import LibraryView
 from gui.dashboard import GameDashboard
+from platforms.nexus import handle_nexus_link
+from platforms.steam import get_username_from_steam_id, get_steam_base_dir
 
 APP_NAME = 'com.nomm.Nomm'
 
