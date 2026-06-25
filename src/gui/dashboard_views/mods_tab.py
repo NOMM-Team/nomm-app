@@ -458,7 +458,7 @@ class ModsTab(Gtk.Box):
             # Connect and store new ID
             self._deployment_handler_id = self.deployment_btn.connect("clicked", lambda x: webbrowser.open(f"file://{mod_info["deployment_path"]}"))
             self.deployment_row.set_visible(True)
-            if mod_info["status"] == "disabled": # only show modify button if the mod is disabled
+            if "enabled_timestamp" not in mod_info: # only show modify button if the mod is disabled
                 self.deployment_update_btn.set_visible(True)
                 if hasattr(self, "_update_handler_id") and self._update_handler_id:
                     self.deployment_update_btn.disconnect(self._update_handler_id)
