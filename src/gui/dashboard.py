@@ -36,7 +36,8 @@ class GameDashboard(Gtk.Box):
         user_config = load_yaml(application.user_config_path)
         self.downloads_path = str(Path(os.path.join(Path(user_config.get("download_path")), self.game_name)))
         self.staging_path = Path(os.path.join(Path(user_config.get("staging_path")), self.game_name))
-        
+        self.staging_metadata_path = get_metadata_path(self.staging_path, is_staging=True)
+        self.downloads_metadata_path = get_metadata_path(self.downloads_path, is_staging=False)
 
         # Threading preconfiguration
         self.currently_toggling = set()
@@ -47,8 +48,7 @@ class GameDashboard(Gtk.Box):
         self.current_filter = "all"
         self.active_tab = "mods"
         
-        self.staging_metadata_path = get_metadata_path(self.staging_path, is_staging=True)
-        self.downloads_metadata_path = get_metadata_path(self.downloads_path, is_staging=False)
+        
 
         self.deployment_targets = parse_deployment_paths(self.game_config, self.platform, str(self.app_id))
 
