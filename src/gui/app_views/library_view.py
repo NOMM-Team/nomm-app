@@ -32,7 +32,7 @@ class LibraryView(Gtk.Box):
         else:
             status_page = Adw.StatusPage(
                 title=_("No games detected"),
-                description=_("We couldn't find any Steam or Heroic games. This could be due to\n - You not having any supported games installed\n - Your Steam/Heroic installation type not being handled\n\n Feel free to contact me on Discord or Github for more help!"),
+                description=_("We couldn't find any games. This could be due to\n - You not having any supported games installed\n - Your Steam/Heroic installation type not being handled\n\n Feel free to contact me on Discord or Github for more help!"),
                 icon_name="input-gaming-symbolic"
             )
             overlay.set_child(status_page)
