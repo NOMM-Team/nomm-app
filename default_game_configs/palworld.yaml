@@ -1,0 +1,34 @@
+name: "Palworld"
+steam_id: 1623730
+nexus_id: palworld
+accent_colour: "#032396"
+
+mods_path:
+- path: "{game_data}/Mods/NativeMods/UE4SS/Mods/"
+  name: Lua Mods
+  description: Mods path for Lua mods if UE4SS was installed from the Steam Workshop.
+- path: "{game_data}/Mods/NativeMods/UE4SS/Mods/PalSchema/mods/"
+  name: PalSchema Mods
+  description: Mods path for PalSchema mods if UE4SS was installed from the Steam Workshop.
+- path: "{game_data}/Pal/Content/Paks/~mods"
+  name: Pak Mods
+  description: Mods path for Pak mods, this is not the same as logic pak mods.
+- path: "{game_data}/Pal/Content/Paks"
+  name: Logic Mods
+  description: Mods path for logic mods. Keep in mind these mods SHOULD include the LogicMods folder. If they don't you will have to manually set the deployment path to the LogicMods folder.
+- path: "{game_data}/Pal/Binaries/Win64/ue4ss/Mods"
+  name: Lua Mods
+  description: Mods path for Lua mods.
+- path: "{game_data}/Pal/Binaries/Win64/Mods/ue4ss/Mods/PalSchema/mods/"
+  name: PalSchema Mods
+  description: Mods path for PalSchema mods if UE4SS was installed from the utilities tab in Nomm.
+
+essential-utilities:
+  UE4SS:
+    name: RE-UE4SS
+    version: experimental-palworld
+    creator: Okaetsu
+    creator-link: https://github.com/okaetsu
+    source: https://github.com/Okaetsu/RE-UE4SS/releases/download/experimental-palworld/UE4SS-Palworld.zip
+    utility_path: "/Palword/Pal/Binaries/Win64"
+    launch_options: WINEDLLOVERRIDES='dwmapi=n,b' %command%

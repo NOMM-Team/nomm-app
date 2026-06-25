@@ -12,4 +12,4 @@ essential-utilities:
     creator-link: https://github.com/toebeann
     source: "https://github.com/toebeann/BepInEx.Subnautica/releases/download/v5.4.23-pack.3.1.1/Tobey.s.BepInEx.Pack.for.Subnautica.zip"
     utility_path: ""
-    steam_launch_options: WINEDLLOVERRIDES='winhttp=n,b' %command%
+    launch_options: WINEDLLOVERRIDES='winhttp=n,b' %command%
