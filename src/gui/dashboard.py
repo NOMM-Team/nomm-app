@@ -17,7 +17,6 @@ from core.tools import load_yaml, write_yaml
 from core.mod_manager import (completely_uninstall_mod, get_metadata_path,
                               get_mod_statistics, load_staging_metadata,
                               remove_mod_from_metadata)
-from core.game_scanner import find_game_art
 from core.tools import get_contrast_color
 from gui.dashboard_views.downloads_tab import DownloadsTab
 from gui.dashboard_views.mods_tab import ModsTab
@@ -26,7 +25,7 @@ from gui.dashboard_views.tools_tab import ToolsTab
 rarfile.UNRAR_TOOL = "/app/bin/unrar"
 
 class GameDashboard(Gtk.Box):
-    def __init__(self, game_name, game_path, application, steam_base=None, app_id=None, user_config_path=None, game_config_path=None, assets_path=None, downloader=None, **kwargs):
+    def __init__(self, game_name, game_path, application, steam_base=None, app_id=None, user_config_path=None, game_config_path=None, assets_path=None, downloader=None, hero=None,**kwargs):
         super().__init__(orientation=Gtk.Orientation.VERTICAL, **kwargs)
         self.app = application
         self.game_name = game_name
@@ -81,11 +80,10 @@ class GameDashboard(Gtk.Box):
         win_height = monitor.get_geometry().height
         banner_height = int(win_height * 0.15)
 
-        hero_path = None
+        
 
         # Assets management
-        art = find_game_art(app_id, self.platform, steam_base)
-        hero_path = art.get("hero")
+        hero_path = hero
 
         main_layout = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
         header = Adw.HeaderBar()
