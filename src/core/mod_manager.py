@@ -66,7 +66,6 @@ def deploy_mod_files(staging_dir: str, dest_dir: str, mod_files: list, mod_name:
     # Update game status
     if not is_success:
         unlink_mod_files(staging_mod_dir, dest_dir, mod_files)
-        staging_metadata["mods"][mod_name]["status"] = "disabled"
         staging_metadata["mods"][mod_name].pop("enabled_timestamp", None)
         write_yaml(staging_metadata, staging_meta_path)
         return is_success
@@ -85,9 +84,9 @@ def get_mod_statistics(staging_meta_path: str, downloads_path: str) -> dict:
     if staging_metadata:
         # Loop to count mods active and inactive
         for mod_val in staging_metadata.get("mods", {}).values():
-            if mod_val.get("status") == "enabled":
+            if "enabled_timestamp" in mod_val:
                 stats["mods_active"] += 1
-            elif mod_val.get("status") == "disabled":
+            elif "enabled_timestamp" not in mod_val:
                 stats["mods_inactive"] += 1
     
     if os.path.exists(downloads_path):
@@ -365,8 +364,6 @@ def toggle_mod_state(mod_name: str, mod_files: list, state: bool, staging_dir: s
         # state is true so the mod has to be installed/deployed
         if state:
             # deploy_mod_files return true if it worked, false if it doesn't
-            #TODO: Remove status data as there already is a timestamp
-            mod_info["status"] = "enabled"
             mod_info["enabled_timestamp"] = datetime.now()
             write_yaml(staging_metadata, staging_meta_path)
             if conflicts_exist:
@@ -383,7 +380,6 @@ def toggle_mod_state(mod_name: str, mod_files: list, state: bool, staging_dir: s
                     success = False
         # state is false, deleting the datas and ensure metadata are set to proper value
         else:
-            mod_info["status"] = "disabled"
             # Pop is a safety measure to prevent a crash for a missing key
             mod_info.pop("enabled_timestamp", None)
             write_yaml(staging_metadata, staging_meta_path)
@@ -476,7 +472,6 @@ def finalise_mod_metadata(filename: str, mod_files: list, deployment_target: dic
             current_staging_metadata["mods"][mod_name]["display_name"] = mod_name
 
         current_staging_metadata["mods"][mod_name]["mod_files"] = mod_files
-        current_staging_metadata["mods"][mod_name]["status"] = "disabled"
         current_staging_metadata["mods"][mod_name]["archive_name"] = filename
         current_staging_metadata["mods"][mod_name]["install_timestamp"] = datetime.now()
         current_staging_metadata["mods"][mod_name]["deployment_path"] = deployment_target["path"]
