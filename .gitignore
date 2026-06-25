@@ -17,3 +17,6 @@ NOMM.flatpak
 build/aur/*
 !build/aur/.SRCINFO
 !build/aur/PKGBUILD
+
+# gtk resources
+resources.gresource
