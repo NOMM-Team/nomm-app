@@ -2,6 +2,8 @@ import os
 
 import vdf
 
+from typing import List, Dict, Optional, Any
+
 from core.user_config import load_user_config
 from core.tools import launch_option_merger, slugify, write_yaml
 
@@ -17,8 +19,11 @@ def get_steam_base_dir() -> Optional[str]:
             return p
     return None
 
-def get_library_paths(vdf_path) -> List[str]:
+def get_library_paths(steam_base) -> List[str]:
     libraries = []
+
+    vdf_path = os.path.join(steam_base, "config/libraryfolders.vdf")
+
     try:
         with open(vdf_path, 'r', encoding='utf-8') as f:
             data = vdf.load(f)
@@ -77,7 +82,7 @@ def get_art(steam_base: str, app_id: str):
     print(f"Could not find hero and poster for game: {app_id}")
     return None
 
-def scan_libraries(yaml_data, yaml_path, game_title, found_libs, steam_base) -> List[Dict[str, Any]]:
+def find_game(yaml_data, yaml_path, game_title, found_libs, steam_base) -> List[Dict[str, Any]]:
     """Scans for a specific game in previously detected Steam libraries"""
     yaml_game_name = yaml_data.get("steam_folder_name", game_title)
     slug_yaml_name = slugify(yaml_game_name)

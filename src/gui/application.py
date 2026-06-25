@@ -531,7 +531,8 @@ class Nomm(Adw.Application):
             user_config_path=self.user_config_path,
             game_config_path=game_info["game_config_path"],
             assets_path=self.assets_path,
-            downloader = self.downloader
+            downloader=self.downloader,
+            hero=game_info["img"]["hero"]
         )
         update_user_config("last_selected_game", game_info["name"])
         self.remove_stack_child("dashboard")
