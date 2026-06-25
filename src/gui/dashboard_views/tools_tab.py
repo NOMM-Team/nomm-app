@@ -186,7 +186,7 @@ class ToolsTab(Gtk.Box):
             content_box.append(separator)
 
             # Additional instruction text
-            instruction_text = _("This utility requires the game to have extra Steam launch options.\n"
+            instruction_text = _("This utility requires the game to have extra launch options.\n"
                                  "NOMM is able to add these for you but <b>Steam needs to be turned off</b>.")
             instruction_label = Gtk.Label(label=instruction_text, wrap=True, xalign=0)
             instruction_label.set_use_markup(True)
@@ -233,7 +233,7 @@ class ToolsTab(Gtk.Box):
 
     def execute_utility_install(self, util):
 
-        deploy_essential_utility(util, self.dashboard.downloads_path, self.dashboard.staging_path, self.dashboard.game_path, self.dashboard.steam_base, self.dashboard.game_config.get("steam_id"))
+        deploy_essential_utility(util, self.dashboard.downloads_path, self.dashboard.staging_path, self.dashboard.game_path, self.dashboard.app.steam_base, self.dashboard.game_config.get("steam_id"))
         
         self.dashboard.show_message(
             _("Success"),

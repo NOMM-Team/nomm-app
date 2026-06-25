@@ -237,7 +237,7 @@ class Nomm(Adw.Application):
         status_page.add_css_class("setup-page")
         vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12, halign=Gtk.Align.CENTER)
         warning_label = Gtk.Label(wrap=True, max_width_chars=50, justify=Gtk.Justification.CENTER)
-        warning_label.set_markup(_("<b>Important:</b> If using Steam Flatpak, ensure it has permission to access this folder (you can do this via command line or Flatseal)."))
+        warning_label.set_markup(_("<b>Important:</b> If using Flatpaks for your platforms (Steam, Heroic, etc.), ensure they have permission to access this folder (you can do this via command line or Flatseal)."))
         warning_label.add_css_class("error")
         btn = Gtk.Button(label=_("Set Mod Staging Path"), margin_top=12)
         btn.add_css_class("suggested-action")
@@ -523,16 +523,8 @@ class Nomm(Adw.Application):
 
     def open_dashboard(self, game_info):
         self.dashboard = GameDashboard(
-            game_name=game_info['name'],
-            game_path=game_info['path'],
             application=self,
-            steam_base=self.steam_base,
-            app_id=game_info.get('app_id'),
-            user_config_path=self.user_config_path,
-            game_config_path=game_info["game_config_path"],
-            assets_path=self.assets_path,
-            downloader=self.downloader,
-            hero=game_info["img"]["hero"]
+            game_info=game_info
         )
         update_user_config("last_selected_game", game_info["name"])
         self.remove_stack_child("dashboard")
