@@ -66,8 +66,6 @@ def translate_fuse_path(folder_info) -> str:
             if real_path is not None: # Attribute does not exist if None
                 print(f"Real path parsed: {real_path}")
                 return real_path
-            else:
-                pass # TODO: Throw error dialog to request user to broaden sandbox permissions.
         except GLib.Error:
             print("Can not get real path. If you see this message you will need to manually give NOMM host filesystem permissions.")
     return folder_path
