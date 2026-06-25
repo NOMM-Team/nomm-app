@@ -72,19 +72,7 @@ def translate_fuse_path(folder_info) -> str:
             print("Can not get real path. If you see this message you will need to manually give NOMM host filesystem permissions.")
     return folder_path
 
-def get_username_from_steam_id(steam_id: str, steam_base_path) -> str:
-    localconfig_path = steam_base_path + "userdata/" + steam_id + "/config/localconfig.vdf"
-    if not os.path.exists(localconfig_path):
-        print(f"No file found at : {localconfig_path}")
-        return None
-    with open(localconfig_path, 'r') as vdf_file:
-        localconfig_data = vdf.load(vdf_file)
-    try:
-        steam_username = localconfig_data["UserLocalConfigStore"]["friends"][steam_id]["name"]
-    except KeyError:
-        print(f"[!] Could not find the Steam username for steam ID: {steam_id}")
-        return None
-    return steam_username
+
 
 def retrieve_casesensitive_paths(path:str):
     parts = path.split('/')
@@ -207,3 +195,11 @@ def list_archives(archives_directory: str):
             print(f"Error reading file metadata for {file}: {e}")
     
     return archive_list
+
+def launch_option_merger(current_launch_options: str, new_option: str) -> str:
+    # TODO: add some proprer logic here - notably to check if the new option being added doesn't already exist.
+    merged_launch_option = current_launch_options + " " + new_option
+    return merged_launch_option
+
+def slugify(text: str) -> str:
+    return re.sub(r'[^a-z0-9]', '', text.lower())

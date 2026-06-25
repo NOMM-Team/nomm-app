@@ -13,6 +13,7 @@ from gi.repository import GLib
 from core.tools import load_yaml, write_yaml
 from core.user_config import load_user_config
 from core.archive_manager import extract_archive
+from platforms.steam import add_launch_options
 
 meta_lock = threading.Lock()
 
@@ -338,25 +339,9 @@ def deploy_essential_utility(util_config: dict, downloads_path: str, staging_pat
         subprocess.run(command, shell=True, cwd=game_root)
 
     # Some utilities require specific launch options to run properly
-    steam_launch_options = util_config.get("launch_options")
-    if steam_launch_options:
-        print(f"Adding Steam launch options: {steam_launch_options}")
-        localconfig_path = steam_base + "userdata/" + load_user_config()["steam_user_id"] + "/config/localconfig.vdf"
-        print(f"...to localconfig file located at: {localconfig_path}")
-        with open(localconfig_path, 'r') as vdf_file:
-            localconfig = vdf.load(vdf_file)
-        game_data = localconfig["UserLocalConfigStore"]["Software"]["Valve"]["Steam"]["apps"][str(steam_id)]
-        if "LaunchOptions" not in game_data:
-            localconfig["UserLocalConfigStore"]["Software"]["Valve"]["Steam"]["apps"][str(steam_id)]["LaunchOptions"] = steam_launch_options
-        else:
-            localconfig["UserLocalConfigStore"]["Software"]["Valve"]["Steam"]["apps"][str(steam_id)]["LaunchOptions"] = steam_launch_option_merger(game_data["LaunchOptions"], steam_launch_options)
-        with open(localconfig_path, 'w') as vdf_file:
-            vdf.dump(localconfig, vdf_file)
-
-def steam_launch_option_merger(current_launch_options: str, new_option: str) -> str:
-    # TODO: add some proprer logic here - notably to check if the new option being added doesn't already exist.
-    merged_launch_option = current_launch_options + " " + new_option
-    return merged_launch_option
+    launch_options = util_config.get("launch_options")
+    if launch_options:
+        add_launch_options(steam_base, launch_options)
 
 def toggle_mod_state(mod_name: str, mod_files: list, state: bool, staging_dir: str, deployment_map: list) -> dict:
     staging_meta_path = os.path.join(staging_dir, ".staging.nomm.yaml")
