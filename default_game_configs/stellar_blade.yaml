@@ -3,7 +3,22 @@ steam_id: 3489700
 nexus_id: stellarblade
 accent_colour: "#032396"
 
-mods_path: ""
+mods_path:
+- path: "SB/Binaries/Win64/ue4ss/Mods"
+  name: Lua Mods
+  description: Mods path for Lua mods.
+- path: "SB/Content/Paks/~mods"
+  name: Paks mods
+  description: Pak mod.
+- path: "{game_data}/SB/Content/Paks"
+  name: Logic Mods
+  description: Mods path for logic mods. Keep in mind these mods SHOULD include the LogicMods folder. If they don't you will have to manually set the deployment path to the LogicMods folder.
+- path: "SB/Content/Paks/~mods/CustomNanosuitSystem"
+  name: Mods for Custom Nanosuit System
+  description: Mods path for the mods for Custom Nanosuit System.
+- path: ""
+  name: For the mod CNS - Custom Nanosuit System
+  description: This is the path where you need to install the CNS - Custom Nanosuit System mod.
 
 essential-utilities:
   RE-UE4SS:
@@ -12,5 +27,5 @@ essential-utilities:
     creator: Chrisr0
     creator-link: https://github.com/Chrisr0
     source: https://github.com/Chrisr0/RE-UE4SS/releases/download/3.1.0-6/UE4SS_v3.1.0-6.zip
-    utility_path: "/GameName/Binaries/Win64/"
+    utility_path: "/SB/Binaries/Win64/"
     launch_options: "WINEDLLOVERRIDES='dwmapi=n,b' %command%"
