@@ -13,7 +13,7 @@ from core.mod_manager import (apply_deployment_map_changes, build_deployment_map
                               check_for_deployment_map_change,
                               load_staging_metadata, read_index,
                               toggle_mod_state)
-from core.nexus_api import check_for_mod_updates_async, endorse_nexus_mod
+from platforms.nexus import check_for_mod_updates_async, endorse_nexus_mod
 from core.tools import timestamp_converter, write_yaml, process_bbcode
 from gui.text_window import TextWindow
 
@@ -137,43 +137,60 @@ class ModsTab(Gtk.Box):
         self.platform_btn.set_margin_end(8)
         thumb_overlay.add_overlay(self.platform_btn)
 
-        # Header with close button
-        header = Gtk.CenterBox(margin_top=10)
+        # Header Container
+        header = Gtk.Overlay(margin_top=10)
+        header.add_css_class("preview-pane-title-parent")
+        
+        # Preview Pane Title
         self.preview_title = Gtk.Label(css_classes=["title-1"])
         self.preview_title.set_ellipsize(Pango.EllipsizeMode.END)
-        self.preview_title.set_max_width_chars(38)
-        header.set_center_widget(self.preview_title)
-        
+        self.preview_title.set_max_width_chars(35)
+        self.preview_title.set_xalign(0.5) # Keeps it centered in the header space
+        header.set_child(self.preview_title)
+
+        # Modify Mod Alias overlay box
+        self.modify_alias_overlay_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, css_classes=["preview-pane-button-overlay"])
+        self.modify_alias_overlay_box.set_halign(Gtk.Align.END)
+        self.modify_alias_overlay_box.set_valign(Gtk.Align.CENTER)
+        self.modify_alias_overlay_box.add_css_class("has-alias-action")
+
+        # Modify Mod Alias button
+        self.modify_alias_btn = Gtk.Button(icon_name="edit-symbolic", css_classes=["flat"])
+        self.modify_alias_btn.set_cursor_from_name("pointer")
+        self.modify_alias_btn.set_tooltip_text(_("Add or modify the mod's alias"))
+        self.modify_alias_btn.set_margin_end(10)
+
+        self.modify_alias_overlay_box.append(self.modify_alias_btn)
+        header.add_overlay(self.modify_alias_overlay_box)
+
         self.preview_pane.append(header)
 
         # Metadata Display
         self.details_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=5, margin_start=10, margin_end=10)
 
-        # Info Row Container (Now an Overlay)
-        self.info_row = Gtk.Overlay()
+        # Info Row Container
+        self.info_row = Gtk.Overlay(css_classes=["preview-pane-summary-parent"])
         self.info_row.set_margin_top(10)
         self.info_row.set_visible(False)
-        self.info_row.add_css_class("summary-overlay-parent")
 
         # The summary paragraph
-        self.summary_label = Gtk.Label()
+        self.summary_label = Gtk.Label(css_classes=["dim-label"])
         self.summary_label.set_wrap(True)
         self.summary_label.set_max_width_chars(45)
         self.summary_label.set_wrap_mode(Pango.WrapMode.WORD_CHAR)
         self.summary_label.set_xalign(0)
         self.summary_label.set_hexpand(True)
-        self.summary_label.add_css_class("dim-label")
         self.summary_label.set_margin_bottom(15)
         
         # Set the base widget for the overlay
         self.info_row.set_child(self.summary_label)
 
         # Full summary button overlay
-        self.btn_overlay_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
-        self.btn_overlay_box.set_halign(Gtk.Align.END)   # Anchor to the far right
-        self.btn_overlay_box.set_valign(Gtk.Align.START) # Anchor to the top
-        self.btn_overlay_box.add_css_class("summary-button-overlay")
-        self.btn_overlay_box.set_visible(False) # Entire overlay box hidden by default
+        self.btn_overlay_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, css_classes=["preview-pane-button-overlay"])
+        self.btn_overlay_box.set_halign(Gtk.Align.END)
+        self.btn_overlay_box.set_valign(Gtk.Align.START)
+        self.btn_overlay_box.set_visible(False)
+
 
         # Full summary button
         self.description_btn = Gtk.Button()
@@ -311,13 +328,10 @@ class ModsTab(Gtk.Box):
         self.revealer.set_reveal_child(False)
 
     def on_row_clicked(self, listbox, row):
-        # We need to fetch the metadata associated with this row
 
-        mod_name = row.get_title() # ActionRow title
+        mod_name = row.get_title()
         mod_info = row.mod_data
-
-        # Update labels
-        self.preview_title.set_label(mod_name)
+        mod_index = row.mod_data_index
 
         # Clear previous thumbnail
         while child := self.thumb_container.get_first_child():
@@ -332,7 +346,7 @@ class ModsTab(Gtk.Box):
             texture = Gdk.Texture.new_for_pixbuf(pixbuf)
             self.preview_thumbnail = Gtk.Picture.new_for_paintable(texture)
             self.preview_thumbnail.set_hexpand(False)
-            self.preview_thumbnail.set_vexpand(False)        
+            self.preview_thumbnail.set_vexpand(False)
         else: # no thumbnail provided
             self.preview_thumbnail = Gtk.Image.new_from_icon_name("nomm-logo")
             self.preview_thumbnail.set_pixel_size(150)
@@ -350,6 +364,14 @@ class ModsTab(Gtk.Box):
             self._platform_link_handler_id = self.platform_btn.connect("clicked", lambda b: webbrowser.open(mod_info["mod_link"]))
         else:
             self.platform_btn.set_visible(False)
+
+        # Preview pane title
+        self.preview_title.set_label(mod_info.get("alias", mod_name))
+
+        # Alias modify button
+        if hasattr(self, "_modify_alias_handler_id") and self._modify_alias_handler_id:
+            self.modify_alias_btn.disconnect(self._modify_alias_handler_id)
+        self._modify_alias_handler_id = self.modify_alias_btn.connect("clicked", lambda x: self.pick_new_alias(mod_info, mod_index))
 
         # Info Row Processing
         summary_text = mod_info.get("summary", "").strip()
@@ -370,7 +392,7 @@ class ModsTab(Gtk.Box):
                     print(f"Error reading description: {e}")
                     description_content = ""
 
-                title = _(f"Mod Description for {mod_info.get('display_name', mod_info.get('name'))}")
+                title = _(f"Mod Description for {mod_name}")
                 
                 if hasattr(self, "_desc_handler_id"):
                     self.description_btn.disconnect(self._desc_handler_id)
@@ -379,7 +401,7 @@ class ModsTab(Gtk.Box):
                     "clicked", self.on_description_btn_clicked, title, description_content
                 )
             else:
-                self.btn_overlay_box.set_visible(False) # No description at all? Safe to hard-hide.
+                self.btn_overlay_box.set_visible(False)
                 self.btn_overlay_box.remove_css_class("has-desc")
         else:
             self.info_row.set_visible(False)
@@ -389,7 +411,7 @@ class ModsTab(Gtk.Box):
             number_of_files = len(mod_info["mod_files"])
             self.files_btn.set_tooltip_text("\n".join(mod_info["mod_files"]))
             self.files_btn.set_label(ngettext("{} File", "{} Files", number_of_files).format(number_of_files))
-            folder_path = self.dashboard.staging_path / mod_info.get("folder_name", mod_info.get("display_name"))
+            folder_path = self.dashboard.staging_path / mod_info["folder_name"]
             # Disconnect previous connect
             if hasattr(self, "_files_handler_id") and self._files_handler_id:
                 self.files_btn.disconnect(self._files_handler_id)
@@ -436,7 +458,7 @@ class ModsTab(Gtk.Box):
             # Connect and store new ID
             self._deployment_handler_id = self.deployment_btn.connect("clicked", lambda x: webbrowser.open(f"file://{mod_info["deployment_path"]}"))
             self.deployment_row.set_visible(True)
-            if mod_info["status"] == "disabled": # only show modify button if the mod is disabled
+            if "enabled_timestamp" not in mod_info: # only show modify button if the mod is disabled
                 self.deployment_update_btn.set_visible(True)
                 if hasattr(self, "_update_handler_id") and self._update_handler_id:
                     self.deployment_update_btn.disconnect(self._update_handler_id)
@@ -495,6 +517,51 @@ class ModsTab(Gtk.Box):
         # Display the pane!
         self.revealer.set_reveal_child(True)
 
+    def pick_new_alias(self, mod_info, mod_index):
+        dialog = Adw.MessageDialog(
+            transient_for=self.get_root(),
+            heading=_('Change Mod Alias'),
+            body=_("Enter your desired alias for this mod. This will replace the currently visible name in the UI."),
+        )
+
+        dialog.add_response("cancel", _("Cancel"))
+        dialog.add_response("save", _("Save"))
+        dialog.set_response_appearance("save", Adw.ResponseAppearance.SUGGESTED)
+        dialog.set_default_response("save")
+
+        entry_box = Gtk.ListBox()
+        entry_box.add_css_class("boxed-list")
+
+        entry_row = Adw.EntryRow(title=_("Mod Alias"))
+        entry_row.set_activates_default(True) # Pressing Enter triggers the default dialog action
+
+        current_id = mod_info.get("alias")
+        if current_id:
+            entry_row.set_text(current_id)
+
+        entry_box.append(entry_row)
+
+        dialog.set_extra_child(entry_box)
+
+        def on_response(source_dialog, response_id):
+            if response_id != "save" or not entry_row.get_text().strip():
+                return
+            
+            new_alias = entry_row.get_text().strip()
+            
+            staging_metadata = load_staging_metadata(self.dashboard.staging_metadata_path)
+            staging_metadata["mods"][mod_index]["alias"] = new_alias
+            write_yaml(staging_metadata, self.dashboard.staging_metadata_path)
+
+            # Instantly reflect the change on the UI
+            self.preview_title.set_label(new_alias)
+            self.mod_id_btn.remove_css_class("badge-action-row-accent")
+            self.populate_list()
+            source_dialog.destroy()
+            
+        dialog.connect("response", on_response)
+        dialog.present()
+
     def on_description_btn_clicked(self, button, title, description):
         desc_win = TextWindow(self.dashboard.app.win, title, description, text_type="markup")
         desc_win.present()
@@ -505,23 +572,17 @@ class ModsTab(Gtk.Box):
             heading=_("Change Mod ID"),
             body=_("Enter the new Nexus ID for this mod. The next time you do a metadata update (top right button on the mods tab), this will completely replace the existing metadata for this mod.\nKeep in mind that if you reinstall this mod from its archive file, the metadata will be overwritten and you will have to change this value again."),
         )
-
+        dialog.set_heading_use_markup(True)
         dialog.add_response("cancel", _("Cancel"))
         dialog.add_response("save", _("Save"))
-        
-        # Style the 'Save' button using your theme's primary accent color
         dialog.set_response_appearance("save", Adw.ResponseAppearance.SUGGESTED)
-        
-        # Set 'Save' as the default action when hitting Enter
         dialog.set_default_response("save")
 
         entry_box = Gtk.ListBox()
-        entry_box.add_css_class("boxed-list") # Crucial Adwaita styling class
-
+        entry_box.add_css_class("boxed-list")
         entry_row = Adw.EntryRow(title=_("Mod ID"))
-        entry_row.set_activates_default(True) # Pressing Enter triggers the default dialog action
-        
-        # Pre-populate with current tracking ID
+        entry_row.set_activates_default(True)
+
         current_id = str(mod_info.get("mod_id", ""))
         if current_id:
             entry_row.set_text(current_id)
@@ -536,12 +597,12 @@ class ModsTab(Gtk.Box):
                 if not new_id:
                     return # Skip if blank
 
-                # Write changes back out to your YAML file context
+                # Write changes to YAML
                 staging_metadata = load_staging_metadata(self.dashboard.staging_metadata_path)
                 staging_metadata["mods"][mod_index]["mod_id"] = new_id
                 write_yaml(staging_metadata, self.dashboard.staging_metadata_path)
 
-                # Instantly reflect the change on the UI badge element
+                # Reflect the change on the UI
                 self.mod_id_btn.set_label(new_id)
                 self.mod_id_btn.remove_css_class("badge-action-row-accent")
 
@@ -556,7 +617,7 @@ class ModsTab(Gtk.Box):
         # Create the FileChooserNative
         picker = Gtk.FileChooserNative(
             title=_("Select New Deployment Directory"),
-            transient_for=self.get_root(), # 'self' assumes you are in a widget/window
+            transient_for=self.get_root(),
             action=Gtk.FileChooserAction.SELECT_FOLDER,
             accept_label=_("_Select"),
             cancel_label=_("_Cancel"),
@@ -592,12 +653,12 @@ class ModsTab(Gtk.Box):
     def on_endorse_button_clicked(self, button, mod_info: dict, mod_index: str, unendorse: bool):
         if endorse_nexus_mod(self.dashboard.headers, self.dashboard.game_config["nexus_id"], mod_info["mod_id"], unendorse):
             if unendorse: # we just unendorsed the mod
-                print(f"Successfully unendorsed mod {mod_info.get("display_name", mod_info.get("name"))}")
+                print(f"Successfully unendorsed mod {mod_info.get("alias", mod_info.get("display_name"))}")
                 self.endorse_btn_label.set_label(str(mod_info["endorsements"]))
                 self.endorse_btn.remove_css_class("badge-action-row-accent")
                 self.endorse_btn_icon.set_from_icon_name("go-up-symbolic")
             else: # we just endorsed the mod
-                print(f"Successfully endorsed mod {mod_info.get("display_name", mod_info.get("name"))}")
+                print(f"Successfully endorsed mod {mod_info.get("alias", mod_info.get("display_name"))}")
                 self.endorse_btn_label.set_label(str(mod_info["endorsements"] + 1))
                 self.endorse_btn.add_css_class("badge-action-row-accent")
                 self.endorse_btn_icon.set_from_icon_name("go-down-symbolic")
@@ -610,21 +671,21 @@ class ModsTab(Gtk.Box):
             self.dashboard.show_message(_("Failed to endorse"), _("Could not endorse the selected mod, please make sure you have provided your API key and are connected to the internet."))
 
     def populate_list(self):
-        
+
         def prepare_data():
             staging_path = self.dashboard.staging_path
             staging_metadata = load_staging_metadata(self.dashboard.staging_metadata_path)
-            
+
             indexed_mods = read_index(self.dashboard.staging_metadata_path)
-                
+
             missing_files_per_mod = {
                 mod: [f for f in staging_metadata["mods"][mod].get("mod_files", [])
-                        if not os.path.exists(staging_path / mod / f)]
+                        if not os.path.exists(staging_path / staging_metadata["mods"][mod]["folder_name"] / f)]
                 for mod in staging_metadata.get("mods", {})
             }
-            
+
             conflicts = check_for_conflicts(self.dashboard.staging_metadata_path)
-            
+
             GLib.idle_add(on_data_prepared, staging_path, staging_metadata, indexed_mods, conflicts, missing_files_per_mod)
             
         def on_data_prepared(staging_path, staging_metadata, indexed_mods, conflicts, missing_files_per_mod):
@@ -649,22 +710,22 @@ class ModsTab(Gtk.Box):
                 if mod not in staging_metadata["mods"]:
                     continue
                 
-                display_name = mod
                 mod_metadata = staging_metadata["mods"][mod]
+                try:
+                    folder_name = mod_metadata["folder_name"]
+                except KeyError:
+                    print(f"Staging mod metadata malformed: missing folder_name for mod {mod}")
+                    continue
 
-                display_name = mod_metadata.get("display_name", mod)
-                folder_name = mod_metadata.get("folder_name", mod)
-                
                 changelog = mod_metadata.get("changelog", "")
                 mod_link = mod_metadata.get("mod_link", "")
                 mod_files = mod_metadata.get("mod_files", [])
 
-                row = Adw.ActionRow(title=display_name)
+                row = Adw.ActionRow(title=mod_metadata.get("alias", mod_metadata.get("display_name", mod)))
                 row.set_activatable(True)
                 row.mod_data = mod_metadata
                 row.mod_data_index = mod
                 row.set_subtitle(mod_metadata.get("author", ""))
-                row.mod_name = mod_metadata.get(display_name.lower)
 
                 row_element_margin = 10
 
@@ -700,7 +761,7 @@ class ModsTab(Gtk.Box):
                 row.add_controller(drop_target)
                 
                 # Suffix: Missing Files
-                missing_files = missing_files_per_mod.get(display_name, [])
+                missing_files = missing_files_per_mod.get(mod, [])
                 if missing_files:
                     missing_file_badge = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
                     missing_file_badge.add_css_class("warning-badge")
@@ -718,9 +779,9 @@ class ModsTab(Gtk.Box):
                 # Conflits
                 conflicting_mods = []
                 for conflict_list in conflicts:
-                    if display_name in conflict_list:
+                    if mod in conflict_list:
                         other_mods = conflict_list.copy()
-                        other_mods.remove(display_name)
+                        other_mods.remove(mod)
                         conflicting_mods.extend(other_mods)
                 if conflicting_mods:
                     conflicts_badge = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)

@@ -20,7 +20,6 @@ mods_path:
   name: For the mod CNS - Custom Nanosuit System
   description: This is the path where you need to install the CNS - Custom Nanosuit System mod.
 
-
 essential-utilities:
   RE-UE4SS:
     name: UE4SS

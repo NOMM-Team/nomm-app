@@ -11,14 +11,15 @@ gi.require_version('Notify', '0.7')
 
 from gi.repository import Adw, Gdk, GdkPixbuf, Gio, GLib, Gtk, Pango
 
-from core.game_scanner import get_steam_base_dir, scan_all_games
-from core.nexus_api import handle_nexus_link
-from core.tools import (get_username_from_steam_id, load_yaml,
+from core.game_scanner import scan_all_games
+from core.tools import (load_yaml,
                         translate_fuse_path, write_yaml)
 from core.user_config import (load_user_config, update_user_config,
                               write_user_config)
 from gui.app_views.library_view import LibraryView
 from gui.dashboard import GameDashboard
+from platforms.nexus import handle_nexus_link
+from platforms.steam import get_username_from_steam_id, get_steam_base_dir
 
 APP_NAME = 'com.nomm.Nomm'
 
@@ -236,7 +237,7 @@ class Nomm(Adw.Application):
         status_page.add_css_class("setup-page")
         vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12, halign=Gtk.Align.CENTER)
         warning_label = Gtk.Label(wrap=True, max_width_chars=50, justify=Gtk.Justification.CENTER)
-        warning_label.set_markup(_("<b>Important:</b> If using Steam Flatpak, ensure it has permission to access this folder (you can do this via command line or Flatseal)."))
+        warning_label.set_markup(_("<b>Important:</b> If using Flatpaks for your platforms (Steam, Heroic, etc.), ensure they have permission to access this folder (you can do this via command line or Flatseal)."))
         warning_label.add_css_class("error")
         btn = Gtk.Button(label=_("Set Mod Staging Path"), margin_top=12)
         btn.add_css_class("suggested-action")
@@ -522,15 +523,8 @@ class Nomm(Adw.Application):
 
     def open_dashboard(self, game_info):
         self.dashboard = GameDashboard(
-            game_name=game_info['name'],
-            game_path=game_info['path'],
             application=self,
-            steam_base=self.steam_base,
-            app_id=game_info.get('app_id'),
-            user_config_path=self.user_config_path,
-            game_config_path=game_info["game_config_path"],
-            assets_path=self.assets_path,
-            downloader = self.downloader
+            game_info=game_info
         )
         update_user_config("last_selected_game", game_info["name"])
         self.remove_stack_child("dashboard")

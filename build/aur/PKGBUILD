@@ -1,5 +1,5 @@
 pkgname=nomm
-pkgver=0.10.0
+pkgver=0.10.1
 pkgrel=1
 pkgdesc="Native Open Mod Manager - a mod manager for Linux"
 arch=('any')
@@ -28,14 +28,19 @@ package() {
 
     # App files
     install -dm755 "$pkgdir/usr/lib/nomm"
-    cp src/*.py src/*.css src/*.yaml "$pkgdir/usr/lib/nomm/"
+    cp -r src/* "$pkgdir/usr/lib/nomm/"
     cp -r assets default_game_configs "$pkgdir/usr/lib/nomm/"
 
     # Entry point
-    install -Dm755 src/launcher.py "$pkgdir/usr/bin/nomm"
+    install -dm755 "$pkgdir/usr/bin"
+    cat > "$pkgdir/usr/bin/nomm" <<'EOF'
+#!/bin/sh
+exec python3 /usr/lib/nomm/main.py "$@"
+EOF
+    chmod 755 "$pkgdir/usr/bin/nomm"
 
     # Desktop file
-    install -Dm644 com.nomm.Nomm.desktop \
+    install -Dm644 build/flatpak/com.nomm.Nomm.desktop \
         "$pkgdir/usr/share/applications/com.nomm.Nomm.desktop"
 
     # Icon
