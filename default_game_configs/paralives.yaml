@@ -1,0 +1,9 @@
+name: "Paralives"
+steam_id: 1118520
+nexus_id: paralives
+accent_colour: "#032396"
+
+mods_path:
+- path: "{user_data}/drive_c/users/steamuser/AppData/LocalLow/Paralives/Paralives"
+  name: Standard
+  description: The standard mods path for all mods

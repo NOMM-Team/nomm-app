@@ -17,7 +17,6 @@ from core.tools import load_yaml, write_yaml
 from core.mod_manager import (completely_uninstall_mod, get_metadata_path,
                               get_mod_statistics, load_staging_metadata,
                               remove_mod_from_metadata)
-from core.game_scanner import find_game_art
 from core.tools import get_contrast_color
 from gui.dashboard_views.downloads_tab import DownloadsTab
 from gui.dashboard_views.mods_tab import ModsTab
@@ -26,39 +25,41 @@ from gui.dashboard_views.tools_tab import ToolsTab
 rarfile.UNRAR_TOOL = "/app/bin/unrar"
 
 class GameDashboard(Gtk.Box):
-    def __init__(self, game_name, game_path, application, steam_base=None, app_id=None, user_config_path=None, game_config_path=None, assets_path=None, downloader=None, **kwargs):
+    def __init__(self, application, game_info, **kwargs):
         super().__init__(orientation=Gtk.Orientation.VERTICAL, **kwargs)
         self.app = application
-        self.game_name = game_name
-        self.game_path = game_path
-        self.app_id = app_id
-        self.current_filter = "all"
-        self.active_tab = "mods"
-        self.steam_base = steam_base
-        self.assets_path = assets_path
-        self.game_config = load_yaml(game_config_path)
-        self.user_config = load_yaml(user_config_path)
-        self.user_config_path = user_config_path
-        self.downloads_path = str(Path(os.path.join(Path(self.user_config.get("download_path")), game_name)))
-        self.staging_path = Path(os.path.join(Path(self.user_config.get("staging_path")), game_name))
-        self.platform = self.game_config.get("platform")
-        self.currently_toggling = set()
-        self.currently_installing = set()
-        self.downloader = downloader
-        
+        self.game_name = game_info["name"]
+        self.game_path = game_info["path"]
+        self.platform = game_info["platform"]
+        self.app_id = game_info.get("app_id")
+        self.game_config = load_yaml(game_info["game_config_path"])
+        user_config = load_yaml(application.user_config_path)
+        self.downloads_path = str(Path(os.path.join(Path(user_config.get("download_path")), self.game_name)))
+        self.staging_path = Path(os.path.join(Path(user_config.get("staging_path")), self.game_name))
         self.staging_metadata_path = get_metadata_path(self.staging_path, is_staging=True)
         self.downloads_metadata_path = get_metadata_path(self.downloads_path, is_staging=False)
+
+        # Threading preconfiguration
+        self.currently_toggling = set()
+        self.currently_installing = set()
+        self.downloader = application.downloader
+
+        # UI preconfiguration
+        self.current_filter = "all"
+        self.active_tab = "mods"
+        
+        
 
         self.deployment_targets = parse_deployment_paths(self.game_config, self.platform, str(self.app_id))
 
         self.headers = {
-            'apikey': self.user_config["nexus_api_key"],
+            'apikey': user_config["nexus_api_key"],
             'Application-Name': 'NOMM',
             'Application-Version': '0.10'
         }
 
         # Per game accent colour theming
-        if self.user_config.get("enable_per_game_accent_colour") and self.game_config.get("accent_colour"):
+        if user_config.get("enable_per_game_accent_colour") and self.game_config.get("accent_colour"):
             print("applying cool new colour")
             fg_color = get_contrast_color(self.game_config["accent_colour"])
             css = f"""
@@ -81,25 +82,22 @@ class GameDashboard(Gtk.Box):
         win_height = monitor.get_geometry().height
         banner_height = int(win_height * 0.15)
 
-        hero_path = None
+        
 
         # Assets management
-        art = find_game_art(app_id, self.platform, steam_base)
-        hero_path = art.get("hero")
-
         main_layout = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
         header = Adw.HeaderBar()
         main_layout.append(header)
 
         banner_overlay = Gtk.Overlay()
         
-        if hero_path:
+        if game_info["img"]["hero"]:
             banner_mask = Gtk.ScrolledWindow(propagate_natural_height=False, vexpand=False)
             banner_mask.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.NEVER)
             banner_mask.set_size_request(-1, banner_height)
             
             try:
-                hero_tex = Gdk.Texture.new_from_file(Gio.File.new_for_path(hero_path))
+                hero_tex = Gdk.Texture.new_from_file(Gio.File.new_for_path(game_info["img"]["hero"]))
                 hero_img = Gtk.Picture(paintable=hero_tex, content_fit=Gtk.ContentFit.COVER, can_shrink=True)
                 hero_img.set_valign(Gtk.Align.START)
                 banner_mask.set_child(hero_img)
@@ -281,9 +279,9 @@ class GameDashboard(Gtk.Box):
             self.update_indicators()
 
     def on_back_clicked(self, btn):
-        user_config = load_yaml(self.user_config_path)
+        user_config = load_yaml(self.app.user_config_path)
         user_config["last_selected_game"] = "dashboard"
-        write_yaml(user_config, self.user_config_path)
+        write_yaml(user_config, self.app.user_config_path)
         
         self.app.return_to_library()
 
