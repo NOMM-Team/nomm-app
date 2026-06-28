@@ -14,7 +14,7 @@ mods_path:
   name: Logic Mods
   description: Mods path for logic mods. Keep in mind these mods SHOULD include the LogicMods folder. If they don't you will have to manually set the deployment path to the LogicMods folder.
 - path: "SB/Content/Paks/~mods/CustomNanosuitSystem"
-  name: Custom Nanosuit System Mods
+  name: Mods for Custom Nanosuit System
   description: Mods path for the mods for Custom Nanosuit System.
 - path: ""
   name: For the mod CNS - Custom Nanosuit System

@@ -5,10 +5,10 @@ accent_colour: "#032396"
 
 mods_path:
 - path: "{game_data}/Mods/NativeMods/UE4SS/Mods/"
-  name: Lua Mods
+  name: Lua Mods (UE4SS installed via Steam)
   description: Mods path for Lua mods if UE4SS was installed from the Steam Workshop.
 - path: "{game_data}/Mods/NativeMods/UE4SS/Mods/PalSchema/mods/"
-  name: PalSchema Mods
+  name: PalSchema Mods (UE4SS installed via Steam)
   description: Mods path for PalSchema mods if UE4SS was installed from the Steam Workshop.
 - path: "{game_data}/Pal/Content/Paks/~mods"
   name: Pak Mods
@@ -17,10 +17,10 @@ mods_path:
   name: Logic Mods
   description: Mods path for logic mods. Keep in mind these mods SHOULD include the LogicMods folder. If they don't you will have to manually set the deployment path to the LogicMods folder.
 - path: "{game_data}/Pal/Binaries/Win64/ue4ss/Mods"
-  name: Lua Mods
-  description: Mods path for Lua mods.
+  name: Lua Mods (UE4SS installed manually/via NOMM)
+  description: Mods path for Lua mods if UE4SS was installed from the utilities tab in Nomm.
 - path: "{game_data}/Pal/Binaries/Win64/Mods/ue4ss/Mods/PalSchema/mods/"
-  name: PalSchema Mods
+  name: PalSchema Mods (UE4SS installed manually/via NOMM)
   description: Mods path for PalSchema mods if UE4SS was installed from the utilities tab in Nomm.
 
 essential-utilities:
