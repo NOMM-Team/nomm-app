@@ -13,7 +13,7 @@ mods_path:
 nexus_id: "abioticfactor"
 
 essential-utilities:
-  tobey-bepinex:
+  AF-UE4SS:
     name: UE4SS for Abiotic Factor
     version: v3.0.1-954-g272ce2f8
     creator: igromanru
