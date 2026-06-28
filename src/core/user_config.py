@@ -46,10 +46,10 @@ def parse_deployment_paths(game_config: dict, platform: str, app_id: str) -> Lis
     elif platform in ["heroic-gog", "heroic-epic"]:
         user_data_path = os.path.dirname(os.path.dirname(game_path))
         #TODO: implement support for heroic user data files
-        print("WARNING: User data folder not supported yet for heroic installations")
+        print("[!] User data folder not supported yet for heroic installations")
     else:
-            print("unrecognised platform")
-            return {}
+        print("unrecognised platform")
+        return {}
     
     # Handle case where there is only one path provided, and it's not a list of dicts
     if not isinstance(deployment_dicts, list):
