@@ -1,0 +1,16 @@
+name: "Stellar Blade"
+steam_id: 3489700
+nexus_id: stellarblade
+accent_colour: "#032396"
+
+mods_path: ""
+
+essential-utilities:
+  RE-UE4SS:
+    name: UE4SS
+    version: Build 6
+    creator: Chrisr0
+    creator-link: https://github.com/Chrisr0
+    source: https://github.com/Chrisr0/RE-UE4SS/releases/download/3.1.0-6/UE4SS_v3.1.0-6.zip
+    utility_path: "/GameName/Binaries/Win64/"
+    launch_options: "WINEDLLOVERRIDES='dwmapi=n,b' %command%"

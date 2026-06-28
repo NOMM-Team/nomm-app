@@ -338,7 +338,7 @@ def deploy_essential_utility(util_config: dict, downloads_path: str, staging_pat
         subprocess.run(command, shell=True, cwd=game_root)
 
     # Some utilities require specific launch options to run properly
-    steam_launch_options = util_config.get("steam_launch_options")
+    steam_launch_options = util_config.get("launch_options")
     if steam_launch_options:
         print(f"Adding Steam launch options: {steam_launch_options}")
         localconfig_path = steam_base + "userdata/" + load_user_config()["steam_user_id"] + "/config/localconfig.vdf"

@@ -177,8 +177,8 @@ class ToolsTab(Gtk.Box):
         warning_label = Gtk.Label(label=msg, wrap=True, xalign=0)
         content_box.append(warning_label)
 
-        # Check if steam_launch_options exist in the util dict
-        launch_options = util.get("steam_launch_options")
+        # Check if launch_options exist in the util dict
+        launch_options = util.get("launch_options")
         if launch_options:
             separator = Gtk.Separator(orientation=Gtk.Orientation.HORIZONTAL)
             separator.set_margin_top(8)
