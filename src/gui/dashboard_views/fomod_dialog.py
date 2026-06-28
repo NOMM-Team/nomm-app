@@ -137,7 +137,7 @@ class FomodSelectionDialog(Adw.Window):
         self.header_box.append(self.fomod_desc)
         
         self.group_label = Gtk.Label(label='')
-        self.group_label.add_css_class("title-2")
+        self.group_label.add_css_class("fomod-title-2")
         self.group_label.add_css_class("dim-label")
         self.group_label.set_margin_top(10)
         self.group_label.set_margin_start(32)
