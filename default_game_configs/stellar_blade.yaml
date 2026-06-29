@@ -18,11 +18,11 @@ mods_path:
   description: Mods path for the mods for Custom Nanosuit System.
 
 essential-utilities:
-  RE-UE4SS:
-    name: UE4SS
-    version: Build 6
-    creator: Chrisr0
-    creator-link: https://github.com/Chrisr0
-    source: https://github.com/Chrisr0/RE-UE4SS/releases/download/3.1.0-6/UE4SS_v3.1.0-6.zip
+  SB-UE4SS:
+    name: SB-UE4SS
+    version: "1.3"
+    creator: Rev-OG-UwU
+    creator-link: https://github.com/Rev-OG-UwU
+    source: https://github.com/Rev-OG-UwU/SB-UE4SS/releases/download/1.3/SB.UE4SS.1.3.zip
     utility_path: "/SB/Binaries/Win64/"
     launch_options: "WINEDLLOVERRIDES='dwmapi=n,b' %command%"
