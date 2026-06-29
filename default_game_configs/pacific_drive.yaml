@@ -1,0 +1,9 @@
+name: "Pacific Drive"
+steam_id: 1458140
+nexus_id: pacificdrive
+accent_colour: "#014760"
+
+mods_path:
+- path: "PenDriverPro/Content/Paks/~mods"
+  name: Paks mods
+  description: Pak mod.
