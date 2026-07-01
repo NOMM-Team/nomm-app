@@ -6,7 +6,7 @@ import vdf
 
 from gi.repository import GLib
 from core.user_config import load_user_config
-from core.tools import slugify, write_yaml
+from core.tools import slugify, write_yaml, load_cached_assets, download_image
 
 def get_epic_library() -> dict or None:
     epic_flatpak = os.path.expanduser("~/.var/app/com.heroicgameslauncher.hgl/config/heroic/legendaryConfig/legendary/installed.json")
@@ -48,7 +48,7 @@ def find_epic_game(yaml_data, yaml_path, game_title, installed_epic):
             
             return {
                 "name": game_title,
-                "img": get_art(app_id, "heroic-epic"),
+                "img": get_art(game_title, app_id, "heroic-epic"),
                 "path": game_path,
                 "app_id": app_id,
                 "platform": "heroic-epic",
@@ -69,7 +69,7 @@ def find_gog_game(yaml_data, yaml_path, game_title, installed_gog):
             
             return {
                 "name": game_title,
-                "img": get_art(yaml_data["gog_id"], "heroic-gog"),
+                "img": get_art(game_title, yaml_data["gog_id"], "heroic-gog"),
                 "path": game_path,
                 "app_id": yaml_data["gog_id"],
                 "platform": "heroic-gog",
@@ -86,35 +86,25 @@ def obtain_heroic_libraries(game_paths: list) -> list:
             directory_paths.append(os.path.dirname(path))
     return directory_paths
 
-def get_art(app_id: str | int, platform: str) -> dict:
+def get_art(game_title: str, app_id: str | int, platform: str) -> dict:
     art = {"hero": None, "poster": None}
     if not app_id: return None
 
-    paths = download_heroic_assets(app_id, platform)
-    art["poster"] = paths.get("art_square")
-    art["hero"] = paths.get("art_hero")
+    art = load_cached_assets(game_title, platform)
+    if not art:
+        paths = download_heroic_assets(game_title, app_id, platform)
+        art["poster"] = paths.get("art_grid")
+        art["hero"] = paths.get("art_hero")
     return art
 
 # Grabs the assets from heroic games launcher such as banner and game image
-def download_heroic_assets(appName: str, platform: str):
+def download_heroic_assets(game_title: str, appName: str, platform: str):
 
     json_path = os.path.expanduser("~/.var/app/com.heroicgameslauncher.hgl/config/heroic/store/download-manager.json") # flatpak
     if not os.path.exists(json_path):
         json_path = os.path.expanduser("~/.config/heroic/store/download-manager.json") # not flatpak
     
-    cache_base = os.path.join(GLib.get_user_data_dir(), "nomm", "image-cache", f"{platform}", f"{appName}")
-    
-    if os.path.exists(cache_base):
-        existing_files = {}
-        for entry in os.listdir(cache_base):
-            if entry.startswith("art_square"):
-                existing_files["art_square"] = os.path.join(cache_base, entry)
-            elif entry.startswith("art_hero"):
-                existing_files["art_hero"] = os.path.join(cache_base, entry)
-        
-        if "art_square" in existing_files:
-            print(f"Using cached assets for {appName}")
-            return existing_files
+    cache_base = os.path.join(GLib.get_user_data_dir(), "nomm", "image-cache", f"{platform}", f"{game_title}")
 
     if not os.path.exists(json_path):
         print(f"Heroic config not found at {json_path}")
@@ -135,7 +125,7 @@ def download_heroic_assets(appName: str, platform: str):
         game_info = params.get("gameInfo", {})
         
         # Match by internal appName (e.g., 'Curry') or title (e.g., 'ABZÛ')
-        if params.get("appName") == appName or game_info.get("title") == appName:
+        if params.get("appName") == str(appName) or game_info.get("title") == appName:
             target_info = game_info
             break
     
@@ -143,7 +133,7 @@ def download_heroic_assets(appName: str, platform: str):
         return None
 
     urls = {
-        "art_square": target_info.get("art_square"),
+        "art_grid": target_info.get("art_square"),
         "art_hero": target_info.get("art_background") or target_info.get("art_cover")
     }
 
@@ -155,21 +145,11 @@ def download_heroic_assets(appName: str, platform: str):
             continue
             
         ext = os.path.splitext(url)[1] if "." in url.split("/")[-1] else ".jpg"
-        # Ensure extensions like .jpg?foo=bar are cleaned
+        
         if "?" in ext: ext = ext.split("?")[0]
         
         local_path = os.path.join(cache_base, f"{key}{ext}")
 
-        try:
-            r = requests.get(url, timeout=15)
-            if r.status_code == 200:
-                with open(local_path, 'wb') as f:
-                    f.write(r.content)
-                downloaded_paths[key] = local_path
-                print(f"Downloaded: {local_path}")
-        except Exception as e:
-            print(f"Error downloading {key}: {e}")
+        download_image(url, local_path)
 
     return downloaded_paths
-
-

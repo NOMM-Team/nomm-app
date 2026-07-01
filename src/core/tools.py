@@ -4,6 +4,7 @@ import vdf
 import requests
 import re
 
+from pathlib import Path
 from typing import List, Dict, Any
 from gi.repository import GLib, Gio
 
@@ -90,15 +91,17 @@ def download_image(url: str, save_path: str) -> bool:
     # Send a GET request to the URL
     response = requests.get(url, stream=True)
     
+    Path(save_path).parent.mkdir(parents=True, exist_ok=True)
+
     # Check if the request was successful (Status Code 200)
     if response.status_code == 200:
         with open(save_path, 'wb') as f:
             for chunk in response.iter_content(1024):
                 f.write(chunk)
-        print(f"Thumbnail successfully downloaded: {save_path}")
+        print(f"Image successfully downloaded and stored in cache: {save_path}")
         return True
     else:
-        print(f"Failed to retrieve image. Status code: {response.status_code}")
+        print(f"Failed to download image. Status code: {response.status_code}")
         return False
 
 def process_bbcode(raw_desc: str) -> str:
@@ -201,3 +204,21 @@ def launch_option_merger(current_launch_options: str, new_option: str) -> str:
 
 def slugify(text: str) -> str:
     return re.sub(r'[^a-z0-9]', '', text.lower())
+
+def load_cached_assets(game_name: str, platform: str) -> dict:
+    """Attempts to load game poster and hero from cache, or downloads them"""
+    cache_base = os.path.join(GLib.get_user_data_dir(), "nomm", "image-cache", f"{platform}", f"{game_name}")
+    
+    if os.path.exists(cache_base):
+        existing_files = {}
+        for entry in os.listdir(cache_base):
+            if entry.startswith("art_grid"):
+                existing_files["poster"] = os.path.join(cache_base, entry)
+            elif entry.startswith("art_hero"):
+                existing_files["hero"] = os.path.join(cache_base, entry)
+        
+        if "poster" in existing_files:
+            print(f"Using cached assets for {game_name}")
+            return existing_files
+
+    return None
