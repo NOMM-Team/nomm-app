@@ -37,6 +37,8 @@ def find_matches(game_configs_dir) -> list:
                     "poster" : grid_path,
                     "hero" : hero_path
                 }
+            mod_paths = {"name": "default",
+            "path": f".var/app/io.github.ryubing.Ryujinx/config/Ryujinx/sdcard/atmosphere/contents/{game["switch_id"]}/"}
             matches.append(
                 {
                     "name": game["full_name"],
@@ -44,7 +46,8 @@ def find_matches(game_configs_dir) -> list:
                     "path": os.path.join(ryujinx_game_path, game["switch_id"]),
                     "app_id": game["switch_id"],
                     "platform": PLATFORM,
-                    "game_config_path": switch_config_path
+                    "game_config_path": switch_config_path,
+                    "mod_paths": mod_paths,
                 }
             )
     
