@@ -189,7 +189,7 @@ class GameDashboard(Gtk.Box):
         if game_info.get("utilities"):
             self.create_tools_page()
         
-        self.update_indicators()
+        self.update_indicators() 
 
         footer = Gtk.CenterBox(margin_start=40, margin_end=40, margin_top=10)
 
