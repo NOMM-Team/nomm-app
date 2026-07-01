@@ -58,7 +58,8 @@ def find_epic_game(yaml_data, yaml_path, game_title, installed_epic):
                 "app_id": app_id,
                 "platform": "heroic-epic",
                 "game_config_path": yaml_path,
-                "mod_paths": mod_paths
+                "mod_paths": mod_paths,
+                "utilities": yaml_data.get("essential-utilities")
             }
     return None
 
@@ -85,7 +86,8 @@ def find_gog_game(yaml_data, yaml_path, game_title, installed_gog):
                 "app_id": yaml_data["gog_id"],
                 "platform": "heroic-gog",
                 "game_config_path": yaml_path,
-                "mod_paths": mod_paths
+                "mod_paths": mod_paths,
+                "utilities": yaml_data.get("essential-utilities")
             }
     return None
 
