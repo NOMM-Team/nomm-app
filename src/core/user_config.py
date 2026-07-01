@@ -32,25 +32,8 @@ def write_user_config(data: dict) -> dict:
         return False
     return True
 
-# Returns both game path and steam/heroic(WIP) user data path
-def parse_deployment_paths(game_config: dict, platform: str, app_id: str) -> List[Dict[str, str]]:
-    game_path = game_config.get("game_path")
-    deployment_dicts = game_config.get("mods_path", "")
+def parse_mod_paths(deployment_dicts: list or str, game_path: str, user_data_path: str) -> List[Dict[str, str]]:
 
-    if not game_path:
-        return {}
-
-    user_data_path = ""
-    if platform == "steam":
-        user_data_path = os.path.dirname(os.path.dirname(game_path)) + "/compatdata/" + str(app_id) + "/pfx"
-    elif platform in ["heroic-gog", "heroic-epic"]:
-        user_data_path = os.path.dirname(os.path.dirname(game_path))
-        #TODO: implement support for heroic user data files
-        print("[!] User data folder not supported yet for heroic installations")
-    else:
-        print("unrecognised platform")
-        return {}
-    
     # Handle case where there is only one path provided, and it's not a list of dicts
     if not isinstance(deployment_dicts, list):
         deployment_dicts = [{"name": "default",
@@ -61,7 +44,7 @@ def parse_deployment_paths(game_config: dict, platform: str, app_id: str) -> Lis
         deployment_path = deployment_dict["path"]
         if "}" not in deployment_path: # NOMM 0.5 Format
             deployment_path = os.path.join(game_path, deployment_path)
-        else: # NOMM 0.6 Format
+        else: # NOMM 0.6+ Format
             deployment_path = deployment_path.replace("{game_path}", game_path)
             deployment_path = deployment_path.replace("{user_data_path}", user_data_path)
         deployment_dict["path"] = deployment_path

@@ -5,7 +5,7 @@ import json
 import vdf
 
 from gi.repository import GLib
-from core.user_config import load_user_config
+from core.user_config import load_user_config, parse_mod_paths
 from core.tools import slugify, write_yaml, load_cached_assets, download_image
 
 def get_epic_library() -> dict or None:
@@ -46,13 +46,19 @@ def find_epic_game(yaml_data, yaml_path, game_title, installed_epic):
             yaml_data["game_path"] = game_path
             write_yaml(yaml_data, yaml_path)
             
+            # mod path parsing
+            # TODO: add support for heroic/EPIC user data path
+            user_data_path = ""
+            mod_paths = parse_mod_paths(yaml_data["mods_path"], game_path, user_data_path)
+
             return {
                 "name": game_title,
                 "img": get_art(game_title, app_id, "heroic-epic"),
                 "path": game_path,
                 "app_id": app_id,
                 "platform": "heroic-epic",
-                "game_config_path": yaml_path
+                "game_config_path": yaml_path,
+                "mod_paths": mod_paths
             }
     return None
 
@@ -67,13 +73,19 @@ def find_gog_game(yaml_data, yaml_path, game_title, installed_gog):
             yaml_data["game_path"] = game_path
             write_yaml(yaml_data, yaml_path)
             
+            # mod path parsing
+            # TODO: add support for heroic/GOG user data path
+            user_data_path = ""
+            mod_paths = parse_mod_paths(yaml_data["mods_path"], game_path, user_data_path)
+
             return {
                 "name": game_title,
                 "img": get_art(game_title, yaml_data["gog_id"], "heroic-gog"),
                 "path": game_path,
                 "app_id": yaml_data["gog_id"],
                 "platform": "heroic-gog",
-                "game_config_path": yaml_path
+                "game_config_path": yaml_path,
+                "mod_paths": mod_paths
             }
     return None
 

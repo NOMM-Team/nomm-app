@@ -12,7 +12,6 @@ import requests
 import yaml
 from gi.repository import Adw, Gdk, Gio, Gtk
 
-from core.user_config import parse_deployment_paths
 from core.tools import load_yaml, write_yaml
 from core.mod_manager import (completely_uninstall_mod, get_metadata_path,
                               get_mod_statistics, load_staging_metadata,
@@ -38,6 +37,7 @@ class GameDashboard(Gtk.Box):
         self.staging_path = Path(os.path.join(Path(user_config.get("staging_path")), self.game_name))
         self.staging_metadata_path = get_metadata_path(self.staging_path, is_staging=True)
         self.downloads_metadata_path = get_metadata_path(self.downloads_path, is_staging=False)
+        self.deployment_targets = game_info["mod_paths"]
 
         # Threading preconfiguration
         self.currently_toggling = set()
@@ -47,10 +47,6 @@ class GameDashboard(Gtk.Box):
         # UI preconfiguration
         self.current_filter = "all"
         self.active_tab = "mods"
-        
-        
-
-        self.deployment_targets = parse_deployment_paths(self.game_config, self.platform, str(self.app_id))
 
         self.headers = {
             'apikey': user_config["nexus_api_key"],
