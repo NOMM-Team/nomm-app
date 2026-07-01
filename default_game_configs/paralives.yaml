@@ -7,3 +7,16 @@ mods_path:
 - path: "{user_data}/drive_c/users/steamuser/AppData/LocalLow/Paralives/Paralives"
   name: Standard
   description: The standard mods path for all mods
+- path: "BepInEx/plugins/"
+  name: BepInEx Mods
+  description: The mods path for BepInEx mods.
+
+essential-utilities:
+  bepinex:
+    name: BepInex
+    version: "5.4.23.5"
+    creator: BepInEx
+    creator-link: "https://github.com/BepInEx"
+    source: "https://github.com/BepInEx/BepInEx/releases/download/v5.4.23.5/BepInEx_win_x64_5.4.23.5.zip"
+    utility_path: ""
+    launch_options: WINEDLLOVERRIDES='winhttp=n,b' %command%
