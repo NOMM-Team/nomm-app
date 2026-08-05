@@ -4,7 +4,7 @@ import vdf
 
 from typing import List, Dict, Optional, Any
 
-from core.user_config import load_user_config
+from core.user_config import load_user_config, parse_mod_paths
 from core.tools import launch_option_merger, slugify, write_yaml
 
 def get_steam_base_dir() -> Optional[str]:
@@ -95,6 +95,10 @@ def find_game(yaml_data, yaml_path, game_title, found_libs, steam_base) -> List[
                 yaml_data["platform"] = "steam"
                 yaml_data["game_path"] = game_path
                 write_yaml(yaml_data, yaml_path)
+
+                # mod path parsing
+                user_data_path = os.path.dirname(os.path.dirname(game_path)) + "/compatdata/" + str(yaml_data["steam_id"]) + "/pfx"
+                mod_paths = parse_mod_paths(yaml_data["mods_path"], game_path, user_data_path)
                 
                 return {
                     "name": game_title,
@@ -102,6 +106,8 @@ def find_game(yaml_data, yaml_path, game_title, found_libs, steam_base) -> List[
                     "path": game_path,
                     "app_id": yaml_data.get("steam_id"),
                     "platform": "steam",
-                    "game_config_path": yaml_path
+                    "game_config_path": yaml_path,
+                    "mod_paths": mod_paths,
+                    "utilities": yaml_data.get("essential-utilities")
                 }
     return None

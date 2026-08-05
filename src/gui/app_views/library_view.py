@@ -46,7 +46,7 @@ class LibraryView(Gtk.Box):
         card.set_halign(Gtk.Align.START)
         card.set_hexpand(False)
         card.add_css_class("game-card")
-        card.set_overflow(Gtk.Overflow.HIDDEN) 
+        card.set_overflow(Gtk.Overflow.HIDDEN)
         card.set_tooltip_text(f"{game['name']}\n{game['path']}")
         
         gesture = Gtk.GestureClick()
@@ -72,11 +72,13 @@ class LibraryView(Gtk.Box):
         platform = game.get('platform')
         icon_path = ""
         if platform == "steam":
-            platform_badge = Gtk.Image.new_from_icon_name("steam-logo-symbolic")
+            platform_badge = Gtk.Image.new_from_icon_name("steam-logo")
         elif platform == "heroic-epic":
             platform_badge = Gtk.Image.new_from_icon_name("epic-logo-symbolic")
         elif platform == "heroic-gog":
             platform_badge = Gtk.Image.new_from_icon_name("gog-logo-symbolic")
+        elif platform == "switch":
+            platform_badge = Gtk.Image.new_from_icon_name("switch-logo-symbolic")
         
         platform_badge.set_pixel_size(32)
         platform_badge.set_halign(Gtk.Align.END)

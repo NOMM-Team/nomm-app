@@ -9,9 +9,8 @@ from gi.repository import GLib
 from core.user_config import update_user_config
 from core.tools import  write_yaml, load_yaml, slugify
 from typing import List, Dict, Optional, Any
-#from platforms.steam import get_library_paths, get_steam_base_dir, scan_libraries
-from platforms import steam
-from platforms import heroic
+
+from platforms import steam, heroic, switch
 
 
 def scan_all_games(game_configs_dir):
@@ -75,7 +74,7 @@ def scan_all_games(game_configs_dir):
                 continue
     
     heroic_libraries = heroic.obtain_heroic_libraries(heroic_game_paths)
-
+    matches += switch.find_matches(game_configs_dir)
     game_libraries = steam_libraries + heroic_libraries
     print(f"Game libraries detected: {str(game_libraries)}")
     update_user_config("library_paths", sorted(game_libraries))

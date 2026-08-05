@@ -2,13 +2,14 @@ import gettext
 import os
 import threading
 import subprocess
-
+import shutil
 import gi
 
 gi.require_version('Gtk', '4.0')
 gi.require_version('Adw', '1')
 gi.require_version('Notify', '0.7')
 
+from pathlib import Path
 from gi.repository import Adw, Gdk, GdkPixbuf, Gio, GLib, Gtk, Pango
 
 from core.game_scanner import scan_all_games
@@ -121,18 +122,31 @@ class Nomm(Adw.Application):
         Adw.Application.do_shutdown(self)
                   
     def sync_configs(self):
-        """Synchronises game configs from bundled YAMLs to user YAMLs"""
-        # This should only be run if it's the app's first run OR it's a manual refresh
+        """Synchronises game configs from bundled YAMLs to user YAMLs (including subfolders)"""
         print("Synchronising YAML game_configs")
         src, dest = self.default_game_config_path, self.game_config_path
-        if not os.path.exists(src): return
-        if not os.path.exists(dest): os.makedirs(dest)
-        for filename in os.listdir(src):
-            if filename.lower().endswith((".yaml", ".yml")):
+        
+        if not os.path.exists(src): 
+            return
+            
+        if not os.path.exists(dest): 
+            os.makedirs(dest)
+
+        for item in os.listdir(src):
+            src_item = Path(src) / item
+            dest_item = Path(dest) / item
+
+            if src_item.is_dir():
                 try:
-                    import shutil
-                    shutil.copy2(os.path.join(src, filename), os.path.join(dest, filename))
-                except: pass
+                    shutil.copytree(src_item, dest_item, dirs_exist_ok=True)
+                except Exception as e:
+                    print(f"Error copying folder {item}: {e}")
+    
+            elif item.lower().endswith((".yaml", ".yml")):
+                try:
+                    shutil.copy2(src_item, dest_item)
+                except Exception as e:
+                    print(f"Error copying file {item}: {e}")
     
     def styles_application(self):
         css_provider = Gtk.CssProvider()
@@ -298,7 +312,7 @@ class Nomm(Adw.Application):
             title=_("Select Your Steam user ID"),
             description=_("Multiple Steam user IDs were detected in your Steam installation.\n"
             "Please select the one that you want to configure when using NOMM."),
-            icon_name="steam-logo-symbolic"
+            icon_name="steam-logo"
         )
 
         # Create a boxed list for the options

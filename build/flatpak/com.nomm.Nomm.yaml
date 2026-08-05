@@ -16,7 +16,9 @@ finish-args:
   # Steam
   - --filesystem=~/.local/share/Steam:rw # Standard
   - --filesystem=~/.var/app/com.valvesoftware.Steam:rw # Flatpak
-  - --filesystem=~/.steam/debian-installation:rw" # Debian
+  - --filesystem=~/.steam/debian-installation:rw # Debian
+  # Switch support
+  - --filesystem=~/.var/app/io.github.ryubing.Ryujinx/config/Ryujinx:rw # Ryujinx flatpak
 
 modules:
   # Python dependencies (generated via flatpak-pip-generator)

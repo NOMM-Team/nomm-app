@@ -12,7 +12,6 @@ import requests
 import yaml
 from gi.repository import Adw, Gdk, Gio, Gtk
 
-from core.user_config import parse_deployment_paths
 from core.tools import load_yaml, write_yaml
 from core.mod_manager import (completely_uninstall_mod, get_metadata_path,
                               get_mod_statistics, load_staging_metadata,
@@ -38,6 +37,7 @@ class GameDashboard(Gtk.Box):
         self.staging_path = Path(os.path.join(Path(user_config.get("staging_path")), self.game_name))
         self.staging_metadata_path = get_metadata_path(self.staging_path, is_staging=True)
         self.downloads_metadata_path = get_metadata_path(self.downloads_path, is_staging=False)
+        self.deployment_targets = game_info["mod_paths"]
 
         # Threading preconfiguration
         self.currently_toggling = set()
@@ -47,10 +47,6 @@ class GameDashboard(Gtk.Box):
         # UI preconfiguration
         self.current_filter = "all"
         self.active_tab = "mods"
-        
-        
-
-        self.deployment_targets = parse_deployment_paths(self.game_config, self.platform, str(self.app_id))
 
         self.headers = {
             'apikey': user_config["nexus_api_key"],
@@ -163,17 +159,18 @@ class GameDashboard(Gtk.Box):
         tab_container.append(main_tabs_box)
 
         # Utilities tab
-        self.tools_tab_btn = Gtk.ToggleButton(css_classes=["overlay-tab"])
-        wrench_icon = Gtk.Image.new_from_icon_name("emblem-system-symbolic")
-        wrench_icon.set_pixel_size(48) 
-        self.tools_tab_btn.set_child(wrench_icon)
-        self.tools_tab_btn.set_size_request(banner_height, banner_height)
-        self.tools_tab_btn.set_cursor_from_name("pointer")
-        tab_container.append(self.tools_tab_btn)
+        if game_info.get("utilities"):
+            self.tools_tab_btn = Gtk.ToggleButton(css_classes=["overlay-tab"])
+            wrench_icon = Gtk.Image.new_from_icon_name("emblem-system-symbolic")
+            wrench_icon.set_pixel_size(48)
+            self.tools_tab_btn.set_child(wrench_icon)
+            self.tools_tab_btn.set_size_request(banner_height, banner_height)
+            self.tools_tab_btn.set_cursor_from_name("pointer")
+            self.tools_tab_btn.connect("toggled", self.on_tab_changed, "tools")
+            tab_container.append(self.tools_tab_btn)
 
         # Grouping
-        self.dl_tab_btn.set_group(self.mods_tab_btn)
-        self.tools_tab_btn.set_group(self.mods_tab_btn)
+        self.dl_tab_btn.set_group(self.mods_tab_btn)        
         self.mods_tab_btn.set_active(True)
         
         # Banner
@@ -183,15 +180,16 @@ class GameDashboard(Gtk.Box):
         self.view_stack = Gtk.Stack(transition_type=Gtk.StackTransitionType.SLIDE_LEFT_RIGHT, transition_duration=400, vexpand=True)
         self.mods_tab_btn.connect("toggled", self.on_tab_changed, "mods")
         self.dl_tab_btn.connect("toggled", self.on_tab_changed, "downloads")
-        self.tools_tab_btn.connect("toggled", self.on_tab_changed, "tools")
+        
         main_layout.append(self.view_stack)
         
         # Initializing the three views
         self.create_mods_page()
         self.create_downloads_page()
-        self.create_tools_page()
+        if game_info.get("utilities"):
+            self.create_tools_page()
         
-        self.update_indicators()
+        self.update_indicators() 
 
         footer = Gtk.CenterBox(margin_start=40, margin_end=40, margin_top=10)
 
