@@ -3,6 +3,14 @@ import yaml
 
 from gi.repository import GLib
 from core.tools import load_cached_assets, download_image
+from core.user_config import load_user_config
+
+# Ryubing paths
+RYUBING_GAME_PATH = os.path.expanduser("~/.var/app/io.github.ryubing.Ryujinx/config/Ryujinx/games")
+RYUBING_MOD_PATH = os.path.expanduser("~/.var/app/io.github.ryubing.Ryujinx/config/Ryujinx/sdcard/atmosphere/contents/")
+# Eden paths
+EDEN_GAME_PATH = os.path.expanduser("~/.local/share/eden/load/")
+EDEN_MOD_PATH = os.path.expanduser("~/.local/share/eden/load/")
 
 def find_matches(game_configs_dir) -> list:
 
@@ -12,6 +20,7 @@ def find_matches(game_configs_dir) -> list:
 
     PLATFORM = "switch"
     
+    preferred_emulator = load_user_config().get("preferred_switch_emulator", list_emulators()[0])
 
     try:
         with open(switch_config_path, 'r') as f:
@@ -19,13 +28,24 @@ def find_matches(game_configs_dir) -> list:
     except Exception as e:
         print(f"Was not able to load switch config - is it improperly formatted? {e}")
 
-    ryujinx_game_path = os.path.expanduser("~/.var/app/io.github.ryubing.Ryujinx/config/Ryujinx/games")
-
-    installed_games = os.listdir(ryujinx_game_path)
+    if preferred_emulator == "Ryubing":
+        game_path = RYUBING_GAME_PATH
+        mods_path = RYUBING_MOD_PATH
+    elif preferred_emulator == "Eden":
+        game_path = EDEN_GAME_PATH
+        mods_path = EDEN_MOD_PATH
+    
+    
+    installed_games = os.listdir(game_path)
     matches = []
 
     for game in supported_switch_games:
-        if game["switch_id"].lower() in installed_games:
+        #Ryujinx has game IDs in lowercase, and Eden has them in uppercase :')
+        if preferred_emulator == "Ryubing":
+            game_id = game["switch_id"].lower()
+        elif preferred_emulator == "Eden":
+            game_id = game["switch_id"].upper()
+        if game_id in installed_games:
             art = load_cached_assets(game["full_name"], PLATFORM)
             if not art:
                 cache_base = os.path.join(GLib.get_user_data_dir(), "nomm", "image-cache", PLATFORM, f"{game["full_name"]}")
@@ -38,13 +58,13 @@ def find_matches(game_configs_dir) -> list:
                     "hero" : hero_path
                 }
             mod_paths = [{"name": "default",
-            "path": f".var/app/io.github.ryubing.Ryujinx/config/Ryujinx/sdcard/atmosphere/contents/{game["switch_id"]}/"}]
+            "path": f"{mods_path}/{game_id}/"}]
             matches.append(
                 {
                     "name": game["full_name"],
                     "img": art,
-                    "path": os.path.join(ryujinx_game_path, game["switch_id"]),
-                    "app_id": game["switch_id"],
+                    "path": os.path.join(game_path, game_id),
+                    "app_id": game_id,
                     "platform": PLATFORM,
                     "game_config_path": switch_config_path,
                     "mod_paths": mod_paths,
@@ -53,3 +73,12 @@ def find_matches(game_configs_dir) -> list:
             )
     
     return matches
+
+def list_emulators():
+    """Lists Switch emulators installed on user's system"""
+    installed_emulator_list = []
+    if os.path.exists(RYUBING_GAME_PATH):
+        installed_emulator_list.append("Ryubing")
+    if os.path.exists(EDEN_GAME_PATH):
+        installed_emulator_list.append("Eden")
+    return installed_emulator_list
