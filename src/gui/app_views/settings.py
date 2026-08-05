@@ -7,6 +7,7 @@ from gi.repository import Adw, Gio, GLib, Gtk
 
 from core.user_config import update_user_config
 from core.tools import load_yaml, translate_fuse_path
+from platforms.switch import list_emulators
 
 _ = gettext.gettext
 
@@ -68,12 +69,29 @@ class SettingsWindow(Adw.Window):
         general_group = Adw.PreferencesGroup(title=_("General Settings"))
         content.append(general_group)
 
+        # Preferred Switch emulator
+        installed_emulators = list_emulators()
+        if installed_emulators:
+            options_model = Gtk.StringList.new(installed_emulators)
+            current_emulator = load_yaml(self.user_config_dir).get('preferred_switch_emulator')
+            selected_index = installed_emulators.index(current_emulator) if current_emulator in installed_emulators else 0
+
+            switch_emulator_row = Adw.ComboRow(
+                title=_("Preferred Switch Emulator"),
+                subtitle=_("Switch emulator used by NOMM when multiple are installed"),
+                model=options_model,
+                selected=selected_index
+            )
+            switch_emulator_row.connect("notify::selected", self.on_switch_emulator_changed, installed_emulators)
+            general_group.add(switch_emulator_row)
+
         # Per-game accent colours
         accent_row = Adw.SwitchRow(title=_("Per-Game Accent Colour"))
         accent_row.set_subtitle(_("Accent colour will change for each game depending on configuration"))
         accent_row.set_active(load_yaml(self.user_config_dir).get('enable_per_game_accent_colour', False))
         accent_row.connect("notify::active", lambda row, pspec: self.toggle_setting('enable_per_game_accent_colour', row.get_active()))
         general_group.add(accent_row)
+
 
         # Skip launcher
         launcher_skip_row = Adw.SwitchRow(title=_("Skip Launcher"))
@@ -168,6 +186,12 @@ class SettingsWindow(Adw.Window):
 
     def toggle_setting(self, key, state):
         update_user_config(key, state)
+
+    def on_switch_emulator_changed(self, combo_row, gparam, installed_emulators):
+        selected_index = combo_row.get_selected()
+        if 0 <= selected_index < len(installed_emulators):
+            selected_emulator = installed_emulators[selected_index]
+            update_user_config('preferred_switch_emulator', selected_emulator)
 
     def create_social_button(self, icon_name, url):
         btn_content = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
