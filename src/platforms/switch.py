@@ -43,9 +43,6 @@ def find_matches(game_configs_dir) -> list:
     elif preferred_emulator == "Ryubing":
         game_path = RYUBING_GAME_PATH
         mods_path = RYUBING_MOD_PATH
-    elif preferred_emulator == "Sudachi":
-        game_path = SUDACHI_GAME_PATH
-        mods_path = SUDACHI_MOD_PATH
     
     
     installed_games = os.listdir(game_path)
@@ -95,7 +92,5 @@ def list_emulators():
         installed_emulator_list.append("Eden")
     if os.path.exists(RYUBING_GAME_PATH):
         installed_emulator_list.append("Ryubing")
-    if os.path.exists(SUDACHI_GAME_PATH):
-        installed_emulator_list.append("Sudachi")
 
     return installed_emulator_list
