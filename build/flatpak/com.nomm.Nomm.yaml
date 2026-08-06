@@ -18,7 +18,9 @@ finish-args:
   - --filesystem=~/.var/app/com.valvesoftware.Steam:rw # Flatpak
   - --filesystem=~/.steam/debian-installation:rw # Debian
   # Switch support
-  - --filesystem=~/.var/app/io.github.ryubing.Ryujinx/config/Ryujinx:rw # Ryujinx flatpak
+  - --filesystem=~/.var/app/io.github.ryubing.Ryujinx/config/Ryujinx:rw # Ryubing flatpak
+  - --filesystem=~/.local/share/eden/load:rw # Eden AppImage
+  - --filesystem=~/.local/share/citron/load:rw # Citron AppImage
 
 modules:
   # Python dependencies (generated via flatpak-pip-generator)
