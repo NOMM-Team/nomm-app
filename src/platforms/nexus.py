@@ -91,47 +91,26 @@ def get_mod_info(headers: dict, game_id: str, mod_id: str, download_dir: Path, c
 
     return metadata
 
-def check_for_mod_updates_async(staging_metadata: dict, headers: dict, game_id: str, download_dir: Path, on_complete_callback: Optional[Callable]) -> None:
-    def worker():
-        print("Checking for updates in background...")
 
-        for mod_name, mod_metadata in staging_metadata.get("mods", {}).items():
-            mod_id = mod_metadata.get("mod_id")
-            local_version = str(mod_metadata.get("version", ""))
-            if not mod_id:
-                print(f"No mod ID found for {mod_name}, skipping update check")
-                continue
 
-            print(f"Checking for update for mod: {mod_name}")
-            new_metatadata = get_mod_info(headers, game_id, mod_id, download_dir, mod_metadata["folder_name"] if "folder_name" in mod_metadata else mod_metadata["name"])
+def get_nexus_changelog(headers: dict, game_id: str, mod_id: str):
+    try:
+        changelog_url = f"https://api.nexusmods.com/v1/games/{game_id}/mods/{mod_id}/changelogs.json"
+        changelog_resp = requests.get(changelog_url, headers=headers, timeout=10)
+    except Exception as e:
+        print(f"Error checking {mod_name}: {e}")
+        return None
 
-            remote_version = str(new_metatadata.get("new_version", ""))
+    if changelog_resp.status_code == 200:
+        changelogs = changelog_resp.json()
+        # Nexus returns a dict where keys are version numbers
+        # We grab the log for the specific remote version found
+        new_log = changelogs.get(remote_version)
+        if new_log:
+            # Join list of changes into a single string if necessary
+            new_changelog = "\n".join(new_log) if isinstance(new_log, list) else new_log
 
-            if remote_version and remote_version != local_version:
-                print("New version available!")
-                try:
-                    changelog_url = f"https://api.nexusmods.com/v1/games/{game_id}/mods/{mod_id}/changelogs.json"
-                    changelog_resp = requests.get(changelog_url, headers=headers, timeout=10)
-                except Exception as e:
-                    print(f"Error checking {mod_name}: {e}")
-                    continue
-                
-                if changelog_resp.status_code == 200:
-                    logs = changelog_resp.json()
-                    # Nexus returns a dict where keys are version numbers
-                    # We grab the log for the specific remote version found
-                    new_log = logs.get(remote_version)
-                    if new_log:
-                        # Join list of changes into a single string if necessary
-                        new_changelog = "\n".join(new_log) if isinstance(new_log, list) else new_log
-                        staging_metadata["mods"][mod_name]["changelog"] = new_changelog
-            
-            # update mod_metadata with new metadata values
-            staging_metadata["mods"][mod_name] |= new_metatadata
-
-        GLib.idle_add(on_complete_callback, staging_metadata)
-
-    threading.Thread(target=worker, daemon=True).start()
+    return new_changelog
 
 # Interprets nxm links and launchs notification
 def handle_nexus_link(nxm_link: str, downloader: Downloader) -> bool:
