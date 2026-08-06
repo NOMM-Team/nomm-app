@@ -94,3 +94,11 @@ def list_emulators():
         installed_emulator_list.append("Ryubing")
 
     return installed_emulator_list
+
+def get_emulator_logo(emulator):
+    if emulator == "Citron":
+        return "citron-logo"
+    elif emulator == "Eden":
+        return "eden-logo"
+    elif emulator == "Ryubing":
+        return "ryubing-logo"

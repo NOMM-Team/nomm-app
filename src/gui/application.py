@@ -17,6 +17,7 @@ from core.tools import (load_yaml,
                         translate_fuse_path, write_yaml)
 from core.user_config import (load_user_config, update_user_config,
                               write_user_config)
+from platforms.switch import list_emulators, get_emulator_logo
 from gui.app_views.library_view import LibraryView
 from gui.dashboard import GameDashboard
 from platforms.nexus import handle_nexus_link
@@ -292,7 +293,94 @@ class Nomm(Adw.Application):
 
     def store_api_key(self, api_key):
         self.temp_config["nexus_api_key"] = api_key
-        self.steam_user_id_handler()
+        self.preferred_switch_emulator_handler()
+
+    def preferred_switch_emulator_handler(self):
+        emulators = list_emulators()
+        if len(emulators) == 1:
+            self.temp_config["preferred_switch_emulator"] = emulators[0]
+            self.steam_user_id_handler()
+        elif len(emulators) > 1:
+            self.show_preferred_emulator_screen(emulators)
+        else: # 0 emulators found
+            self.steam_user_id_handler()
+
+    def show_preferred_emulator_screen(self, emulators):
+        self.remove_stack_child("preferred_emu")
+        
+        status_page = Adw.StatusPage(
+            title=_("Select Your Preferred Switch Emulator"),
+            description=_("Multiple Switch emulators were detected on your system.\n"
+                          "Please select the one that you want to configure when using NOMM.\n"
+                          "This choice can be changed later on in the settings."),
+            icon_name="switch-logo"
+        )
+
+        content_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=24, halign=Gtk.Align.CENTER)
+        content_box.set_margin_top(12)
+
+        # Horizontal row to hold the selectable emulator buttons
+        cards_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=16, halign=Gtk.Align.CENTER)
+
+        selected_emulator = {"name": emulators[0]} # Store currently highlighted choice
+
+        # Group buttons together so selecting one unchecks the others (Radio functionality)
+        group_button = None
+
+        for emu_name in emulators:
+            logo_path = get_emulator_logo(emu_name)
+
+            # Container for each emulator option card
+            emu_card = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8, halign=Gtk.Align.CENTER)
+            emu_card.set_margin_start(12)
+            emu_card.set_margin_end(12)
+            emu_card.set_margin_top(12)
+            emu_card.set_margin_bottom(12)
+
+            emu_logo = Gtk.Image.new_from_icon_name(get_emulator_logo(emu_name))
+            emu_logo.set_pixel_size(100)
+            emu_label = Gtk.Label(label=emu_name, css_classes=["title-4"])
+
+            emu_card.append(emu_logo)
+            emu_card.append(emu_label)
+
+            # Toggle Button wrapper to make the card clickable
+            btn = Gtk.ToggleButton()
+            btn.set_child(emu_card)
+            btn.add_css_class("card") # Gives it a nice Libadwaita rounded card border
+
+            # Radio-button behavior setup
+            if group_button is None:
+                group_button = btn
+                btn.set_active(True) # Select the first one by default
+            else:
+                btn.set_group(group_button)
+
+            # Update selection state when clicked
+            def on_toggled(button, name=emu_name):
+                if button.get_active():
+                    selected_emulator["name"] = name
+
+            btn.connect("toggled", on_toggled)
+            cards_box.append(btn)
+
+        content_box.append(cards_box)
+
+        # Continue Button
+        cont_btn = Gtk.Button(label=_("Continue"), halign=Gtk.Align.CENTER, width_request=160)
+        cont_btn.add_css_class("suggested-action")
+        
+        def on_continue_clicked(b):
+            self.temp_config["preferred_switch_emulator"] = selected_emulator["name"]
+            self.steam_user_id_handler()
+
+        cont_btn.connect("clicked", on_continue_clicked)
+        content_box.append(cont_btn)
+
+        status_page.set_child(content_box)
+        
+        self.stack.add_named(status_page, "preferred_emu")
+        self.stack.set_visible_child_name("preferred_emu")
 
     def steam_user_id_handler(self):
         steam_userdata_path = self.steam_base + "userdata/"
