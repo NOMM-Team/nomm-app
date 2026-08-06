@@ -14,7 +14,9 @@ EDEN_MOD_PATH = os.path.expanduser("~/.local/share/eden/load/")
 # Citron paths
 CITRON_GAME_PATH = os.path.expanduser("~/.local/share/citron/load/")
 CITRON_MOD_PATH = os.path.expanduser("~/.local/share/citron/load/")
-
+# SUDACHI paths
+SUDACHI_GAME_PATH = os.path.expanduser("~/.local/share/sudachi/load/")
+SUDACHI_MOD_PATH = os.path.expanduser("~/.local/share/sudachi/load/")
 
 def find_matches(game_configs_dir) -> list:
 
@@ -32,15 +34,18 @@ def find_matches(game_configs_dir) -> list:
     except Exception as e:
         print(f"Was not able to load switch config - is it improperly formatted? {e}")
 
-    if preferred_emulator == "Ryubing":
-        game_path = RYUBING_GAME_PATH
-        mods_path = RYUBING_MOD_PATH
+    if preferred_emulator == "Citron":
+        game_path = CITRON_GAME_PATH
+        mods_path = CITRON_MOD_PATH
     elif preferred_emulator == "Eden":
         game_path = EDEN_GAME_PATH
         mods_path = EDEN_MOD_PATH
-    elif preferred_emulator == "Citron":
-        game_path = CITRON_GAME_PATH
-        mods_path = CITRON_MOD_PATH
+    elif preferred_emulator == "Ryubing":
+        game_path = RYUBING_GAME_PATH
+        mods_path = RYUBING_MOD_PATH
+    elif preferred_emulator == "Sudachi":
+        game_path = SUDACHI_GAME_PATH
+        mods_path = SUDACHI_MOD_PATH
     
     
     installed_games = os.listdir(game_path)
@@ -50,7 +55,7 @@ def find_matches(game_configs_dir) -> list:
         #Ryujinx has game IDs in lowercase, and Eden has them in uppercase :')
         if preferred_emulator == "Ryubing":
             game_id = game["switch_id"].lower()
-        elif preferred_emulator == "Eden":
+        elif preferred_emulator in ["Citron","Eden","Sudachi"]:
             game_id = game["switch_id"].upper()
         if game_id in installed_games:
             art = load_cached_assets(game["full_name"], PLATFORM)
@@ -90,5 +95,7 @@ def list_emulators():
         installed_emulator_list.append("Eden")
     if os.path.exists(RYUBING_GAME_PATH):
         installed_emulator_list.append("Ryubing")
+    if os.path.exists(SUDACHI_GAME_PATH):
+        installed_emulator_list.append("Sudachi")
 
     return installed_emulator_list
