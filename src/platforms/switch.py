@@ -77,7 +77,8 @@ def find_matches(game_configs_dir) -> list:
                     "platform": PLATFORM,
                     "game_config_path": switch_config_path,
                     "mod_paths": mod_paths,
-                    "utilities": None
+                    "utilities": None,
+                    "accent_colour": None
                 }
             )
     

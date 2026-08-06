@@ -59,7 +59,8 @@ def find_epic_game(yaml_data, yaml_path, game_title, installed_epic):
                 "platform": "heroic-epic",
                 "game_config_path": yaml_path,
                 "mod_paths": mod_paths,
-                "utilities": yaml_data.get("essential-utilities")
+                "utilities": yaml_data.get("essential-utilities"),
+                "accent_colour": yaml_data.get("accent_colour")
             }
     return None
 
@@ -87,7 +88,8 @@ def find_gog_game(yaml_data, yaml_path, game_title, installed_gog):
                 "platform": "heroic-gog",
                 "game_config_path": yaml_path,
                 "mod_paths": mod_paths,
-                "utilities": yaml_data.get("essential-utilities")
+                "utilities": yaml_data.get("essential-utilities"),
+                "accent_colour": yaml_data.get("accent_colour")
             }
     return None
 

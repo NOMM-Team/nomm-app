@@ -55,13 +55,13 @@ class GameDashboard(Gtk.Box):
         }
 
         # Per game accent colour theming
-        if user_config.get("enable_per_game_accent_colour") and self.game_config.get("accent_colour"):
+        if user_config.get("enable_per_game_accent_colour") and game_info["accent_colour"]:
             print("applying cool new colour")
-            fg_color = get_contrast_color(self.game_config["accent_colour"])
+            fg_color = get_contrast_color(game_info["accent_colour"])
             css = f"""
             window {{
-                --accent-bg-color: {self.game_config["accent_colour"]};
-                --accent-color: {self.game_config["accent_colour"]};
+                --accent-bg-color: {game_info["accent_colour"]};
+                --accent-color: {game_info["accent_colour"]};
                 --accent-fg-color: {fg_color};
             }}
             """

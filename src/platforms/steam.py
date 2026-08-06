@@ -108,6 +108,7 @@ def find_game(yaml_data, yaml_path, game_title, found_libs, steam_base) -> List[
                     "platform": "steam",
                     "game_config_path": yaml_path,
                     "mod_paths": mod_paths,
-                    "utilities": yaml_data.get("essential-utilities")
+                    "utilities": yaml_data.get("essential-utilities"),
+                    "accent_colour": yaml_data.get("accent_colour")
                 }
     return None
