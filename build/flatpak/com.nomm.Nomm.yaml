@@ -20,6 +20,7 @@ finish-args:
   # Switch support
   - --filesystem=~/.var/app/io.github.ryubing.Ryujinx/config/Ryujinx:rw # Ryubing flatpak
   - --filesystem=~/.local/share/eden/load:rw # Eden AppImage
+  - --filesystem=~/.local/share/citron/load:rw # Citron AppImage
 
 modules:
   # Python dependencies (generated via flatpak-pip-generator)

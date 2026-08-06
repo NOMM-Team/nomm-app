@@ -11,6 +11,10 @@ RYUBING_MOD_PATH = os.path.expanduser("~/.var/app/io.github.ryubing.Ryujinx/conf
 # Eden paths
 EDEN_GAME_PATH = os.path.expanduser("~/.local/share/eden/load/")
 EDEN_MOD_PATH = os.path.expanduser("~/.local/share/eden/load/")
+# Citron paths
+CITRON_GAME_PATH = os.path.expanduser("~/.local/share/citron/load/")
+CITRON_MOD_PATH = os.path.expanduser("~/.local/share/citron/load/")
+
 
 def find_matches(game_configs_dir) -> list:
 
@@ -34,6 +38,9 @@ def find_matches(game_configs_dir) -> list:
     elif preferred_emulator == "Eden":
         game_path = EDEN_GAME_PATH
         mods_path = EDEN_MOD_PATH
+    elif preferred_emulator == "Citron":
+        game_path = CITRON_GAME_PATH
+        mods_path = CITRON_MOD_PATH
     
     
     installed_games = os.listdir(game_path)
@@ -77,8 +84,11 @@ def find_matches(game_configs_dir) -> list:
 def list_emulators():
     """Lists Switch emulators installed on user's system"""
     installed_emulator_list = []
-    if os.path.exists(RYUBING_GAME_PATH):
-        installed_emulator_list.append("Ryubing")
+    if os.path.exists(CITRON_GAME_PATH):
+        installed_emulator_list.append("Citron")
     if os.path.exists(EDEN_GAME_PATH):
         installed_emulator_list.append("Eden")
+    if os.path.exists(RYUBING_GAME_PATH):
+        installed_emulator_list.append("Ryubing")
+
     return installed_emulator_list
