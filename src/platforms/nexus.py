@@ -126,6 +126,7 @@ def handle_nexus_link(nxm_link: str, downloader: Downloader) -> bool:
         print("Error: Missing API key or download path in user_config.yaml")
         return False
 
+    # TODO: Headers should not be redefined here. They should be defined once globally for all platforms.
     headers = {
         'apikey': api_key,
         'Application-Name': 'NOMM',
