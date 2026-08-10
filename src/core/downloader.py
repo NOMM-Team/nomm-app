@@ -68,6 +68,7 @@ class Downloader(GObject.Object):
                             }
                             GLib.idle_add(self.emit, 'progress-changed', download_data)
 
+            print(f"DEBUG: Download finished writing to {dest_path}. Emitting complete signal...")
             GLib.idle_add(self.emit, 'download-complete', filename)
             return True
         except Exception as e:
