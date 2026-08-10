@@ -898,7 +898,7 @@ class ModsTab(Gtk.Box):
 
     def find_text_file(self, mod_files):
         for file_path in mod_files:
-            if ".txt" in file_path:
+            if file_path.endswith(".txt"):
                 return file_path
         return None
 
