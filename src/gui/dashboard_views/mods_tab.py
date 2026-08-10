@@ -1011,7 +1011,7 @@ class ModsTab(Gtk.Box):
                 if mod_platform == "Nexus":
                     if not nexus_id:
                         print(f"Nexus_id not found in staging metadata. Skipping update check.")
-                    continue
+                        continue
                     new_metatadata = get_nexus_mod_info(self.dashboard.nexus_headers, nexus_id, mod_id, download_dir, mod_metadata["folder_name"] if "folder_name" in mod_metadata else mod_metadata["name"])
                 elif mod_platform == "GameBanana":
                     new_metatadata = get_gamebanana_mod_info(self.dashboard.headers, mod_id, download_dir, mod_metadata["folder_name"] if "folder_name" in mod_metadata else mod_metadata["name"])
@@ -1023,7 +1023,7 @@ class ModsTab(Gtk.Box):
                 if remote_version and remote_version != local_version:
                     print(f"New version available: {local_version} -> {remote_version}")
                 if mod_platform == "Nexus":
-                    staging_metadata["mods"][mod_name]["changelog"] = get_nexus_changelog(headers, nexus_id, mod_id)
+                    staging_metadata["mods"][mod_name]["changelog"] = get_nexus_changelog(self.dashboard.nexus_headers, nexus_id, mod_id, remote_version)
 
                 # update mod_metadata with new metadata values
                 staging_metadata["mods"][mod_name] |= new_metatadata

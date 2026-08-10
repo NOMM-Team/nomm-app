@@ -93,7 +93,7 @@ def get_mod_info(headers: dict, game_id: str, mod_id: str, download_dir: Path, c
 
 
 
-def get_nexus_changelog(headers: dict, game_id: str, mod_id: str):
+def get_nexus_changelog(headers: dict, game_id: str, mod_id: str, remote_version: str):
     try:
         changelog_url = f"https://api.nexusmods.com/v1/games/{game_id}/mods/{mod_id}/changelogs.json"
         changelog_resp = requests.get(changelog_url, headers=headers, timeout=10)
@@ -106,11 +106,10 @@ def get_nexus_changelog(headers: dict, game_id: str, mod_id: str):
         # Nexus returns a dict where keys are version numbers
         # We grab the log for the specific remote version found
         new_log = changelogs.get(remote_version)
-        if new_log:
-            # Join list of changes into a single string if necessary
-            new_changelog = "\n".join(new_log) if isinstance(new_log, list) else new_log
-
-    return new_changelog
+        if not new_log:
+            return None
+        # Join list of changes into a single string if necessary
+        return "\n".join(new_log) if isinstance(new_log, list) else new_log
 
 # Interprets nxm links and launchs notification
 def handle_nexus_link(nxm_link: str, downloader: Downloader, headers: dict) -> bool:
