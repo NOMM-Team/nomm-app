@@ -92,7 +92,7 @@ class Nomm(Adw.Application):
             icon_theme.add_resource_path("/com/nomm/Nomm/icons")
             print("[+] Custom icon theme registered successfully!")
 
-    # Choose either to launch the popup_download, the app or both 
+    # Choose either to launch the popup_download, the app or both
     def do_open(self, files, n_files, hint):
         for f in files:
             uri = f.get_uri()
@@ -115,7 +115,7 @@ class Nomm(Adw.Application):
     def _process_link(self, uri, handler_fn):
         started = False
         try:
-            started = handler_fn(uri, self.downloader)
+            started = handler_fn(uri, self.downloader, self.headers)
         except Exception as e:
             print(f"Error handling URI {uri}: {e}")
 
@@ -124,7 +124,7 @@ class Nomm(Adw.Application):
         )
         GLib.idle_add(callback)
 
-    def handle_nomm_link(self, url: str, downloader):
+    def handle_nomm_link(self, url: str, downloader, headers: dict):
         """Looks at nomm protocol scheme urls and redirects to the right bit of code"""
         target = urlparse(url).netloc
         print(f"Detected link to {target}")

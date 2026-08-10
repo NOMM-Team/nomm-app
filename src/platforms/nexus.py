@@ -113,7 +113,7 @@ def get_nexus_changelog(headers: dict, game_id: str, mod_id: str):
     return new_changelog
 
 # Interprets nxm links and launchs notification
-def handle_nexus_link(nxm_link: str, downloader: Downloader) -> bool:
+def handle_nexus_link(nxm_link: str, downloader: Downloader, headers: dict) -> bool:
 
     app_dir = os.path.join(GLib.get_user_data_dir(), "nomm")
     user_config_dir = os.path.join(app_dir, "user_config.yaml")
@@ -126,13 +126,8 @@ def handle_nexus_link(nxm_link: str, downloader: Downloader) -> bool:
         print("Error: Missing API key or download path in user_config.yaml")
         return False
 
-    # TODO: Headers should not be redefined here. They should be defined once globally for all platforms.
-    headers = {
-        'apikey': api_key,
-        'Application-Name': 'NOMM',
-        'Application-Version': '0.5.3',
-        'User-Agent': 'NOMM/0.1 (Linux; Flatpak) Requests/Python'
-    }
+    nexus_headers = headers.copy()
+    nexus_headers["apikey"] = api_key
     
     splitted_nxm = urlsplit(nxm_link)
     nexus_id = splitted_nxm.netloc.lower()
@@ -163,10 +158,10 @@ def handle_nexus_link(nxm_link: str, downloader: Downloader) -> bool:
 
     if "collections" in nxm_link:
         print("Downloading collection")
-        return _download_nexus_collection(nxm_link, headers, final_download_dir, downloader)
+        return _download_nexus_collection(nxm_link, nexus_headers, final_download_dir, downloader)
     else:
         print("Downloading single mod")
-        return _download_nexus_mod(nxm_link, headers, final_download_dir, nexus_id, game_folder_name, user_config_dir, downloader)
+        return _download_nexus_mod(nxm_link, nexus_headers, final_download_dir, nexus_id, game_folder_name, user_config_dir, downloader)
 
 def _download_nexus_mod(nxm_link: str, headers: dict, final_download_dir: Path, nexus_id: str, game_folder_name: str, user_config_dir, downloader: Downloader) -> bool:
     

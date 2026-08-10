@@ -982,7 +982,7 @@ class ModsTab(Gtk.Box):
         if not staging_metadata:
             print(f"Staging metadata not found at: {self.dashboard.staging_metadata_path}. Aborting update process.")
             return
-        nexus_id = staging_metadata.get("info").get("nexus_id")
+        
         
 
         btn.set_sensitive(False)
@@ -992,12 +992,12 @@ class ModsTab(Gtk.Box):
             self.populate_list()
             btn.set_sensitive(True)
 
-        self.check_for_mod_updates_async(staging_metadata, self.dashboard.headers, nexus_id, Path(self.dashboard.downloads_path), on_updates_checked)
+        self.check_for_mod_updates_async(staging_metadata, Path(self.dashboard.downloads_path), on_updates_checked)
 
-    def check_for_mod_updates_async(self, staging_metadata: dict, headers: dict, game_id: str, download_dir: Path, on_complete_callback: Optional[Callable]) -> None:
+    def check_for_mod_updates_async(self, staging_metadata: dict, download_dir: Path, on_complete_callback: Optional[Callable]) -> None:
         def worker():
             print("Checking for updates in background...")
-
+            nexus_id = staging_metadata.get("info").get("nexus_id")
             for mod_name, mod_metadata in staging_metadata.get("mods", {}).items():
                 mod_id = mod_metadata.get("mod_id")
                 local_version = str(mod_metadata.get("version", ""))
@@ -1011,17 +1011,19 @@ class ModsTab(Gtk.Box):
                 if mod_platform == "Nexus":
                     if not nexus_id:
                         print(f"Nexus_id not found in staging metadata. Skipping update check.")
-                    return
-                    new_metatadata = get_nexus_mod_info(headers, game_id, mod_id, download_dir, mod_metadata["folder_name"] if "folder_name" in mod_metadata else mod_metadata["name"])
+                    continue
+                    new_metatadata = get_nexus_mod_info(self.dashboard.nexus_headers, nexus_id, mod_id, download_dir, mod_metadata["folder_name"] if "folder_name" in mod_metadata else mod_metadata["name"])
                 elif mod_platform == "GameBanana":
-                    new_metatadata = get_gamebanana_mod_info(headers, mod_id, download_dir, mod_metadata["folder_name"] if "folder_name" in mod_metadata else mod_metadata["name"])
-
+                    new_metatadata = get_gamebanana_mod_info(self.dashboard.headers, mod_id, download_dir, mod_metadata["folder_name"] if "folder_name" in mod_metadata else mod_metadata["name"])
+                else:
+                    print("Unrecognised platform")
+                    continue
                 remote_version = str(new_metatadata.get("new_version", ""))
 
                 if remote_version and remote_version != local_version:
                     print(f"New version available: {local_version} -> {remote_version}")
                 if mod_platform == "Nexus":
-                    staging_metadata["mods"][mod_name]["changelog"] = get_nexus_changelog(headers, game_id, mod_id)
+                    staging_metadata["mods"][mod_name]["changelog"] = get_nexus_changelog(headers, nexus_id, mod_id)
 
                 # update mod_metadata with new metadata values
                 staging_metadata["mods"][mod_name] |= new_metatadata
