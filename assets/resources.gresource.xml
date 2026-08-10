@@ -24,5 +24,7 @@
     <file>downloaded-symbolic.svg</file>
     <file>enabled-symbolic.svg</file>
     <file>installed-symbolic.svg</file>
+    <file>upgrade-symbolic.svg</file>
+    <file>arrow-circle-right-symbolic.svg</file>
   </gresource>
 </gresources>

@@ -234,7 +234,7 @@ class ModsTab(Gtk.Box):
         self.version_btn_changelog_icon = Gtk.Image.new_from_icon_name("help-about-symbolic")
         self.version_btn_changelog_icon.set_visible(False)
         self.version_btn_label = Gtk.Label()
-        self.version_btn_upgrade_icon = Gtk.Image.new_from_icon_name("software-update-available-symbolic")
+        self.version_btn_upgrade_icon = Gtk.Image.new_from_icon_name("arrow-circle-right-symbolic")
         self.version_btn_upgrade_icon.set_visible(False)
         self.version_btn_label_new = Gtk.Label()
         self.version_btn_label_new.set_visible(False)
@@ -845,7 +845,7 @@ class ModsTab(Gtk.Box):
                 version_new = mod_metadata.get("new_version", "")
                 if version_current and version_new and (version_new != version_current):
                     update_badge = Gtk.Button(margin_top=10, margin_bottom=10)
-                    update_badge_icon = Gtk.Image.new_from_icon_name("software-update-available-symbolic")
+                    update_badge_icon = Gtk.Image.new_from_icon_name("upgrade-symbolic")
                     update_badge_icon.set_pixel_size(22)
                     update_badge.connect("clicked", lambda b, link=mod_link: webbrowser.open(link + "?tab=files"))
                     update_badge_icon.add_css_class("transparent-bg-accent-icon")
