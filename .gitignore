@@ -18,5 +18,9 @@ build/aur/*
 !build/aur/.SRCINFO
 !build/aur/PKGBUILD
 
+build/aur-nightly/*
+!build/aur-nightly/.SRCINFO
+!build/aur-nightly/PKGBUILD
+
 # gtk resources
 resources.gresource

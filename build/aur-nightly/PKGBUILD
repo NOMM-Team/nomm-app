@@ -1,6 +1,6 @@
-pkgname=nomm
-pkgver=0.11.0
+pkgname=nomm-git
 pkgrel=1
+pkgver=0.11.0.r29.g6efe3f9
 pkgdesc="Native Open Mod Manager - a mod manager for Linux"
 arch=('any')
 url="https://github.com/Allexio/nomm"
@@ -20,11 +20,16 @@ depends=(
 makedepends=(
     'gettext'
 )
-source=("$pkgname-$pkgver.tar.gz::https://github.com/Allexio/nomm/archive/refs/tags/$pkgver.tar.gz")
-sha256sums=('4277d8a2290e7e7cf757b65d7740af3128146a7bb204dd8f03de2f12a71aa1ed')
+source=("git+https://github.com/Allexio/nomm.git#branch=main")
+sha256sums=('SKIP')
+
+pkgver() {
+  cd "nomm"
+  git describe --long --tags --abbrev=7 | sed 's/\([^-]*-g\)/r\1/;s/-/./g'
+}
 
 package() {
-    cd "nomm-$pkgver"
+    cd "nomm"
 
     # App files
     install -dm755 "$pkgdir/usr/lib/nomm"
