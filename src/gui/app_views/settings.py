@@ -31,7 +31,7 @@ class SettingsWindow(Adw.Window):
         current_path = load_yaml(self.user_config_dir).get('download_path', 'Not set')
         self.path_row.set_subtitle(current_path)
 
-        folder_btn = Gtk.Button(icon_name="folder-open-symbolic", valign=Gtk.Align.CENTER, css_classes=["flat"])
+        folder_btn = Gtk.Button(icon_name="folder-managed-symbolic", valign=Gtk.Align.CENTER, css_classes=["flat"])
         folder_btn.connect("clicked", lambda b: self.pick_folder(self.path_row, "download_path"))
         self.path_row.add_suffix(folder_btn)
         storage_group.add(self.path_row)
@@ -41,7 +41,7 @@ class SettingsWindow(Adw.Window):
         current_staging = load_yaml(self.user_config_dir).get('staging_path', 'Not set')
         self.staging_row.set_subtitle(current_staging)
 
-        staging_btn = Gtk.Button(icon_name="folder-open-symbolic", valign=Gtk.Align.CENTER, css_classes=["flat"])
+        staging_btn = Gtk.Button(icon_name="folder-managed-symbolic", valign=Gtk.Align.CENTER, css_classes=["flat"])
         staging_btn.connect("clicked", lambda b: self.pick_folder(self.staging_row, "staging_path"))
         self.staging_row.add_suffix(staging_btn)
         storage_group.add(self.staging_row)
