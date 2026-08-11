@@ -119,18 +119,28 @@ class LibraryView(Gtk.Box):
         return card
 
     def add_fab_buttons(self, overlay):
-        refresh_btn = Gtk.Button(icon_name="mat-document-search-symbolic", halign=Gtk.Align.END, valign=Gtk.Align.START, margin_top=30, margin_end=30)
-        refresh_btn.set_size_request(64, 64)
+        fab_box = Gtk.Box(
+            orientation=Gtk.Orientation.HORIZONTAL,
+            spacing=20,
+            halign=Gtk.Align.END,
+            valign=Gtk.Align.START,
+            margin_top=30,
+            margin_end=30,
+        )
+
+        refresh_btn = Gtk.Button(icon_name="mat-document-search-symbolic")
+        refresh_btn.set_size_request(74, 74)
         refresh_btn.add_css_class("refresh-fab")
         refresh_btn.connect("clicked", lambda b: self.app.manual_library_refresh())
 
-        settings_btn = Gtk.Button(icon_name="mat-settings-symbolic", halign=Gtk.Align.END, valign=Gtk.Align.START, margin_top=30, margin_end=120)
-        settings_btn.set_size_request(64, 64)
+        settings_btn = Gtk.Button(icon_name="mat-settings-symbolic")
+        settings_btn.set_size_request(74, 74)
         settings_btn.add_css_class("refresh-fab")
         settings_btn.connect("clicked", self.app.on_settings_clicked)
-        
-        overlay.add_overlay(settings_btn)
-        overlay.add_overlay(refresh_btn)
+
+        fab_box.append(refresh_btn)
+        fab_box.append(settings_btn)
+        overlay.add_overlay(fab_box)
 
     def get_placeholder_game_poster(self):
         b = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, valign=Gtk.Align.CENTER)
