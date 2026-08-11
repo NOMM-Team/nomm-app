@@ -1,5 +1,6 @@
 import os
 import yaml
+from enum import Enum
 
 from gi.repository import GLib
 from core.tools import load_cached_assets, download_image
@@ -15,16 +16,23 @@ EDEN_MOD_PATH = os.path.expanduser("~/.local/share/eden/load")
 CITRON_GAME_PATH = os.path.expanduser("~/.local/share/citron/load")
 CITRON_MOD_PATH = os.path.expanduser("~/.local/share/citron/load")
 
+# Supported config values
+class EmulatorName(Enum):
+    RYUBING = "Ryubing"
+    EDEN = "Eden"
+    CITRON = "Citron"
+    UNKNOWN = "Unknown"
 
 def find_matches(game_configs_dir) -> list:
 
     switch_config_path = os.path.join(game_configs_dir, "emulation/switch.yaml")
-    if not os.path.exists(switch_config_path):
+    if not os.path.exists(switch_config_path) or list_emulators() == [] :
         return []
 
     PLATFORM = "switch"
     
-    preferred_emulator = load_user_config().get("preferred_switch_emulator", list_emulators()[0])
+    emulator_name_str = load_user_config().get("preferred_switch_emulator", EmulatorName.UNKNOWN)
+    preferred_emulator = EmulatorName(emulator_name_str) 
 
     try:
         with open(switch_config_path, 'r') as f:
@@ -32,25 +40,27 @@ def find_matches(game_configs_dir) -> list:
     except Exception as e:
         print(f"Was not able to load switch config - is it improperly formatted? {e}")
 
-    if preferred_emulator == "Citron":
+    if preferred_emulator == EmulatorName.CITRON:
         game_path = CITRON_GAME_PATH
         mods_path = CITRON_MOD_PATH
-    elif preferred_emulator == "Eden":
+    elif preferred_emulator == EmulatorName.EDEN:
         game_path = EDEN_GAME_PATH
         mods_path = EDEN_MOD_PATH
-    elif preferred_emulator == "Ryubing":
+    elif preferred_emulator == EmulatorName.RYUBING:
         game_path = RYUBING_GAME_PATH
         mods_path = RYUBING_MOD_PATH
-    
+    elif preferred_emulator == EmulatorName.UNKNOWN:
+        print(f"Preferred emulator value is not supported")
+        return []
     
     installed_games = os.listdir(game_path)
     matches = []
 
     for game in supported_switch_games:
         #Ryujinx has game IDs in lowercase, and Eden has them in uppercase :')
-        if preferred_emulator == "Ryubing":
+        if preferred_emulator == EmulatorName.RYUBING:
             game_id = game["switch_id"].lower()
-        elif preferred_emulator in ["Citron","Eden","Sudachi"]:
+        elif preferred_emulator in [EmulatorName.CITRON, EmulatorName.EDEN, "Sudachi"]: # Sudachi doesn't exist yet?
             game_id = game["switch_id"].upper()
         if game_id in installed_games:
             art = load_cached_assets(game["full_name"], PLATFORM)
@@ -86,18 +96,21 @@ def list_emulators():
     """Lists Switch emulators installed on user's system"""
     installed_emulator_list = []
     if os.path.exists(CITRON_GAME_PATH):
-        installed_emulator_list.append("Citron")
-    if os.path.exists(EDEN_GAME_PATH):
-        installed_emulator_list.append("Eden")
-    if os.path.exists(RYUBING_GAME_PATH):
-        installed_emulator_list.append("Ryubing")
+        installed_emulator_list.append(EmulatorName.CITRON.value)
+    elif os.path.exists(EDEN_GAME_PATH):
+        installed_emulator_list.append(EmulatorName.EDEN.value)
+    elif os.path.exists(RYUBING_GAME_PATH):
+        installed_emulator_list.append(EmulatorName.RYUBING.value)
+    else:
+        print("[Info] No switch emulator has been installed yet")
 
     return installed_emulator_list
 
 def get_emulator_logo(emulator):
-    if emulator == "Citron":
+    EmulatorName(emulator)
+    if emulator == EmulatorName.CITRON:
         return "citron-logo"
-    elif emulator == "Eden":
+    elif emulator == EmulatorName.EDEN:
         return "eden-logo"
-    elif emulator == "Ryubing":
+    elif emulator == EmulatorName.RYUBING:
         return "ryubing-logo"
