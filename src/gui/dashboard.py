@@ -241,8 +241,7 @@ class GameDashboard(Gtk.Box):
         icon.add_css_class("dim-label")
         
         label = Gtk.Label(label=text, xalign=0, css_classes=["dim-label", "caption"])
-        label.set_tooltip_text(tooltip)
-        
+        row_box.set_tooltip_text(tooltip)
         row_box.append(icon)
         row_box.append(label)
         return row_box
