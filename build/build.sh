@@ -10,3 +10,8 @@ if [ $1 == "aur" ]; then
     cd "$(dirname "$0")/aur"
     makepkg -si
 fi
+
+if [ $1 == "aur-nightly" ]; then
+    cd "$(dirname "$0")/aur-nightly"
+    makepkg -si
+fi
