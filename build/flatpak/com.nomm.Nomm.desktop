@@ -8,4 +8,4 @@ Icon=com.nomm.Nomm
 Terminal=false
 Categories=Game;Settings;
 StartupWMClass=nomm
-MimeType=x-scheme-handler/nxm;
+MimeType=x-scheme-handler/nxm; x-scheme-handler/nomm;

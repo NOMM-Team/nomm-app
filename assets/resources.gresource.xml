@@ -5,6 +5,7 @@
     <file>nomm-logo.svg</file>
     <!-- modding platform icons -->
     <file>nexus-logo.svg</file>
+    <file>gamebanana-logo.svg</file>
     <!-- game platform icons -->
     <file>gog-logo-symbolic.svg</file>
     <file>steam-logo.svg</file>
@@ -23,5 +24,7 @@
     <file>downloaded-symbolic.svg</file>
     <file>enabled-symbolic.svg</file>
     <file>installed-symbolic.svg</file>
+    <file>upgrade-symbolic.svg</file>
+    <file>arrow-circle-right-symbolic.svg</file>
   </gresource>
 </gresources>

@@ -3,6 +3,7 @@ import yaml
 import vdf
 import requests
 import re
+import html
 
 from pathlib import Path
 from typing import List, Dict, Any
@@ -160,6 +161,37 @@ def process_bbcode(raw_desc: str) -> str:
 
     print("BBCode successfuly parsed into HTML")
     return pango_text
+
+def sanitize_for_pango(raw_html: str) -> str:
+    """Class-free HTML sanitizer that auto-closes unclosed tags for GTK Pango. Mainly used for GameBanana descriptions."""
+    if not raw_html:
+        return ""
+
+    text = raw_html
+    text = re.sub(r'<br\s*/?>', '\n', text, flags=re.IGNORECASE)
+    text = re.sub(r'</?(p|div)[^>]*>', '\n', text, flags=re.IGNORECASE)
+    text = re.sub(r'<a\s+[^>]*href=["\']([^"\']+)["\'][^>]*>', r'___A_HREF___\1___', text, flags=re.IGNORECASE)
+    text = re.sub(r'</a>', '___A_END___', text, flags=re.IGNORECASE)
+    text = re.sub(r'<(b|strong)[^>]*>', '___B_START___', text, flags=re.IGNORECASE)
+    text = re.sub(r'</(b|strong)>', '___B_END___', text, flags=re.IGNORECASE)
+    text = re.sub(r'<(i|em)[^>]*>', '___I_START___', text, flags=re.IGNORECASE)
+    text = re.sub(r'</(i|em)>', '___I_END___', text, flags=re.IGNORECASE)
+    text = re.sub(r'<u[^>]*>', '___U_START___', text, flags=re.IGNORECASE)
+    text = re.sub(r'</u>', '___U_END___', text, flags=re.IGNORECASE)
+    text = re.sub(r'<[^>]+>', '', text)
+    text = html.escape(text)
+    text = text.replace('___B_START___', '<b>').replace('___B_END___', '</b>')
+    text = text.replace('___I_START___', '<i>').replace('___I_END___', '</i>')
+    text = text.replace('___U_START___', '<u>').replace('___U_END___', '</u>')
+    text = re.sub(r'___A_HREF___(.*?)___', r'<a href="\1">', text)
+    text = text.replace('___A_END___', '</a>')
+    for tag in ['b', 'i', 'u', 'a']:
+        open_count = len(re.findall(f'<{tag}[^>]*>', text))
+        close_count = len(re.findall(f'</{tag}>', text))
+        if open_count > close_count:
+            text += f"</{tag}>" * (open_count - close_count)
+
+    return text.strip()
 
 def list_archives(archives_directory: str):
 

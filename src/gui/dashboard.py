@@ -48,11 +48,9 @@ class GameDashboard(Gtk.Box):
         self.current_filter = "all"
         self.active_tab = "mods"
 
-        self.headers = {
-            'apikey': user_config["nexus_api_key"],
-            'Application-Name': 'NOMM',
-            'Application-Version': '0.10'
-        }
+        self.headers = self.app.headers
+        self.nexus_headers = self.app.headers.copy()
+        self.nexus_headers["apikey"] = user_config.get("nexus_api_key")
 
         # Per game accent colour theming
         if user_config.get("enable_per_game_accent_colour") and game_info["accent_colour"]:

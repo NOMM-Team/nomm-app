@@ -13,9 +13,12 @@ from core.mod_manager import (apply_deployment_map_changes, build_deployment_map
                               check_for_deployment_map_change,
                               load_staging_metadata, read_index,
                               toggle_mod_state)
-from platforms.nexus import check_for_mod_updates_async, endorse_nexus_mod
-from core.tools import timestamp_converter, write_yaml, process_bbcode
+from platforms.nexus import get_nexus_changelog, endorse_nexus_mod
+from platforms.nexus import get_mod_info as get_nexus_mod_info
+from platforms.gamebanana import get_mod_info as get_gamebanana_mod_info
+from core.tools import timestamp_converter, write_yaml
 from gui.text_window import TextWindow
+from typing import Optional, Callable
 
 _ = gettext.gettext
 ngettext = gettext.ngettext
@@ -231,7 +234,7 @@ class ModsTab(Gtk.Box):
         self.version_btn_changelog_icon = Gtk.Image.new_from_icon_name("help-about-symbolic")
         self.version_btn_changelog_icon.set_visible(False)
         self.version_btn_label = Gtk.Label()
-        self.version_btn_upgrade_icon = Gtk.Image.new_from_icon_name("software-update-available-symbolic")
+        self.version_btn_upgrade_icon = Gtk.Image.new_from_icon_name("arrow-circle-right-symbolic")
         self.version_btn_upgrade_icon.set_visible(False)
         self.version_btn_label_new = Gtk.Label()
         self.version_btn_label_new.set_visible(False)
@@ -357,7 +360,10 @@ class ModsTab(Gtk.Box):
 
         # Platform Link Button
         if "mod_link" in mod_info and mod_info["mod_link"]:
-            self.platform_icon.set_from_icon_name("nexus-logo")
+            if mod_info.get("platform") == "GameBanana":
+                self.platform_icon.set_from_icon_name("gamebanana-logo")
+            else:    
+                self.platform_icon.set_from_icon_name("nexus-logo")
             self.platform_btn.set_visible(True)
             if hasattr(self, "_platform_link_handler_id"):
                 self.platform_btn.disconnect(self._platform_link_handler_id)    
@@ -570,7 +576,7 @@ class ModsTab(Gtk.Box):
         dialog = Adw.MessageDialog(
             transient_for=self.get_root(),
             heading=_("Change Mod ID"),
-            body=_("Enter the new Nexus ID for this mod. The next time you do a metadata update (top right button on the mods tab), this will completely replace the existing metadata for this mod.\nKeep in mind that if you reinstall this mod from its archive file, the metadata will be overwritten and you will have to change this value again."),
+            body=_("Select the platform and enter the new ID for this mod. The next time you do a metadata update (top right button on the mods tab), this will completely replace the existing metadata for this mod.\nKeep in mind that if you reinstall this mod from its archive file, the metadata will be overwritten and you will have to change this value again."),
         )
         dialog.set_heading_use_markup(True)
         dialog.add_response("cancel", _("Cancel"))
@@ -580,6 +586,22 @@ class ModsTab(Gtk.Box):
 
         entry_box = Gtk.ListBox()
         entry_box.add_css_class("boxed-list")
+
+        # Platform Selection Dropdown
+        platforms = ["Nexus", "GameBanana"]
+        # Create a StringList model for the options
+        model = Gtk.StringList.new(platforms)
+        
+        platform_row = Adw.ComboRow(title=_("Platform"), model=model)
+        
+        # Pre-select current platform if set in YAML
+        current_platform = mod_info.get("platform", "Nexus")
+        if current_platform in platforms:
+            platform_row.set_selected(platforms.index(current_platform))
+        
+        entry_box.append(platform_row)
+
+        # Mod ID Entry Row
         entry_row = Adw.EntryRow(title=_("Mod ID"))
         entry_row.set_activates_default(True)
 
@@ -597,9 +619,14 @@ class ModsTab(Gtk.Box):
                 if not new_id:
                     return # Skip if blank
 
+                # Get selected platform string from index
+                selected_index = platform_row.get_selected()
+                new_platform = platforms[selected_index]
+
                 # Write changes to YAML
                 staging_metadata = load_staging_metadata(self.dashboard.staging_metadata_path)
                 staging_metadata["mods"][mod_index]["mod_id"] = new_id
+                staging_metadata["mods"][mod_index]["platform"] = new_platform
                 write_yaml(staging_metadata, self.dashboard.staging_metadata_path)
 
                 # Reflect the change on the UI
@@ -609,6 +636,7 @@ class ModsTab(Gtk.Box):
             # Cleanly destroy the dialog window tracking allocation
             source_dialog.destroy()
             self.populate_list()
+
         dialog.connect("response", on_response)
         # Bring the layout cleanly into focus
         dialog.present()
@@ -817,7 +845,7 @@ class ModsTab(Gtk.Box):
                 version_new = mod_metadata.get("new_version", "")
                 if version_current and version_new and (version_new != version_current):
                     update_badge = Gtk.Button(margin_top=10, margin_bottom=10)
-                    update_badge_icon = Gtk.Image.new_from_icon_name("software-update-available-symbolic")
+                    update_badge_icon = Gtk.Image.new_from_icon_name("upgrade-symbolic")
                     update_badge_icon.set_pixel_size(22)
                     update_badge.connect("clicked", lambda b, link=mod_link: webbrowser.open(link + "?tab=files"))
                     update_badge_icon.add_css_class("transparent-bg-accent-icon")
@@ -870,7 +898,7 @@ class ModsTab(Gtk.Box):
 
     def find_text_file(self, mod_files):
         for file_path in mod_files:
-            if ".txt" in file_path:
+            if file_path.endswith(".txt"):
                 return file_path
         return None
 
@@ -954,10 +982,8 @@ class ModsTab(Gtk.Box):
         if not staging_metadata:
             print(f"Staging metadata not found at: {self.dashboard.staging_metadata_path}. Aborting update process.")
             return
-        nexus_id = staging_metadata.get("info", {}).get("nexus_id")
-        if not nexus_id:
-            print(f"nexus_id not found in staging metadata. Aborting update process.")
-            return
+        
+        
 
         btn.set_sensitive(False)
 
@@ -966,4 +992,42 @@ class ModsTab(Gtk.Box):
             self.populate_list()
             btn.set_sensitive(True)
 
-        check_for_mod_updates_async(staging_metadata, self.dashboard.headers, nexus_id, Path(self.dashboard.downloads_path), on_updates_checked)
+        self.check_for_mod_updates_async(staging_metadata, Path(self.dashboard.downloads_path), on_updates_checked)
+
+    def check_for_mod_updates_async(self, staging_metadata: dict, download_dir: Path, on_complete_callback: Optional[Callable]) -> None:
+        def worker():
+            print("Checking for updates in background...")
+            nexus_id = staging_metadata.get("info").get("nexus_id")
+            for mod_name, mod_metadata in staging_metadata.get("mods", {}).items():
+                mod_id = mod_metadata.get("mod_id")
+                local_version = str(mod_metadata.get("version", ""))
+                if not mod_id:
+                    print(f"No mod ID found for {mod_name}, skipping update check")
+                    continue
+
+                mod_platform = mod_metadata.get("platform", "Nexus")
+                print(f"Checking for update for mod: {mod_name} on platform: {mod_platform}")
+
+                if mod_platform == "Nexus":
+                    if not nexus_id:
+                        print(f"Nexus_id not found in staging metadata. Skipping update check.")
+                        continue
+                    new_metatadata = get_nexus_mod_info(self.dashboard.nexus_headers, nexus_id, mod_id, download_dir, mod_metadata["folder_name"] if "folder_name" in mod_metadata else mod_metadata["name"])
+                elif mod_platform == "GameBanana":
+                    new_metatadata = get_gamebanana_mod_info(self.dashboard.headers, mod_id, download_dir, mod_metadata["folder_name"] if "folder_name" in mod_metadata else mod_metadata["name"])
+                else:
+                    print("Unrecognised platform")
+                    continue
+                remote_version = str(new_metatadata.get("new_version", ""))
+
+                if remote_version and remote_version != local_version:
+                    print(f"New version available: {local_version} -> {remote_version}")
+                if mod_platform == "Nexus":
+                    staging_metadata["mods"][mod_name]["changelog"] = get_nexus_changelog(self.dashboard.nexus_headers, nexus_id, mod_id, remote_version)
+
+                # update mod_metadata with new metadata values
+                staging_metadata["mods"][mod_name] |= new_metatadata
+
+            GLib.idle_add(on_complete_callback, staging_metadata)
+
+        threading.Thread(target=worker, daemon=True).start()

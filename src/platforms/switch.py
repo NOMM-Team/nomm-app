@@ -7,16 +7,14 @@ from core.user_config import load_user_config
 
 # Ryubing paths
 RYUBING_GAME_PATH = os.path.expanduser("~/.var/app/io.github.ryubing.Ryujinx/config/Ryujinx/games")
-RYUBING_MOD_PATH = os.path.expanduser("~/.var/app/io.github.ryubing.Ryujinx/config/Ryujinx/sdcard/atmosphere/contents/")
+RYUBING_MOD_PATH = os.path.expanduser("~/.var/app/io.github.ryubing.Ryujinx/config/Ryujinx/sdcard/atmosphere/contents")
 # Eden paths
-EDEN_GAME_PATH = os.path.expanduser("~/.local/share/eden/load/")
-EDEN_MOD_PATH = os.path.expanduser("~/.local/share/eden/load/")
+EDEN_GAME_PATH = os.path.expanduser("~/.local/share/eden/load")
+EDEN_MOD_PATH = os.path.expanduser("~/.local/share/eden/load")
 # Citron paths
-CITRON_GAME_PATH = os.path.expanduser("~/.local/share/citron/load/")
-CITRON_MOD_PATH = os.path.expanduser("~/.local/share/citron/load/")
-# SUDACHI paths
-SUDACHI_GAME_PATH = os.path.expanduser("~/.local/share/sudachi/load/")
-SUDACHI_MOD_PATH = os.path.expanduser("~/.local/share/sudachi/load/")
+CITRON_GAME_PATH = os.path.expanduser("~/.local/share/citron/load")
+CITRON_MOD_PATH = os.path.expanduser("~/.local/share/citron/load")
+
 
 def find_matches(game_configs_dir) -> list:
 

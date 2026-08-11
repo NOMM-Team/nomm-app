@@ -10,6 +10,7 @@ gi.require_version('Adw', '1')
 gi.require_version('Notify', '0.7')
 
 from pathlib import Path
+from urllib.parse import urlparse
 from gi.repository import Adw, Gdk, GdkPixbuf, Gio, GLib, Gtk, Pango
 
 from core.game_scanner import scan_all_games
@@ -21,9 +22,12 @@ from platforms.switch import list_emulators, get_emulator_logo
 from gui.app_views.library_view import LibraryView
 from gui.dashboard import GameDashboard
 from platforms.nexus import handle_nexus_link
+from platforms.gamebanana import handle_gamebanana_link
+
 from platforms.steam import get_username_from_steam_id, get_steam_base_dir
 
 APP_NAME = 'com.nomm.Nomm'
+APP_VERSION = '0.12.0'
 
 translation_system = gettext.translation(APP_NAME, localedir='/app/share/locale', fallback=True)
 translation_system.install(names=['ngettext'])
@@ -56,6 +60,12 @@ class Nomm(Adw.Application):
         self.initialize_custom_icons(self.assets_path)            
         self.win = None
 
+        self.headers = {
+            'Application-Name': APP_NAME,
+            'Application-Version': APP_VERSION,
+            'User-Agent': f'{APP_NAME}/{APP_VERSION} (Linux; Flatpak) Requests/Python'
+        }
+
     def initialize_custom_icons(self, assets_path):
         # 1. Compile the XML into a .gresource bundle dynamically (if running in dev mode)
         # In a production flatpak, this compilation step is handled automatically by Meson/Blueprint
@@ -82,23 +92,47 @@ class Nomm(Adw.Application):
             icon_theme.add_resource_path("/com/nomm/Nomm/icons")
             print("[+] Custom icon theme registered successfully!")
 
-    # Choose either to launch the popup_download, the app or both 
+    # Choose either to launch the popup_download, the app or both
     def do_open(self, files, n_files, hint):
         for f in files:
             uri = f.get_uri()
-            if not uri.startswith("nxm://"):
-                continue
-            self.hold()
-            threading.Thread(target=self._process_nxm_link, args=(uri,), daemon=True).start()
 
-    def _process_nxm_link(self, uri):
+            if uri.startswith("nxm://"):
+                target_fn = handle_nexus_link
+            elif uri.startswith("nomm://"):
+                target_fn = self.handle_nomm_link
+            else:
+                print("Could not recognise protocol ident - ignoring command")
+                continue
+
+            self.hold()
+            threading.Thread(
+                target=self._process_link,
+                args=(uri, target_fn),
+                daemon=True,
+            ).start()
+
+    def _process_link(self, uri, handler_fn):
         started = False
         try:
-            started = handle_nexus_link(uri, self.downloader)
+            started = handler_fn(uri, self.downloader, self.headers)
         except Exception as e:
-            print(f"Error while treating nxm link {uri}: {e}")
-        GLib.idle_add(self._connect_release_on_finish if started else self.release)
-    
+            print(f"Error handling URI {uri}: {e}")
+
+        callback = (
+            self._connect_release_on_finish if started else self.release
+        )
+        GLib.idle_add(callback)
+
+    def handle_nomm_link(self, url: str, downloader, headers: dict):
+        """Looks at nomm protocol scheme urls and redirects to the right bit of code"""
+        target = urlparse(url).netloc
+        print(f"Detected link to {target}")
+        if target == "gb":
+            handle_gamebanana_link(url, downloader, self.headers)
+        else:
+            print(f"NOMM does not handle mod platform {target}")
+
     # Release application.py from self.hold so the download stops happening as background task allowing you to 
     # close the downloader while keeping the download active in the mod manager and disconnect the event once 
     # download is done

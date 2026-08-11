@@ -256,13 +256,6 @@ def apply_deployment_map_changes(staging_dir: str, dest_dir: str, changes: dict,
     
     return True
 
-# Dashboard.py/find_text_file
-def find_text_file(mod_files: list) -> str:
-    for file_path in mod_files:
-        if ".txt" in file_path:
-            return file_path
-    return ""
-
 def deploy_essential_utility(util_config: dict, downloads_path: str, staging_path: str, game_path: str, steam_base: str, steam_id: str):
     source_url = util_config.get("source")
     filename = source_url.split("/")[-1]
