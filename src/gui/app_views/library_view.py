@@ -119,12 +119,12 @@ class LibraryView(Gtk.Box):
         return card
 
     def add_fab_buttons(self, overlay):
-        refresh_btn = Gtk.Button(icon_name="view-refresh-symbolic", halign=Gtk.Align.END, valign=Gtk.Align.START, margin_top=30, margin_end=30)
+        refresh_btn = Gtk.Button(icon_name="mat-document-search-symbolic", halign=Gtk.Align.END, valign=Gtk.Align.START, margin_top=30, margin_end=30)
         refresh_btn.set_size_request(64, 64)
         refresh_btn.add_css_class("refresh-fab")
         refresh_btn.connect("clicked", lambda b: self.app.manual_library_refresh())
 
-        settings_btn = Gtk.Button(icon_name="settings-configure-symbolic", halign=Gtk.Align.END, valign=Gtk.Align.START, margin_top=30, margin_end=120)
+        settings_btn = Gtk.Button(icon_name="mat-settings-symbolic", halign=Gtk.Align.END, valign=Gtk.Align.START, margin_top=30, margin_end=120)
         settings_btn.set_size_request(64, 64)
         settings_btn.add_css_class("refresh-fab")
         settings_btn.connect("clicked", self.app.on_settings_clicked)
