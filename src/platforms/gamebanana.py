@@ -163,7 +163,7 @@ def _download_gb_mod(mod_url: str, headers: dict, download_dir: Path, mod_id: st
             daemon=True
         ).start()
     else:
-        download_popup(download_url, download_dir, downloader) # windowed download
+        download_popup(file_name, download_url, download_dir, downloader)
 
     return True
 
@@ -174,6 +174,9 @@ def _fetch_and_write_mod_metadata(headers: dict, download_dir: Path, mod_id: str
     mod_metadata = get_mod_info(headers, mod_id, download_dir)
 
     downloads_metadata_path = get_metadata_path(str(download_dir), is_staging=False)
+    mod_metadata["folder_name"] = mod_metadata["display_name"]
+    mod_metadata["mod_id"] = mod_id
+
     with meta_lock:
         downloads_metadata = load_yaml(downloads_metadata_path)
 
@@ -185,21 +188,6 @@ def _fetch_and_write_mod_metadata(headers: dict, download_dir: Path, mod_id: str
 
         write_yaml(downloads_metadata, downloads_metadata_path)
     GLib.idle_add(downloader.emit, 'download-metadata-ready', file_name)
-
-    mod_metadata["folder_name"] = mod_metadata["display_name"]
-    mod_metadata["mod_id"] = mod_id
-
-    # Handle saving all of this data
-    downloads_metadata_path = get_metadata_path(str(download_dir), is_staging=False)
-    downloads_metadata = load_yaml(downloads_metadata_path)
-
-    if "mods" not in downloads_metadata:
-        downloads_metadata["mods"] = {}
-    downloads_metadata["info"] = {}
-    downloads_metadata["info"]["game"] = game_folder_name
-    downloads_metadata["mods"][file_name] = mod_metadata
-
-    write_yaml(downloads_metadata, downloads_metadata_path)
 
     send_download_notification("success", file_name=file_name, game_name=game_folder_name, icon_path=None)
     
