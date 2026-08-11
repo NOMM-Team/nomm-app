@@ -60,7 +60,7 @@ def find_matches(game_configs_dir) -> list:
         #Ryujinx has game IDs in lowercase, and Eden has them in uppercase :')
         if preferred_emulator == EmulatorName.RYUBING:
             game_id = game["switch_id"].lower()
-        elif preferred_emulator in [EmulatorName.CITRON, EmulatorName.EDEN, "Sudachi"]: # Sudachi doesn't exist yet?
+        elif preferred_emulator in [EmulatorName.CITRON, EmulatorName.EDEN]:
             game_id = game["switch_id"].upper()
         if game_id in installed_games:
             art = load_cached_assets(game["full_name"], PLATFORM)
