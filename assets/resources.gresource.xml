@@ -29,5 +29,6 @@
     <file>mat-folder-symbolic.svg</file>
     <file>mat-folder-managed-symbolic.svg</file>
     <file>refresh-mods-symbolic.svg</file>
+    <file>experiment-symbolic.svg</file>
   </gresource>
 </gresources>
