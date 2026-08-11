@@ -188,6 +188,7 @@ def _download_nexus_mod(nxm_link: str, headers: dict, final_download_dir: Path, 
         return False
     
     download_data = response.json()
+    
     if not download_data:
         print("No download mirrors available.")
         return False
@@ -195,7 +196,12 @@ def _download_nexus_mod(nxm_link: str, headers: dict, final_download_dir: Path, 
     uri = download_data[0].get('URI')
     splitted_uri = urlsplit(uri)
     file_url = urlunsplit(splitted_uri)
-    file_name = splitted_uri.path.split('/')[-1]
+    response = requests.head(file_url, timeout=(15, None))
+    try: 
+        response.headers.get('content-disposition')
+        file_name = response.headers.get('content-disposition').split('filename=')[1][1:-1]
+    except Exception as e:
+        file_name = file_url.split('/')[-1].split('?')[0] or "download"
     
     full_file_path = final_download_dir / file_name
     
@@ -208,13 +214,15 @@ def _download_nexus_mod(nxm_link: str, headers: dict, final_download_dir: Path, 
             daemon=True
         ).start()
     else:
-        download_popup(file_url, final_download_dir, downloader) # windowed download
+        download_popup(file_name, file_url, final_download_dir, downloader) # windowed download
         
     def on_download_complete(download_inst, downloaded_filename):
         if downloaded_filename != file_name:
             return
         download_inst.disconnect_by_func(on_download_complete)
         download_inst.disconnect_by_func(on_download_error)
+        with download_inst._downloads_lock:
+            download_inst._active_downloads.add(file_name)
         threading.Thread(target=_fetch_and_write_mod_metadata, args=(nxm_link, headers, final_download_dir, nexus_id, game_folder_name, file_name, downloader), daemon=True).start()
     
     def on_download_error(download_inst, error_data):
@@ -351,6 +359,8 @@ def _fetch_and_write_mod_metadata(nxm_link: str, headers: dict, final_download_d
             'filename': file_name,
             'error': e
         }
+        with downloader._downloads_lock:
+            downloader._active_downloads.discard(file_name)
         GLib.idle_add(downloader.emit, 'download-error', error_data)
         return
         
@@ -375,6 +385,8 @@ def _fetch_and_write_mod_metadata(nxm_link: str, headers: dict, final_download_d
         downloads_metadata["mods"][file_name] = mod_metadata
 
         write_yaml(downloads_metadata, downloads_metadata_path)
+    with downloader._downloads_lock:
+        downloader._active_downloads.discard(file_name)
     GLib.idle_add(downloader.emit, 'download-metadata-ready', file_name)
     
     # obtain additional metadata on the mod

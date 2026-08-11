@@ -135,6 +135,8 @@ def _download_gb_mod(mod_url: str, headers: dict, download_dir: Path, mod_id: st
             return
         download_inst.disconnect_by_func(on_download_complete)
         download_inst.disconnect_by_func(on_download_error)
+        with download_inst._downloads_lock:
+            download_inst._active_downloads.add(file_name)
         threading.Thread(
             target=_fetch_and_write_mod_metadata, 
             args=(headers, download_dir, mod_id, game_folder_name, file_name, downloader), 
@@ -200,6 +202,8 @@ def _fetch_and_write_mod_metadata(headers: dict, download_dir: Path, mod_id: str
     write_yaml(downloads_metadata, downloads_metadata_path)
 
     send_download_notification("success", file_name=file_name, game_name=game_folder_name, icon_path=None)
+    
+    downloader._active_downloads.discard(file_name)
     
     return True
 
