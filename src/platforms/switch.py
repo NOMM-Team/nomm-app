@@ -40,7 +40,10 @@ def find_matches(game_configs_dir) -> list:
     except Exception as e:
         print(f"Was not able to load switch config - is it improperly formatted? {e}")
 
-    if preferred_emulator == EmulatorName.CITRON:
+    if preferred_emulator == EmulatorName.UNKNOWN:
+        print(f"Preferred emulator value is not supported")
+        return []
+    elif preferred_emulator == EmulatorName.CITRON:
         game_path = CITRON_GAME_PATH
         mods_path = CITRON_MOD_PATH
     elif preferred_emulator == EmulatorName.EDEN:
@@ -49,9 +52,6 @@ def find_matches(game_configs_dir) -> list:
     elif preferred_emulator == EmulatorName.RYUBING:
         game_path = RYUBING_GAME_PATH
         mods_path = RYUBING_MOD_PATH
-    elif preferred_emulator == EmulatorName.UNKNOWN:
-        print(f"Preferred emulator value is not supported")
-        return []
     
     installed_games = os.listdir(game_path)
     matches = []
@@ -101,8 +101,6 @@ def list_emulators():
         installed_emulator_list.append(EmulatorName.EDEN.value)
     elif os.path.exists(RYUBING_GAME_PATH):
         installed_emulator_list.append(EmulatorName.RYUBING.value)
-    else:
-        print("[Info] No switch emulator has been installed yet")
 
     return installed_emulator_list
 
