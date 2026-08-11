@@ -127,13 +127,16 @@ class LibraryView(Gtk.Box):
             margin_top=30,
             margin_end=30,
         )
-
-        refresh_btn = Gtk.Button(icon_name="radar-symbolic")
+        refresh_icon = Gtk.Image.new_from_icon_name("radar-symbolic")
+        refresh_icon.set_pixel_size(42)
+        refresh_btn = Gtk.Button(child=refresh_icon)
         refresh_btn.set_size_request(74, 74)
         refresh_btn.add_css_class("refresh-fab")
         refresh_btn.connect("clicked", lambda b: self.app.manual_library_refresh())
 
-        settings_btn = Gtk.Button(icon_name="mat-settings-symbolic")
+        settings_icon = Gtk.Image.new_from_icon_name("mat-settings-symbolic")
+        settings_icon.set_pixel_size(42)
+        settings_btn = Gtk.Button(child=settings_icon)
         settings_btn.set_size_request(74, 74)
         settings_btn.add_css_class("refresh-fab")
         settings_btn.connect("clicked", self.app.on_settings_clicked)
