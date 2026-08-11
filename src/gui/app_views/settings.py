@@ -7,8 +7,9 @@ import requests
 from gi.repository import Adw, Gio, GLib, Gtk
 
 from core.user_config import update_user_config
-from core.tools import load_yaml, translate_fuse_path
+from core.tools import load_yaml, translate_fuse_path, get_nomm_tags
 from platforms.switch import list_emulators
+from gui.application import APP_VERSION
 
 _ = gettext.gettext
 
@@ -16,7 +17,7 @@ class SettingsWindow(Adw.Window):
     def __init__(self, app, parent_window, **kwargs):
         super().__init__(title=_("Settings"), transient_for=parent_window, modal=True, **kwargs)
         self.app = app
-        self.set_default_size(500, -1)
+        self.set_default_size(500, 670)
 
         self.user_config_dir = os.path.join(GLib.get_user_data_dir(), "nomm",)
         self.user_config_path = os.path.join(self.user_config_dir, "user_config.yaml")
@@ -24,9 +25,73 @@ class SettingsWindow(Adw.Window):
         content = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=20, margin_top=24, margin_bottom=24, margin_start=24, margin_end=24)
         self.set_content(content)
 
+        # --- Custom Title Box ---
+        title_box = Gtk.Box(
+            orientation=Gtk.Orientation.HORIZONTAL,
+            spacing=12,
+            valign=Gtk.Align.CENTER,
+        )
+        title_label = Gtk.Label(
+            label="Native Open Mod Manager (NOMM)",
+            hexpand=True,
+            halign=Gtk.Align.START
+        )
+        title_label.add_css_class("title-1")
+
+
+        # Version Button
+        version_btn = Gtk.Button()
+        version_btn.set_cursor_from_name("pointer")
+        button_content = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
+        button_content.set_halign(Gtk.Align.CENTER)
+        version_btn_label = Gtk.Label(label=_(f"v{APP_VERSION}"))
+        version_btn.set_tooltip_text(_(f"Open changelog on Github"))
+        button_content.append(version_btn_label)
+        version_btn.set_child(button_content)
+        version_btn.add_css_class("badge-action-row")
+        version_btn.connect("clicked", lambda b: webbrowser.open(f"https://github.com/Allexio/nomm/releases/tag/{APP_VERSION}"))
+        title_box.append(title_label)
+        title_box.append(version_btn)
+
+        # Tag check logic:
+        tags = get_nomm_tags(app.headers)
+        if not tags:
+            pass
+        elif APP_VERSION not in tags:
+            version_badge = Gtk.Label(label=_("dev"))
+            version_badge.set_tooltip_text(_("This version is meant for testing/development only and is not publicly available"))
+            version_badge.add_css_class("badge-warning")
+            version_badge.set_valign(Gtk.Align.CENTER)
+            title_box.append(version_badge)
+        elif APP_VERSION == tags[0]:
+            version_badge = Gtk.Label(label=_("latest"))
+            version_badge.set_tooltip_text(_("This version is the latest publicly available version"))
+            version_badge.add_css_class("badge-grey")
+            version_badge.set_valign(Gtk.Align.CENTER)
+            title_box.append(version_badge)
+        else:
+            version_upgrade_button = Gtk.Button(icon_name="upgrade-symbolic")
+            version_upgrade_button.set_tooltip_text(_(f"New version available: {tags[0]}"))
+            version_upgrade_button.connect("clicked", lambda b: webbrowser.open(f"https://github.com/Allexio/nomm/releases/tag/{tags[0]}"))
+            version_upgrade_button.add_css_class("badge-action-row-accent")
+            version_upgrade_button.add_css_class("large-icon-btn")
+            version_upgrade_button.set_cursor_from_name("pointer")
+            title_box.append(version_upgrade_button)
+
+
+        content.append(title_box)
+        content.append(Gtk.Separator(margin_top=4))
+
+        # Everything else is in a scrollbox!
+        settings_scrollwindow = Gtk.ScrolledWindow(vexpand=True)
+        settings_scrollbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=20,
+                             margin_top=12, margin_bottom=12,
+                             margin_start=12, margin_end=12)
+        settings_scrollwindow.set_child(settings_scrollbox)
+
         # --- STORAGE SECTION ---
-        storage_group = Adw.PreferencesGroup(title=_("NOMM Paths"), description=_("Configure where NOMM manages your files."))
-        content.append(storage_group)
+        storage_group = Adw.PreferencesGroup(title=_("NOMM Paths"))
+        settings_scrollbox.append(storage_group)
 
         # Downloads Path Row
         self.path_row = Adw.ActionRow(title=_("Mod Downloads Path"))
@@ -62,7 +127,7 @@ class SettingsWindow(Adw.Window):
 
         # --- NEXUS SECTION ---
         nexus_group = Adw.PreferencesGroup(title=_("Nexus Mods Integration"))
-        content.append(nexus_group)
+        settings_scrollbox.append(nexus_group)
 
         self.api_entry = Gtk.PasswordEntry(hexpand=True, valign=Gtk.Align.CENTER)
         self.api_entry.set_property("placeholder-text", _("Paste API Key..."))
@@ -82,7 +147,7 @@ class SettingsWindow(Adw.Window):
 
         # --- GENERAL SETTINGS SECTION ---
         general_group = Adw.PreferencesGroup(title=_("General Settings"))
-        content.append(general_group)
+        settings_scrollbox.append(general_group)
 
         # Preferred Switch emulator
         installed_emulators = list_emulators()
@@ -138,11 +203,10 @@ class SettingsWindow(Adw.Window):
         community_box.append(self.create_social_button("matrix-logo-symbolic", "https://matrix.to/#/#nomm:matrix.org"))
         community_box.append(self.create_social_button("youtube-logo-symbolic", "https://www.youtube.com/channel/UCNHRyvBXItOkBZN0rWqZVrA"))
 
-        content.append(community_box)
+        settings_scrollbox.append(community_box)
+        content.append(settings_scrollwindow)
 
-        # Separator and Close
-        content.append(Gtk.Separator(margin_top=10))
-        
+        # Close Button        
         save_btn = Gtk.Button(label=_("Close"), css_classes=["suggested-action"], margin_top=12)
         save_btn.connect("clicked", lambda b: self.close_settings())
         content.append(save_btn)
