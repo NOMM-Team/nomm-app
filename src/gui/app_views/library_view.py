@@ -128,7 +128,7 @@ class LibraryView(Gtk.Box):
             margin_end=30,
         )
 
-        refresh_btn = Gtk.Button(icon_name="mat-document-search-symbolic")
+        refresh_btn = Gtk.Button(icon_name="radar-symbolic")
         refresh_btn.set_size_request(74, 74)
         refresh_btn.add_css_class("refresh-fab")
         refresh_btn.connect("clicked", lambda b: self.app.manual_library_refresh())
