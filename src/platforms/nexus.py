@@ -384,9 +384,10 @@ def _fetch_and_write_mod_metadata(nxm_link: str, headers: dict, final_download_d
         downloads_metadata["mods"][file_name] = mod_metadata
 
         write_yaml(downloads_metadata, downloads_metadata_path)
+    
+    
     with downloader._downloads_lock:
         downloader._active_downloads.discard(file_name)
-    GLib.idle_add(downloader.emit, 'download-metadata-ready', file_name)
     
     # obtain additional metadata on the mod
     mod_metadata = get_mod_info(headers, nexus_id, mod_id, final_download_dir)
@@ -414,5 +415,7 @@ def _fetch_and_write_mod_metadata(nxm_link: str, headers: dict, final_download_d
     write_yaml(downloads_metadata, downloads_metadata_path)
 
     send_download_notification("success", file_name=file_name, game_name=game_folder_name, icon_path=None)
+    
+    GLib.idle_add(downloader.emit, 'download-metadata-ready', file_name)
     
     return True
