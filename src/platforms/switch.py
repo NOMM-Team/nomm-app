@@ -108,9 +108,8 @@ def list_emulators():
 def get_emulator_logo(emulator):
     try:
         emulator = EmulatorName(emulator)
-    except TypeError as e:
+    except ValueError as e:
         print(f"Preferred emulator value is not supported")
-        return "fallback logo"
     
     if emulator == EmulatorName.CITRON:
         return "citron-logo"
