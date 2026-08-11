@@ -197,8 +197,7 @@ def _download_nexus_mod(nxm_link: str, headers: dict, final_download_dir: Path, 
     splitted_uri = urlsplit(uri)
     file_url = urlunsplit(splitted_uri)
     response = requests.head(file_url, timeout=(15, None))
-    try: 
-        response.headers.get('content-disposition')
+    try:
         file_name = response.headers.get('content-disposition').split('filename=')[1][1:-1]
     except Exception as e:
         file_name = file_url.split('/')[-1].split('?')[0] or "download"
