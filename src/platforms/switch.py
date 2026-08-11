@@ -21,8 +21,7 @@ class EmulatorName(Enum):
     RYUBING = "Ryubing"
     EDEN = "Eden"
     CITRON = "Citron"
-    UNKNOWN = "Unknown"
-
+    
 def find_matches(game_configs_dir) -> list:
 
     switch_config_path = os.path.join(game_configs_dir, "emulation/switch.yaml")
@@ -31,19 +30,21 @@ def find_matches(game_configs_dir) -> list:
 
     PLATFORM = "switch"
     
-    emulator_name_str = load_user_config().get("preferred_switch_emulator", EmulatorName.UNKNOWN)
-    preferred_emulator = EmulatorName(emulator_name_str) 
-
+    emulator_name_str = load_user_config().get("preferred_switch_emulator", list_emulators()[0])
+    
+    try:
+        preferred_emulator = EmulatorName(emulator_name_str)
+    except ValueError as e:
+        print(f"Preferred emulator value is not supported")
+        return[]
+    
     try:
         with open(switch_config_path, 'r') as f:
             supported_switch_games = yaml.safe_load(f)
     except Exception as e:
         print(f"Was not able to load switch config - is it improperly formatted? {e}")
 
-    if preferred_emulator == EmulatorName.UNKNOWN:
-        print(f"Preferred emulator value is not supported")
-        return []
-    elif preferred_emulator == EmulatorName.CITRON:
+    if preferred_emulator == EmulatorName.CITRON:
         game_path = CITRON_GAME_PATH
         mods_path = CITRON_MOD_PATH
     elif preferred_emulator == EmulatorName.EDEN:
@@ -105,7 +106,12 @@ def list_emulators():
     return installed_emulator_list
 
 def get_emulator_logo(emulator):
-    EmulatorName(emulator)
+    try:
+        emulator = EmulatorName(emulator)
+    except TypeError as e:
+        print(f"Preferred emulator value is not supported")
+        return "fallback logo"
+    
     if emulator == EmulatorName.CITRON:
         return "citron-logo"
     elif emulator == EmulatorName.EDEN:
