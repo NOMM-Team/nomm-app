@@ -63,7 +63,7 @@ modules:
       - install -D build/flatpak/com.nomm.Nomm.metainfo.xml /app/share/metainfo/com.nomm.Nomm.metainfo.xml
 
       # Install logo
-      - install -D assets/nomm.png /app/share/icons/hicolor/64x64/apps/com.nomm.Nomm.png
+      - install -D assets/icons/nomm-logo.svg /app/share/icons/hicolor/64x64/apps/com.nomm.Nomm.svg
 
       # Copy all other python files
       - cp -r src/core /app/bin/core
