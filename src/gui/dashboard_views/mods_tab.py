@@ -45,26 +45,26 @@ class ModsTab(Gtk.Box):
         self.mod_search_entry.connect("search-changed", self.on_mod_search_changed)
         action_bar.append(self.mod_search_entry)
 
-        folder_btn = Gtk.Button(icon_name="folder-open-symbolic", css_classes=["flat"])
+        folder_btn = Gtk.Button(icon_name="mat-folder-symbolic", css_classes=["flat", "large-icon-btn"])
         folder_btn.set_halign(Gtk.Align.END); 
         folder_btn.set_cursor_from_name("pointer")
         folder_btn.connect("clicked", lambda x: webbrowser.open(f"file://{self.dashboard.staging_path}"))
         folder_btn.set_tooltip_text(_("Open staging folder"))
         
-        update_btn = Gtk.Button(icon_name="view-refresh-symbolic", css_classes=["flat"])
+        update_btn = Gtk.Button(icon_name="refresh-mods-symbolic", css_classes=["flat", "large-icon-btn"])
         update_btn.set_halign(Gtk.Align.END)
         update_btn.set_cursor_from_name("pointer")
         update_btn.connect("clicked", self.check_for_updates)
         update_btn.set_tooltip_text(_("Refresh Metadata & Check for updates\nThis will replace all current mod metadata with fresh data coming straight from the modding platform."))
         
-        launch_btn = Gtk.Button(icon_name="media-playback-start", css_classes=["flat"])
+        launch_btn = Gtk.Button(icon_name="media-playback-start", css_classes=["flat", "large-icon-btn"])
         launch_btn.set_halign(Gtk.Align.END)
         launch_btn.set_cursor_from_name("pointer")
         launch_btn.connect("clicked", self.dashboard.on_launch_clicked)
         launch_btn.set_tooltip_text(_(f"Launch {dashboard.game_name}"))
         
         if "wiki_link" in dashboard.game_config:
-            wiki_btn = Gtk.Button(icon_name="info-symbolic", css_classes=["flat"])
+            wiki_btn = Gtk.Button(icon_name="globe-book-symbolic", css_classes=["flat", "large-icon-btn"])
             wiki_btn.set_halign(Gtk.Align.END); wiki_btn.set_hexpand(True)
             wiki_btn.set_cursor_from_name("pointer")
             wiki_btn.connect("clicked", lambda x: webbrowser.open(f"https://nomm.moe/docs/game-guides/{dashboard.game_config["wiki_link"]}"))

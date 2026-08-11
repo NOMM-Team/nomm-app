@@ -68,7 +68,7 @@ class SettingsWindow(Adw.Window):
         self.api_entry.set_property("placeholder-text", _("Paste API Key..."))
         self.api_entry.set_text(load_yaml(self.user_config_path).get('nexus_api_key', ''))
 
-        self.check_btn = Gtk.Button(icon_name="experiment-symbolic", valign=Gtk.Align.CENTER, css_classes=["flat", "large-icon-btn"])
+        self.check_btn = Gtk.Button(icon_name="mat-experiment-symbolic", valign=Gtk.Align.CENTER, css_classes=["flat", "large-icon-btn"])
         self.check_btn.set_tooltip_text(_("Check API key validity"))
         self.spinner = Gtk.Spinner(valign=Gtk.Align.CENTER)
 
