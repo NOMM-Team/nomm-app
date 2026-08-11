@@ -67,23 +67,19 @@ class Nomm(Adw.Application):
         }
 
     def initialize_custom_icons(self, assets_path):
-        # 1. Compile the XML into a .gresource bundle dynamically (if running in dev mode)
-        # In a production flatpak, this compilation step is handled automatically by Meson/Blueprint
         xml_path = os.path.join(assets_path, "resources.gresource.xml")
         gresource_path = "resources.gresource"
 
         if os.path.exists(xml_path):
-            # Tell the compiler that files inside the XML are found inside assets/icons/
             icons_dir = os.path.join(assets_path, "icons")
             
             subprocess.run([
-                "glib-compile-resources", 
-                xml_path, 
-                f"--sourcedir={icons_dir}", 
+                "glib-compile-resources",
+                xml_path,
+                f"--sourcedir={icons_dir}",
                 "--target", gresource_path
             ])
 
-        # 2. Load and register the compiled resource file into memory
         if os.path.exists(gresource_path):
             resource = Gio.Resource.load(gresource_path)
             Gio.resources_register(resource)

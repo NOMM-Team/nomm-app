@@ -254,3 +254,16 @@ def load_cached_assets(game_name: str, platform: str) -> dict:
             return existing_files
 
     return None
+
+def get_nomm_tags(headers: dict):
+
+    url = f"https://api.github.com/repos/allexio/nomm/tags?per_page=100"
+
+    response = requests.get(url, headers=headers)
+
+    if response.status_code == 200:
+        tags = response.json()
+        tag_names = [tag["name"] for tag in tags]
+        return tag_names
+    else:
+        return None

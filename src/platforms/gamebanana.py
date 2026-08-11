@@ -120,17 +120,13 @@ def handle_gamebanana_link(link: str, downloader: Downloader, headers: dict) -> 
 
 def _download_gb_mod(mod_url: str, headers: dict, download_dir: Path, mod_id: str, game_folder_name: str, user_config_dir, downloader: Downloader) -> bool:
 
-    # 1. Resolve final redirect URL
     response = requests.head(mod_url, allow_redirects=True, headers=headers, timeout=10)
     download_url = response.url
     
-    # 2. Safely parse filename (unquoting URL entities like %20)
     parsed_path = urlparse(download_url).path
     file_name = unquote(os.path.basename(parsed_path))
 
-    # 3. Callbacks matching Nexus pattern
     def on_download_complete(download_inst, downloaded_filename):
-        # Unquote here as well to guarantee equality
         if unquote(downloaded_filename) != file_name:
             return
         download_inst.disconnect_by_func(on_download_complete)
@@ -149,7 +145,6 @@ def _download_gb_mod(mod_url: str, headers: dict, download_dir: Path, mod_id: st
         download_inst.disconnect_by_func(on_download_complete)
         download_inst.disconnect_by_func(on_download_error)
 
-    # 4. Connect signals BEFORE starting download
     downloader.connect('download-complete', on_download_complete)
     downloader.connect('download-error', on_download_error)
 

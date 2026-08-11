@@ -54,3 +54,9 @@
     color: var(--accent-bg-color);
     background: transparent;
 }
+
+button.large-icon-btn image {
+    -gtk-icon-size: 24px;
+    min-width: 24px;
+    min-height: 24px;
+}
