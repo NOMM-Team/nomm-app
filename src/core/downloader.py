@@ -31,22 +31,27 @@ class Downloader(GObject.Object):
     def download_mod(self, url: str, dest_folder: str) -> bool:
         filename = url.split('/')[-1].split('?')[0] or "download"
         
-        with self._downloads_lock:
-            if filename in self._active_downloads:
-                print(f"Download already in progress: {filename}")
-                return False
-            self._active_downloads.add(filename)
-          
-        dest_path = os.path.join(dest_folder, filename)
-        os.makedirs(dest_folder, exist_ok=True)
-        
-        GLib.idle_add(send_download_notification, "started", filename)
-
         try:
             # Background task: downloading
             response = requests.get(url, stream=True, timeout=(15, None))
             total_size = int(response.headers.get('content-length', 0))
             response.raise_for_status()
+            
+            if response.headers.get('content-disposition'):
+                filename = response.headers.get('content-disposition').split('filename=')[1][1:-1]
+            
+            with self._downloads_lock:
+                if filename in self._active_downloads:
+                    print(f"Download already in progress: {filename}")
+                    return False
+                self._active_downloads.add(filename)
+          
+            dest_path = os.path.join(dest_folder, filename)
+            os.makedirs(dest_folder, exist_ok=True)
+
+            GLib.idle_add(send_download_notification, "started", filename)
+
+                
             downloaded = 0
             GLib.idle_add(self.emit, 'download-started', filename)
             with open(dest_path, 'wb') as f:
@@ -80,6 +85,8 @@ class Downloader(GObject.Object):
             }
             GLib.idle_add(self.emit, 'download-error', error_data)
             return False
+        # TODO: This active_downloads.discard could be removed and managed somewhere else as we need the app to stay 
+        # active even during the metadata phase
         finally:
             with self._downloads_lock:
                 self._active_downloads.discard(filename)

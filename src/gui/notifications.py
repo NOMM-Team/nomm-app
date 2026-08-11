@@ -46,9 +46,8 @@ def send_download_notification(status, file_name="", game_name=None, icon_path=N
         print(f"libnotify failed: {e}")
 
 # Check import before uncommenting the method
-def download_popup(url, dest_folder, downloader):
+def download_popup(filename, url, dest_folder, downloader):
 
-    filename = url.split('/')[-1].split('?')[0] or "download"
     dest_path = os.path.join(dest_folder, filename)
     os.makedirs(dest_folder, exist_ok=True)
 
