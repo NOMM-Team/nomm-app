@@ -124,14 +124,15 @@ class Nomm(Adw.Application):
         )
         GLib.idle_add(callback)
 
-    def handle_nomm_link(self, url: str, downloader, headers: dict):
+    def handle_nomm_link(self, url: str, downloader, headers: dict) -> bool:
         """Looks at nomm protocol scheme urls and redirects to the right bit of code"""
         target = urlparse(url).netloc
         print(f"Detected link to {target}")
         if target == "gb":
-            handle_gamebanana_link(url, downloader, self.headers)
+            return handle_gamebanana_link(url, downloader, self.headers)
         else:
             print(f"NOMM does not handle mod platform {target}")
+            return False
 
     # Release application.py from self.hold so the download stops happening as background task allowing you to 
     # close the downloader while keeping the download active in the mod manager and disconnect the event once 
@@ -149,6 +150,7 @@ class Nomm(Adw.Application):
                 downloader.disconnect(hid)
         handler_ids.append(self.downloader.connect("download-complete", on_finished))
         handler_ids.append(self.downloader.connect("download-error", on_finished))
+        handler_ids.append(self.downloader.connect("download-metadata-ready", on_finished))
     
     # Cancels downloads when shutting down the app by switching 
     # the download thread event with cancel_all empty event
