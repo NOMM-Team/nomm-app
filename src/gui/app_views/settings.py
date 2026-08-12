@@ -101,6 +101,7 @@ class SettingsWindow(Adw.Window):
         folder_btn = Gtk.Button(icon_name="mat-folder-managed-symbolic", valign=Gtk.Align.CENTER, css_classes=["flat", "large-icon-btn"])
         folder_btn.connect("clicked", lambda b: self.pick_folder(self.path_row, "download_path"))
         folder_btn.set_tooltip_text(_("Change your downloads folder location. This will NOT move all your current files to the new directory. "))
+        folder_btn.set_cursor_from_name("pointer")
         self.path_row.add_suffix(folder_btn)
         storage_group.add(self.path_row)
 
@@ -112,6 +113,7 @@ class SettingsWindow(Adw.Window):
         staging_btn = Gtk.Button(icon_name="mat-folder-managed-symbolic", valign=Gtk.Align.CENTER, css_classes=["flat", "large-icon-btn"])
         staging_btn.connect("clicked", lambda b: self.pick_folder(self.staging_row, "staging_path"))
         staging_btn.set_tooltip_text(_("Change your staging folder location. This will NOT move all your current files to the new directory. "))
+        staging_btn.set_cursor_from_name("pointer")
         self.staging_row.add_suffix(staging_btn)
         storage_group.add(self.staging_row)
 
@@ -122,6 +124,7 @@ class SettingsWindow(Adw.Window):
         config_path_btn = Gtk.Button(icon_name="mat-folder-symbolic", valign=Gtk.Align.CENTER, css_classes=["flat", "large-icon-btn"])
         config_path_btn.connect("clicked", lambda b: webbrowser.open(f"file://{self.user_config_dir}"))
         config_path_btn.set_tooltip_text(_("Go to your NOMM configuration folder location. This path is not modifiable and depends on your NOMM installation type."))
+        config_path_btn.set_cursor_from_name("pointer")
         self.config_path_row.add_suffix(config_path_btn)
         storage_group.add(self.config_path_row)
 
@@ -135,6 +138,7 @@ class SettingsWindow(Adw.Window):
 
         self.check_btn = Gtk.Button(icon_name="mat-experiment-symbolic", valign=Gtk.Align.CENTER, css_classes=["flat", "large-icon-btn"])
         self.check_btn.set_tooltip_text(_("Check API key validity"))
+        self.check_btn.set_cursor_from_name("pointer")
         self.spinner = Gtk.Spinner(valign=Gtk.Align.CENTER)
 
         api_row = Adw.ActionRow(title=_("Nexus API Key"))
@@ -209,6 +213,7 @@ class SettingsWindow(Adw.Window):
         # Close Button        
         save_btn = Gtk.Button(label=_("Close"), css_classes=["suggested-action"], margin_top=12)
         save_btn.connect("clicked", lambda b: self.close_settings())
+        save_btn.set_cursor_from_name("pointer")
         content.append(save_btn)
 
     def pick_folder(self, row, config_key):
@@ -233,7 +238,7 @@ class SettingsWindow(Adw.Window):
 
         self.check_btn.set_sensitive(False)
         self.spinner.start()
-        
+
         self.check_btn.remove_css_class("success")
         self.check_btn.remove_css_class("error")
 
@@ -279,10 +284,11 @@ class SettingsWindow(Adw.Window):
         img.set_pixel_size(48)
         btn_content.append(img)
         
-        button = Gtk.Button(child=btn_content)
-        button.add_css_class("flat")
-        button.connect("clicked", lambda b: Gtk.FileLauncher.new(Gio.File.new_for_uri(url)).launch(self, None, None))
-        return button
+        social_button = Gtk.Button(child=btn_content)
+        social_button.add_css_class("flat")
+        social_button.set_cursor_from_name("pointer")
+        social_button.connect("clicked", lambda b: Gtk.FileLauncher.new(Gio.File.new_for_uri(url)).launch(self, None, None))
+        return social_button
 
     def close_settings(self):
         update_user_config('nexus_api_key', self.api_entry.get_text())
