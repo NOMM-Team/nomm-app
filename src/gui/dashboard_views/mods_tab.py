@@ -16,7 +16,7 @@ from core.mod_manager import (apply_deployment_map_changes, build_deployment_map
 from platforms.nexus import get_nexus_changelog, endorse_nexus_mod
 from platforms.nexus import get_mod_info as get_nexus_mod_info
 from platforms.gamebanana import get_mod_info as get_gamebanana_mod_info
-from core.tools import timestamp_converter, write_yaml
+from core.tools import timestamp_converter, write_yaml, create_icon_button
 from gui.text_window import TextWindow
 from typing import Optional, Callable
 
@@ -41,34 +41,31 @@ class ModsTab(Gtk.Box):
         # Action bar top right
         action_bar = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
         self.mod_search_entry = Gtk.SearchEntry(placeholder_text=_("Search mods..."))
-        self.mod_search_entry.set_size_request(300, -1) 
+        self.mod_search_entry.set_size_request(300, -1)
         self.mod_search_entry.connect("search-changed", self.on_mod_search_changed)
         action_bar.append(self.mod_search_entry)
 
-        folder_btn = Gtk.Button(icon_name="mat-folder-symbolic", css_classes=["flat", "large-icon-btn"])
-        folder_btn.set_halign(Gtk.Align.END); 
-        folder_btn.set_cursor_from_name("pointer")
-        folder_btn.connect("clicked", lambda x: webbrowser.open(f"file://{self.dashboard.staging_path}"))
-        folder_btn.set_tooltip_text(_("Open staging folder"))
-        
-        update_btn = Gtk.Button(icon_name="refresh-mods-symbolic", css_classes=["flat", "large-icon-btn"])
-        update_btn.set_halign(Gtk.Align.END)
-        update_btn.set_cursor_from_name("pointer")
-        update_btn.connect("clicked", self.check_for_updates)
-        update_btn.set_tooltip_text(_("Refresh Metadata & Check for updates\nThis will replace all current mod metadata with fresh data coming straight from the modding platform."))
-        
-        launch_btn = Gtk.Button(icon_name="media-playback-start", css_classes=["flat", "large-icon-btn"])
-        launch_btn.set_halign(Gtk.Align.END)
-        launch_btn.set_cursor_from_name("pointer")
-        launch_btn.connect("clicked", self.dashboard.on_launch_clicked)
-        launch_btn.set_tooltip_text(_(f"Launch {dashboard.game_name}"))
-        
+        folder_btn = create_icon_button(
+            icon_name="mat-folder-symbolic",
+            tooltip=_("Open staging folder"),
+            on_click=lambda x: webbrowser.open(f"file://{self.dashboard.staging_path}")
+        )
+        update_btn = create_icon_button(
+            icon_name="refresh-mods-symbolic",
+            tooltip=_("Refresh Metadata & Check for updates\nThis will replace all current mod metadata with fresh data coming straight from the modding platform."),
+            on_click=self.check_for_updates
+        )
+        launch_btn = create_icon_button(
+            icon_name="media-playback-start",
+            tooltip=_(f"Launch {dashboard.game_name}"),
+            on_click=self.dashboard.on_launch_clicked
+        )
         if "wiki_link" in dashboard.game_config:
-            wiki_btn = Gtk.Button(icon_name="globe-book-symbolic", css_classes=["flat", "large-icon-btn"])
-            wiki_btn.set_halign(Gtk.Align.END); wiki_btn.set_hexpand(True)
-            wiki_btn.set_cursor_from_name("pointer")
-            wiki_btn.connect("clicked", lambda x: webbrowser.open(f"https://nomm.moe/docs/game-guides/{dashboard.game_config["wiki_link"]}"))
-            wiki_btn.set_tooltip_text(_("Open wiki page"))
+            wiki_btn = create_icon_button(
+                icon_name="globe-book-symbolic",
+                tooltip=_("Open wiki page"),
+                on_click=lambda x: webbrowser.open(f"https://nomm.moe/docs/game-guides/{dashboard.game_config["wiki_link"]}")
+            )
             action_bar.append(wiki_btn)
         else:
             # This is so that the buttons all show up on the right side, even if there is no wiki button

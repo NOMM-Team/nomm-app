@@ -7,7 +7,7 @@ import requests
 from gi.repository import Adw, Gio, GLib, Gtk
 
 from core.user_config import update_user_config
-from core.tools import load_yaml, translate_fuse_path, get_nomm_tags
+from core.tools import load_yaml, translate_fuse_path, get_nomm_tags, create_icon_button
 from platforms.switch import list_emulators
 from gui.application import APP_VERSION
 
@@ -110,10 +110,11 @@ class SettingsWindow(Adw.Window):
         current_staging = load_yaml(self.user_config_path).get('staging_path', 'Not set')
         self.staging_row.set_subtitle(current_staging)
 
-        staging_btn = Gtk.Button(icon_name="mat-folder-managed-symbolic", valign=Gtk.Align.CENTER, css_classes=["flat", "large-icon-btn"])
-        staging_btn.connect("clicked", lambda b: self.pick_folder(self.staging_row, "staging_path"))
-        staging_btn.set_tooltip_text(_("Change your staging folder location. This will NOT move all your current files to the new directory. "))
-        staging_btn.set_cursor_from_name("pointer")
+        staging_btn = create_icon_button(
+            icon_name="mat-folder-managed-symbolic",
+            tooltip=_("Change your staging folder location. This will NOT move all your current files to the new directory. "),
+            on_click= lambda b: self.pick_folder(self.staging_row, "staging_path"),
+        )
         self.staging_row.add_suffix(staging_btn)
         storage_group.add(self.staging_row)
 
@@ -121,10 +122,11 @@ class SettingsWindow(Adw.Window):
         self.config_path_row = Adw.ActionRow(title=_("NOMM Configuration Path"))
         self.config_path_row.set_subtitle(self.user_config_dir)
 
-        config_path_btn = Gtk.Button(icon_name="mat-folder-symbolic", valign=Gtk.Align.CENTER, css_classes=["flat", "large-icon-btn"])
-        config_path_btn.connect("clicked", lambda b: webbrowser.open(f"file://{self.user_config_dir}"))
-        config_path_btn.set_tooltip_text(_("Go to your NOMM configuration folder location. This path is not modifiable and depends on your NOMM installation type."))
-        config_path_btn.set_cursor_from_name("pointer")
+        config_path_btn = create_icon_button(
+            icon_name="mat-folder-symbolic",
+            tooltip=_("Go to your NOMM configuration folder location. This path is not modifiable and depends on your NOMM installation type.",
+            on_click=lambda b: webbrowser.open(f"file://{self.user_config_dir}"),)
+        )
         self.config_path_row.add_suffix(config_path_btn)
         storage_group.add(self.config_path_row)
 
