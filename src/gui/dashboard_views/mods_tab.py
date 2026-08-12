@@ -55,17 +55,14 @@ class ModsTab(Gtk.Box):
             tooltip=_("Refresh Metadata & Check for updates\nThis will replace all current mod metadata with fresh data coming straight from the modding platform."),
             on_click=self.check_for_updates
         )
-        launch_btn = create_icon_button(
-            icon_name="media-playback-start",
-            tooltip=_(f"Launch {dashboard.game_name}"),
-            on_click=self.dashboard.on_launch_clicked
-        )
+        
         if "wiki_link" in dashboard.game_config:
             wiki_btn = create_icon_button(
                 icon_name="globe-book-symbolic",
                 tooltip=_("Open wiki page"),
                 on_click=lambda x: webbrowser.open(f"https://nomm.moe/docs/game-guides/{dashboard.game_config["wiki_link"]}")
             )
+            wiki_btn.set_hexpand(True)
             action_bar.append(wiki_btn)
         else:
             # This is so that the buttons all show up on the right side, even if there is no wiki button
@@ -74,7 +71,14 @@ class ModsTab(Gtk.Box):
         # Add all the buttons
         action_bar.append(folder_btn)
         action_bar.append(update_btn)
-        action_bar.append(launch_btn)
+
+        if dashboard.platform in ["steam", "gog", "epic"]:
+            launch_btn = create_icon_button(
+                icon_name="media-playback-start",
+                tooltip=_(f"Launch {dashboard.game_name}"),
+                on_click=self.dashboard.on_launch_clicked
+            )
+            action_bar.append(launch_btn)
 
         self.append(action_bar)
         
