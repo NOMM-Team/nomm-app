@@ -7,7 +7,26 @@ import html
 
 from pathlib import Path
 from typing import List, Dict, Any, Callable, Optional
-from gi.repository import GLib, Gio, Gtk
+from gi.repository import GLib, Gio, Gtk, Gdk
+
+def set_accent_colour(accent_colour: str):
+        print("applying cool new colour")
+        fg_color = get_contrast_color(accent_colour)
+        css = f"""
+        window {{
+            --accent-bg-color: {accent_colour};
+            --accent-color: {accent_colour};
+            --accent-fg-color: {fg_color};
+        }}
+        """
+        style_provider = Gtk.CssProvider()
+        style_provider.load_from_data(css.encode())
+        
+        Gtk.StyleContext.add_provider_for_display(
+            Gdk.Display.get_default(),
+            style_provider,
+            Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION
+        )
 
 def get_contrast_color(hex_code: str) -> str:
     hex_code = hex_code.lstrip('#')
