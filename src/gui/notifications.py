@@ -1,6 +1,7 @@
 import os
 import random
 import threading
+import gettext
 
 import gi
 import yaml
@@ -9,6 +10,8 @@ gi.require_version('Notify', '0.7')
 gi.require_version('Gtk', '4.0')
 gi.require_version('GdkPixbuf', '2.0')
 from gi.repository import GdkPixbuf, GLib, Gtk, Notify
+
+_ = gettext.gettext
 
 # This function handle notifications when downloading mods from Nexusmods
 def send_download_notification(status, file_name="", game_name=None, icon_path=None):

@@ -1,6 +1,7 @@
 import webbrowser
+import gettext
 from gi.repository import Gtk, Adw
-
+_ = gettext.gettext
 class TextWindow(Adw.Window):
     def __init__(self, parent, title, content, text_type="text"):
         # We set the internal window title, though the HeaderBar will display the WindowTitle widget
