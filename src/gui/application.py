@@ -664,8 +664,10 @@ class Nomm(Adw.Application):
         self.remove_stack_child("dashboard")
         self.stack.add_named(self.dashboard, "dashboard")
         self.stack.set_visible_child_name("dashboard")
+        self.win.set_title(f"NOMM: {game_info["name"]}")
 
     def return_to_library(self):
+        self.win.set_title("NOMM")
         if load_yaml(self.user_config_path).get('enable_fullscreen'): self.win.unfullscreen()
         
         # Creates the library_view if it has not been set before
