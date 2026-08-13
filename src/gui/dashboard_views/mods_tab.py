@@ -908,7 +908,8 @@ class ModsTab(Gtk.Box):
     def filter_mods_rows(self, row):
         search_text = self.mod_search_entry.get_text().lower()
         if not search_text: return True
-        return search_text in getattr(row, 'mod_name', '')
+        if search_text in row.mod_data.get("display_name", row.mod_data.get("name", "")).lower()  or search_text in row.mod_data.get("summary", "").lower():
+            return True
 
     def on_mod_toggled(self, switch, state: bool, mod_files: list, mod: str):
         
