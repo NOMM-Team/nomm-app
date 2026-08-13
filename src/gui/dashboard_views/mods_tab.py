@@ -71,7 +71,7 @@ class ModsTab(Gtk.Box):
         action_bar.append(folder_btn)
         action_bar.append(update_btn)
 
-        if dashboard.platform in ["steam", "gog", "epic"]:
+        if dashboard.platform in ["steam", "heroic-gog", "heroic-epic"]:
             launch_btn = create_icon_button(
                 icon_name="media-playback-start",
                 tooltip=_(f"Launch {dashboard.game_name}"),
