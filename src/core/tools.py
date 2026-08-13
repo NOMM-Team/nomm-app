@@ -7,36 +7,9 @@ import html
 
 from pathlib import Path
 from typing import List, Dict, Any, Callable, Optional
-from gi.repository import GLib, Gio, Gtk, Gdk
+from gi.repository import GLib, Gio, Gtk
 
-def set_accent_colour(accent_colour: str):
-        print("applying cool new colour")
-        fg_color = get_contrast_color(accent_colour)
-        css = f"""
-        window {{
-            --accent-bg-color: {accent_colour};
-            --accent-color: {accent_colour};
-            --accent-fg-color: {fg_color};
-        }}
-        """
-        style_provider = Gtk.CssProvider()
-        style_provider.load_from_data(css.encode())
-        
-        Gtk.StyleContext.add_provider_for_display(
-            Gdk.Display.get_default(),
-            style_provider,
-            Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION
-        )
 
-def get_contrast_color(hex_code: str) -> str:
-    hex_code = hex_code.lstrip('#')
-    
-    r, g, b = [int(hex_code[i:i+2], 16) for i in (0, 2, 4)]
-    
-    luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255
-    
-    return "#000000" if luminance > 0.5 else "#ffffff"
-        
 def load_yaml(path: str) -> dict:
     if os.path.exists(path):
         try:

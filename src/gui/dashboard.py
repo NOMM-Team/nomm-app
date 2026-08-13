@@ -16,7 +16,7 @@ from core.tools import load_yaml, write_yaml
 from core.mod_manager import (completely_uninstall_mod, get_metadata_path,
                               get_mod_statistics, load_staging_metadata,
                               remove_mod_from_metadata)
-from core.tools import get_contrast_color, set_accent_colour
+from core.colour_manager import get_contrast_color, set_accent_colour, reset_accent_colour
 from gui.dashboard_views.downloads_tab import DownloadsTab
 from gui.dashboard_views.mods_tab import ModsTab
 from gui.dashboard_views.tools_tab import ToolsTab
@@ -52,9 +52,7 @@ class GameDashboard(Gtk.Box):
         self.nexus_headers = self.app.headers.copy()
         self.nexus_headers["apikey"] = user_config.get("nexus_api_key")
 
-        # Per game accent colour theming
-        if user_config.get("enable_per_game_accent_colour") and game_info["accent_colour"]:
-            set_accent_colour(game_info["accent_colour"])
+        
 
         monitor = Gdk.Display.get_default().get_monitors().get_item(0)
         win_height = monitor.get_geometry().height
@@ -176,6 +174,11 @@ class GameDashboard(Gtk.Box):
         main_layout.append(footer)
         self.append(main_layout)
 
+        # Per game accent colour theming
+        self._accent_style_provider = None
+        if user_config.get("enable_per_game_accent_colour") and game_info["accent_colour"]:
+            self._accent_style_provider = set_accent_colour(game_info["accent_colour"], self._accent_style_provider)
+
     def update_indicators(self):
         stats = get_mod_statistics(self.staging_metadata_path, self.downloads_path)
         
@@ -259,7 +262,7 @@ class GameDashboard(Gtk.Box):
         user_config = load_yaml(self.app.user_config_path)
         user_config["last_selected_game"] = "dashboard"
         write_yaml(user_config, self.app.user_config_path)
-        
+        reset_accent_colour(self._accent_style_provider)
         self.app.return_to_library()
 
     def on_launch_clicked(self, btn):
