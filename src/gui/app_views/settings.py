@@ -98,10 +98,11 @@ class SettingsWindow(Adw.Window):
         current_path = load_yaml(self.user_config_path).get('download_path', 'Not set')
         self.path_row.set_subtitle(current_path)
 
-        folder_btn = Gtk.Button(icon_name="mat-folder-managed-symbolic", valign=Gtk.Align.CENTER, css_classes=["flat", "large-icon-btn"])
-        folder_btn.connect("clicked", lambda b: self.pick_folder(self.path_row, "download_path"))
-        folder_btn.set_tooltip_text(_("Change your downloads folder location. This will NOT move all your current files to the new directory. "))
-        folder_btn.set_cursor_from_name("pointer")
+        folder_btn = create_icon_button(
+            icon_name="mat-folder-managed-symbolic",
+            tooltip=_("Change your downloads folder location. This will NOT move all your current files to the new directory."),
+            on_click= lambda b: self.pick_folder(self.path_row, "download_path"),
+        )
         self.path_row.add_suffix(folder_btn)
         storage_group.add(self.path_row)
 
@@ -124,8 +125,8 @@ class SettingsWindow(Adw.Window):
 
         config_path_btn = create_icon_button(
             icon_name="mat-folder-symbolic",
-            tooltip=_("Go to your NOMM configuration folder location. This path is not modifiable and depends on your NOMM installation type.",
-            on_click=lambda b: webbrowser.open(f"file://{self.user_config_dir}"),)
+            tooltip=_("Go to your NOMM configuration folder location. This path is not modifiable and depends on your NOMM installation type."),
+            on_click=lambda b: webbrowser.open(f"file://{self.user_config_dir}"),
         )
         self.config_path_row.add_suffix(config_path_btn)
         storage_group.add(self.config_path_row)

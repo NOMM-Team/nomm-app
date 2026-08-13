@@ -877,8 +877,8 @@ class ModsTab(Gtk.Box):
 
                 # Trash
                 u_stack = Gtk.Stack(transition_type=Gtk.StackTransitionType.CROSSFADE, hhomogeneous=False, interpolate_size=True)
-                bin_btn = Gtk.Button(icon_name="user-trash-symbolic", valign=Gtk.Align.CENTER, css_classes=["flat"])
-                conf_del_btn = Gtk.Button(label=_("Are you sure?"), valign=Gtk.Align.CENTER, css_classes=["destructive-action"])
+                bin_btn = Gtk.Button(icon_name="mat-delete-symbolic", valign=Gtk.Align.CENTER, css_classes=["flat"])
+                conf_del_btn = Gtk.Button(icon_name="mat-delete-forever-symbolic", valign=Gtk.Align.CENTER, css_classes=["destructive-action"])
                 conf_del_btn.connect("clicked", self.dashboard.on_uninstall_item, mod_files, mod)
 
                 bin_btn.connect("clicked", lambda b, s=u_stack: [
