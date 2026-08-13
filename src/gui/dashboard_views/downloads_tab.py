@@ -3,9 +3,7 @@ import os
 import shutil
 import webbrowser
 import threading
-import xml.etree.ElementTree as ET
 from datetime import datetime
-from pathlib import Path
 
 import yaml
 from gi.repository import Adw, Gdk, Gio, GLib, Gtk, Pango

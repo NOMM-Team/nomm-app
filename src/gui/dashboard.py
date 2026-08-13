@@ -1,27 +1,25 @@
 import os
-import shutil
-import subprocess
 import webbrowser
-import zipfile
-from datetime import datetime
+import gettext
+
 from pathlib import Path
 
-import gi
 import rarfile
 import requests
-import yaml
 from gi.repository import Adw, Gdk, Gio, Gtk
 
 from core.tools import load_yaml, write_yaml
 from core.mod_manager import (completely_uninstall_mod, get_metadata_path,
                               get_mod_statistics, load_staging_metadata,
                               remove_mod_from_metadata)
-from core.colour_manager import get_contrast_color, set_accent_colour, reset_accent_colour
+from core.colour_manager import set_accent_colour, reset_accent_colour
 from gui.dashboard_views.downloads_tab import DownloadsTab
 from gui.dashboard_views.mods_tab import ModsTab
 from gui.dashboard_views.tools_tab import ToolsTab
 
 rarfile.UNRAR_TOOL = "/app/bin/unrar"
+
+_ = gettext.gettext
 
 class GameDashboard(Gtk.Box):
     def __init__(self, application, game_info, **kwargs):

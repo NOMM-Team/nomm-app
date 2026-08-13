@@ -4,6 +4,7 @@ from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from typing import Callable, Optional
 from urllib.parse import urlsplit, urlunsplit
+from urllib.error import HTTPError
 
 import requests
 import yaml
@@ -98,7 +99,7 @@ def get_nexus_changelog(headers: dict, game_id: str, mod_id: str, remote_version
         changelog_url = f"https://api.nexusmods.com/v1/games/{game_id}/mods/{mod_id}/changelogs.json"
         changelog_resp = requests.get(changelog_url, headers=headers, timeout=10)
     except Exception as e:
-        print(f"Error checking {mod_name}: {e}")
+        print(f"Error checking changelog for mod with ID {mod_id}: {e}")
         return None
 
     if changelog_resp.status_code == 200:

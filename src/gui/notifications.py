@@ -3,7 +3,6 @@ import random
 import threading
 
 import gi
-import requests
 import yaml
 
 gi.require_version('Notify', '0.7')

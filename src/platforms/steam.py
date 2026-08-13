@@ -7,6 +7,9 @@ from typing import List, Dict, Optional, Any
 from core.user_config import load_user_config, parse_mod_paths
 from core.tools import launch_option_merger, slugify, write_yaml
 
+import gettext
+_ = gettext.gettext
+
 def get_steam_base_dir() -> Optional[str]:
     paths = [
         os.path.expanduser("~/.steam/debian-installation/"),
@@ -37,7 +40,7 @@ def get_library_paths(steam_base) -> List[str]:
         print(f"Error parsing VDF at {vdf_path}: {e}")
     return libraries
 
-def add_launch_options(steam_base, launch_options):
+def add_launch_options(steam_base: str, launch_options, steam_id: str):
     print(f"Adding Steam launch options: {launch_options}")
     localconfig_path = steam_base + "userdata/" + load_user_config()["steam_user_id"] + "/config/localconfig.vdf"
     print(f"...to localconfig file located at: {localconfig_path}")

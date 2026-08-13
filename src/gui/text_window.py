@@ -1,5 +1,4 @@
 import webbrowser
-import gi
 from gi.repository import Gtk, Adw
 
 class TextWindow(Adw.Window):

@@ -3,7 +3,6 @@ import os
 import webbrowser
 import threading
 
-from datetime import datetime
 from pathlib import Path
 
 from gi.repository import Adw, Gdk, GLib, GObject, Gtk, Gio, GdkPixbuf, Pango

@@ -1,9 +1,6 @@
 import os
 import pathlib
 import re
-import os
-import pathlib
-import re
 
 from gi.repository import Adw, Gdk, GdkPixbuf, GObject, Gtk
 

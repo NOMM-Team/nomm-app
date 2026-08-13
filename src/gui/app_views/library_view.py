@@ -1,7 +1,7 @@
 import gettext
 import os
 
-from gi.repository import Adw, Gdk, GdkPixbuf, Gtk, GLib
+from gi.repository import Adw, Gdk, GdkPixbuf, Gtk
 from core.tools import load_yaml, list_archives
 from core.user_config import load_user_config
 
@@ -14,10 +14,10 @@ class LibraryView(Gtk.Box):
         self.matches = matches
 
         self.append(Adw.HeaderBar())
-        
+
         overlay = Gtk.Overlay()
         scroll = Gtk.ScrolledWindow(vexpand=True)
-        
+
         self.flow = Gtk.FlowBox(
             valign=Gtk.Align.START, halign=Gtk.Align.START,
             selection_mode=Gtk.SelectionMode.NONE,
@@ -72,14 +72,13 @@ class LibraryView(Gtk.Box):
             game2 = child2.get_child()._game_data
 
             if sort_mode == "Number of Mods":
-                # Primary: Descending mod count
                 diff = game2.get('mod_count') - game1.get('mod_count')
                 if diff != 0:
                     return diff
                 # Secondary fallback: Alphabetical A-Z
                 return 1 if game1['name'].lower() > game2['name'].lower() else -1
 
-            else:  # "alphabetical"
+            else:  # alphabetical
                 name1 = game1['name'].lower()
                 name2 = game2['name'].lower()
                 if name1 < name2:
@@ -92,7 +91,7 @@ class LibraryView(Gtk.Box):
 
     def create_game_card(self, game):
         card = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
-        card._game_data = game  # Store reference for sort_func comparison
+        card._game_data = game
         
         card.set_size_request(200, 300)
         card.set_halign(Gtk.Align.START)

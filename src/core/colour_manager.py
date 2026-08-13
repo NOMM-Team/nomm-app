@@ -1,4 +1,4 @@
-from gi.repository import GLib, Gtk, Gdk
+from gi.repository import Gtk, Gdk
 
 def set_accent_colour(accent_colour: str, _accent_style_provider):
     reset_accent_colour(_accent_style_provider)

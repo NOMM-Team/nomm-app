@@ -1,5 +1,4 @@
 import os
-from datetime import datetime
 
 from gi.repository import GLib
 from core.tools import load_yaml, write_yaml
@@ -32,7 +31,7 @@ def write_user_config(data: dict) -> dict:
         return False
     return True
 
-def parse_mod_paths(deployment_dicts: list or str, game_path: str, user_data_path: str) -> List[Dict[str, str]]:
+def parse_mod_paths(deployment_dicts: list | str, game_path: str, user_data_path: str) -> List[Dict[str, str]]:
 
     # Handle case where there is only one path provided, and it's not a list of dicts
     if not isinstance(deployment_dicts, list):

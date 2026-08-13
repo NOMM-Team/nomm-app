@@ -1,14 +1,11 @@
 import os
-import requests
 import json
 
-import vdf
-
 from gi.repository import GLib
-from core.user_config import load_user_config, parse_mod_paths
+from core.user_config import parse_mod_paths
 from core.tools import slugify, write_yaml, load_cached_assets, download_image
 
-def get_epic_library() -> dict or None:
+def get_epic_library() -> dict | None:
     epic_flatpak = os.path.expanduser("~/.var/app/com.heroicgameslauncher.hgl/config/heroic/legendaryConfig/legendary/installed.json")
     epic_native = os.path.expanduser("~/.config/heroic/legendaryConfig/legendary/installed.json")
     if os.path.exists(epic_flatpak):
@@ -23,7 +20,7 @@ def get_epic_library() -> dict or None:
     except Exception as e:
         print(f"Error loading Epic JSON: {e}")
 
-def get_gog_library() -> dict or None:
+def get_gog_library() -> dict | None:
     gog_flatpak = os.path.expanduser("~/.var/app/com.heroicgameslauncher.hgl/config/heroic/gog_store/installed.json")
     gog_native = os.path.expanduser("~/.config/heroic/gog_store/installed.json")
     if os.path.exists(gog_flatpak):

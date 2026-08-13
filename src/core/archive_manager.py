@@ -7,10 +7,7 @@ from pathlib import Path
 from urllib.parse import unquote
 
 from core.fomod_manager import parse_fomod_xml
-
 import rarfile
-
-from core.fomod_manager import parse_fomod_xml
 
 # Point rarfile to the bundled binary
 rarfile.UNRAR_TOOL = "/app/bin/unrar"

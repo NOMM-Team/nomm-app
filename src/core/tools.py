@@ -1,12 +1,11 @@
 import os
 import yaml
-import vdf
 import requests
 import re
 import html
 
 from pathlib import Path
-from typing import List, Dict, Any, Callable, Optional
+from typing import Callable, Optional
 from gi.repository import GLib, Gio, Gtk
 
 
