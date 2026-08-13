@@ -172,6 +172,21 @@ class SettingsWindow(Adw.Window):
             switch_emulator_row.connect("notify::selected", self.on_switch_emulator_changed, installed_emulators)
             general_group.add(switch_emulator_row)
 
+        # Library sort
+        sorting_options = ["Alphabetic", "Number of Mods"]
+        options_model = Gtk.StringList.new(sorting_options)
+        current_sort = load_yaml(self.user_config_path).get("library_sort", "Number of Mods")
+        selected_index = sorting_options.index(current_sort)
+
+        library_sort_row = Adw.ComboRow(
+            title=_("Sort Library Tiles by"),
+            subtitle=_("How library tiles will be sorted"),
+            model=options_model,
+            selected=selected_index
+        )
+        library_sort_row.connect("notify::selected", self.on_sort_changed, sorting_options)
+        general_group.add(library_sort_row)
+
         # Per-game accent colours
         accent_row = Adw.SwitchRow(title=_("Per-Game Accent Colour"))
         accent_row.set_subtitle(_("Accent colour will change for each game depending on configuration"))
@@ -279,6 +294,12 @@ class SettingsWindow(Adw.Window):
         if 0 <= selected_index < len(installed_emulators):
             selected_emulator = installed_emulators[selected_index]
             update_user_config('preferred_switch_emulator', selected_emulator)
+
+    def on_sort_changed(self, combo_row, gparam, sorting_options: list):
+        selected_index = combo_row.get_selected()
+        if 0 <= selected_index < len(sorting_options):
+            selected_sort = sorting_options[selected_index]
+            update_user_config('library_sort', selected_sort)
 
     def create_social_button(self, icon_name, url):
         btn_content = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)

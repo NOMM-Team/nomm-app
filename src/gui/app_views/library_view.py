@@ -3,6 +3,7 @@ import os
 
 from gi.repository import Adw, Gdk, GdkPixbuf, Gtk, GLib
 from core.tools import load_yaml, list_archives
+from core.user_config import load_user_config
 
 _ = gettext.gettext
 
@@ -17,7 +18,7 @@ class LibraryView(Gtk.Box):
         overlay = Gtk.Overlay()
         scroll = Gtk.ScrolledWindow(vexpand=True)
         
-        flow = Gtk.FlowBox(
+        self.flow = Gtk.FlowBox(
             valign=Gtk.Align.START, halign=Gtk.Align.START,
             selection_mode=Gtk.SelectionMode.NONE,
             margin_top=40, margin_bottom=40, margin_start=40, margin_end=40,
@@ -25,10 +26,20 @@ class LibraryView(Gtk.Box):
         )
 
         if self.matches:
+            user_config = load_user_config()
+            base_dl_path = user_config.get("download_path")
+
             for game in self.matches:
-                flow.append(self.create_game_card(game))
-            scroll.set_child(flow)
+                game['mod_count'] = self.calculate_mod_count(game['name'], base_dl_path)
+
+            for game in self.matches:
+                self.flow.append(self.create_game_card(game))
+
+            scroll.set_child(self.flow)
             overlay.set_child(scroll)
+
+            sort_mode = user_config.get("library_sort", "Number of Mods")
+            self.apply_sort(sort_mode)
         else:
             status_page = Adw.StatusPage(
                 title=_("No games detected"),
@@ -40,8 +51,49 @@ class LibraryView(Gtk.Box):
         self.add_fab_buttons(overlay)
         self.append(overlay)
 
+    def calculate_mod_count(self, game_name, base_dl_path):
+        """Calculates archive count for a game."""
+        game_dl_path = os.path.join(base_dl_path, game_name)
+        if os.path.exists(game_dl_path):
+            try:
+                return len(list_archives(game_dl_path))
+            except Exception as e:
+                print(f"Error listing archives for {game_name}: {e}")
+        return 0
+
+    def apply_sort(self, sort_mode="alphabetical"):
+        """
+        Supported modes:
+          - "Alphabetical"
+          - "Number of Mods"
+        """
+        def sort_func(child1, child2):
+            game1 = child1.get_child()._game_data
+            game2 = child2.get_child()._game_data
+
+            if sort_mode == "Number of Mods":
+                # Primary: Descending mod count
+                diff = game2.get('mod_count') - game1.get('mod_count')
+                if diff != 0:
+                    return diff
+                # Secondary fallback: Alphabetical A-Z
+                return 1 if game1['name'].lower() > game2['name'].lower() else -1
+
+            else:  # "alphabetical"
+                name1 = game1['name'].lower()
+                name2 = game2['name'].lower()
+                if name1 < name2:
+                    return -1
+                elif name1 > name2:
+                    return 1
+                return 0
+
+        self.flow.set_sort_func(sort_func)
+
     def create_game_card(self, game):
         card = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        card._game_data = game  # Store reference for sort_func comparison
+        
         card.set_size_request(200, 300)
         card.set_halign(Gtk.Align.START)
         card.set_hexpand(False)
@@ -65,13 +117,13 @@ class LibraryView(Gtk.Box):
                 pb = GdkPixbuf.Pixbuf.new_from_file_at_scale(poster_path, 200, 300, False)
                 poster = Gtk.Picture.new_for_paintable(Gdk.Texture.new_for_pixbuf(pb))
                 poster.set_can_shrink(True)
-            except: pass
+            except Exception:
+                pass
             
         img_overlay.set_child(poster)
         
-        # platform badge
+        # Platform badge
         platform = game.get('platform')
-        icon_path = ""
         if platform == "steam":
             platform_badge = Gtk.Image.new_from_icon_name("steam-logo")
         elif platform == "heroic-epic":
@@ -80,7 +132,9 @@ class LibraryView(Gtk.Box):
             platform_badge = Gtk.Image.new_from_icon_name("gog-logo-symbolic")
         elif platform == "switch":
             platform_badge = Gtk.Image.new_from_icon_name("switch-logo-symbolic")
-        
+        else:
+            print(f"Unrecognised platform: {platform}")
+            return
         platform_badge.set_pixel_size(32)
         platform_badge.set_halign(Gtk.Align.END)
         platform_badge.set_valign(Gtk.Align.END)
@@ -90,7 +144,7 @@ class LibraryView(Gtk.Box):
         
         img_overlay.add_overlay(platform_badge)
 
-        # mod total badge
+        # Mod total badge
         mod_total_badge = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=4)
         mod_total_badge.set_halign(Gtk.Align.START)
         mod_total_badge.set_valign(Gtk.Align.END)
@@ -98,17 +152,7 @@ class LibraryView(Gtk.Box):
         mod_total_badge.set_margin_bottom(10)
         mod_total_badge.add_css_class("platform-badge")
             
-        count = 0
-        try:
-            user_config_path = os.path.join(GLib.get_user_data_dir (), 'nomm', 'user_config.yaml') 
-            user_config = load_yaml(user_config_path)
-            base_dl_path = user_config.get("download_path")
-            if base_dl_path:
-                game_dl_path = os.path.join(base_dl_path, game["name"])
-                if os.path.exists(game_dl_path):
-                    count = len(list_archives(game_dl_path))
-        except Exception as e:
-            print(f"Error loading user_config : {e}")
+        count = game.get('mod_count', 0)
         
         mod_total_badge_label = Gtk.Label(label=str(count))
         mod_total_badge_label.add_css_class("badge-accent")
