@@ -41,8 +41,21 @@ class ModsTab(Gtk.Box):
         action_bar = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
         self.mod_search_entry = Gtk.SearchEntry(placeholder_text=_("Search mods..."))
         self.mod_search_entry.set_size_request(300, -1)
-        self.mod_search_entry.connect("search-changed", self.on_mod_search_changed)
+        self.mod_search_entry.connect("search-changed", self.on_search_changed)
         action_bar.append(self.mod_search_entry)
+
+        # Filters
+        filter_group = Gtk.Box(css_classes=["linked"])
+        self.current_filter = "all"
+        self.all_filter_btn = Gtk.ToggleButton(label=_("All"), active=True)
+        self.all_filter_btn.connect("toggled", self.on_filter_toggled, "all")
+        filter_group.append(self.all_filter_btn)
+        for filter_type, label in [("enabled", _("Enabled")), ("disabled", _("Disabled"))]:
+            btn = Gtk.ToggleButton(label=label, group=self.all_filter_btn)
+            btn.connect("toggled", self.on_filter_toggled, filter_type)
+            filter_group.append(btn)
+        
+        action_bar.append(filter_group)
 
         folder_btn = create_icon_button(
             icon_name="mat-folder-symbolic",
@@ -87,7 +100,7 @@ class ModsTab(Gtk.Box):
 
         # Mod list
         self.mods_list_box = Gtk.ListBox(css_classes=["dashboard-list"])
-        self.mods_list_box.set_filter_func(self.filter_mods_rows)
+        self.mods_list_box.set_filter_func(self.filter_mods_func)
         self.mods_list_box.connect("row-activated", self.on_row_clicked) 
         self.mods_list_box.set_overflow(Gtk.Overflow.HIDDEN)
         self.list_scroll = Gtk.ScrolledWindow(vexpand=True, hexpand=True, css_classes=["shadow-box"])
@@ -698,6 +711,8 @@ class ModsTab(Gtk.Box):
         else:
             self.dashboard.show_message(_("Failed to endorse"), _("Could not endorse the selected mod, please make sure you have provided your API key and are connected to the internet."))
 
+    
+
     def populate_list(self):
 
         def prepare_data():
@@ -891,9 +906,9 @@ class ModsTab(Gtk.Box):
 
                 if mod == srow:
                     self.mods_list_box.select_row(row)
-                
+
             self.sc.set_valign(valignment)
-        
+
         threading.Thread(target=prepare_data, daemon=True).start()
 
     def find_text_file(self, mod_files):
@@ -902,17 +917,37 @@ class ModsTab(Gtk.Box):
                 return file_path
         return None
 
-    def on_mod_search_changed(self, entry):
+    def filter_mods_func(self, row) -> bool:
+        """Combined filter callback for search query AND enabled/disabled status."""
+        if self.current_filter != "all":
+            if self.current_filter == "enabled" and not "enabled_timestamp" in row.mod_data:
+                return False
+            if self.current_filter == "disabled" and "enabled_timestamp" in row.mod_data:
+                return False
+
+        search_text = self.mod_search_entry.get_text().strip().lower()
+        if search_text:
+            display_name = row.mod_data.get("display_name", row.mod_data.get("name", "")).lower()
+            summary = row.mod_data.get("summary", "").lower()
+
+            if search_text not in display_name and search_text not in summary:
+                return False
+
+        return True
+
+
+    def on_filter_toggled(self, btn, f_name):
+        """Callback for filter toggle buttons."""
+        if btn.get_active():
+            self.current_filter = f_name
+            self.mods_list_box.invalidate_filter()
+
+    def on_search_changed(self, entry):
+        """Callback for search entry typing/clearing."""
         self.mods_list_box.invalidate_filter()
 
-    def filter_mods_rows(self, row):
-        search_text = self.mod_search_entry.get_text().lower()
-        if not search_text: return True
-        if search_text in row.mod_data.get("display_name", row.mod_data.get("name", "")).lower()  or search_text in row.mod_data.get("summary", "").lower():
-            return True
-
     def on_mod_toggled(self, switch, state: bool, mod_files: list, mod: str):
-        
+
         switch.set_sensitive(False)
         self.dashboard.currently_toggling.add(mod)
 
@@ -983,8 +1018,6 @@ class ModsTab(Gtk.Box):
         if not staging_metadata:
             print(f"Staging metadata not found at: {self.dashboard.staging_metadata_path}. Aborting update process.")
             return
-        
-        
 
         btn.set_sensitive(False)
 
