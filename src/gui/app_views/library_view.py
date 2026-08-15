@@ -3,7 +3,7 @@ import os
 
 from gi.repository import Adw, Gdk, GdkPixbuf, Gtk
 from core.tools import load_yaml, list_archives
-from core.user_config import load_user_config
+from core.user_config import load_user_config, LibrarySort
 
 _ = gettext.gettext
 
@@ -38,7 +38,8 @@ class LibraryView(Gtk.Box):
             scroll.set_child(self.flow)
             overlay.set_child(scroll)
 
-            sort_mode = user_config.get("library_sort", "Number of Mods")
+            sort_mode_str = user_config.get("library_sort", "Number of Mods")
+            sort_mode = LibrarySort.from_string(sort_mode_str)
             self.apply_sort(sort_mode)
         else:
             status_page = Adw.StatusPage(
@@ -61,24 +62,17 @@ class LibraryView(Gtk.Box):
                 print(f"Error listing archives for {game_name}: {e}")
         return 0
 
-    def apply_sort(self, sort_mode="alphabetical"):
-        """
-        Supported modes:
-          - "Alphabetical"
-          - "Number of Mods"
-        """
+    def apply_sort(self, sort_mode: LibrarySort = LibrarySort.NUMBER_OF_MODS):
         def sort_func(child1, child2):
             game1 = child1.get_child()._game_data
             game2 = child2.get_child()._game_data
 
-            if sort_mode == "Number of Mods":
+            if sort_mode == LibrarySort.NUMBER_OF_MODS:
                 diff = game2.get('mod_count') - game1.get('mod_count')
                 if diff != 0:
                     return diff
-                # Secondary fallback: Alphabetical A-Z
                 return 1 if game1['name'].lower() > game2['name'].lower() else -1
-
-            else:  # alphabetical
+            else:
                 name1 = game1['name'].lower()
                 name2 = game2['name'].lower()
                 if name1 < name2:

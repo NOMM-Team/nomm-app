@@ -5,8 +5,9 @@ import webbrowser
 
 import requests
 from gi.repository import Adw, Gio, GLib, Gtk
+from enum import Enum
 
-from core.user_config import update_user_config
+from core.user_config import update_user_config, LibrarySort
 from core.tools import load_yaml, translate_fuse_path, get_nomm_tags, create_icon_button
 from platforms.switch import list_emulators
 from gui.application import APP_VERSION
@@ -173,10 +174,11 @@ class SettingsWindow(Adw.Window):
             general_group.add(switch_emulator_row)
 
         # Library sort
-        sorting_options = ["Alphabetic", "Number of Mods"]
+        sorting_options = [sort.display_name for sort in LibrarySort]
         options_model = Gtk.StringList.new(sorting_options)
-        current_sort = load_yaml(self.user_config_path).get("library_sort", "Number of Mods")
-        selected_index = sorting_options.index(current_sort)
+        current_sort_str = load_yaml(self.user_config_path).get("library_sort", "Number of Mods")
+        current_sort = LibrarySort.from_string(current_sort_str)
+        selected_index = list(LibrarySort).index(current_sort)
 
         library_sort_row = Adw.ComboRow(
             title=_("Sort Library Tiles by"),
@@ -184,7 +186,7 @@ class SettingsWindow(Adw.Window):
             model=options_model,
             selected=selected_index
         )
-        library_sort_row.connect("notify::selected", self.on_sort_changed, sorting_options)
+        library_sort_row.connect("notify::selected", self.on_sort_changed)
         general_group.add(library_sort_row)
 
         # Per-game accent colours
@@ -295,11 +297,12 @@ class SettingsWindow(Adw.Window):
             selected_emulator = installed_emulators[selected_index]
             update_user_config('preferred_switch_emulator', selected_emulator)
 
-    def on_sort_changed(self, combo_row, gparam, sorting_options: list):
+    def on_sort_changed(self, combo_row, gparam):
         selected_index = combo_row.get_selected()
-        if 0 <= selected_index < len(sorting_options):
-            selected_sort = sorting_options[selected_index]
-            update_user_config('library_sort', selected_sort)
+        sort_values = list(LibrarySort)
+        if 0 <= selected_index < len(sort_values):
+            selected_sort = sort_values[selected_index]
+            update_user_config('library_sort', selected_sort.value)
 
     def create_social_button(self, icon_name, url):
         btn_content = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
