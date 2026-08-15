@@ -3,9 +3,7 @@ import os
 import shutil
 import webbrowser
 import threading
-import xml.etree.ElementTree as ET
 from datetime import datetime
-from pathlib import Path
 
 import yaml
 from gi.repository import Adw, Gdk, Gio, GLib, Gtk, Pango
@@ -16,7 +14,7 @@ from core.archive_manager import (delete_downloaded_archive, extract_archive,
 from core.fomod_manager import apply_fomod_selection, parse_fomod_xml
 from core.mod_manager import (finalise_mod_metadata, is_mod_installed,
                               load_staging_metadata, remove_mod_from_metadata)
-from core.tools import timestamp_converter, list_archives
+from core.tools import timestamp_converter, list_archives, create_icon_button
 from gui.dashboard_views.fomod_dialog import FomodSelectionDialog
 
 _ = gettext.gettext
@@ -57,12 +55,14 @@ class DownloadsTab(Gtk.Box):
         action_bar.append(filter_group)
         
         # Folder button
-        folder_btn = Gtk.Button(icon_name="folder-open-symbolic", css_classes=["flat"])
-        folder_btn.set_halign(Gtk.Align.END)
+        folder_btn = create_icon_button(
+            icon_name="mat-folder-symbolic",
+            tooltip=_("Open downloads folder"),
+            on_click=lambda x: webbrowser.open(f"file://{self.dashboard.downloads_path}")
+        )
         folder_btn.set_hexpand(True)
-        folder_btn.connect("clicked", lambda x: webbrowser.open(f"file://{self.dashboard.downloads_path}"))
-        folder_btn.set_tooltip_text(_("Open downloads folder"))
         action_bar.append(folder_btn)
+        
         
         self.append(action_bar)
 
@@ -85,20 +85,18 @@ class DownloadsTab(Gtk.Box):
 
         if self.dashboard.downloads_path and os.path.exists(self.dashboard.downloads_path):
             self.setup_folder_monitor()
-        
+
         self.populate_list()
 
     def populate_list(self):
 
         if not (self.dashboard.downloads_path and os.path.exists(self.dashboard.downloads_path)):
             return
-        
+
         def prepare_data():
 
             files = list_archives(self.dashboard.downloads_path)
-
             files.sort(key=lambda f: os.path.getmtime(os.path.join(self.dashboard.downloads_path, f)), reverse=True)
-
             staging_metadata = load_staging_metadata(self.dashboard.staging_metadata_path)
 
             meta_path = self.dashboard.downloads_metadata_path
@@ -109,20 +107,19 @@ class DownloadsTab(Gtk.Box):
                         metadata = yaml.safe_load(meta_f)
                 except: pass
             GLib.idle_add(on_data_prepared, files, staging_metadata, meta_path, metadata)
-        
+
         def on_data_prepared(files, staging_metadata, meta_path, metadata):
 
             valign = self.scrolled.get_valign()
-            
+
             while child := self.list_box.get_first_child():
                 self.list_box.remove(child)
-            
+
             install_btn_sizegroup = Gtk.SizeGroup(mode=Gtk.SizeGroupMode.HORIZONTAL)
             version_badge_sizegroup = Gtk.SizeGroup(mode=Gtk.SizeGroupMode.HORIZONTAL)
-            
+
             for file_name in files:
                 installed = is_mod_installed(file_name, staging_metadata)
-
                 display_name, version_text, changelog = file_name, "—", ""
 
                 if file_name in metadata.get("mods", {}):
@@ -230,22 +227,22 @@ class DownloadsTab(Gtk.Box):
                 row.add_suffix(overlay)
 
                 # Trash Button
-                d_stack = Gtk.Stack(transition_type=Gtk.StackTransitionType.CROSSFADE, hhomogeneous=False, interpolate_size=True)
-                b_btn = Gtk.Button(icon_name="user-trash-symbolic", valign=Gtk.Align.CENTER, css_classes=["flat"])
-                b_btn.set_cursor_from_name("pointer")
-                c_btn = Gtk.Button(label=_("Are you sure?"), valign=Gtk.Align.CENTER, css_classes=["destructive-action"])
-                c_btn.connect("clicked", self.on_delete_downloaded_archive, file_name)
+                delete_stack = Gtk.Stack(transition_type=Gtk.StackTransitionType.CROSSFADE, hhomogeneous=False, interpolate_size=True)
+                bin_btn = Gtk.Button(icon_name="mat-delete-symbolic", valign=Gtk.Align.CENTER, css_classes=["flat"])
+                bin_btn.set_cursor_from_name("pointer")
+                confirm_btn = Gtk.Button(icon_name="mat-delete-forever-symbolic", valign=Gtk.Align.CENTER, css_classes=["destructive-action"])
+                confirm_btn.connect("clicked", self.on_delete_downloaded_archive, file_name)
 
-                b_btn.connect("clicked", lambda b, s=d_stack: [
+                bin_btn.connect("clicked", lambda b, s=delete_stack: [
                     s.set_visible_child_name("c"),
                     GLib.timeout_add_seconds(3, lambda: s.set_visible_child_name("b") or False)
                 ])
-                d_stack.add_named(b_btn, "b"); d_stack.add_named(c_btn, "c")
-                row.add_suffix(d_stack)
+                delete_stack.add_named(bin_btn, "b"); delete_stack.add_named(confirm_btn, "c")
+                row.add_suffix(delete_stack)
 
                 self.list_box.append(row)
             self.scrolled.set_valign(valign)
-        
+
         threading.Thread(target=prepare_data, daemon=True).start()
 
     # Filter lists

@@ -1,23 +1,14 @@
 import os
 import yaml
-import vdf
 import requests
 import re
 import html
 
 from pathlib import Path
-from typing import List, Dict, Any
-from gi.repository import GLib, Gio
+from typing import Callable, Optional
+from gi.repository import GLib, Gio, Gtk
 
-def get_contrast_color(hex_code: str) -> str:
-    hex_code = hex_code.lstrip('#')
-    
-    r, g, b = [int(hex_code[i:i+2], 16) for i in (0, 2, 4)]
-    
-    luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255
-    
-    return "#000000" if luminance > 0.5 else "#ffffff"
-        
+
 def load_yaml(path: str) -> dict:
     if os.path.exists(path):
         try:
@@ -267,3 +258,40 @@ def get_nomm_tags(headers: dict):
         return tag_names
     else:
         return None
+
+def create_icon_button(
+    *,
+    icon_name: str,
+    tooltip: str,
+    icon_size: int = 24,
+    icon_margin: int = 2,
+    valign: Gtk.Align = Gtk.Align.CENTER,
+    halign: Gtk.Align = Gtk.Align.END,
+    css_classes: Optional[list[str]] = None,
+    on_click: Optional[Callable] = None,
+) -> Gtk.Button:
+
+    button = Gtk.Button(valign=valign, halign=halign)
+    button.add_css_class("image-button")
+
+    img = Gtk.Image.new_from_icon_name(icon_name)
+    img.set_pixel_size(icon_size)
+    img.set_valign(Gtk.Align.CENTER)
+    img.set_halign(Gtk.Align.CENTER)
+    img.set_margin_start(icon_margin)
+    img.set_margin_end(icon_margin)
+    img.set_margin_top(icon_margin)
+    img.set_margin_bottom(icon_margin)
+    button.set_child(img)
+
+    button.set_tooltip_text(tooltip)
+    button.set_cursor_from_name("pointer")
+
+    classes_to_add = css_classes if css_classes is not None else ["flat"]
+    for css_class in classes_to_add:
+        button.add_css_class(css_class)
+
+    if on_click:
+        button.connect("clicked", on_click)
+
+    return button

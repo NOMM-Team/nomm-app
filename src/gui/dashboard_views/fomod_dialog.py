@@ -1,9 +1,6 @@
 import os
-import pathlib
 import re
-import os
-import pathlib
-import re
+import gettext
 
 from gi.repository import Adw, Gdk, GdkPixbuf, GObject, Gtk
 
@@ -17,7 +14,7 @@ from core.fomod_manager import (check_for_dependencies,
 from core.tools import retrieve_casesensitive_paths
 from gui.text_window import TextWindow
 from core.tools import retrieve_casesensitive_paths
-
+_ = gettext.gettext
 
 class FomodSelectionDialog(Adw.Window):
     

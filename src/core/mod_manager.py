@@ -3,11 +3,9 @@ import shutil
 import yaml
 import threading
 import subprocess
-import zipfile
-import vdf
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional
+from typing import List
 from datetime import datetime
 from gi.repository import GLib
 from core.tools import load_yaml, write_yaml
@@ -333,7 +331,7 @@ def deploy_essential_utility(util_config: dict, downloads_path: str, staging_pat
     # Some utilities require specific launch options to run properly
     launch_options = util_config.get("launch_options")
     if launch_options:
-        add_launch_options(steam_base, launch_options)
+        add_launch_options(steam_base, launch_options, steam_id)
 
 def toggle_mod_state(mod_name: str, mod_files: list, state: bool, staging_dir: str, deployment_map: list) -> dict:
     staging_meta_path = os.path.join(staging_dir, ".staging.nomm.yaml")

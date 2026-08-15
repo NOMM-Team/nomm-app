@@ -33,5 +33,7 @@
     <file>radar-symbolic.svg</file>
     <file>mat-settings-symbolic.svg</file>
     <file>globe-book-symbolic.svg</file>
+    <file>mat-delete-symbolic.svg</file>
+    <file>mat-delete-forever-symbolic.svg</file>
   </gresource>
 </gresources>

@@ -1,27 +1,25 @@
 import os
-import shutil
-import subprocess
 import webbrowser
-import zipfile
-from datetime import datetime
+import gettext
+
 from pathlib import Path
 
-import gi
 import rarfile
 import requests
-import yaml
 from gi.repository import Adw, Gdk, Gio, Gtk
 
 from core.tools import load_yaml, write_yaml
 from core.mod_manager import (completely_uninstall_mod, get_metadata_path,
                               get_mod_statistics, load_staging_metadata,
                               remove_mod_from_metadata)
-from core.tools import get_contrast_color
+from core.colour_manager import set_accent_colour, reset_accent_colour
 from gui.dashboard_views.downloads_tab import DownloadsTab
 from gui.dashboard_views.mods_tab import ModsTab
 from gui.dashboard_views.tools_tab import ToolsTab
 
 rarfile.UNRAR_TOOL = "/app/bin/unrar"
+
+_ = gettext.gettext
 
 class GameDashboard(Gtk.Box):
     def __init__(self, application, game_info, **kwargs):
@@ -52,31 +50,11 @@ class GameDashboard(Gtk.Box):
         self.nexus_headers = self.app.headers.copy()
         self.nexus_headers["apikey"] = user_config.get("nexus_api_key")
 
-        # Per game accent colour theming
-        if user_config.get("enable_per_game_accent_colour") and game_info["accent_colour"]:
-            print("applying cool new colour")
-            fg_color = get_contrast_color(game_info["accent_colour"])
-            css = f"""
-            window {{
-                --accent-bg-color: {game_info["accent_colour"]};
-                --accent-color: {game_info["accent_colour"]};
-                --accent-fg-color: {fg_color};
-            }}
-            """
-            style_provider = Gtk.CssProvider()
-            style_provider.load_from_data(css.encode())
-            
-            Gtk.StyleContext.add_provider_for_display(
-                Gdk.Display.get_default(),
-                style_provider,
-                Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION
-            )
+        
 
         monitor = Gdk.Display.get_default().get_monitors().get_item(0)
         win_height = monitor.get_geometry().height
         banner_height = int(win_height * 0.15)
-
-        
 
         # Assets management
         main_layout = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
@@ -194,6 +172,11 @@ class GameDashboard(Gtk.Box):
         main_layout.append(footer)
         self.append(main_layout)
 
+        # Per game accent colour theming
+        self._accent_style_provider = None
+        if user_config.get("enable_per_game_accent_colour") and game_info["accent_colour"]:
+            self._accent_style_provider = set_accent_colour(game_info["accent_colour"], self._accent_style_provider)
+
     def update_indicators(self):
         stats = get_mod_statistics(self.staging_metadata_path, self.downloads_path)
         
@@ -277,7 +260,7 @@ class GameDashboard(Gtk.Box):
         user_config = load_yaml(self.app.user_config_path)
         user_config["last_selected_game"] = "dashboard"
         write_yaml(user_config, self.app.user_config_path)
-        
+        reset_accent_colour(self._accent_style_provider)
         self.app.return_to_library()
 
     def on_launch_clicked(self, btn):

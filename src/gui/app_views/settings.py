@@ -5,9 +5,10 @@ import webbrowser
 
 import requests
 from gi.repository import Adw, Gio, GLib, Gtk
+from enum import Enum
 
-from core.user_config import update_user_config
-from core.tools import load_yaml, translate_fuse_path, get_nomm_tags
+from core.user_config import update_user_config, LibrarySort
+from core.tools import load_yaml, translate_fuse_path, get_nomm_tags, create_icon_button
 from platforms.switch import list_emulators
 from gui.application import APP_VERSION
 
@@ -98,9 +99,11 @@ class SettingsWindow(Adw.Window):
         current_path = load_yaml(self.user_config_path).get('download_path', 'Not set')
         self.path_row.set_subtitle(current_path)
 
-        folder_btn = Gtk.Button(icon_name="mat-folder-managed-symbolic", valign=Gtk.Align.CENTER, css_classes=["flat", "large-icon-btn"])
-        folder_btn.connect("clicked", lambda b: self.pick_folder(self.path_row, "download_path"))
-        folder_btn.set_tooltip_text(_("Change your downloads folder location. This will NOT move all your current files to the new directory. "))
+        folder_btn = create_icon_button(
+            icon_name="mat-folder-managed-symbolic",
+            tooltip=_("Change your downloads folder location. This will NOT move all your current files to the new directory."),
+            on_click= lambda b: self.pick_folder(self.path_row, "download_path"),
+        )
         self.path_row.add_suffix(folder_btn)
         storage_group.add(self.path_row)
 
@@ -109,9 +112,11 @@ class SettingsWindow(Adw.Window):
         current_staging = load_yaml(self.user_config_path).get('staging_path', 'Not set')
         self.staging_row.set_subtitle(current_staging)
 
-        staging_btn = Gtk.Button(icon_name="mat-folder-managed-symbolic", valign=Gtk.Align.CENTER, css_classes=["flat", "large-icon-btn"])
-        staging_btn.connect("clicked", lambda b: self.pick_folder(self.staging_row, "staging_path"))
-        staging_btn.set_tooltip_text(_("Change your staging folder location. This will NOT move all your current files to the new directory. "))
+        staging_btn = create_icon_button(
+            icon_name="mat-folder-managed-symbolic",
+            tooltip=_("Change your staging folder location. This will NOT move all your current files to the new directory. "),
+            on_click= lambda b: self.pick_folder(self.staging_row, "staging_path"),
+        )
         self.staging_row.add_suffix(staging_btn)
         storage_group.add(self.staging_row)
 
@@ -119,9 +124,11 @@ class SettingsWindow(Adw.Window):
         self.config_path_row = Adw.ActionRow(title=_("NOMM Configuration Path"))
         self.config_path_row.set_subtitle(self.user_config_dir)
 
-        config_path_btn = Gtk.Button(icon_name="mat-folder-symbolic", valign=Gtk.Align.CENTER, css_classes=["flat", "large-icon-btn"])
-        config_path_btn.connect("clicked", lambda b: webbrowser.open(f"file://{self.user_config_dir}"))
-        config_path_btn.set_tooltip_text(_("Go to your NOMM configuration folder location. This path is not modifiable and depends on your NOMM installation type."))
+        config_path_btn = create_icon_button(
+            icon_name="mat-folder-symbolic",
+            tooltip=_("Go to your NOMM configuration folder location. This path is not modifiable and depends on your NOMM installation type."),
+            on_click=lambda b: webbrowser.open(f"file://{self.user_config_dir}"),
+        )
         self.config_path_row.add_suffix(config_path_btn)
         storage_group.add(self.config_path_row)
 
@@ -135,6 +142,7 @@ class SettingsWindow(Adw.Window):
 
         self.check_btn = Gtk.Button(icon_name="mat-experiment-symbolic", valign=Gtk.Align.CENTER, css_classes=["flat", "large-icon-btn"])
         self.check_btn.set_tooltip_text(_("Check API key validity"))
+        self.check_btn.set_cursor_from_name("pointer")
         self.spinner = Gtk.Spinner(valign=Gtk.Align.CENTER)
 
         api_row = Adw.ActionRow(title=_("Nexus API Key"))
@@ -164,6 +172,22 @@ class SettingsWindow(Adw.Window):
             )
             switch_emulator_row.connect("notify::selected", self.on_switch_emulator_changed, installed_emulators)
             general_group.add(switch_emulator_row)
+
+        # Library sort
+        sorting_options = [sort.display_name for sort in LibrarySort]
+        options_model = Gtk.StringList.new(sorting_options)
+        current_sort_str = load_yaml(self.user_config_path).get("library_sort", "Number of Mods")
+        current_sort = LibrarySort.from_string(current_sort_str)
+        selected_index = list(LibrarySort).index(current_sort)
+
+        library_sort_row = Adw.ComboRow(
+            title=_("Sort Library Tiles by"),
+            subtitle=_("How library tiles will be sorted"),
+            model=options_model,
+            selected=selected_index
+        )
+        library_sort_row.connect("notify::selected", self.on_sort_changed)
+        general_group.add(library_sort_row)
 
         # Per-game accent colours
         accent_row = Adw.SwitchRow(title=_("Per-Game Accent Colour"))
@@ -209,6 +233,7 @@ class SettingsWindow(Adw.Window):
         # Close Button        
         save_btn = Gtk.Button(label=_("Close"), css_classes=["suggested-action"], margin_top=12)
         save_btn.connect("clicked", lambda b: self.close_settings())
+        save_btn.set_cursor_from_name("pointer")
         content.append(save_btn)
 
     def pick_folder(self, row, config_key):
@@ -233,7 +258,7 @@ class SettingsWindow(Adw.Window):
 
         self.check_btn.set_sensitive(False)
         self.spinner.start()
-        
+
         self.check_btn.remove_css_class("success")
         self.check_btn.remove_css_class("error")
 
@@ -272,6 +297,13 @@ class SettingsWindow(Adw.Window):
             selected_emulator = installed_emulators[selected_index]
             update_user_config('preferred_switch_emulator', selected_emulator)
 
+    def on_sort_changed(self, combo_row, gparam):
+        selected_index = combo_row.get_selected()
+        sort_values = list(LibrarySort)
+        if 0 <= selected_index < len(sort_values):
+            selected_sort = sort_values[selected_index]
+            update_user_config('library_sort', selected_sort.value)
+
     def create_social_button(self, icon_name, url):
         btn_content = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
         
@@ -279,10 +311,11 @@ class SettingsWindow(Adw.Window):
         img.set_pixel_size(48)
         btn_content.append(img)
         
-        button = Gtk.Button(child=btn_content)
-        button.add_css_class("flat")
-        button.connect("clicked", lambda b: Gtk.FileLauncher.new(Gio.File.new_for_uri(url)).launch(self, None, None))
-        return button
+        social_button = Gtk.Button(child=btn_content)
+        social_button.add_css_class("flat")
+        social_button.set_cursor_from_name("pointer")
+        social_button.connect("clicked", lambda b: Gtk.FileLauncher.new(Gio.File.new_for_uri(url)).launch(self, None, None))
+        return social_button
 
     def close_settings(self):
         update_user_config('nexus_api_key', self.api_entry.get_text())

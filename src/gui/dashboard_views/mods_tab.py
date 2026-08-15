@@ -3,7 +3,6 @@ import os
 import webbrowser
 import threading
 
-from datetime import datetime
 from pathlib import Path
 
 from gi.repository import Adw, Gdk, GLib, GObject, Gtk, Gio, GdkPixbuf, Pango
@@ -16,7 +15,7 @@ from core.mod_manager import (apply_deployment_map_changes, build_deployment_map
 from platforms.nexus import get_nexus_changelog, endorse_nexus_mod
 from platforms.nexus import get_mod_info as get_nexus_mod_info
 from platforms.gamebanana import get_mod_info as get_gamebanana_mod_info
-from core.tools import timestamp_converter, write_yaml
+from core.tools import timestamp_converter, write_yaml, create_icon_button
 from gui.text_window import TextWindow
 from typing import Optional, Callable
 
@@ -41,34 +40,41 @@ class ModsTab(Gtk.Box):
         # Action bar top right
         action_bar = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
         self.mod_search_entry = Gtk.SearchEntry(placeholder_text=_("Search mods..."))
-        self.mod_search_entry.set_size_request(300, -1) 
-        self.mod_search_entry.connect("search-changed", self.on_mod_search_changed)
+        self.mod_search_entry.set_size_request(300, -1)
+        self.mod_search_entry.connect("search-changed", self.on_search_changed)
         action_bar.append(self.mod_search_entry)
 
-        folder_btn = Gtk.Button(icon_name="mat-folder-symbolic", css_classes=["flat", "large-icon-btn"])
-        folder_btn.set_halign(Gtk.Align.END); 
-        folder_btn.set_cursor_from_name("pointer")
-        folder_btn.connect("clicked", lambda x: webbrowser.open(f"file://{self.dashboard.staging_path}"))
-        folder_btn.set_tooltip_text(_("Open staging folder"))
+        # Filters
+        filter_group = Gtk.Box(css_classes=["linked"])
+        self.current_filter = "all"
+        self.all_filter_btn = Gtk.ToggleButton(label=_("All"), active=True)
+        self.all_filter_btn.connect("toggled", self.on_filter_toggled, "all")
+        filter_group.append(self.all_filter_btn)
+        for filter_type, label in [("enabled", _("Enabled")), ("disabled", _("Disabled"))]:
+            btn = Gtk.ToggleButton(label=label, group=self.all_filter_btn)
+            btn.connect("toggled", self.on_filter_toggled, filter_type)
+            filter_group.append(btn)
         
-        update_btn = Gtk.Button(icon_name="refresh-mods-symbolic", css_classes=["flat", "large-icon-btn"])
-        update_btn.set_halign(Gtk.Align.END)
-        update_btn.set_cursor_from_name("pointer")
-        update_btn.connect("clicked", self.check_for_updates)
-        update_btn.set_tooltip_text(_("Refresh Metadata & Check for updates\nThis will replace all current mod metadata with fresh data coming straight from the modding platform."))
-        
-        launch_btn = Gtk.Button(icon_name="media-playback-start", css_classes=["flat", "large-icon-btn"])
-        launch_btn.set_halign(Gtk.Align.END)
-        launch_btn.set_cursor_from_name("pointer")
-        launch_btn.connect("clicked", self.dashboard.on_launch_clicked)
-        launch_btn.set_tooltip_text(_(f"Launch {dashboard.game_name}"))
+        action_bar.append(filter_group)
+
+        folder_btn = create_icon_button(
+            icon_name="mat-folder-symbolic",
+            tooltip=_("Open staging folder"),
+            on_click=lambda x: webbrowser.open(f"file://{self.dashboard.staging_path}")
+        )
+        update_btn = create_icon_button(
+            icon_name="refresh-mods-symbolic",
+            tooltip=_("Refresh Metadata & Check for updates\nThis will replace all current mod metadata with fresh data coming straight from the modding platform."),
+            on_click=self.check_for_updates
+        )
         
         if "wiki_link" in dashboard.game_config:
-            wiki_btn = Gtk.Button(icon_name="globe-book-symbolic", css_classes=["flat", "large-icon-btn"])
-            wiki_btn.set_halign(Gtk.Align.END); wiki_btn.set_hexpand(True)
-            wiki_btn.set_cursor_from_name("pointer")
-            wiki_btn.connect("clicked", lambda x: webbrowser.open(f"https://nomm.moe/docs/game-guides/{dashboard.game_config["wiki_link"]}"))
-            wiki_btn.set_tooltip_text(_("Open wiki page"))
+            wiki_btn = create_icon_button(
+                icon_name="globe-book-symbolic",
+                tooltip=_("Open wiki page"),
+                on_click=lambda x: webbrowser.open(f"https://nomm.moe/docs/game-guides/{dashboard.game_config["wiki_link"]}")
+            )
+            wiki_btn.set_hexpand(True)
             action_bar.append(wiki_btn)
         else:
             # This is so that the buttons all show up on the right side, even if there is no wiki button
@@ -77,7 +83,14 @@ class ModsTab(Gtk.Box):
         # Add all the buttons
         action_bar.append(folder_btn)
         action_bar.append(update_btn)
-        action_bar.append(launch_btn)
+
+        if dashboard.platform in ["steam", "heroic-gog", "heroic-epic"]:
+            launch_btn = create_icon_button(
+                icon_name="media-playback-start",
+                tooltip=_(f"Launch {dashboard.game_name}"),
+                on_click=self.dashboard.on_launch_clicked
+            )
+            action_bar.append(launch_btn)
 
         self.append(action_bar)
         
@@ -87,7 +100,7 @@ class ModsTab(Gtk.Box):
 
         # Mod list
         self.mods_list_box = Gtk.ListBox(css_classes=["dashboard-list"])
-        self.mods_list_box.set_filter_func(self.filter_mods_rows)
+        self.mods_list_box.set_filter_func(self.filter_mods_func)
         self.mods_list_box.connect("row-activated", self.on_row_clicked) 
         self.mods_list_box.set_overflow(Gtk.Overflow.HIDDEN)
         self.list_scroll = Gtk.ScrolledWindow(vexpand=True, hexpand=True, css_classes=["shadow-box"])
@@ -698,6 +711,8 @@ class ModsTab(Gtk.Box):
         else:
             self.dashboard.show_message(_("Failed to endorse"), _("Could not endorse the selected mod, please make sure you have provided your API key and are connected to the internet."))
 
+    
+
     def populate_list(self):
 
         def prepare_data():
@@ -876,8 +891,8 @@ class ModsTab(Gtk.Box):
 
                 # Trash
                 u_stack = Gtk.Stack(transition_type=Gtk.StackTransitionType.CROSSFADE, hhomogeneous=False, interpolate_size=True)
-                bin_btn = Gtk.Button(icon_name="user-trash-symbolic", valign=Gtk.Align.CENTER, css_classes=["flat"])
-                conf_del_btn = Gtk.Button(label=_("Are you sure?"), valign=Gtk.Align.CENTER, css_classes=["destructive-action"])
+                bin_btn = Gtk.Button(icon_name="mat-delete-symbolic", valign=Gtk.Align.CENTER, css_classes=["flat"])
+                conf_del_btn = Gtk.Button(icon_name="mat-delete-forever-symbolic", valign=Gtk.Align.CENTER, css_classes=["destructive-action"])
                 conf_del_btn.connect("clicked", self.dashboard.on_uninstall_item, mod_files, mod)
 
                 bin_btn.connect("clicked", lambda b, s=u_stack: [
@@ -891,9 +906,9 @@ class ModsTab(Gtk.Box):
 
                 if mod == srow:
                     self.mods_list_box.select_row(row)
-                
+
             self.sc.set_valign(valignment)
-        
+
         threading.Thread(target=prepare_data, daemon=True).start()
 
     def find_text_file(self, mod_files):
@@ -902,16 +917,37 @@ class ModsTab(Gtk.Box):
                 return file_path
         return None
 
-    def on_mod_search_changed(self, entry):
+    def filter_mods_func(self, row) -> bool:
+        """Combined filter callback for search query AND enabled/disabled status."""
+        if self.current_filter != "all":
+            if self.current_filter == "enabled" and not "enabled_timestamp" in row.mod_data:
+                return False
+            if self.current_filter == "disabled" and "enabled_timestamp" in row.mod_data:
+                return False
+
+        search_text = self.mod_search_entry.get_text().strip().lower()
+        if search_text:
+            display_name = row.mod_data.get("display_name", row.mod_data.get("name", "")).lower()
+            summary = row.mod_data.get("summary", "").lower()
+
+            if search_text not in display_name and search_text not in summary:
+                return False
+
+        return True
+
+
+    def on_filter_toggled(self, btn, f_name):
+        """Callback for filter toggle buttons."""
+        if btn.get_active():
+            self.current_filter = f_name
+            self.mods_list_box.invalidate_filter()
+
+    def on_search_changed(self, entry):
+        """Callback for search entry typing/clearing."""
         self.mods_list_box.invalidate_filter()
 
-    def filter_mods_rows(self, row):
-        search_text = self.mod_search_entry.get_text().lower()
-        if not search_text: return True
-        return search_text in getattr(row, 'mod_name', '')
-
     def on_mod_toggled(self, switch, state: bool, mod_files: list, mod: str):
-        
+
         switch.set_sensitive(False)
         self.dashboard.currently_toggling.add(mod)
 
@@ -982,8 +1018,6 @@ class ModsTab(Gtk.Box):
         if not staging_metadata:
             print(f"Staging metadata not found at: {self.dashboard.staging_metadata_path}. Aborting update process.")
             return
-        
-        
 
         btn.set_sensitive(False)
 

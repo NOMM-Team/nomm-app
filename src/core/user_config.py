@@ -1,9 +1,30 @@
 import os
-from datetime import datetime
+import gettext
 
 from gi.repository import GLib
 from core.tools import load_yaml, write_yaml
 from typing import List, Dict, Any
+from enum import Enum
+
+_ = gettext.gettext
+
+class LibrarySort(Enum):
+    ALPHABETIC = _("Alphabetical Order")
+    NUMBER_OF_MODS = _("Number of Mods")
+
+    @property
+    def display_name(self) -> str:
+        """Return the translated display name for UI."""
+        if self == LibrarySort.ALPHABETIC:
+            return _("Alphabetical Order")
+        return _("Number of Mods")
+
+    @classmethod
+    def from_string(cls, value: str) -> 'LibrarySort':
+        try:
+            return cls(value)
+        except ValueError:
+            return cls.NUMBER_OF_MODS
 
 # changes user setting by changing/writing the value for an associated key string
 def update_user_config(key: str, value: Any) -> None:
@@ -32,7 +53,7 @@ def write_user_config(data: dict) -> dict:
         return False
     return True
 
-def parse_mod_paths(deployment_dicts: list or str, game_path: str, user_data_path: str) -> List[Dict[str, str]]:
+def parse_mod_paths(deployment_dicts: list | str, game_path: str, user_data_path: str) -> List[Dict[str, str]]:
 
     # Handle case where there is only one path provided, and it's not a list of dicts
     if not isinstance(deployment_dicts, list):

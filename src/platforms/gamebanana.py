@@ -1,10 +1,10 @@
 import os
 import threading
 
-from concurrent.futures import ThreadPoolExecutor
+
 from pathlib import Path
-from typing import Callable, Optional
-from urllib.parse import urlsplit, urlunsplit, urlparse, parse_qs, unquote
+from urllib.parse import urlsplit, urlparse, parse_qs, unquote
+from urllib.error import HTTPError
 
 import requests
 import yaml
@@ -104,7 +104,7 @@ def handle_gamebanana_link(link: str, downloader: Downloader, headers: dict) -> 
 
     if not game_folder_name:
         print(f"Game {mod_switch_id} could not be found in game_configs!")
-        GLib.idle_add(send_download_notification, "failure-game-not-found", file_name=None, game_name=nexus_id, icon_path=None)
+        GLib.idle_add(send_download_notification, "failure-game-not-found", file_name=None, game_name=game["full_name"], icon_path=None)
         return False
 
     download_dir = Path(base_download_path) / game_folder_name

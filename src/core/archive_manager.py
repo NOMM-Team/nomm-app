@@ -3,15 +3,14 @@ import shutil
 import subprocess
 import xml.etree.ElementTree as ET
 import zipfile
+import gettext
 from pathlib import Path
 from urllib.parse import unquote
 
 from core.fomod_manager import parse_fomod_xml
-
 import rarfile
 
-from core.fomod_manager import parse_fomod_xml
-
+_ = gettext.gettext
 # Point rarfile to the bundled binary
 rarfile.UNRAR_TOOL = "/app/bin/unrar"
 

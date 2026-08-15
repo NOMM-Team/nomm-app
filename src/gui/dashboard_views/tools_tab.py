@@ -4,7 +4,7 @@ import threading
 import webbrowser
 from pathlib import Path
 
-from gi.repository import Adw, GLib, Gtk
+from gi.repository import Adw, Gtk
 
 from core.mod_manager import deploy_essential_utility
 

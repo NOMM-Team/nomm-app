@@ -11,7 +11,7 @@ gi.require_version('Notify', '0.7')
 
 from pathlib import Path
 from urllib.parse import urlparse
-from gi.repository import Adw, Gdk, GdkPixbuf, Gio, GLib, Gtk, Pango
+from gi.repository import Adw, Gdk, Gio, GLib, Gtk
 
 from core.game_scanner import scan_all_games
 from core.tools import (load_yaml,
@@ -32,21 +32,23 @@ APP_VERSION = '0.12.0'
 translation_system = gettext.translation(APP_NAME, localedir='/app/share/locale', fallback=True)
 translation_system.install(names=['ngettext'])
 
+_ = gettext.gettext
+
 class Nomm(Adw.Application):
     def __init__(self, **kwargs):
         
         self.downloader = kwargs.pop('downloader', None)
         
         super().__init__(application_id=APP_NAME, flags=Gio.ApplicationFlags.HANDLES_OPEN, **kwargs)
-        self.matches = []
+        self.matches: list[dict] = []
         self.user_defined_paths = []
         self.steam_base = get_steam_base_dir()
 
-        user_data_dir = os.path.join(GLib.get_user_data_dir(), 'nomm')
-        self.user_config_path = os.path.join(user_data_dir, "user_config.yaml")
-        self.game_config_path = os.path.join(user_data_dir, "game_configs")
+        user_data_dir: str = os.path.join(GLib.get_user_data_dir(), 'nomm')
+        self.user_config_path: str = os.path.join(user_data_dir, "user_config.yaml")
+        self.game_config_path: str = os.path.join(user_data_dir, "game_configs")
         
-        base_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        base_path: str = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
         self.initialize_custom_icons(base_path)
 
@@ -664,8 +666,10 @@ class Nomm(Adw.Application):
         self.remove_stack_child("dashboard")
         self.stack.add_named(self.dashboard, "dashboard")
         self.stack.set_visible_child_name("dashboard")
+        self.win.set_title(f"NOMM: {game_info["name"]}")
 
     def return_to_library(self):
+        self.win.set_title("NOMM")
         if load_yaml(self.user_config_path).get('enable_fullscreen'): self.win.unfullscreen()
         
         # Creates the library_view if it has not been set before

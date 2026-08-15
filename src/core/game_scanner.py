@@ -1,14 +1,12 @@
 
 import os
 
-import vdf
 import yaml
 
 from gi.repository import GLib
 
 from core.user_config import update_user_config
 from core.tools import  write_yaml, load_yaml, slugify
-from typing import List, Dict, Optional, Any
 
 from platforms import steam, heroic, switch
 

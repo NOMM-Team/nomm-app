@@ -2,7 +2,6 @@ import os
 import pprint
 import shutil
 from pathlib import Path
-import xml.etree.ElementTree as ET
 
 # Parsing the fomod from the XML
 def parse_fomod_xml(xml_data):
