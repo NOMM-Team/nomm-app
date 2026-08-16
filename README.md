@@ -16,7 +16,7 @@ Don't come here expecting it to manage mods for something like Skyrim. There are
 Instead, think of NOMM as more of a general purpose tool for most games that just need you to point to a directory and extract some zip files.
 
 > [!WARNING]
-> This project is partially made with the help of Gemini (especially on the GUI side of things).
+> Gemini took a supporting role with this project, mainly as a learning tool on the UI development side.
 > 
 > For the full AI disclaimer head to the [dedicated page on our website](https://nomm.moe/docs/about/values).
 
