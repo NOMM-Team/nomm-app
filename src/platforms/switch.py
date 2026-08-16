@@ -98,9 +98,9 @@ def list_emulators():
     installed_emulator_list = []
     if os.path.exists(CITRON_GAME_PATH):
         installed_emulator_list.append(EmulatorName.CITRON.value)
-    elif os.path.exists(EDEN_GAME_PATH):
+    if os.path.exists(EDEN_GAME_PATH):
         installed_emulator_list.append(EmulatorName.EDEN.value)
-    elif os.path.exists(RYUBING_GAME_PATH):
+    if os.path.exists(RYUBING_GAME_PATH):
         installed_emulator_list.append(EmulatorName.RYUBING.value)
 
     return installed_emulator_list
