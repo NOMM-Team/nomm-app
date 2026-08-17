@@ -104,10 +104,11 @@ def get_art(game_title: str, app_id: str | int, platform: str) -> dict:
 
     art = load_cached_assets(game_title, platform)
     if not art:
-        art = {"hero": None, "poster": None}
-        paths = download_heroic_assets(game_title, app_id, platform)
-        art["poster"] = paths.get("art_grid")
-        art["hero"] = paths.get("art_hero")
+        if download_heroic_assets(game_title, app_id, platform):
+            art = load_cached_assets(game_title, platform)
+        else:
+            print(f"Could not download heroic assets for game: {game_title}")
+            return {"hero": None, "poster": None}
     return art
 
 # Grabs the assets from heroic games launcher such as banner and game image
@@ -151,7 +152,6 @@ def download_heroic_assets(game_title: str, appName: str, platform: str):
     }
 
     os.makedirs(cache_base, exist_ok=True)
-    downloaded_paths = {}
 
     for key, url in urls.items():
         if not url:
@@ -165,4 +165,4 @@ def download_heroic_assets(game_title: str, appName: str, platform: str):
 
         download_image(url, local_path)
 
-    return downloaded_paths
+    return True

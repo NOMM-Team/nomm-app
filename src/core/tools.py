@@ -228,7 +228,7 @@ def launch_option_merger(current_launch_options: str, new_option: str) -> str:
 def slugify(text: str) -> str:
     return re.sub(r'[^a-z0-9]', '', text.lower())
 
-def load_cached_assets(game_name: str, platform: str) -> dict:
+def load_cached_assets(game_name: str, platform: str) -> dict[str, str]:
     """Attempts to load game poster and hero from cache, or downloads them"""
     cache_base = os.path.join(GLib.get_user_data_dir(), "nomm", "image-cache", f"{platform}", f"{game_name}")
     
