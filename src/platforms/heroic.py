@@ -100,11 +100,11 @@ def obtain_heroic_libraries(game_paths: list) -> list:
     return directory_paths
 
 def get_art(game_title: str, app_id: str | int, platform: str) -> dict:
-    art = {"hero": None, "poster": None}
     if not app_id: return None
 
     art = load_cached_assets(game_title, platform)
     if not art:
+        art = {"hero": None, "poster": None}
         paths = download_heroic_assets(game_title, app_id, platform)
         art["poster"] = paths.get("art_grid")
         art["hero"] = paths.get("art_hero")
