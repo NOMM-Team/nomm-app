@@ -1,4 +1,4 @@
-id: com.nomm.Nomm
+id: moe.nomm.Nomm
 runtime: org.gnome.Platform
 runtime-version: '49' # latest stable GNOME runtime
 sdk: org.gnome.Sdk
@@ -9,7 +9,7 @@ finish-args:
   - --socket=fallback-x11
   - --socket=wayland
   - --device=dri
-  - --own-name=com.nomm.Nomm
+  - --own-name=moe.nomm.Nomm
   # Heroic
   - --filesystem=~/.config/heroic:ro # Standard
   - --filesystem=~/.var/app/com.heroicgameslauncher.hgl/config/heroic:ro # Flatpak
@@ -57,13 +57,13 @@ modules:
       - install -D src/main.py /app/bin/nomm
       
       # Install desktop file
-      - install -D build/flatpak/com.nomm.Nomm.desktop /app/share/applications/com.nomm.Nomm.desktop
+      - install -D build/flatpak/moe.nomm.Nomm.desktop /app/share/applications/moe.nomm.Nomm.desktop
 
       # Install metainfo
-      - install -D build/flatpak/com.nomm.Nomm.metainfo.xml /app/share/metainfo/com.nomm.Nomm.metainfo.xml
+      - install -D build/flatpak/moe.nomm.Nomm.metainfo.xml /app/share/metainfo/moe.nomm.Nomm.metainfo.xml
 
       # Install logo
-      - install -D assets/icons/nomm-logo.svg /app/share/icons/hicolor/64x64/apps/com.nomm.Nomm.svg
+      - install -D assets/icons/nomm-logo.svg /app/share/icons/hicolor/64x64/apps/moe.nomm.Nomm.svg
 
       # Copy all other python files
       - cp -r src/core /app/bin/core
@@ -81,7 +81,7 @@ modules:
 
       # Localisation
       - mkdir -p /app/share/locale/fr/LC_MESSAGES
-      - msgfmt locale/fr.po -o /app/share/locale/fr/LC_MESSAGES/com.nomm.Nomm.mo
+      - msgfmt locale/fr.po -o /app/share/locale/fr/LC_MESSAGES/moe.nomm.Nomm.mo
 
     sources:
       - type: dir

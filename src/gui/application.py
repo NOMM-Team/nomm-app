@@ -26,7 +26,7 @@ from platforms.gamebanana import handle_gamebanana_link
 
 from platforms.steam import get_username_from_steam_id, get_steam_base_dir
 
-APP_NAME = 'com.nomm.Nomm'
+APP_NAME = 'moe.nomm.Nomm'
 APP_VERSION = '0.12.1'
 
 translation_system = gettext.translation(APP_NAME, localedir='/app/share/locale', fallback=True)
