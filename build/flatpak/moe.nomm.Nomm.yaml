@@ -26,8 +26,7 @@ finish-args:
 modules:
   # Python dependencies (generated via flatpak-pip-generator)
   - python3-modules.json
-
-  # bundling unrar because otherwise the default version in flatpak doesn't work
+  # bundling unrar because otherwise the default version in flatpak doesn't work as expected
   - name: unrar
     buildsystem: simple
     build-commands:
@@ -37,12 +36,12 @@ modules:
       - type: archive
         url: https://www.rarlab.com/rar/unrarsrc-6.2.10.tar.gz
         sha256: 55fe6ebd5e48d6655bfda3fd19b55438ca05e13c7e69772420caad9fdb68ef42
-  
-  # bundling p7zip because I'm an idiot who couldn't make py7zr to work
+
+  # bundling p7zip because I couldn't make py7zr work
   - name: p7zip
     buildsystem: simple
     build-commands:
-      # '7za' is the standalone binary with the main codecs built-in
+      # 7za is the standalone binary with the main codecs built-in
       - make 7za
       - install -Dm755 bin/7za /app/bin/7z
     sources:
@@ -52,34 +51,26 @@ modules:
 
   - name: NOMM
     buildsystem: simple
-
     build-commands:
       # Install entry point from the src folder to /app/bin
       - install -D src/main.py /app/bin/nomm
-      
       # Install desktop file
       - install -D build/flatpak/moe.nomm.Nomm.desktop /app/share/applications/moe.nomm.Nomm.desktop
-
       # Install metainfo
       - install -D build/flatpak/moe.nomm.Nomm.metainfo.xml /app/share/metainfo/moe.nomm.Nomm.metainfo.xml
-
       # Install logo
       - install -D assets/icons/nomm-logo.svg /app/share/icons/hicolor/64x64/apps/moe.nomm.Nomm.svg
-
       # Copy all other python files
       - cp -r src/core /app/bin/core
       - cp -r src/gui /app/bin/gui
       - cp -r src/styles /app/bin/styles
       - cp -r src/queries /app/bin/queries
       - cp -r src/platforms /app/bin/platforms
-
       # Other files (shenanigans)
       - cp src/*.yaml /app/bin/
-      
       # Copy non-code folders
       - cp -r assets /app/bin/assets
       - cp -r default_game_configs /app/bin/default_game_configs
-
       # Localisation
       - install -d /app/share/locale/fr/LC_MESSAGES
       - msgfmt locale/fr.po -o /app/share/locale/fr/LC_MESSAGES/moe.nomm.Nomm.mo
