@@ -3,8 +3,6 @@ import yaml
 import requests
 import re
 import html
-import polib
-import gettext
 
 from pathlib import Path
 from typing import Callable, Optional
