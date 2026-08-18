@@ -15,7 +15,7 @@ from gi.repository import Adw, Gdk, Gio, GLib, Gtk
 
 from core.game_scanner import scan_all_games
 from core.tools import (load_yaml,
-                        translate_fuse_path, write_yaml)
+                        translate_fuse_path, write_yaml, load_translations)
 from core.user_config import (load_user_config, update_user_config,
                               write_user_config)
 from platforms.switch import list_emulators, get_emulator_logo
@@ -29,8 +29,7 @@ from platforms.steam import get_username_from_steam_id, get_steam_base_dir
 APP_NAME = 'moe.nomm.Nomm'
 APP_VERSION = '0.12.1'
 
-translation_system = gettext.translation(APP_NAME, localedir='/app/share/locale', fallback=True)
-translation_system.install(names=['ngettext'])
+load_translations(APP_NAME)
 
 _ = gettext.gettext
 

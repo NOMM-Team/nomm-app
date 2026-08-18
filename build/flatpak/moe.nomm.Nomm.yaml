@@ -80,8 +80,8 @@ modules:
       - cp -r default_game_configs /app/bin/default_game_configs
 
       # Localisation
-      - mkdir -p /app/share/locale/fr/LC_MESSAGES
-      - msgfmt locale/fr.po -o /app/share/locale/fr/LC_MESSAGES/moe.nomm.Nomm.mo
+      # - mkdir -p /app/share/locale/fr/LC_MESSAGES
+      # - msgfmt locale/fr.po -o /app/share/locale/fr/LC_MESSAGES/moe.nomm.Nomm.mo
 
     sources:
       - type: dir
