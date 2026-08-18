@@ -24,3 +24,6 @@ build/aur-nightly/*
 
 # gtk resources
 resources.gresource
+
+# localisation temp files
+*.po~
