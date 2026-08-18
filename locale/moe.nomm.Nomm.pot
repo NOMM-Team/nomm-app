@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-08-18 12:44+0200\n"
+"POT-Creation-Date: 2026-08-18 12:48+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -36,11 +36,11 @@ msgstr ""
 msgid "Number of Mods"
 msgstr ""
 
-#: src/gui/application.py:231
+#: src/gui/application.py:233
 msgid "Welcome to the Native Open Mod Manager (NOMM) app!"
 msgstr ""
 
-#: src/gui/application.py:232
+#: src/gui/application.py:234
 msgid ""
 "This app is still in early development, so expect some bugs and missing "
 "features.\n"
@@ -48,93 +48,93 @@ msgid ""
 "forget that you can report any bugs or request features on the Github!"
 msgstr ""
 
-#: src/gui/application.py:251
+#: src/gui/application.py:253
 msgid "Select your mods download folder"
 msgstr ""
 
-#: src/gui/application.py:252
+#: src/gui/application.py:254
 msgid ""
 "Please select the folder where mod archives will be downloaded.\n"
 "Mod downloads will be categorised by game name.\n"
 "I recommend you create a nomm directory at the end of your target path"
 msgstr ""
 
-#: src/gui/application.py:257
+#: src/gui/application.py:259
 msgid "Set Mod Download Path"
 msgstr ""
 
-#: src/gui/application.py:269
+#: src/gui/application.py:271
 msgid "Select Mod Downloads Folder"
 msgstr ""
 
-#: src/gui/application.py:288
+#: src/gui/application.py:290
 msgid ""
 "<b>Important:</b> If using Flatpaks for your platforms (Steam, Heroic, "
 "etc.), ensure they have permission to access this folder (you can do this "
 "via command line or Flatseal)."
 msgstr ""
 
-#: src/gui/application.py:290
+#: src/gui/application.py:292
 msgid "Set Mod Staging Path"
 msgstr ""
 
-#: src/gui/application.py:299
+#: src/gui/application.py:301
 msgid "Select Mod Staging Folder"
 msgstr ""
 
-#: src/gui/application.py:311 src/gui/app_views/settings.py:148
+#: src/gui/application.py:313 src/gui/app_views/settings.py:148
 msgid "Nexus API Key"
 msgstr ""
 
-#: src/gui/application.py:312
+#: src/gui/application.py:314
 msgid ""
 "If you want to download mods from Nexus Mods, enter your API Key (Site "
 "Preferences > API Keys > scroll all the way down)"
 msgstr ""
 
-#: src/gui/application.py:318
+#: src/gui/application.py:320
 msgid "Enter API Key..."
 msgstr ""
 
-#: src/gui/application.py:320 src/gui/application.py:403
-#: src/gui/application.py:602 src/gui/dashboard_views/tools_tab.py:223
+#: src/gui/application.py:322 src/gui/application.py:405
+#: src/gui/application.py:604 src/gui/dashboard_views/tools_tab.py:223
 msgid "Continue"
 msgstr ""
 
-#: src/gui/application.py:345
+#: src/gui/application.py:347
 msgid "Select Your Preferred Switch Emulator"
 msgstr ""
 
-#: src/gui/application.py:346
+#: src/gui/application.py:348
 msgid ""
 "Multiple Switch emulators were detected on your system.\n"
 "Please select the one that you want to configure when using NOMM.\n"
 "This choice can be changed later on in the settings."
 msgstr ""
 
-#: src/gui/application.py:433
+#: src/gui/application.py:435
 msgid "Select Your Steam user ID"
 msgstr ""
 
-#: src/gui/application.py:434
+#: src/gui/application.py:436
 msgid ""
 "Multiple Steam user IDs were detected in your Steam installation.\n"
 "Please select the one that you want to configure when using NOMM."
 msgstr ""
 
-#: src/gui/application.py:467
+#: src/gui/application.py:469
 msgid "Select Option"
 msgstr ""
 
-#: src/gui/application.py:487
+#: src/gui/application.py:489
 msgid "NOMM: Searching for games..."
 msgstr ""
 
-#: src/gui/application.py:536
+#: src/gui/application.py:538
 msgid "Permissions Missing"
 msgstr ""
 
-#: src/gui/application.py:537
+#: src/gui/application.py:539
 msgid ""
 "NOMM needs some extra permissions to read/write to specific folders.\n"
 "This is used so that NOMM can find your games and install &amp; deploy mods "
@@ -142,19 +142,19 @@ msgid ""
 "Please copy the command below and run it in your terminal."
 msgstr ""
 
-#: src/gui/application.py:571 src/gui/dashboard_views/tools_tab.py:207
+#: src/gui/application.py:573 src/gui/dashboard_views/tools_tab.py:207
 msgid "Copy to Clipboard"
 msgstr ""
 
-#: src/gui/application.py:581
+#: src/gui/application.py:583
 msgid "Restart NOMM after running the command."
 msgstr ""
 
-#: src/gui/application.py:593
+#: src/gui/application.py:595
 msgid "Quit"
 msgstr ""
 
-#: src/gui/application.py:608
+#: src/gui/application.py:610
 msgid "Continue & Ignore"
 msgstr ""
 
