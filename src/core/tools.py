@@ -299,14 +299,11 @@ def create_icon_button(
     return button
 
 def load_translations(APP_NAME: str):
-    # 1. Path to the extracted .po files from extra-data
     base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     po_dir = os.path.join(base_dir, "locale")
     
-    # 2. Path to the user's writable sandbox directory
     user_locale_dir = os.path.expanduser("~/.local/share/locale")
 
-    # 3. Check for .po files and compile them into .mo inside user_locale_dir
     if os.path.exists(po_dir):
         for lang in os.listdir(po_dir):
             if lang.endswith(".po"):
@@ -315,7 +312,6 @@ def load_translations(APP_NAME: str):
                 mo_file = os.path.join(mo_folder, f"{APP_NAME}.mo")
                 po_file = os.path.join(po_dir, lang)
 
-                # Recompile if .mo doesn't exist or if the .po file is newer
                 if not os.path.exists(mo_file) or os.path.getmtime(po_file) > os.path.getmtime(mo_file):
                     os.makedirs(mo_folder, exist_ok=True)
                     try:
@@ -324,7 +320,6 @@ def load_translations(APP_NAME: str):
                     except Exception as e:
                         print(f"[-] Failed to compile translation {lang}: {e}")
 
-    # 4. Bind and install gettext from the writable locale directory
     gettext.bindtextdomain(APP_NAME, user_locale_dir)
     translation_system = gettext.translation(
         APP_NAME, 
