@@ -297,33 +297,3 @@ def create_icon_button(
         button.connect("clicked", on_click)
 
     return button
-
-def load_translations(APP_NAME: str):
-    base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    po_dir = os.path.join(base_dir, "locale")
-    
-    user_locale_dir = os.path.expanduser("~/.local/share/locale")
-
-    if os.path.exists(po_dir):
-        for lang in os.listdir(po_dir):
-            if lang.endswith(".po"):
-                lang_code = lang[:-3]  # e.g., 'fr'
-                mo_folder = os.path.join(user_locale_dir, lang_code, "LC_MESSAGES")
-                mo_file = os.path.join(mo_folder, f"{APP_NAME}.mo")
-                po_file = os.path.join(po_dir, lang)
-
-                if not os.path.exists(mo_file) or os.path.getmtime(po_file) > os.path.getmtime(mo_file):
-                    os.makedirs(mo_folder, exist_ok=True)
-                    try:
-                        po = polib.pofile(po_file)
-                        po.save_as_mofile(mo_file)
-                    except Exception as e:
-                        print(f"[-] Failed to compile translation {lang}: {e}")
-
-    gettext.bindtextdomain(APP_NAME, user_locale_dir)
-    translation_system = gettext.translation(
-        APP_NAME, 
-        localedir=user_locale_dir, 
-        fallback=True
-    )
-    translation_system.install(names=['ngettext'])

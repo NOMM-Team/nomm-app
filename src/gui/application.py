@@ -16,7 +16,7 @@ from gi.repository import Adw, Gdk, Gio, GLib, Gtk
 
 from core.game_scanner import scan_all_games
 from core.tools import (load_yaml,
-                        translate_fuse_path, write_yaml, load_translations)
+                        translate_fuse_path, write_yaml)
 from core.user_config import (load_user_config, update_user_config,
                               write_user_config)
 from platforms.switch import list_emulators, get_emulator_logo
