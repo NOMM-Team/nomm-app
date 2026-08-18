@@ -4,6 +4,7 @@ import threading
 import subprocess
 import shutil
 import gi
+import locale
 
 gi.require_version('Gtk', '4.0')
 gi.require_version('Adw', '1')
@@ -28,8 +29,18 @@ from platforms.steam import get_username_from_steam_id, get_steam_base_dir
 
 APP_NAME = 'moe.nomm.Nomm'
 APP_VERSION = '0.12.2'
+LOCALE_DIR = '/app/share/locale'
 
-load_translations(APP_NAME)
+# Localisation setup
+gettext.bindtextdomain(APP_NAME, LOCALE_DIR)
+gettext.textdomain(APP_NAME)
+gettext.install(APP_NAME, LOCALE_DIR, names=['ngettext'])
+
+try:
+    locale.bindtextdomain(APP_NAME, LOCALE_DIR)
+    locale.textdomain(APP_NAME)
+except AttributeError:
+    pass
 
 _ = gettext.gettext
 
