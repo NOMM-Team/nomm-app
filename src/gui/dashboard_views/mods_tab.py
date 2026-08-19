@@ -660,8 +660,8 @@ class ModsTab(Gtk.Box):
             title=_("Select New Deployment Directory"),
             transient_for=self.get_root(),
             action=Gtk.FileChooserAction.SELECT_FOLDER,
-            accept_label=_("_Select"),
-            cancel_label=_("_Cancel"),
+            accept_label=_("Select"),
+            cancel_label=_("Cancel"),
         )
 
         # Pre-select the existing path

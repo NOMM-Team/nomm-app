@@ -3,10 +3,10 @@
 
 curl -L https://raw.githubusercontent.com/flatpak/flatpak-builder-tools/refs/heads/master/pip/flatpak-pip-generator.py -o ./build/flatpak/flatpak-pip-generator.py
 
-python3 build/flatpak/flatpak-pip-generator.py requests PyYAML vdf rarfile --output ./build/flatpak/python3-modules.json
+python3 build/flatpak/flatpak-pip-generator.py requests PyYAML vdf rarfile polib --output ./build/flatpak/python3-modules.json
 
 # Build the flatpak folders and files. This uses the standard flatpak-builder utility
-flatpak-builder --user --install --force-clean --repo=repo build-dir ./build/flatpak/com.nomm.Nomm.yaml 
+flatpak-builder --user --install --force-clean --repo=repo build-dir ./build/flatpak/moe.nomm.Nomm.yaml 
 
 # Once you have all the files/folders generated, you package it into a neat little flatpak file :)
-flatpak build-bundle ./repo NOMM.flatpak com.nomm.Nomm
+flatpak build-bundle ./repo NOMM.flatpak moe.nomm.Nomm

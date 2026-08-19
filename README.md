@@ -93,7 +93,7 @@ For more advanced users (those who prefer the console or may not have a standard
 
 You may install and run the flatpak via command line:
 4. `flatpak install nomm.flatpak`
-5. `flatpak run flatpak run com.nomm.Nomm`
+5. `flatpak run flatpak run moe.nomm.Nomm`
 
 From now on when you want to launch it you can just look for it in your start menu (by typing "nomm")
 

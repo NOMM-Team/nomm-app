@@ -45,14 +45,14 @@ EOF
     chmod 755 "$pkgdir/usr/bin/nomm"
 
     # Desktop file
-    install -Dm644 build/flatpak/com.nomm.Nomm.desktop \
-        "$pkgdir/usr/share/applications/com.nomm.Nomm.desktop"
+    install -Dm644 build/flatpak/moe.nomm.Nomm.desktop \
+        "$pkgdir/usr/share/applications/moe.nomm.Nomm.desktop"
 
     # Icon
     install -Dm644 assets/nomm.png \
-        "$pkgdir/usr/share/icons/hicolor/64x64/apps/com.nomm.Nomm.png"
+        "$pkgdir/usr/share/icons/hicolor/64x64/apps/moe.nomm.Nomm.png"
 
     # Localisation
     install -dm755 "$pkgdir/usr/share/locale/fr/LC_MESSAGES"
-    msgfmt locale/fr.po -o "$pkgdir/usr/share/locale/fr/LC_MESSAGES/com.nomm.Nomm.mo"
+    msgfmt locale/fr.po -o "$pkgdir/usr/share/locale/fr/LC_MESSAGES/moe.nomm.Nomm.mo"
 }
