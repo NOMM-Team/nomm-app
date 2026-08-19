@@ -45,7 +45,7 @@ EOF
 
     # Icon
     install -Dm644 assets/icons/nomm-logo.svg \
-        "$pkgdir/usr/share/icons/hicolor/scalable/apps/moe.nomm.Nomm.png"
+        "$pkgdir/usr/share/icons/hicolor/scalable/apps/moe.nomm.Nomm.svg"
 
     # Localisation
     install -dm755 "$pkgdir/usr/share/locale/fr/LC_MESSAGES"
