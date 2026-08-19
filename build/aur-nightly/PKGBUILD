@@ -1,6 +1,7 @@
 pkgname=nomm-git
 pkgrel=1
-pkgver=0.11.0.r29.g6efe3f9
+_pkgbase=0.12.2
+pkgver=0.12.2.c844
 pkgdesc="Native Open Mod Manager - a mod manager for Linux"
 arch=('any')
 url="https://github.com/Allexio/nomm"
@@ -19,13 +20,14 @@ depends=(
 )
 makedepends=(
     'gettext'
+    'git'
 )
 source=("git+https://github.com/Allexio/nomm.git#branch=main")
 sha256sums=('SKIP')
 
 pkgver() {
-  cd "nomm"
-  git describe --long --tags --abbrev=7 | sed 's/\([^-]*-g\)/r\1/;s/-/./g'
+    cd "nomm"
+    printf "%s.c%s" "$_pkgbase" "$(git rev-list --count HEAD)"
 }
 
 package() {
@@ -49,7 +51,7 @@ EOF
         "$pkgdir/usr/share/applications/moe.nomm.Nomm.desktop"
 
     # Icon
-    install -Dm644 assets/nomm.png \
+    install -Dm644 assets/icons/nomm-logo.svg \
         "$pkgdir/usr/share/icons/hicolor/64x64/apps/moe.nomm.Nomm.png"
 
     # Localisation
