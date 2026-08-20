@@ -1,5 +1,5 @@
 pkgname=nomm
-pkgver=0.11.0
+pkgver=0.12.2
 pkgrel=1
 pkgdesc="Native Open Mod Manager - a mod manager for Linux"
 arch=('any')
@@ -21,7 +21,7 @@ makedepends=(
     'gettext'
 )
 source=("$pkgname-$pkgver.tar.gz::https://github.com/Allexio/nomm/archive/refs/tags/$pkgver.tar.gz")
-sha256sums=('4277d8a2290e7e7cf757b65d7740af3128146a7bb204dd8f03de2f12a71aa1ed')
+sha256sums=('a182a29e68806eeec8c08024b39ae6c6ca80226b349cf280561214918e78d294')
 
 package() {
     cd "nomm-$pkgver"
@@ -44,8 +44,8 @@ EOF
         "$pkgdir/usr/share/applications/moe.nomm.Nomm.desktop"
 
     # Icon
-    install -Dm644 assets/nomm.png \
-        "$pkgdir/usr/share/icons/hicolor/64x64/apps/moe.nomm.Nomm.png"
+    install -Dm644 assets/icons/nomm-logo.svg \
+        "$pkgdir/usr/share/icons/hicolor/scalable/apps/moe.nomm.Nomm.svg"
 
     # Localisation
     install -dm755 "$pkgdir/usr/share/locale/fr/LC_MESSAGES"
