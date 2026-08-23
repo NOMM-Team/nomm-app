@@ -4,7 +4,7 @@
   <metadata_license>CC0-1.0</metadata_license>
   <project_license>GPL-3.0</project_license>
   <developer>
-    <name>Allexio</name>
+    <name>NOMM Team</name>
   </developer>
   <name>Nomm</name>
   <summary>Modern Linux-First Mod Manager</summary>
@@ -20,6 +20,10 @@
     </p>
   </description>
   <launchable type="desktop-id">moe.nomm.Nomm.desktop</launchable>
+  <branding>
+    <color type="primary" scheme_preference="light">#9baebc</color>
+    <color type="primary" scheme_preference="dark">#374955</color>
+  </branding>
   <content_rating type="oars-1.1">
     <content_attribute id="language-humor">mild</content_attribute>
   </content_rating>
