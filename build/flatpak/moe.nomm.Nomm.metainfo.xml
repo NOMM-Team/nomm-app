@@ -27,8 +27,9 @@
   <content_rating type="oars-1.1">
     <content_attribute id="language-humor">mild</content_attribute>
   </content_rating>
-  <url type="homepage">https://github.com/allexio/nomm</url>
+  <url type="homepage">https://nomm.moe</url>
   <url type="bugtracker">https://github.com/allexio/nomm/issues</url>
+  <url type="vcs-browser">https://github.com/allexio/nomm</url>
   <screenshots>
     <screenshot type="default">
       <image>https://i.imgur.com/hg6wNFQ.jpeg</image>
