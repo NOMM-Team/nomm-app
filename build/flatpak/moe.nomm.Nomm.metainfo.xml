@@ -3,7 +3,7 @@
   <id>moe.nomm.Nomm</id>
   <metadata_license>CC0-1.0</metadata_license>
   <project_license>GPL-3.0</project_license>
-  <developer>
+  <developer id="moe.nomm">
     <name>NOMM Team</name>
   </developer>
   <name>Nomm</name>
