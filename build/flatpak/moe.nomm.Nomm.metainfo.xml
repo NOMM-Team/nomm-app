@@ -42,7 +42,7 @@
     <release version="0.12.3" date="2026-08-23">
       <url type="details">https://github.com/Allexio/nomm/releases/tag/0.12.3</url>
       <description>
-        <p>Release bullets</p>
+        <p>Release bites</p>
           <ul>
             <li>Additional changes for Flathub support</li>
           </ul>
@@ -51,20 +51,10 @@
     <release version="0.12.2" date="2026-08-19">
       <url type="details">https://github.com/Allexio/nomm/releases/tag/0.12.2</url>
       <description>
-        <p>Release bullets</p>
+        <p>Release bites</p>
           <ul>
             <li>Name change from com.nomm.Nomm to moe.nomm.Nomm</li>
             <li>Minor bugfix during first launch with GOG games installed</li>
-          </ul>
-      </description>
-    </release>
-    <release version="0.12.1" date="2026-08-16">
-      <url type="details">https://github.com/Allexio/nomm/releases/tag/0.12.1</url>
-      <description>
-        <p>Release bullets</p>
-          <ul>
-            <li>List of changes</li>
-            <li>List of changes</li>
           </ul>
       </description>
     </release>
