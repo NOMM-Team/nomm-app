@@ -20,6 +20,9 @@
     </p>
   </description>
   <launchable type="desktop-id">moe.nomm.Nomm.desktop</launchable>
+  <content_rating type="oars-1.1">
+    <content_attribute id="language-humor">mild</content_attribute>
+  </content_rating>
   <url type="homepage">https://github.com/allexio/nomm</url>
   <url type="bugtracker">https://github.com/allexio/nomm/issues</url>
   <screenshots>
