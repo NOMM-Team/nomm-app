@@ -39,6 +39,15 @@
     </screenshot>
   </screenshots>
   <releases>
+    <release version="0.12.5" date="2026-08-24">
+      <url type="details">https://github.com/Allexio/nomm/releases/tag/0.12.5</url>
+      <description>
+        <p>Release bites</p>
+          <ul>
+            <li>Fixed regression stopping utilities from being correctly downloaded</li>
+          </ul>
+      </description>
+    </release>
     <release version="0.12.4" date="2026-08-24">
       <url type="details">https://github.com/Allexio/nomm/releases/tag/0.12.4</url>
       <description>
