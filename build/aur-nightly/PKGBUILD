@@ -1,6 +1,6 @@
 pkgname=nomm-git
 pkgrel=1
-_pkgbase=0.12.4
+_pkgbase=0.12.5
 pkgver=0.12.2.c844
 pkgdesc="Native Open Mod Manager - a mod manager for Linux"
 arch=('any')
