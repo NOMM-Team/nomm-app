@@ -298,7 +298,7 @@ class Nomm(Adw.Application):
         warning_label = Gtk.Label(wrap=True, max_width_chars=50, justify=Gtk.Justification.CENTER)
         warning_label.set_markup(_("<b>Important:</b> If using Flatpaks for your platforms (Steam, Heroic, etc.), ensure they have permission to access this folder (you can do this via command line or Flatseal)."))
         warning_label.add_css_class("error")
-        btn = Gtk.Button(label=_("Set Mod Staging Path"), margin_top=12)
+        btn = Gtk.Button(label=_("Set Mod Staging Path"), margin_top=12, halign=Gtk.Align.CENTER)
         btn.add_css_class("suggested-action")
         btn.connect("clicked", self.on_select_staging_folder_clicked)
         vbox.append(warning_label); vbox.append(btn)
