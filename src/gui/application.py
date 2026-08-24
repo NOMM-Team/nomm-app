@@ -28,7 +28,7 @@ from platforms.gamebanana import handle_gamebanana_link
 from platforms.steam import get_username_from_steam_id, get_steam_base_dir
 
 APP_NAME = 'moe.nomm.Nomm'
-APP_VERSION = '0.12.3'
+APP_VERSION = '0.12.4'
 LOCALE_DIR = '/app/share/locale'
 
 # Localisation setup
