@@ -39,6 +39,16 @@
     </screenshot>
   </screenshots>
   <releases>
+    <release version="0.12.4" date="2026-08-24">
+      <url type="details">https://github.com/Allexio/nomm/releases/tag/0.12.4</url>
+      <description>
+        <p>Release bites</p>
+          <ul>
+            <li>NOMM can now be properly launched even when no Steam installation is present on user system</li>
+            <li>Fixed some minor UI issues in first time setup screens (bundled icons, staging select button width, crossfade)</li>
+          </ul>
+      </description>
+    </release>
     <release version="0.12.3" date="2026-08-23">
       <url type="details">https://github.com/Allexio/nomm/releases/tag/0.12.3</url>
       <description>
