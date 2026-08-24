@@ -257,7 +257,7 @@ class Nomm(Adw.Application):
         GLib.timeout_add(100, lambda: status_page.add_css_class("visible"))
 
     def show_downloads_folder_select_screen(self, btn=None):
-        self.remove_stack_child("setup")
+        self.remove_stack_child("download-select")
         status_page = Adw.StatusPage(
             title=_("Select your mods download folder"),
             description=_("Please select the folder where mod archives will be downloaded.\nMod downloads will be categorised by game name.\nI recommend you create a nomm directory at the end of your target path"),
@@ -272,8 +272,8 @@ class Nomm(Adw.Application):
         btn.connect("clicked", self.on_select_downloads_folder_clicked)
         
         status_page.set_child(btn)
-        self.stack.add_named(status_page, "setup")
-        self.stack.set_visible_child_name("setup")
+        self.stack.add_named(status_page, "download-select")
+        self.stack.set_visible_child_name("download-select")
         GLib.timeout_add(100, lambda: status_page.add_css_class("visible"))
 
     def on_select_downloads_folder_clicked(self, btn):
@@ -287,7 +287,7 @@ class Nomm(Adw.Application):
         self.show_staging_select_screen()
 
     def show_staging_select_screen(self):
-        self.remove_stack_child("setup")
+        self.remove_stack_child("staging-select")
         status_page = Adw.StatusPage(
             title="Select your staging folder",
             description="Please select the folder where mods will be temporarily stored.",
@@ -303,7 +303,7 @@ class Nomm(Adw.Application):
         btn.connect("clicked", self.on_select_staging_folder_clicked)
         vbox.append(warning_label); vbox.append(btn)
         status_page.set_child(vbox)
-        self.stack.add_named(status_page, "setup"); self.stack.set_visible_child_name("setup")
+        self.stack.add_named(status_page, "staging-select"); self.stack.set_visible_child_name("staging-select")
         GLib.timeout_add(100, lambda: status_page.add_css_class("visible"))
 
     def on_select_staging_folder_clicked(self, btn):
