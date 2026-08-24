@@ -37,8 +37,9 @@ class Downloader(GObject.Object):
             total_size = int(response.headers.get('content-length', 0))
             response.raise_for_status()
             
-            if response.headers.get('content-disposition'):
-                filename = response.headers.get('content-disposition').split('filename=')[1][1:-1]
+            content_disposition = response.headers.get('content-disposition')
+            if content_disposition:
+                filename = content_disposition.split('filename=')[1].split(';')[0].strip(' "\'')
             
             with self._downloads_lock:
                 if filename in self._active_downloads:
@@ -73,7 +74,7 @@ class Downloader(GObject.Object):
                             }
                             GLib.idle_add(self.emit, 'progress-changed', download_data)
 
-            print(f"DEBUG: Download finished writing to {dest_path}. Emitting complete signal...")
+            print(f"DEBUG: Download finished writing to {dest_path}. Emitting complete signal for {filename}...")
             GLib.idle_add(self.emit, 'download-complete', filename)
             return True
         except Exception as e:
