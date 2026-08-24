@@ -261,7 +261,7 @@ class Nomm(Adw.Application):
         status_page = Adw.StatusPage(
             title=_("Select your mods download folder"),
             description=_("Please select the folder where mod archives will be downloaded.\nMod downloads will be categorised by game name.\nI recommend you create a nomm directory at the end of your target path"),
-            icon_name="folder-download-symbolic"
+            icon_name="downloaded-symbolic"
         )
         status_page.add_css_class("setup-page")
 
@@ -291,7 +291,7 @@ class Nomm(Adw.Application):
         status_page = Adw.StatusPage(
             title="Select your staging folder",
             description="Please select the folder where mods will be temporarily stored.",
-            icon_name="folder-git-symbolic"
+            icon_name="folder-staging-symbolic"
         )
         status_page.add_css_class("setup-page")
         vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12, halign=Gtk.Align.CENTER)
