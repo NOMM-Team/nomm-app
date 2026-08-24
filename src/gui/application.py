@@ -237,7 +237,7 @@ class Nomm(Adw.Application):
         if child: self.stack.remove(child)
 
     def show_welcome_screen(self):
-        self.remove_stack_child("setup")
+        self.remove_stack_child("welcome")
         status_page = Adw.StatusPage(
             title=_("Welcome to the Native Open Mod Manager (NOMM) app!"),
             description=_("This app is still in early development, so expect some bugs and missing features.\nI hope you can still enjoy what the app currently offers and please don't forget that you can report any bugs or request features on the Github!"),
@@ -252,16 +252,16 @@ class Nomm(Adw.Application):
         btn.connect("clicked", self.show_downloads_folder_select_screen)
         
         status_page.set_child(btn)
-        self.stack.add_named(status_page, "setup")
-        self.stack.set_visible_child_name("setup")
+        self.stack.add_named(status_page, "welcome")
+        self.stack.set_visible_child_name("welcome")
         GLib.timeout_add(100, lambda: status_page.add_css_class("visible"))
 
     def show_downloads_folder_select_screen(self, btn=None):
-        self.remove_stack_child("setup")
+        self.remove_stack_child("download-select")
         status_page = Adw.StatusPage(
             title=_("Select your mods download folder"),
             description=_("Please select the folder where mod archives will be downloaded.\nMod downloads will be categorised by game name.\nI recommend you create a nomm directory at the end of your target path"),
-            icon_name="folder-download-symbolic"
+            icon_name="downloaded-symbolic"
         )
         status_page.add_css_class("setup-page")
 
@@ -272,8 +272,8 @@ class Nomm(Adw.Application):
         btn.connect("clicked", self.on_select_downloads_folder_clicked)
         
         status_page.set_child(btn)
-        self.stack.add_named(status_page, "setup")
-        self.stack.set_visible_child_name("setup")
+        self.stack.add_named(status_page, "download-select")
+        self.stack.set_visible_child_name("download-select")
         GLib.timeout_add(100, lambda: status_page.add_css_class("visible"))
 
     def on_select_downloads_folder_clicked(self, btn):
@@ -287,23 +287,23 @@ class Nomm(Adw.Application):
         self.show_staging_select_screen()
 
     def show_staging_select_screen(self):
-        self.remove_stack_child("setup")
+        self.remove_stack_child("staging-select")
         status_page = Adw.StatusPage(
             title="Select your staging folder",
             description="Please select the folder where mods will be temporarily stored.",
-            icon_name="folder-git-symbolic"
+            icon_name="folder-staging-symbolic"
         )
         status_page.add_css_class("setup-page")
         vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12, halign=Gtk.Align.CENTER)
         warning_label = Gtk.Label(wrap=True, max_width_chars=50, justify=Gtk.Justification.CENTER)
         warning_label.set_markup(_("<b>Important:</b> If using Flatpaks for your platforms (Steam, Heroic, etc.), ensure they have permission to access this folder (you can do this via command line or Flatseal)."))
         warning_label.add_css_class("error")
-        btn = Gtk.Button(label=_("Set Mod Staging Path"), margin_top=12)
+        btn = Gtk.Button(label=_("Set Mod Staging Path"), margin_top=12, halign=Gtk.Align.CENTER)
         btn.add_css_class("suggested-action")
         btn.connect("clicked", self.on_select_staging_folder_clicked)
         vbox.append(warning_label); vbox.append(btn)
         status_page.set_child(vbox)
-        self.stack.add_named(status_page, "setup"); self.stack.set_visible_child_name("setup")
+        self.stack.add_named(status_page, "staging-select"); self.stack.set_visible_child_name("staging-select")
         GLib.timeout_add(100, lambda: status_page.add_css_class("visible"))
 
     def on_select_staging_folder_clicked(self, btn):
