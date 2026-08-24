@@ -237,7 +237,7 @@ class Nomm(Adw.Application):
         if child: self.stack.remove(child)
 
     def show_welcome_screen(self):
-        self.remove_stack_child("setup")
+        self.remove_stack_child("welcome")
         status_page = Adw.StatusPage(
             title=_("Welcome to the Native Open Mod Manager (NOMM) app!"),
             description=_("This app is still in early development, so expect some bugs and missing features.\nI hope you can still enjoy what the app currently offers and please don't forget that you can report any bugs or request features on the Github!"),
@@ -252,8 +252,8 @@ class Nomm(Adw.Application):
         btn.connect("clicked", self.show_downloads_folder_select_screen)
         
         status_page.set_child(btn)
-        self.stack.add_named(status_page, "setup")
-        self.stack.set_visible_child_name("setup")
+        self.stack.add_named(status_page, "welcome")
+        self.stack.set_visible_child_name("welcome")
         GLib.timeout_add(100, lambda: status_page.add_css_class("visible"))
 
     def show_downloads_folder_select_screen(self, btn=None):
