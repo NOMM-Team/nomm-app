@@ -427,6 +427,8 @@ class Nomm(Adw.Application):
         self.stack.set_visible_child_name("preferred_emu")
 
     def steam_user_id_handler(self):
+        if not self.steam_base:
+            self.finalize_setup()
         steam_userdata_path = self.steam_base + "userdata/"
         steam_user_ids = [f for f in os.listdir(steam_userdata_path) if os.path.isdir(os.path.join(steam_userdata_path, f))]
         if "0" in steam_user_ids:
