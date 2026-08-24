@@ -25,6 +25,9 @@ def get_steam_base_dir() -> Optional[str]:
 def get_library_paths(steam_base) -> List[str]:
     libraries = []
 
+    if not steam_base:
+        return libraries
+
     vdf_path = os.path.join(steam_base, "config/libraryfolders.vdf")
 
     try:
