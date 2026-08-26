@@ -1,5 +1,5 @@
 pkgname=nomm
-pkgver=0.12.5
+pkgver=0.12.6
 pkgrel=1
 pkgdesc="Native Open Mod Manager - a mod manager for Linux"
 arch=('any')

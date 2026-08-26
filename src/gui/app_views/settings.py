@@ -23,6 +23,8 @@ class SettingsWindow(Adw.Window):
         self.user_config_dir = os.path.join(GLib.get_user_data_dir(), "nomm",)
         self.user_config_path = os.path.join(self.user_config_dir, "user_config.yaml")
 
+        user_config = load_yaml(self.user_config_path)
+
         content = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=20, margin_top=24, margin_bottom=24, margin_start=24, margin_end=24)
         self.set_content(content)
 
@@ -94,10 +96,13 @@ class SettingsWindow(Adw.Window):
         storage_group = Adw.PreferencesGroup(title=_("NOMM Paths"))
         settings_scrollbox.append(storage_group)
 
+
         # Downloads Path Row
         self.path_row = Adw.ActionRow(title=_("Mod Downloads Path"))
-        current_path = load_yaml(self.user_config_path).get('download_path', 'Not set')
-        self.path_row.set_subtitle(current_path)
+        current_download_path = user_config.get('download_path', 'Not set')
+        if "/run/user" in current_download_path:
+            current_download_path = user_config.get('translated_download_path', 'Not set')
+        self.path_row.set_subtitle(current_download_path)
 
         folder_btn = create_icon_button(
             icon_name="mat-folder-managed-symbolic",
@@ -109,8 +114,10 @@ class SettingsWindow(Adw.Window):
 
         # Staging Path Row
         self.staging_row = Adw.ActionRow(title=_("Mod Staging Path"))
-        current_staging = load_yaml(self.user_config_path).get('staging_path', 'Not set')
-        self.staging_row.set_subtitle(current_staging)
+        current_staging_path = user_config.get('staging_path', 'Not set')
+        if "/run/user" in current_staging_path:
+            current_staging_path = user_config.get('translated_staging_path', 'Not set')
+        self.staging_row.set_subtitle(current_staging_path)
 
         staging_btn = create_icon_button(
             icon_name="mat-folder-managed-symbolic",
@@ -138,7 +145,7 @@ class SettingsWindow(Adw.Window):
 
         self.api_entry = Gtk.PasswordEntry(hexpand=True, valign=Gtk.Align.CENTER)
         self.api_entry.set_property("placeholder-text", _("Paste API Key..."))
-        self.api_entry.set_text(load_yaml(self.user_config_path).get('nexus_api_key', ''))
+        self.api_entry.set_text(user_config.get('nexus_api_key', ''))
 
         self.check_btn = Gtk.Button(icon_name="mat-experiment-symbolic", valign=Gtk.Align.CENTER, css_classes=["flat", "large-icon-btn"])
         self.check_btn.set_tooltip_text(_("Check API key validity"))
@@ -161,7 +168,7 @@ class SettingsWindow(Adw.Window):
         installed_emulators = list_emulators()
         if installed_emulators:
             options_model = Gtk.StringList.new(installed_emulators)
-            current_emulator = load_yaml(self.user_config_path).get('preferred_switch_emulator')
+            current_emulator = user_config.get('preferred_switch_emulator')
             selected_index = installed_emulators.index(current_emulator) if current_emulator in installed_emulators else 0
 
             switch_emulator_row = Adw.ComboRow(
@@ -176,7 +183,7 @@ class SettingsWindow(Adw.Window):
         # Library sort
         sorting_options = [sort.display_name for sort in LibrarySort]
         options_model = Gtk.StringList.new(sorting_options)
-        current_sort_str = load_yaml(self.user_config_path).get("library_sort", "Number of Mods")
+        current_sort_str = user_config.get("library_sort", "Number of Mods")
         current_sort = LibrarySort.from_string(current_sort_str)
         selected_index = list(LibrarySort).index(current_sort)
 
@@ -192,29 +199,28 @@ class SettingsWindow(Adw.Window):
         # Per-game accent colours
         accent_row = Adw.SwitchRow(title=_("Per-Game Accent Colour"))
         accent_row.set_subtitle(_("Accent colour will change for each game depending on configuration"))
-        accent_row.set_active(load_yaml(self.user_config_path).get('enable_per_game_accent_colour', False))
+        accent_row.set_active(user_config.get('enable_per_game_accent_colour', False))
         accent_row.connect("notify::active", lambda row, pspec: self.toggle_setting('enable_per_game_accent_colour', row.get_active()))
         general_group.add(accent_row)
-
 
         # Skip launcher
         launcher_skip_row = Adw.SwitchRow(title=_("Skip Launcher"))
         launcher_skip_row.set_subtitle(_("App launches last used game profile instead of starting up launcher"))
-        launcher_skip_row.set_active(load_yaml(self.user_config_path).get('enable_launcher_skip', False))
+        launcher_skip_row.set_active(user_config.get('enable_launcher_skip', False))
         launcher_skip_row.connect("notify::active", lambda row, pspec: self.toggle_setting('enable_launcher_skip', row.get_active()))
         general_group.add(launcher_skip_row)
-        
+
         # Skip launcher
         download_popup = Adw.SwitchRow(title=_("Disable Download Window"))
         download_popup.set_subtitle(_("Disables mod downloads spawning a separate window"))
-        download_popup.set_active(load_yaml(self.user_config_path).get('disable_download_window', False))
+        download_popup.set_active(user_config.get('disable_download_window', False))
         download_popup.connect("notify::active", lambda row, pspec: self.toggle_setting('disable_download_window', row.get_active()))
         general_group.add(download_popup)
 
         # Fullscreen
         fullscreen_row = Adw.SwitchRow(title=_("Fullscreen NOMM"))
         fullscreen_row.set_subtitle(_("App launches in full screen when you select a game"))
-        fullscreen_row.set_active(load_yaml(self.user_config_path).get('enable_fullscreen', False))
+        fullscreen_row.set_active(user_config.get('enable_fullscreen', False))
         fullscreen_row.connect("notify::active", lambda row, pspec: self.toggle_setting('enable_fullscreen', row.get_active()))
         general_group.add(fullscreen_row)
 
@@ -244,9 +250,13 @@ class SettingsWindow(Adw.Window):
                 folder = dialog.select_folder_finish(result)
                 if folder:
                     print("new folder selected")
-                    folder_path = translate_fuse_path(folder)
+                    folder_path , translated_folder_path = translate_fuse_path(folder)
                     update_user_config(config_key, folder_path)
-                    row.set_subtitle(folder_path)
+                    update_user_config("translated_"+config_key, translated_folder_path)
+                    if translated_folder_path:
+                        row.set_subtitle(translated_folder_path)
+                    else:
+                        row.set_subtitle(folder_path)
             except Exception as e:
                 print(f"Folder selection failed: {e}")
 
