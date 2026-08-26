@@ -99,8 +99,10 @@ class SettingsWindow(Adw.Window):
 
         # Downloads Path Row
         self.path_row = Adw.ActionRow(title=_("Mod Downloads Path"))
-        current_path = user_config.get('download_path', 'Not set')
-        self.path_row.set_subtitle(current_path)
+        current_download_path = user_config.get('download_path', 'Not set')
+        if "/run/user" in current_download_path:
+            current_download_path = user_config.get('translated_download_path', 'Not set')
+        self.path_row.set_subtitle(current_download_path)
 
         folder_btn = create_icon_button(
             icon_name="mat-folder-managed-symbolic",
@@ -112,8 +114,10 @@ class SettingsWindow(Adw.Window):
 
         # Staging Path Row
         self.staging_row = Adw.ActionRow(title=_("Mod Staging Path"))
-        current_staging = user_config.get('staging_path', 'Not set')
-        self.staging_row.set_subtitle(current_staging)
+        current_staging_path = user_config.get('staging_path', 'Not set')
+        if "/run/user" in current_staging_path:
+            current_staging_path = user_config.get('translated_staging_path', 'Not set')
+        self.staging_row.set_subtitle(current_staging_path)
 
         staging_btn = create_icon_button(
             icon_name="mat-folder-managed-symbolic",
@@ -246,8 +250,9 @@ class SettingsWindow(Adw.Window):
                 folder = dialog.select_folder_finish(result)
                 if folder:
                     print("new folder selected")
-                    folder_path = translate_fuse_path(folder)
+                    folder_path , translated_folder_path = translate_fuse_path(folder)
                     update_user_config(config_key, folder_path)
+                    update_user_config("translated_"+config_key, translated_folder_path)
                     row.set_subtitle(folder_path)
             except Exception as e:
                 print(f"Folder selection failed: {e}")
