@@ -253,7 +253,10 @@ class SettingsWindow(Adw.Window):
                     folder_path , translated_folder_path = translate_fuse_path(folder)
                     update_user_config(config_key, folder_path)
                     update_user_config("translated_"+config_key, translated_folder_path)
-                    row.set_subtitle(folder_path)
+                    if translated_folder_path:
+                        row.set_subtitle(translated_folder_path)
+                    else:
+                        row.set_subtitle(folder_path)
             except Exception as e:
                 print(f"Folder selection failed: {e}")
 
