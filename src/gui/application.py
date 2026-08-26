@@ -16,7 +16,7 @@ from gi.repository import Adw, Gdk, Gio, GLib, Gtk
 
 from core.game_scanner import scan_all_games
 from core.tools import (load_yaml,
-                        translate_fuse_path, write_yaml)
+                        translate_fuse_path, write_yaml, load_nomm_version)
 from core.user_config import (load_user_config, update_user_config,
                               write_user_config)
 from platforms.switch import list_emulators, get_emulator_logo
@@ -28,7 +28,7 @@ from platforms.gamebanana import handle_gamebanana_link
 from platforms.steam import get_username_from_steam_id, get_steam_base_dir
 
 APP_NAME = 'moe.nomm.Nomm'
-APP_VERSION = '0.12.6'
+APP_VERSION = load_nomm_version()
 LOCALE_DIR = '/app/share/locale'
 
 # Localisation setup

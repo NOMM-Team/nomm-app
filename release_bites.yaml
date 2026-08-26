@@ -1,0 +1,33 @@
+---
+Version: "0.12.6"
+Date: 2026-08-26
+Description: |-
+  Release bites
+   * Use portal path instead of real path for staging and downloads
+---
+Version: "0.12.5"
+Date: 2026-08-24
+Description: |-
+  Release bites
+   * Fixed regression stopping utilities from being correctly downloaded
+---
+Version: "0.12.4"
+Date: 2026-08-24
+Description: |-
+  Release bites
+   * NOMM can now be properly launched even when no Steam installation is present on user system
+   * Fixed some minor UI issues in first time setup screens (bundled icons, staging select button
+     width, crossfade)
+---
+Version: "0.12.3"
+Date: 2026-08-23
+Description: |-
+  Release bites
+   * Additional changes for Flathub support
+---
+Version: "0.12.2"
+Date: 2026-08-19
+Description: |-
+  Release bites
+   * Name change from com.nomm.Nomm to moe.nomm.Nomm
+   * Minor bugfix during first launch with GOG games installed
