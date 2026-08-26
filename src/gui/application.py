@@ -281,8 +281,8 @@ class Nomm(Adw.Application):
         dialog.select_folder(self.win, None, self.on_downloads_folder_selected_callback)
 
     def on_downloads_folder_selected_callback(self, dialog, result):
-        selected_folder_path = translate_fuse_path(dialog.select_folder_finish(result))
-        self.temp_config = {"download_path": selected_folder_path, "library_paths": []}
+        selected_folder_path, translated_folder_path = translate_fuse_path(dialog.select_folder_finish(result))
+        self.temp_config = {"download_path": selected_folder_path, "translated_download_path": translated_folder_path, "library_paths": []}
         self.user_defined_paths = [selected_folder_path]
         self.show_staging_select_screen()
 
@@ -311,8 +311,9 @@ class Nomm(Adw.Application):
         dialog.select_folder(self.win, None, self.on_staging_folder_selected_callback)
 
     def on_staging_folder_selected_callback(self, dialog, result):
-        selected_folder_path = translate_fuse_path(dialog.select_folder_finish(result))
+        selected_folder_path, translated_folder_path = translate_fuse_path(dialog.select_folder_finish(result))
         self.temp_config["staging_path"] = selected_folder_path
+        self.temp_config["translated_staging_path"] = translated_folder_path
         self.user_defined_paths.append(selected_folder_path)
         self.show_nexus_api_key_screen()
 

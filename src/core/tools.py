@@ -46,11 +46,12 @@ def timestamp_converter(timestamp: str, timestamp_type="short") -> str:
         return timestamp.strftime("%x %H:%M")
     return legible_timestamp
 
-def translate_fuse_path(folder_info) -> str:
+def translate_fuse_path(folder_info) -> tuple[str, str]:
     folder_path = folder_info.get_path()
+    translated_path = ""
     if "run/user" in folder_path:
         print(f"Detected sandboxed path: {folder_path}")
-        try:
+        try: 
             # Get FileInfo for File
             file_info = folder_info.query_info("xattr::document-portal.host-path", Gio.FileQueryInfoFlags.NONE, None)
 
@@ -58,10 +59,10 @@ def translate_fuse_path(folder_info) -> str:
             real_path = file_info.get_attribute_string("xattr::document-portal.host-path")
             if real_path is not None: # Attribute does not exist if None
                 print(f"Real path parsed: {real_path}")
-                return real_path
+                translated_path = real_path
         except GLib.Error:
             print("Can not get real path. If you see this message you will need to manually give NOMM host filesystem permissions.")
-    return folder_path
+    return folder_path, translated_path
 
 
 
