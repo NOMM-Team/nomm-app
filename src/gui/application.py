@@ -51,7 +51,6 @@ class Nomm(Adw.Application):
         
         super().__init__(application_id=APP_NAME, flags=Gio.ApplicationFlags.HANDLES_OPEN, **kwargs)
         self.matches: list[dict] = []
-        self.user_defined_paths = []
         self.steam_base = get_steam_base_dir()
 
         user_data_dir: str = os.path.join(GLib.get_user_data_dir(), 'nomm')
@@ -283,7 +282,6 @@ class Nomm(Adw.Application):
     def on_downloads_folder_selected_callback(self, dialog, result):
         selected_folder_path, translated_folder_path = translate_fuse_path(dialog.select_folder_finish(result))
         self.temp_config = {"download_path": selected_folder_path, "translated_download_path": translated_folder_path, "library_paths": []}
-        self.user_defined_paths = [selected_folder_path]
         self.show_staging_select_screen()
 
     def show_staging_select_screen(self):
@@ -314,7 +312,6 @@ class Nomm(Adw.Application):
         selected_folder_path, translated_folder_path = translate_fuse_path(dialog.select_folder_finish(result))
         self.temp_config["staging_path"] = selected_folder_path
         self.temp_config["translated_staging_path"] = translated_folder_path
-        self.user_defined_paths.append(selected_folder_path)
         self.show_nexus_api_key_screen()
 
     def show_nexus_api_key_screen(self):
