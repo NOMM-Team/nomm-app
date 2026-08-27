@@ -27,7 +27,8 @@ sha256sums=('SKIP')
 
 pkgver() {
     cd "nomm"
-    printf "%s.c%s" "$_pkgbase" "$(git rev-list --count HEAD)"
+    ver=yq -r '.Version' $startdir/../../release_bites.yaml | head -n 1
+    printf "%s.c%s" "$ver" "$(git rev-list --count HEAD)"
 }
 
 package() {
