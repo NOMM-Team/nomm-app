@@ -1,0 +1,40 @@
+name: Update AppStream Metainfo News (Arch)
+
+on:
+  push:
+    branches:
+      - '**'
+    paths:
+      - 'release-bites.yaml'
+
+jobs:
+  update-metainfo:
+    runs-on: ubuntu-latest
+    container:
+      image: archlinux:latest # I use arch to make sure I get latest appstream
+
+    permissions:
+      contents: write
+
+    steps:
+      - name: Install latest appstream
+        run: |
+          pacman -Sy --noconfirm git appstream
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Ensure target directory exists
+        run: mkdir -p build/flatpak
+
+      - name: Update Metainfo XML
+        run: |
+          appstreamcli news-to-metainfo --limit=6 ./release-bites.yaml ./build/flatpak/moe.nomm.Nomm.metainfo.xml
+
+      - name: Commit and Push changes
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "Chore: update metainfo.xml release notes"
+          file_pattern: "build/flatpak/moe.nomm.Nomm.metainfo.xml"
