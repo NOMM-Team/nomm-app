@@ -8,7 +8,6 @@ from pathlib import Path
 from typing import Callable, Optional
 from gi.repository import GLib, Gio, Gtk
 
-
 def load_yaml(path: str) -> dict:
     if os.path.exists(path):
         try:
@@ -64,8 +63,6 @@ def translate_fuse_path(folder_info) -> tuple[str, str]:
             print("Can not get real path. If you see this message you will need to manually give NOMM host filesystem permissions.")
     return folder_path, translated_path
 
-
-
 def retrieve_casesensitive_paths(path:str):
     parts = path.split('/')
     part_list = ['/']
@@ -80,6 +77,7 @@ def retrieve_casesensitive_paths(path:str):
     path = os.path.join(*part_list)
     return path
 
+ # TODO: change this method so it becomes an async method (heavy gains for multiple images downloads)
 def download_image(url: str, save_path: str) -> bool:
     # Send a GET request to the URL
     response = requests.get(url, stream=True)

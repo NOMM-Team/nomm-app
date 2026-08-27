@@ -87,7 +87,8 @@ class Downloader(GObject.Object):
             GLib.idle_add(self.emit, 'download-error', error_data)
             return False
         # TODO: This active_downloads.discard could be removed and managed somewhere else as we need the app to stay 
-        # active even during the metadata phase
+        # active even during the metadata phase. For now we enabled the lock once more during the metadata phase before
+        # disabling this one
         finally:
             with self._downloads_lock:
                 self._active_downloads.discard(filename)
