@@ -1,6 +1,7 @@
 [![Watch the video](https://i.imgur.com/Qdn83As.png)](https://www.youtube.com/watch?v=3UWBQxQY9kk)
 <div align="center">
   <a href="https://discord.gg/WFRePSjEQY"><img src="https://img.shields.io/discord/1472479817512521772?color=0098DB&label=Discord&logo=discord&logoColor=0098DB"></a>
+  <a title="Crowdin" target="_blank" href="https://crowdin.com/project/nomm"><img src="https://badges.crowdin.net/nomm/localized.svg"></a>
 </div>
 
 # NOMM (Native Open Mod Manager)
@@ -36,9 +37,12 @@ This means that anyone can create a simple yaml for their game and submit it to 
 
 You can find out more info on how to add support for your game [here](https://nomm.moe/docs/adding-your-game).
 
-## "Roadmap"
+## Features
 
-Phase 1 Development Progress:
+<details>
+<summary>List of Features developed during the first half of 2026 </summary>
+
+Phase 1 Development:
 - [x] Auto-detect Steam libraries
 - [x] Auto-detect Steam library games
 - [x] Obtain cool images for game tiles from Steam cache folder
@@ -53,7 +57,7 @@ Phase 1 Development Progress:
 - [x] Let user launch the game directly from the interface
 - [x] Add a button to return to launcher from the main window
 
-Phase 2 Development Progress:
+Phase 2 Development:
 - [x] Rudimentary FOMOD support
 - [x] Add mod update checker
 - [x] Let user skip launcher and go straight to game
@@ -64,15 +68,14 @@ Phase 2 Development Progress:
 - [x] Add support for Epic libraries / games (through Heroic)
 - [x] Detect conflicts
 
-Phase 3 Development Progress:
+Phase 3 Development:
 - [x] Manage conflicts (for sure this will be hard without an actually good developer)
 - [x] Review access rights to be more restrictive
-- [ ] Make a Flathub build
 - [x] Handle more complex FOMOD, and handle them cleanly
 
-Bonus (nice to have)
-- [ ] Game profiles?
-- [ ] ???
+</details>
+
+To see the current topics in our backlog check out [our Github project](https://github.com/users/Allexio/projects/1).
 
 ## Installing/Running
 
