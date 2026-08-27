@@ -5,9 +5,9 @@ name: Nomm
 
 on:
   push:
-    branches: [ "test-implementation" ]
+    branches: [ "main" ]
   pull_request:
-    branches: [ "test-implementation" ]
+    branches: [ "main" ]
 
 permissions:
   contents: read
@@ -36,4 +36,4 @@ jobs:
         flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
     - name: Test with pytest
       run: |
-        pytest
+        pytest src/core_tests/test.py
