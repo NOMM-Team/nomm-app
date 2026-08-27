@@ -1,3 +1,4 @@
+PyGObject==3.50.0
 gi==0.8.1
 PyYAML==6.0.3
 rarfile==4.5
