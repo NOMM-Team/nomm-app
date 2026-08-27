@@ -1,11 +1,11 @@
-name: Update AppStream Metainfo News (Arch)
+name: Auto-export AppStream Metainfo Release Notes
 
 on:
   push:
     branches:
       - '**'
     paths:
-      - 'release-bites.yaml'
+      - 'release_bites.yaml'
 
 jobs:
   update-metainfo:
@@ -31,7 +31,7 @@ jobs:
 
       - name: Update Metainfo XML
         run: |
-          appstreamcli news-to-metainfo --limit=6 ./release-bites.yaml ./build/flatpak/moe.nomm.Nomm.metainfo.xml
+          appstreamcli news-to-metainfo --limit=6 ./release_bites.yaml ./build/flatpak/moe.nomm.Nomm.metainfo.xml
 
       - name: Commit and Push changes
         uses: stefanzweifel/git-auto-commit-action@v5
