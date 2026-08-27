@@ -1,6 +1,7 @@
 [![Watch the video](https://i.imgur.com/Qdn83As.png)](https://www.youtube.com/watch?v=3UWBQxQY9kk)
 <div align="center">
   <a href="https://discord.gg/WFRePSjEQY"><img src="https://img.shields.io/discord/1472479817512521772?color=0098DB&label=Discord&logo=discord&logoColor=0098DB"></a>
+  <a title="Crowdin" target="_blank" href="https://crowdin.com/project/nomm"><img src="https://badges.crowdin.net/nomm/localized.svg"></a>
 </div>
 
 # NOMM (Native Open Mod Manager)
