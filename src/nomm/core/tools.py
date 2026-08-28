@@ -294,3 +294,13 @@ def create_icon_button(
         button.connect("clicked", on_click)
 
     return button
+
+def load_nomm_version() -> str:
+    release_bites_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "release_bites.yaml")
+    if not os.path.exists(release_bites_path):
+        release_bites_path = os.path.join(os.path.dirname(os.path.dirname(release_bites_path)), "release_bites.yaml")
+    
+    with open(release_bites_path, 'r') as f:
+        release_bites = list(yaml.safe_load_all(f))
+
+    return release_bites[0]["Version"]

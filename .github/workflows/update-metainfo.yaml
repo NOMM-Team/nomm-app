@@ -1,0 +1,60 @@
+name: Auto-export AppStream Metainfo Release Notes
+
+on:
+  push:
+    branches:
+      - '**'
+    paths:
+      - 'release_bites.yaml'
+
+jobs:
+  update-metainfo:
+    runs-on: ubuntu-latest
+    container:
+      image: archlinux:latest # I use arch to make sure I get latest appstream
+
+    permissions:
+      contents: write
+
+    steps:
+      - name: Install latest appstream
+        run: |
+          pacman -Sy --noconfirm git appstream
+
+      - name: Checkout repository
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Ensure target directory exists
+        run: mkdir -p build/flatpak
+
+      - name: Update Metainfo XML
+        run: |
+          appstreamcli news-to-metainfo --limit=6 ./release_bites.yaml ./build/flatpak/moe.nomm.Nomm.metainfo.xml
+
+      - name: Commit and Push changes
+        uses: stefanzweifel/git-auto-commit-action@v7
+        with:
+          commit_message: "Chore: update metainfo.xml release notes"
+          file_pattern: "build/flatpak/moe.nomm.Nomm.metainfo.xml"
+      
+      - name: Update PKGBUILD and .SRCINFO for stable release
+        run: |
+          cd build/aur
+          makepkg -sif
+          makepkg --printsrcinfo > .SRCINFO
+          updpkgsums
+          
+      - name: Update PKGBUILD and .SRCINFO for git release
+        run: |
+          cd build/aur-nightly
+          makepkg -sif
+          makepkg --printsrcinfo > .SRCINFO
+          updpkgsums
+        
+      - name: Commit and Push changes for PKGBUILD
+        uses: stefanzweifel/git-auto-commit-action@v7
+        with:
+          commit_message: "Chore: bumped PKGBUILD version"
+          file_pattern: "build/aur/PKGBUILD build/aur/.SRCINFO build/aur-nightly/PKGBUILD build/aur-nightly/.SRCINFO"

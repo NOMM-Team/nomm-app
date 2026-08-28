@@ -61,6 +61,7 @@ modules:
       - install -D assets/icons/nomm-logo.svg /app/share/icons/hicolor/scalable/apps/moe.nomm.Nomm.svg
       # Other files (shenanigans)
       - cp src/nomm/*.yaml /app/bin/
+      - cp release_bites.yaml /app/bin/
       # Copy non-code folders
       - cp -r assets /app/bin/assets
       - cp -r default_game_configs /app/bin/default_game_configs

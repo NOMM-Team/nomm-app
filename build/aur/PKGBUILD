@@ -1,5 +1,5 @@
 pkgname=nomm
-pkgver=0.12.6
+pkgver=0.12.2
 pkgrel=1
 pkgdesc="Native Open Mod Manager - a mod manager for Linux"
 arch=('any')
@@ -21,7 +21,11 @@ makedepends=(
     'gettext'
 )
 source=("$pkgname-$pkgver.tar.gz::https://github.com/Allexio/nomm/archive/refs/tags/$pkgver.tar.gz")
-sha256sums=('SKIP')
+sha256sums=('a182a29e68806eeec8c08024b39ae6c6ca80226b349cf280561214918e78d294')
+
+pkgver() {
+    yq -r '.Version' $startdir/../../release_bites.yaml | head -n 1
+}
 
 package() {
     cd "nomm-$pkgver"
