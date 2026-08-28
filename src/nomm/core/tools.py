@@ -3,6 +3,7 @@ import yaml
 import requests
 import re
 import html
+import sys
 
 from pathlib import Path
 from typing import Callable, Optional
@@ -295,12 +296,28 @@ def create_icon_button(
 
     return button
 
+
 def load_nomm_version() -> str:
-    release_bites_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "release_bites.yaml")
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    release_bites_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(base_dir))), "release_bites.yaml")
     if not os.path.exists(release_bites_path):
-        release_bites_path = os.path.join(os.path.dirname(os.path.dirname(release_bites_path)), "release_bites.yaml")
-    
+        release_bites_path = "/app/bin/release_bites.yaml"
+
     with open(release_bites_path, 'r') as f:
         release_bites = list(yaml.safe_load_all(f))
 
     return release_bites[0]["Version"]
+
+def get_data_dir() -> str:
+    """Returns the absolute path to the directory containing assets/ and config files."""
+    candidates = [
+        "/app/share/nomm",  # Flatpak directory
+        os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))  # Local python dir
+    ]
+
+    for path in candidates:
+        if os.path.exists(os.path.join(path, "assets")) or os.path.exists(os.path.join(path, "resources.gresource.xml")):
+            return path
+
+    # Default fallback to current working directory
+    return os.getcwd()
