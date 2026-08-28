@@ -66,6 +66,8 @@ modules:
       - cp -r src/platforms /app/bin/platforms
       # Other files (shenanigans)
       - cp src/*.yaml /app/bin/
+      # Release_bites -> used for in-app version numbering
+      - cp release_bites.yaml /app/bin/
       # Copy non-code folders
       - cp -r assets /app/bin/assets
       - cp -r default_game_configs /app/bin/default_game_configs
