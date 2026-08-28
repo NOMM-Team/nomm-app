@@ -4,6 +4,7 @@ build-backend = 'setuptools.build_meta'
 
 [project]
 name = 'nomm'
+dynamic = ["version"]
 
 dependencies = [
     "PyGObject>=3.54.0",
@@ -18,10 +19,6 @@ dependencies = [
 test = [
   "flake8",
   "pytest"
-]
-
-dynamic = [
-  'version'
 ]
 
 [project.scripts]
