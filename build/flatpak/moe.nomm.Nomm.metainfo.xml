@@ -40,7 +40,7 @@
       <description>
         <p>Release bites</p>
         <ul>
-          <li>Set up automated workflow for adding release notes to flatpak!</li>
+          <li>Set up automated workflow for adding release notes to flatpak</li>
         </ul>
       </description>
     </release>
