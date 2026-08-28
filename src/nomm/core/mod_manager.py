@@ -8,10 +8,10 @@ from pathlib import Path
 from typing import List
 from datetime import datetime
 from gi.repository import GLib
-from core.tools import load_yaml, write_yaml
-from core.user_config import load_user_config
-from core.archive_manager import extract_archive
-from platforms.steam import add_launch_options
+from nomm.core.tools import load_yaml, write_yaml
+from nomm.core.user_config import load_user_config
+from nomm.core.archive_manager import extract_archive
+from nomm.platforms.steam import add_launch_options
 
 meta_lock = threading.Lock()
 

@@ -1,8 +1,8 @@
 import gi
 gi.require_version('Gtk', '4.0')
 
-from core.tools import retrieve_casesensitive_paths
-from core.archive_manager import get_archive_type, extract_archive, get_all_relative_files
+from nomm.core.tools import retrieve_casesensitive_paths
+from nomm.core.archive_manager import get_archive_type, extract_archive, get_all_relative_files
 import hashlib
 from os import path
 import os
@@ -10,11 +10,11 @@ from pathlib import Path
 
 from gi.repository import GLib, Gio, Gtk
 
-from core.user_config import load_user_config
-from core.tools import write_yaml
-from core.user_config import load_yaml
-from core.user_config import update_user_config
-from core.downloader import Downloader
+from nomm.core.user_config import load_user_config
+from nomm.core.tools import write_yaml
+from nomm.core.user_config import load_yaml
+from nomm.core.user_config import update_user_config
+from nomm.core.downloader import Downloader
 
 def test_load_yaml():
     user_config_path = os.path.join(GLib.get_user_data_dir (), 'nomm', 'user_config.yaml')

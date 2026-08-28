@@ -5,10 +5,10 @@ import yaml
 
 from gi.repository import GLib
 
-from core.user_config import update_user_config
-from core.tools import  write_yaml, load_yaml, slugify
+from nomm.core.user_config import update_user_config
+from nomm.core.tools import  write_yaml, load_yaml, slugify
 
-from platforms import steam, heroic, switch
+from nomm.platforms import steam, heroic, switch
 
 
 def scan_all_games(game_configs_dir):

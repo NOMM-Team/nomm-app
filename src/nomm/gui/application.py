@@ -14,18 +14,18 @@ from pathlib import Path
 from urllib.parse import urlparse
 from gi.repository import Adw, Gdk, Gio, GLib, Gtk
 
-from core.game_scanner import scan_all_games
-from core.tools import (load_yaml,
+from nomm.core.game_scanner import scan_all_games
+from nomm.core.tools import (load_yaml,
                         translate_fuse_path, write_yaml)
-from core.user_config import (load_user_config, update_user_config,
+from nomm.core.user_config import (load_user_config, update_user_config,
                               write_user_config)
-from platforms.switch import list_emulators, get_emulator_logo
-from gui.app_views.library_view import LibraryView
-from gui.dashboard import GameDashboard
-from platforms.nexus import handle_nexus_link
-from platforms.gamebanana import handle_gamebanana_link
+from nomm.platforms.switch import list_emulators, get_emulator_logo
+from nomm.gui.app_views.library_view import LibraryView
+from nomm.gui.dashboard import GameDashboard
+from nomm.platforms.nexus import handle_nexus_link
+from nomm.platforms.gamebanana import handle_gamebanana_link
 
-from platforms.steam import get_username_from_steam_id, get_steam_base_dir
+from nomm.platforms.steam import get_username_from_steam_id, get_steam_base_dir
 
 APP_NAME = 'moe.nomm.Nomm'
 APP_VERSION = '0.12.6'
@@ -690,7 +690,7 @@ class Nomm(Adw.Application):
         self.stack.set_visible_child_name("library")
 
     def on_settings_clicked(self, button):
-        from gui.app_views.settings import SettingsWindow
+        from nomm.gui.app_views.settings import SettingsWindow
         settings_win = SettingsWindow(self, parent_window=self.win)
         settings_win.present()
 

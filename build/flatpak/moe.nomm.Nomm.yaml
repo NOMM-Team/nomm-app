@@ -50,22 +50,17 @@ modules:
   - name: NOMM
     buildsystem: simple
     build-commands:
+      - pip3 install --no-build-isolation --no-deps --prefix=/app .
       # Install entry point from the src folder to /app/bin
-      - install -D src/main.py /app/bin/nomm
+      # - install -D src/main.py /app/bin/nomm
       # Install desktop file
       - install -D build/flatpak/moe.nomm.Nomm.desktop /app/share/applications/moe.nomm.Nomm.desktop
       # Install metainfo
       - install -D build/flatpak/moe.nomm.Nomm.metainfo.xml /app/share/metainfo/moe.nomm.Nomm.metainfo.xml
       # Install logo
       - install -D assets/icons/nomm-logo.svg /app/share/icons/hicolor/scalable/apps/moe.nomm.Nomm.svg
-      # Copy all other python files
-      - cp -r src/core /app/bin/core
-      - cp -r src/gui /app/bin/gui
-      - cp -r src/styles /app/bin/styles
-      - cp -r src/queries /app/bin/queries
-      - cp -r src/platforms /app/bin/platforms
       # Other files (shenanigans)
-      - cp src/*.yaml /app/bin/
+      - cp src/nomm/*.yaml /app/bin/
       # Copy non-code folders
       - cp -r assets /app/bin/assets
       - cp -r default_game_configs /app/bin/default_game_configs

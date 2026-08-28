@@ -10,10 +10,10 @@ import requests
 import yaml
 from gi.repository import GLib
 
-from core.mod_manager import get_metadata_path, load_staging_metadata, meta_lock
-from core.downloader import Downloader
-from gui.notifications import download_popup, send_download_notification
-from core.tools import load_yaml, write_yaml, download_image, sanitize_for_pango
+from nomm.core.mod_manager import get_metadata_path, load_staging_metadata, meta_lock
+from nomm.core.downloader import Downloader
+from nomm.gui.notifications import download_popup, send_download_notification
+from nomm.core.tools import load_yaml, write_yaml, download_image, sanitize_for_pango
 
 import requests
 
