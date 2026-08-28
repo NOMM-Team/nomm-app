@@ -3,7 +3,7 @@ Version: "0.13.0"
 Date: 2026-08-28
 Description: |-
   Release bites
-   * Set up automated workflow for adding release notes to flatpak!
+   * Set up automated workflow for adding release notes to flatpak
 ---
 Version: "0.12.6"
 Date: 2026-08-26
