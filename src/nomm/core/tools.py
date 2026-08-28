@@ -3,11 +3,11 @@ import yaml
 import requests
 import re
 import html
-import sys
 
 from pathlib import Path
 from typing import Callable, Optional
 from gi.repository import GLib, Gio, Gtk
+
 
 def load_yaml(path: str) -> dict:
     if os.path.exists(path):
@@ -16,7 +16,8 @@ def load_yaml(path: str) -> dict:
                 return yaml.safe_load(f) or {}
         except Exception as e:
             print(f"Error while loading {path}: {e}")
-    return {}
+            return {}
+
 
 def write_yaml(data: dict, path: str) -> bool:
     # difference here: creates the path if needed
@@ -30,59 +31,64 @@ def write_yaml(data: dict, path: str) -> bool:
         return False
     return False
 
+
 def timestamp_converter(timestamp: str, timestamp_type="short") -> str:
     """Converts standard time timestamps (2026-04-28 15:52:14.249614) into localised text"""
-    
-    #TODO: review this method to produce a nicer timestamp format
+
+    # TODO: review this method to produce a nicer timestamp format
     legible_timestamp = timestamp
     try:
         timestamp.strftime("%c")
-    except:
+    except ValueError:
         print(f"Could not translate timestamp: {timestamp}")
         return timestamp
-    if timestamp_type == "long": # used for tooltips
+    if timestamp_type == "long":  # used for tooltips
         return timestamp.strftime("%c")
-    if timestamp_type == "short": # used for the base UI
+    if timestamp_type == "short":  # used for the base UI
         return timestamp.strftime("%x %H:%M")
     return legible_timestamp
+
 
 def translate_fuse_path(folder_info) -> tuple[str, str]:
     folder_path = folder_info.get_path()
     translated_path = ""
     if "run/user" in folder_path:
         print(f"Detected sandboxed path: {folder_path}")
-        try: 
+        try:
             # Get FileInfo for File
             file_info = folder_info.query_info("xattr::document-portal.host-path", Gio.FileQueryInfoFlags.NONE, None)
 
             # Query file attribute for real path
             real_path = file_info.get_attribute_string("xattr::document-portal.host-path")
-            if real_path is not None: # Attribute does not exist if None
+            if real_path is not None:  # Attribute does not exist if None
                 print(f"Real path parsed: {real_path}")
                 translated_path = real_path
         except GLib.Error:
             print("Can not get real path. If you see this message you will need to manually give NOMM host filesystem permissions.")
     return folder_path, translated_path
 
-def retrieve_casesensitive_paths(path:str):
+
+def retrieve_casesensitive_paths(path: str):
     parts = path.split('/')
     part_list = ['/']
     for part in parts[1:]:
         try:
             new_path = os.path.join(*part_list) if part_list else '/'
-        except Exception as e:
-            return None    
+        except TypeError as e:
+            print(f"[!] Error: {e}")
+            return None
         found_item = next((f for f in os.listdir(new_path) if f.lower() == part.lower()), None)
         if found_item:
             part_list.append(found_item)
     path = os.path.join(*part_list)
     return path
 
- # TODO: change this method so it becomes an async method (heavy gains for multiple images downloads)
+
+# TODO: change this method so it becomes an async method (heavy gains for multiple images downloads)
 def download_image(url: str, save_path: str) -> bool:
     # Send a GET request to the URL
     response = requests.get(url, stream=True)
-    
+
     Path(save_path).parent.mkdir(parents=True, exist_ok=True)
 
     # Check if the request was successful (Status Code 200)
@@ -96,6 +102,7 @@ def download_image(url: str, save_path: str) -> bool:
         print(f"Failed to download image. Status code: {response.status_code}")
         return False
 
+
 def process_bbcode(raw_desc: str) -> str:
 
     # 1. Convert BBCode/HTML-ish to Pango Markup
@@ -103,10 +110,10 @@ def process_bbcode(raw_desc: str) -> str:
     pango_text = pango_text.replace("[b]", "<b>").replace("[/b]", "</b>")
     pango_text = pango_text.replace("[u]", "<u>").replace("[/u]", "</u>")
     pango_text = pango_text.replace("[i]", "<i>").replace("[/i]", "</i>")
-    
+
     # Handle centering
     pango_text = pango_text.replace("[center]", "").replace("[/center]", "")
-    
+
     # Handle fonts
     pango_text = re.sub(r'\[font=([^\]]+)\]', r'<span font_family="\1">', pango_text)
     pango_text = pango_text.replace("[/font]", "</span>")
@@ -117,24 +124,24 @@ def process_bbcode(raw_desc: str) -> str:
     # Handle colors: [color=#hex] -> <span foreground="#hex">
     pango_text = re.sub(r'\[color=([^\]]+)\]', r'<span foreground="\1">', pango_text)
     pango_text = pango_text.replace("[/color]", "</span>")
-    
+
     # Handle sizes: [size=4] -> <span size="large">
     pango_text = re.sub(r'\[size=[^\]]+\]', r'<span size="large">', pango_text)
     pango_text = pango_text.replace("[/size]", "</span>")
-    
+
     # Handle urls
     pango_text = re.sub(
-        r'\[url=([^\]]+)\](.*?)\[/url\]', 
-        r'<a href="\1">\2</a>', 
-        pango_text, 
+        r'\[url=([^\]]+)\](.*?)\[/url\]',
+        r'<a href="\1">\2</a>',
+        pango_text,
         flags=re.DOTALL
     )
 
     # Handle youtube links
     pango_text = re.sub(
-        r'\[youtube\](.*?)\[/youtube\]', 
-        r'<a href="https://youtu.be/\1">YouTube Video (\1)</a>', 
-        pango_text, 
+        r'\[youtube\](.*?)\[/youtube\]',
+        r'<a href="https://youtu.be/\1">YouTube Video (\1)</a>',
+        pango_text,
         flags=re.DOTALL
     )
 
@@ -148,10 +155,11 @@ def process_bbcode(raw_desc: str) -> str:
     # Handle spoiler tags
     pango_text = pango_text.replace("[spoiler]", "\n--- SPOILER ---\n").replace("[/spoiler]", "\n----------------\n")
 
-    pango_text = re.sub(r'\n\s*\n', '\n', pango_text) # Collapse excessive newlines
+    pango_text = re.sub(r'\n\s*\n', '\n', pango_text)  # Collapse excessive newlines
 
     print("BBCode successfuly parsed into HTML")
     return pango_text
+
 
 def sanitize_for_pango(raw_html: str) -> str:
     """Class-free HTML sanitizer that auto-closes unclosed tags for GTK Pango. Mainly used for GameBanana descriptions."""
@@ -184,6 +192,7 @@ def sanitize_for_pango(raw_html: str) -> str:
 
     return text.strip()
 
+
 def list_archives(archives_directory: str):
 
     ARCHIVE_MIME_TYPES = {
@@ -199,16 +208,15 @@ def list_archives(archives_directory: str):
 
     for file in os.listdir(archives_directory):
         full_path = os.path.join(archives_directory, file)
-        
+
         if not os.path.isfile(full_path):
             continue
-            
+
         try:
             gio_file = Gio.File.new_for_path(full_path)
             file_info = gio_file.query_info("standard::content-type", Gio.FileQueryInfoFlags.NONE, None)
             mime_type = file_info.get_content_type()
-            
-            
+
             # If the OS identifies it as a known archive file type, pull it in
             if mime_type in ARCHIVE_MIME_TYPES:
                 archive_list.append(file)
@@ -217,21 +225,24 @@ def list_archives(archives_directory: str):
                     print(f"[!] Could not identify mime type in download folder: {mime_type}")
         except Exception as e:
             print(f"Error reading file metadata for {file}: {e}")
-    
+
     return archive_list
+
 
 def launch_option_merger(current_launch_options: str, new_option: str) -> str:
     # TODO: add some proprer logic here - notably to check if the new option being added doesn't already exist.
     merged_launch_option = current_launch_options + " " + new_option
     return merged_launch_option
 
+
 def slugify(text: str) -> str:
     return re.sub(r'[^a-z0-9]', '', text.lower())
+
 
 def load_cached_assets(game_name: str, platform: str) -> dict[str, str]:
     """Attempts to load game poster and hero from cache, or downloads them"""
     cache_base = os.path.join(GLib.get_user_data_dir(), "nomm", "image-cache", f"{platform}", f"{game_name}")
-    
+
     if os.path.exists(cache_base):
         existing_files = {}
         for entry in os.listdir(cache_base):
@@ -239,16 +250,17 @@ def load_cached_assets(game_name: str, platform: str) -> dict[str, str]:
                 existing_files["poster"] = os.path.join(cache_base, entry)
             elif entry.startswith("art_hero"):
                 existing_files["hero"] = os.path.join(cache_base, entry)
-        
+
         if "poster" in existing_files:
             print(f"Using cached assets for {game_name}")
             return existing_files
 
     return None
 
+
 def get_nomm_tags(headers: dict):
 
-    url = f"https://api.github.com/repos/allexio/nomm/tags?per_page=100"
+    url = "https://api.github.com/repos/allexio/nomm/tags?per_page=100"
 
     response = requests.get(url, headers=headers)
 
@@ -258,6 +270,7 @@ def get_nomm_tags(headers: dict):
         return tag_names
     else:
         return None
+
 
 def create_icon_button(
     *,
@@ -307,6 +320,7 @@ def load_nomm_version() -> str:
         release_bites = list(yaml.safe_load_all(f))
 
     return release_bites[0]["Version"]
+
 
 def get_data_dir() -> str:
     """Returns the absolute path to the directory containing assets/ and config files."""

@@ -3,13 +3,14 @@ import pprint
 import shutil
 from pathlib import Path
 
+
 # Parsing the fomod from the XML
 def parse_fomod_xml(xml_data):
     try:
-        
+
         # Fomod module name
         module_name = xml_data.findtext('moduleName')
-        
+
         # Module dependency tree
         dependencies_data = {}
         module_dependencies = xml_data.find('moduleDependencies')
@@ -17,7 +18,7 @@ def parse_fomod_xml(xml_data):
             dependencies_data = dependencies_loops(module_dependencies)
         else:
             dependencies_data = {}
-        
+
         # Module tree, where options are actually stored
         module_data = {}
         steps = xml_data.findall('.//installStep')
@@ -29,15 +30,15 @@ def parse_fomod_xml(xml_data):
                 group_name = group.get('name')
                 group_type = group.get('type')
                 group_data = {
-                    'name' : group_name,
-                    'type' : group_type,
-                    'plugins' : []
+                    'name': group_name,
+                    'type': group_type,
+                    'plugins': []
                 }
                 group_list.append(group_data)
                 for plugin in group.findall('.//plugin'):
                     plugin_name = plugin.get('name')
                     plugin_desc = plugin.findtext('description', default='No description provided')
-                    if plugin.find('image') != None:
+                    if plugin.find('image') is not None:
                         image_tag = plugin.find('image')
                         plugin_image_path = image_tag.get('path').replace('\\', '/')
                     else:
@@ -45,7 +46,7 @@ def parse_fomod_xml(xml_data):
                     items = plugin.findall('.//folder') + plugin.findall('.//file')
                     folders_data = []
                     plugin_folder = {}
-                    for index,item in enumerate(items):
+                    for index, item in enumerate(items):
                         source = item.get('source').replace('\\', '/') or ''
                         dest = item.get('destination').replace('\\', '/') or ''
                         plugin_folder = {
@@ -118,13 +119,13 @@ def parse_fomod_xml(xml_data):
                     'flags': flags
                 }
             step_data = {
-                'step_name' : step_name,
-                'group' : group_list,
-                'visible' : visible_data
+                'step_name': step_name,
+                'group': group_list,
+                'visible': visible_data
             }
             step_list.append(step_data)
         module_data = step_list
-        
+
         # Conditional file installs
         conditional_installs = xml_data.find('conditionalFileInstalls')
         flags_data = []
@@ -154,14 +155,14 @@ def parse_fomod_xml(xml_data):
                     },
                     'files': files
                 })
-        
+
         # Required files
         required_files = xml_data.find('requiredInstallFiles')
         required_data = []
-        if required_files :
+        if required_files:
             items = required_files.findall('.//folder') + required_files.findall('.//file')
             plugin_folder = {}
-            for index,item in enumerate(items):
+            for index, item in enumerate(items):
                 source = item.get('source', '').replace('\\', '/')
                 dest = item.get('destination', '').replace('\\', '/')
                 plugin_folder = {
@@ -169,7 +170,7 @@ def parse_fomod_xml(xml_data):
                     'destination': dest.lstrip('\\/')
                 }
                 required_data.append(plugin_folder)
-        
+
         # Put it in a whole dict as it was a lot of different categories
         parsed_fomod = {
             'module_name': module_name,
@@ -178,17 +179,20 @@ def parse_fomod_xml(xml_data):
             'flags_data': flags_data,
             'required_data': required_data
         }
-        
+
         return parsed_fomod
     except Exception as e:
         print(f"Failed to parse FOMOD XML: {e}")
         return {}
-    
+
+
 def get_fomod_step_count(module_data: dict) -> int:
     return len(module_data)
 
+
 def get_fomod_group_count(module_data: dict, step_index: int = 0) -> int:
     return len(module_data[step_index]['group'])
+
 
 def get_fomod_group_info(module_data: dict, step_index: int = 0, group_index: int = 0) -> dict:
     group = module_data[step_index]['group'][group_index]
@@ -196,6 +200,7 @@ def get_fomod_group_info(module_data: dict, step_index: int = 0, group_index: in
         'type': group['type'],
         'name': group['name']
     }
+
 
 def get_fomod_group_options(module_data: dict, step_index: int = 0, group_index: int = 0) -> list:
     options = []
@@ -206,12 +211,14 @@ def get_fomod_group_options(module_data: dict, step_index: int = 0, group_index:
         options.append((plugin['name'], plugin['desc'], sources, condition_flags))
     return options
 
+
 def get_plugin_image_path(module_data: dict, plugin_name: str, step_index: int = 0, group_index: int = 0) -> str:
     plugins = module_data[step_index]['group'][group_index]['plugins']
     for plugin in plugins:
         if plugin['name'] == plugin_name:
             return plugin['image_path']
     return ''
+
 
 def have_plugins_images(module_data: dict, step_index: int = 0, group_index: int = 0) -> bool:
     plugins = module_data[step_index]['group'][group_index]['plugins']
@@ -220,12 +227,14 @@ def have_plugins_images(module_data: dict, step_index: int = 0, group_index: int
             return True
     return False
 
+
 def get_plugin_type(module_data: dict, plugin_name: str, step_index: int = 0, group_index: int = 0) -> str:
     plugins = module_data[step_index]['group'][group_index]['plugins']
     for plugin in plugins:
         if plugin['name'] == plugin_name:
             return plugin['type_descriptor']['default_type']
     return ''
+
 
 def get_plugin_flags(module_data: dict, plugin_name: str, step_index: int = 0, group_index: int = 0) -> list:
     plugins = module_data[step_index]['group'][group_index]['plugins']
@@ -234,11 +243,12 @@ def get_plugin_flags(module_data: dict, plugin_name: str, step_index: int = 0, g
             return plugin['condition_flags']
     return []
 
+
 def apply_fomod_selection(mod_staging_dir: str, source_folder_name: str, dest_path: str) -> list:
 
     normalized_source = source_folder_name.replace('\\', '/').strip('/')
     source_path = None
-    
+
     direct_path = os.path.join(mod_staging_dir, normalized_source)
     if os.path.isdir(direct_path):
         # checks if direct path is the same as source_path, which means all we have to do is copy the files as it is once extracted
@@ -248,7 +258,7 @@ def apply_fomod_selection(mod_staging_dir: str, source_folder_name: str, dest_pa
         for root, _, files in os.walk(mod_staging_dir):
             # Calculates relative root and replaces \\ for compatibility
             rel_root = os.path.relpath(root, mod_staging_dir).replace('\\', '/')
-            #If we find the folder, then we break
+            # If we find the folder, then we break
             if rel_root.lower() == normalized_source.lower() or rel_root.lower().endswith('/' + normalized_source.lower()):
                 source_path = root
                 break
@@ -260,7 +270,7 @@ def apply_fomod_selection(mod_staging_dir: str, source_folder_name: str, dest_pa
                     break
             if source_path:
                 break
-            
+
     if not source_path:
         raise FileNotFoundError(f"Could not find folder or file '{normalized_source}' in extracted mod.")
 
@@ -269,7 +279,7 @@ def apply_fomod_selection(mod_staging_dir: str, source_folder_name: str, dest_pa
     if os.path.isdir(source_path):
         os.makedirs(dest_path, exist_ok=True)
         shutil.copytree(source_path, dest_path, dirs_exist_ok=True)
-        
+
         for root, _, files in os.walk(source_path):
             for file in files:
                 rel_path = os.path.relpath(os.path.join(root, file), source_path)
@@ -281,8 +291,10 @@ def apply_fomod_selection(mod_staging_dir: str, source_folder_name: str, dest_pa
 
     return copied_files
 
+
 def dump_fomod_data(module_data: dict):
     pprint.pprint(module_data, indent=2, width=120)
+
 
 def generate_source_from_flags(flags_metadata: dict, flags: list) -> dict:
     result = []
@@ -297,6 +309,7 @@ def generate_source_from_flags(flags_metadata: dict, flags: list) -> dict:
             result.extend(pattern['files'])
     return result
 
+
 def dependencies_loops(current_dependency_metadata) -> list:
     required_files_root = []
     for file in current_dependency_metadata.findall('fileDependency'):
@@ -304,19 +317,19 @@ def dependencies_loops(current_dependency_metadata) -> list:
         req_file = req_file.replace('\\', '/')
         state = file.get('state')
         file_data = {
-        'file' : req_file.lstrip('\\/'),
-        'state' : state
+            'file': req_file.lstrip('\\/'),
+            'state': state
         }
         required_files_root.append(file_data)
     current_level_data = {
-        'operator' : current_dependency_metadata.get('operator') or 'And',
-        'req_files' : required_files_root
+        'operator': current_dependency_metadata.get('operator') or 'And',
+        'req_files': required_files_root
     }
     dependencies_data = {
-        'file_dependencies' : current_level_data,
-        'nested_dependencies' : None
+        'file_dependencies': current_level_data,
+        'nested_dependencies': None
     }
-    
+
     nested = []
     for nested_dep in current_dependency_metadata.findall('dependencies'):
         nested.append(dependencies_loops(nested_dep))
@@ -324,7 +337,7 @@ def dependencies_loops(current_dependency_metadata) -> list:
     return dependencies_data
 
 
-def check_for_dependencies(dependencies_data:dict, dest_dir: str) -> bool:
+def check_for_dependencies(dependencies_data: dict, dest_dir: str) -> bool:
     if not dependencies_data:
         return True
     dep_item = dependencies_data['file_dependencies']['req_files']
@@ -339,11 +352,12 @@ def check_for_dependencies(dependencies_data:dict, dest_dir: str) -> bool:
             if not check_for_dependencies(nested, dest_dir):
                 return False
     return search
-    
 
-def check_for_plugin_dependencies(module_data: dict, dest_dir: str, step_index: int = 0, group_index: int = 0, plugin_index: int = 0, selected_flags = None) -> str:
+
+def check_for_plugin_dependencies(module_data: dict, dest_dir: str, step_index: int = 0,
+                                  group_index: int = 0, plugin_index: int = 0, selected_flags=None) -> str:
     plugin = module_data[step_index]['group'][group_index]['plugins'][plugin_index]
-    
+
     # Check for file dependency
     for cond_type in plugin['type_descriptor']['conditional_types']:
         dependencies = cond_type['dependencies']
@@ -351,7 +365,7 @@ def check_for_plugin_dependencies(module_data: dict, dest_dir: str, step_index: 
         search = False
         if operator == 'And':
             search_file = all(
-                (Path(dest_dir)/f['req_file']).exists() 
+                (Path(dest_dir)/f['req_file']).exists()
                 and (f['state'] == 'Active' or f['state'] == 'Inactive')
                 for f in dependencies['file_dependencies']
             )
@@ -363,8 +377,8 @@ def check_for_plugin_dependencies(module_data: dict, dest_dir: str, step_index: 
             search = search_file and search_flag
         elif operator == 'Or':
             search_file = any(
-                (Path(dest_dir)/f['req_file']).exists() 
-                and (f['state'] == 'Active' or f['state'] == 'Inactive') 
+                (Path(dest_dir)/f['req_file']).exists()
+                and (f['state'] == 'Active' or f['state'] == 'Inactive')
                 for f in dependencies['file_dependencies']
             )
             search_flag = any(
@@ -375,10 +389,11 @@ def check_for_plugin_dependencies(module_data: dict, dest_dir: str, step_index: 
             search = search_file or search_flag
         if search:
             return cond_type['type']
-    
+
     # Check for flag dependency
     return plugin['type_descriptor']['default_type']
-    
+
+
 def is_step_visible(module_data: dict, step_index: int, active_flags: dict) -> bool:
 
     visible_condition = module_data[step_index].get('visible')
