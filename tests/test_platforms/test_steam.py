@@ -1,7 +1,7 @@
 import nomm.platforms.steam as steam
 import os
-import pytest
 import vdf
+
 
 def test_get_steam_base_dir_finds_first_existing_path(monkeypatch):
     target_path = os.path.expanduser("~/.local/share/Steam/")
@@ -14,9 +14,11 @@ def test_get_steam_base_dir_finds_first_existing_path(monkeypatch):
     result = steam.get_steam_base_dir()
     assert result == target_path
 
+
 def test_get_steam_base_dir_returns_none_when_missing(monkeypatch):
     monkeypatch.setattr(os.path, "exists", lambda p: False)
     assert steam.get_steam_base_dir() is None
+
 
 def test_get_library_paths_success(tmp_path):
     config_dir = tmp_path / "config"
@@ -47,13 +49,16 @@ def test_get_library_paths_success(tmp_path):
     assert expected_path_1 in result
     assert expected_path_2 in result
 
+
 def test_get_library_paths_empty_or_none_input():
     assert steam.get_library_paths(None) == []
     assert steam.get_library_paths("") == []
 
+
 def test_get_library_paths_missing_vdf_file(tmp_path):
     result = steam.get_library_paths(str(tmp_path))
     assert result == []
+
 
 def test_get_library_paths_malformed_vdf(tmp_path):
     config_dir = tmp_path / "config"
@@ -64,6 +69,7 @@ def test_get_library_paths_malformed_vdf(tmp_path):
 
     result = steam.get_library_paths(str(tmp_path))
     assert result == []
+
 
 def test_get_library_paths_missing_path_key(tmp_path):
     config_dir = tmp_path / "config"
@@ -82,6 +88,7 @@ def test_get_library_paths_missing_path_key(tmp_path):
 
     result = steam.get_library_paths(str(tmp_path))
     assert result == []
+
 
 def test_add_launch_options_new(tmp_path, monkeypatch):
     monkeypatch.setattr("nomm.platforms.steam.load_user_config", lambda: {"steam_user_id": "12345678"})
