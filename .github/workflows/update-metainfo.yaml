@@ -26,6 +26,9 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Configure safe directory for Git
+        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
+
       - name: Ensure target directory exists
         run: mkdir -p build/flatpak
 
