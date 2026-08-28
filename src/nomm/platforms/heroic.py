@@ -5,6 +5,7 @@ from gi.repository import GLib
 from nomm.core.user_config import parse_mod_paths
 from nomm.core.tools import slugify, write_yaml, load_cached_assets, download_image
 
+
 def get_epic_library() -> dict | None:
     epic_flatpak = os.path.expanduser("~/.var/app/com.heroicgameslauncher.hgl/config/heroic/legendaryConfig/legendary/installed.json")
     epic_native = os.path.expanduser("~/.config/heroic/legendaryConfig/legendary/installed.json")
@@ -19,6 +20,7 @@ def get_epic_library() -> dict | None:
             return json.load(f)
     except Exception as e:
         print(f"Error loading Epic JSON: {e}")
+
 
 def get_gog_library() -> dict | None:
     gog_flatpak = os.path.expanduser("~/.var/app/com.heroicgameslauncher.hgl/config/heroic/gog_store/installed.json")
@@ -35,6 +37,7 @@ def get_gog_library() -> dict | None:
     except Exception as e:
         print(f"Error loading GOG JSON: {e}")
 
+
 def find_epic_game(yaml_data, yaml_path, game_title, installed_epic):
     for app_id, game_info in installed_epic.items():
         if slugify(game_info.get("title", "")) == slugify(game_title):
@@ -42,7 +45,7 @@ def find_epic_game(yaml_data, yaml_path, game_title, installed_epic):
             yaml_data["platform"] = "heroic-epic"
             yaml_data["game_path"] = game_path
             write_yaml(yaml_data, yaml_path)
-            
+
             # mod path parsing
             # TODO: add support for heroic/EPIC user data path
             user_data_path = ""
@@ -61,17 +64,18 @@ def find_epic_game(yaml_data, yaml_path, game_title, installed_epic):
             }
     return None
 
+
 def find_gog_game(yaml_data, yaml_path, game_title, installed_gog):
     if not yaml_data.get("gog_id"):
         return None
-        
+
     for game_info in installed_gog.get("installed", []):
         if slugify(game_info.get("appName", "")) == slugify(str(yaml_data["gog_id"])):
             game_path = game_info.get("install_path", "")
             yaml_data["platform"] = "heroic-gog"
             yaml_data["game_path"] = game_path
             write_yaml(yaml_data, yaml_path)
-            
+
             # mod path parsing
             # TODO: add support for heroic/GOG user data path
             user_data_path = ""
@@ -90,6 +94,7 @@ def find_gog_game(yaml_data, yaml_path, game_title, installed_gog):
             }
     return None
 
+
 def obtain_heroic_libraries(game_paths: list) -> list:
     """Takes a list of unique game paths and attempts to extrapolate a list of library directories.
     This is used to request access to whole libraries and not just each game individually."""
@@ -99,8 +104,10 @@ def obtain_heroic_libraries(game_paths: list) -> list:
             directory_paths.append(os.path.dirname(path))
     return directory_paths
 
+
 def get_art(game_title: str, app_id: str | int, platform: str) -> dict:
-    if not app_id: return None
+    if not app_id:
+        return None
 
     art = load_cached_assets(game_title, platform)
     if not art:
@@ -111,13 +118,14 @@ def get_art(game_title: str, app_id: str | int, platform: str) -> dict:
             return {"hero": None, "poster": None}
     return art
 
+
 # Grabs the assets from heroic games launcher such as banner and game image
 def download_heroic_assets(game_title: str, appName: str, platform: str):
 
-    json_path = os.path.expanduser("~/.var/app/com.heroicgameslauncher.hgl/config/heroic/store/download-manager.json") # flatpak
+    json_path = os.path.expanduser("~/.var/app/com.heroicgameslauncher.hgl/config/heroic/store/download-manager.json")  # flatpak
     if not os.path.exists(json_path):
-        json_path = os.path.expanduser("~/.config/heroic/store/download-manager.json") # not flatpak
-    
+        json_path = os.path.expanduser("~/.config/heroic/store/download-manager.json")  # not flatpak
+
     cache_base = os.path.join(GLib.get_user_data_dir(), "nomm", "image-cache", f"{platform}", f"{game_title}")
 
     if not os.path.exists(json_path):
@@ -137,12 +145,12 @@ def download_heroic_assets(game_title: str, appName: str, platform: str):
     for entry in finished_apps:
         params = entry.get("params", {})
         game_info = params.get("gameInfo", {})
-        
+
         # Match by internal appName (e.g., 'Curry') or title (e.g., 'ABZÛ')
         if params.get("appName") == str(appName) or game_info.get("title") == appName:
             target_info = game_info
             break
-    
+
     if not target_info:
         return None
 
@@ -156,11 +164,12 @@ def download_heroic_assets(game_title: str, appName: str, platform: str):
     for key, url in urls.items():
         if not url:
             continue
-            
+
         ext = os.path.splitext(url)[1] if "." in url.split("/")[-1] else ".jpg"
-        
-        if "?" in ext: ext = ext.split("?")[0]
-        
+
+        if "?" in ext:
+            ext = ext.split("?")[0]
+
         local_path = os.path.join(cache_base, f"{key}{ext}")
 
         download_image(url, local_path)

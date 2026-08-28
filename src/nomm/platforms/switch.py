@@ -16,28 +16,30 @@ EDEN_MOD_PATH = os.path.expanduser("~/.local/share/eden/load")
 CITRON_GAME_PATH = os.path.expanduser("~/.local/share/citron/load")
 CITRON_MOD_PATH = os.path.expanduser("~/.local/share/citron/load")
 
+
 # Supported config values
 class EmulatorName(Enum):
     RYUBING = "Ryubing"
     EDEN = "Eden"
     CITRON = "Citron"
-    
+
+
 def find_matches(game_configs_dir) -> list:
 
     switch_config_path = os.path.join(game_configs_dir, "emulation/switch.yaml")
-    if not os.path.exists(switch_config_path) or list_emulators() == [] :
+    if not os.path.exists(switch_config_path) or list_emulators() == []:
         return []
 
     PLATFORM = "switch"
-    
+
     emulator_name_str = load_user_config().get("preferred_switch_emulator", list_emulators()[0])
-    
+
     try:
         preferred_emulator = EmulatorName(emulator_name_str)
     except ValueError as e:
-        print(f"Preferred emulator value is not supported")
-        return[]
-    
+        print(f"Preferred emulator value is not supported: {e}")
+        return []
+
     try:
         with open(switch_config_path, 'r') as f:
             supported_switch_games = yaml.safe_load(f)
@@ -53,12 +55,12 @@ def find_matches(game_configs_dir) -> list:
     elif preferred_emulator == EmulatorName.RYUBING:
         game_path = RYUBING_GAME_PATH
         mods_path = RYUBING_MOD_PATH
-    
+
     installed_games = os.listdir(game_path)
     matches = []
 
     for game in supported_switch_games:
-        #Ryujinx has game IDs in lowercase, and Eden has them in uppercase :')
+        # Ryujinx has game IDs in lowercase, and Eden has them in uppercase :')
         if preferred_emulator == EmulatorName.RYUBING:
             game_id = game["switch_id"].lower()
         elif preferred_emulator in [EmulatorName.CITRON, EmulatorName.EDEN]:
@@ -72,11 +74,10 @@ def find_matches(game_configs_dir) -> list:
                 hero_path = os.path.join(cache_base, "art_hero.jpg")
                 download_image(game["hero_url"], hero_path)
                 art = {
-                    "poster" : grid_path,
-                    "hero" : hero_path
+                    "poster": grid_path,
+                    "hero": hero_path
                 }
-            mod_paths = [{"name": "default",
-            "path": f"{mods_path}/{game_id}/"}]
+            mod_paths = [{"name": "default", "path": f"{mods_path}/{game_id}/"}]
             matches.append(
                 {
                     "name": game["full_name"],
@@ -90,8 +91,9 @@ def find_matches(game_configs_dir) -> list:
                     "accent_colour": None
                 }
             )
-    
+
     return matches
+
 
 def list_emulators():
     """Lists Switch emulators installed on user's system"""
@@ -105,12 +107,12 @@ def list_emulators():
 
     return installed_emulator_list
 
+
 def get_emulator_logo(emulator):
     try:
         emulator = EmulatorName(emulator)
     except ValueError as e:
-        print(f"Preferred emulator value is not supported")
-    
+        print(f"[!] Preferred emulator value is not supported: {e}")
     if emulator == EmulatorName.CITRON:
         return "citron-logo"
     elif emulator == EmulatorName.EDEN:

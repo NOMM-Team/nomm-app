@@ -7,15 +7,13 @@ from urllib.parse import urlsplit, urlparse, parse_qs, unquote
 from urllib.error import HTTPError
 
 import requests
-import yaml
 from gi.repository import GLib
 
-from nomm.core.mod_manager import get_metadata_path, load_staging_metadata, meta_lock
+from nomm.core.mod_manager import get_metadata_path, meta_lock
 from nomm.core.downloader import Downloader
 from nomm.gui.notifications import download_popup, send_download_notification
 from nomm.core.tools import load_yaml, write_yaml, download_image, sanitize_for_pango
 
-import requests
 
 def get_mod_info(headers: dict, mod_id: str, download_dir: Path, current_mod_staging_folder: str = "") -> dict:
     print(f"Obtaining mod information for mod: {mod_id}")
@@ -53,20 +51,21 @@ def get_mod_info(headers: dict, mod_id: str, download_dir: Path, current_mod_sta
         dest_folder = metadata["display_name"]
 
     # Download thumbnail to have a local copy
-    thumbnail_folder = download_dir.resolve() / f"thumbnails/"
+    thumbnail_folder = download_dir.resolve() / "thumbnails/"
     thumbnail_folder.mkdir(parents=True, exist_ok=True)
     thumbnail_path = str(thumbnail_folder / (f"{dest_folder}.png"))
     download_image(metadata["thumbnail"], thumbnail_path)
     metadata["thumbnail"] = thumbnail_path
 
     # Save description separately to not pollute metadata file
-    description_folder = download_dir.resolve() / f"descriptions/"
+    description_folder = download_dir.resolve() / "descriptions/"
     description_folder.mkdir(parents=True, exist_ok=True)
     description_path = str(description_folder / (f"{dest_folder}.html"))
     with open(description_path, 'w') as f:
         f.write(sanitize_for_pango(remote_data.get("_sText")))
     metadata["description"] = description_path
     return metadata
+
 
 # Interprets nxm links and launchs notification
 def handle_gamebanana_link(link: str, downloader: Downloader, headers: dict) -> bool:
@@ -80,7 +79,7 @@ def handle_gamebanana_link(link: str, downloader: Downloader, headers: dict) -> 
     if not base_download_path:
         print("Error: Missing API key or download path in user_config.yaml")
         return False
-    
+
     split_url = urlsplit(link).path.split("/")
     if split_url[1] != "switch" or len(split_url) < 4:
         print(f"Malformed nomm protocol url: {split_url}")
@@ -118,11 +117,12 @@ def handle_gamebanana_link(link: str, downloader: Downloader, headers: dict) -> 
     return _download_gb_mod(download_url, headers, download_dir, mod_id, game_folder_name, user_config_dir, downloader)
 
 
-def _download_gb_mod(mod_url: str, headers: dict, download_dir: Path, mod_id: str, game_folder_name: str, user_config_dir, downloader: Downloader) -> bool:
+def _download_gb_mod(mod_url: str, headers: dict, download_dir: Path, mod_id: str,
+                     game_folder_name: str, user_config_dir, downloader: Downloader) -> bool:
 
     response = requests.head(mod_url, allow_redirects=True, headers=headers, timeout=10)
     download_url = response.url
-    
+
     parsed_path = urlparse(download_url).path
     file_name = unquote(os.path.basename(parsed_path))
 
@@ -134,8 +134,8 @@ def _download_gb_mod(mod_url: str, headers: dict, download_dir: Path, mod_id: st
         with download_inst._downloads_lock:
             download_inst._active_downloads.add(file_name)
         threading.Thread(
-            target=_fetch_and_write_mod_metadata, 
-            args=(headers, download_dir, mod_id, game_folder_name, file_name, downloader), 
+            target=_fetch_and_write_mod_metadata,
+            args=(headers, download_dir, mod_id, game_folder_name, file_name, downloader),
             daemon=True
         ).start()
 
@@ -150,11 +150,11 @@ def _download_gb_mod(mod_url: str, headers: dict, download_dir: Path, mod_id: st
 
     print(f"Downloading {file_name} to {game_folder_name}...")
     user_meta = load_yaml(user_config_dir)
-    
+
     if user_meta.get('disable_download_window'):
         threading.Thread(
-            target=downloader.download_mod, 
-            args=(download_url, str(download_dir)), 
+            target=downloader.download_mod,
+            args=(download_url, str(download_dir)),
             daemon=True
         ).start()
     else:
@@ -162,8 +162,9 @@ def _download_gb_mod(mod_url: str, headers: dict, download_dir: Path, mod_id: st
 
     return True
 
+
 def _fetch_and_write_mod_metadata(headers: dict, download_dir: Path, mod_id: str, game_folder_name: str, file_name: str, downloader: Downloader):
-    
+
     print("Writing metadata")
     # Get mod metadata
     mod_metadata = get_mod_info(headers, mod_id, download_dir)
@@ -185,10 +186,11 @@ def _fetch_and_write_mod_metadata(headers: dict, download_dir: Path, mod_id: str
     GLib.idle_add(downloader.emit, 'download-metadata-ready', file_name)
 
     send_download_notification("success", file_name=file_name, game_name=game_folder_name, icon_path=None)
-    
+
     downloader._active_downloads.discard(file_name)
-    
+
     return True
+
 
 def get_file_url(url: str, headers: dict = None) -> str:
     # Use HEAD request (or stream=True GET) so we only download HTTP headers
@@ -204,6 +206,7 @@ def get_file_url(url: str, headers: dict = None) -> str:
     else:
         print("Filename could not be determined!")
         return None
+
 
 def clean_headers(headers: dict):
     """Removes API key from request headers"""

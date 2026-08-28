@@ -10,6 +10,7 @@ from nomm.core.tools import launch_option_merger, slugify, write_yaml
 import gettext
 _ = gettext.gettext
 
+
 def get_steam_base_dir() -> Optional[str]:
     paths = [
         os.path.expanduser("~/.steam/debian-installation/"),
@@ -21,6 +22,7 @@ def get_steam_base_dir() -> Optional[str]:
         if os.path.exists(p):
             return p
     return None
+
 
 def get_library_paths(steam_base) -> List[str]:
     libraries = []
@@ -43,6 +45,7 @@ def get_library_paths(steam_base) -> List[str]:
         print(f"Error parsing VDF at {vdf_path}: {e}")
     return libraries
 
+
 def add_launch_options(steam_base: str, launch_options, steam_id: str):
     print(f"Adding Steam launch options: {launch_options}")
     localconfig_path = steam_base + "userdata/" + load_user_config()["steam_user_id"] + "/config/localconfig.vdf"
@@ -56,6 +59,7 @@ def add_launch_options(steam_base: str, launch_options, steam_id: str):
         localconfig["UserLocalConfigStore"]["Software"]["Valve"]["Steam"]["apps"][str(steam_id)]["LaunchOptions"] = launch_option_merger(game_data["LaunchOptions"], launch_options)
     with open(localconfig_path, 'w') as vdf_file:
         vdf.dump(localconfig, vdf_file)
+
 
 def get_username_from_steam_id(steam_id: str, steam_base_path) -> str:
     localconfig_path = steam_base_path + "userdata/" + steam_id + "/config/localconfig.vdf"
@@ -71,10 +75,12 @@ def get_username_from_steam_id(steam_id: str, steam_base_path) -> str:
         return None
     return steam_username
 
+
 def get_art(steam_base: str, app_id: str):
     """Obtains art for Steam games by retrieving the paths from the local Steam cache"""
     path = os.path.join(steam_base, "appcache/librarycache", str(app_id))
-    if not os.path.exists(path): return None
+    if not os.path.exists(path):
+        return None
     art = {}
     for root, _, files in os.walk(path):
         if "library_hero.jpg" in files:
@@ -88,13 +94,15 @@ def get_art(steam_base: str, app_id: str):
     print(f"Could not find hero and poster for game: {app_id}")
     return None
 
+
 def find_game(yaml_data, yaml_path, game_title, found_libs, steam_base) -> List[Dict[str, Any]]:
     """Scans for a specific game in previously detected Steam libraries"""
     yaml_game_name = yaml_data.get("steam_folder_name", game_title)
     slug_yaml_name = slugify(yaml_game_name)
-    
+
     for lib in found_libs:
-        if not os.path.exists(lib): continue
+        if not os.path.exists(lib):
+            continue
         for folder in os.listdir(lib):
             if slugify(folder) == slug_yaml_name:
                 game_path = os.path.join(lib, folder)
@@ -105,7 +113,7 @@ def find_game(yaml_data, yaml_path, game_title, found_libs, steam_base) -> List[
                 # mod path parsing
                 user_data_path = os.path.dirname(os.path.dirname(game_path)) + "/compatdata/" + str(yaml_data["steam_id"]) + "/pfx"
                 mod_paths = parse_mod_paths(yaml_data["mods_path"], game_path, user_data_path)
-                
+
                 return {
                     "name": game_title,
                     "img": get_art(steam_base, yaml_data.get("steam_id")),
