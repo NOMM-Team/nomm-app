@@ -1,4 +1,5 @@
-[![Watch the video](https://i.imgur.com/Qdn83As.png)](https://www.youtube.com/watch?v=3UWBQxQY9kk)
+<img width="2642" alt="nomm-wallpaper" src="https://github.com/user-attachments/assets/3fd08985-6259-45a6-8ae8-e04341f69a10" />
+
 <div align="center">
   <a href="https://discord.gg/WFRePSjEQY">
     <img src="https://img.shields.io/discord/1472479817512521772?color=0098DB&label=Discord&logo=discord&logoColor=0098DB"></a>
@@ -9,8 +10,8 @@
   </a>
 </div>
 
-# NOMM (Native Open Mod Manager)
-
+<div align="center"><h1>NOMM (Native Open Mod Manager) </h1></div>
+  
 ## The project
 
 NOMM is a stupid simple, super clean "native" (as in it runs on Linux without having to use translation tools...) mod manager for Linux.
