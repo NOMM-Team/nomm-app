@@ -2,13 +2,15 @@ import webbrowser
 import gettext
 from gi.repository import Gtk, Adw
 _ = gettext.gettext
+
+
 class TextWindow(Adw.Window):
     def __init__(self, parent, title, content, text_type="text"):
         # We set the internal window title, though the HeaderBar will display the WindowTitle widget
         super().__init__(transient_for=parent, modal=True)
-        
+
         self.set_default_size(570, 490)
-        
+
         # Root Container
         root_container = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
         self.set_content(root_container)
@@ -20,7 +22,7 @@ class TextWindow(Adw.Window):
         )
         header_bar.set_title_widget(self.title_widget)
         root_container.append(header_bar)
-        
+
         # Body
         body = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
         body.add_css_class('tw-body')

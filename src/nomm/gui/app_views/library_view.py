@@ -2,10 +2,11 @@ import gettext
 import os
 
 from gi.repository import Adw, Gdk, GdkPixbuf, Gtk
-from nomm.core.tools import load_yaml, list_archives
+from nomm.core.tools import list_archives
 from nomm.core.user_config import load_user_config, LibrarySort
 
 _ = gettext.gettext
+
 
 class LibraryView(Gtk.Box):
     def __init__(self, app, matches):
@@ -44,7 +45,10 @@ class LibraryView(Gtk.Box):
         else:
             status_page = Adw.StatusPage(
                 title=_("No games detected"),
-                description=_("We couldn't find any games. This could be due to\n - You not having any supported games installed\n - Your Steam/Heroic installation type not being handled\n\n Feel free to contact me on Discord or Github for more help!"),
+                description=_("We couldn't find any games. This could be due to\n \
+                               - You not having any supported games installed\n \
+                               - Your Steam/Heroic installation type not being handled\n\n\
+                               Feel free to contact me on Discord or Github for more help!"),
                 icon_name="input-gaming-symbolic"
             )
             overlay.set_child(status_page)
@@ -86,7 +90,7 @@ class LibraryView(Gtk.Box):
     def create_game_card(self, game):
         card = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
         card._game_data = game
-        
+
         card.set_size_request(200, 300)
         card.set_halign(Gtk.Align.START)
         card.set_hexpand(False)
@@ -94,7 +98,7 @@ class LibraryView(Gtk.Box):
         card.set_overflow(Gtk.Overflow.HIDDEN)
         card.set_tooltip_text(f"{game['name']}\n{game['path']}")
         card.set_cursor_from_name("pointer")
-        
+
         gesture = Gtk.GestureClick()
         gesture.connect("released", lambda g, n, x, y: self.app.on_game_clicked(game))
         card.add_controller(gesture)
@@ -104,7 +108,7 @@ class LibraryView(Gtk.Box):
         img_overlay = Gtk.Overlay()
         img_data = game.get('img')
         poster_path = img_data.get('poster') if isinstance(img_data, dict) else None
-        
+
         if poster_path and os.path.exists(poster_path):
             try:
                 pb = GdkPixbuf.Pixbuf.new_from_file_at_scale(poster_path, 200, 300, False)
@@ -112,9 +116,9 @@ class LibraryView(Gtk.Box):
                 poster.set_can_shrink(True)
             except Exception:
                 pass
-            
+
         img_overlay.set_child(poster)
-        
+
         # Platform badge
         platform = game.get('platform')
         if platform == "steam":
@@ -134,7 +138,7 @@ class LibraryView(Gtk.Box):
         platform_badge.set_margin_end(10)
         platform_badge.set_margin_bottom(10)
         platform_badge.add_css_class("platform-badge")
-        
+
         img_overlay.add_overlay(platform_badge)
 
         # Mod total badge
@@ -144,13 +148,13 @@ class LibraryView(Gtk.Box):
         mod_total_badge.set_margin_start(10)
         mod_total_badge.set_margin_bottom(10)
         mod_total_badge.add_css_class("platform-badge")
-            
+
         count = game.get('mod_count', 0)
-        
+
         mod_total_badge_label = Gtk.Label(label=str(count))
         mod_total_badge_label.add_css_class("badge-accent")
         mod_total_badge.append(mod_total_badge_label)
-        
+
         img_overlay.add_overlay(mod_total_badge)
 
         card.append(img_overlay)
