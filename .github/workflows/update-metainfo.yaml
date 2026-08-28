@@ -22,7 +22,7 @@ jobs:
           pacman -Sy --noconfirm git appstream
 
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
@@ -34,7 +34,7 @@ jobs:
           appstreamcli news-to-metainfo --limit=6 ./release_bites.yaml ./build/flatpak/moe.nomm.Nomm.metainfo.xml
 
       - name: Commit and Push changes
-        uses: stefanzweifel/git-auto-commit-action@v5
+        uses: stefanzweifel/git-auto-commit-action@v7
         with:
           commit_message: "Chore: update metainfo.xml release notes"
           file_pattern: "build/flatpak/moe.nomm.Nomm.metainfo.xml"
@@ -54,7 +54,7 @@ jobs:
           updpkgsums
         
       - name: Commit and Push changes for PKGBUILD
-        uses: stefanzweifel/git-auto-commit-action@v5
+        uses: stefanzweifel/git-auto-commit-action@v7
         with:
           commit_message: "Chore: bumped PKGBUILD version"
           file_pattern: "build/aur/PKGBUILD build/aur/.SRCINFO build/aur-nightly/PKGBUILD build/aur-nightly/.SRCINFO"
