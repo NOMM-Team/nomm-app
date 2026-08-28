@@ -17,9 +17,11 @@ jobs:
       contents: write
 
     steps:
-      - name: Install latest appstream
+      - name: Install dependencies & setup non-root user
         run: |
-          pacman -Sy --noconfirm git appstream
+          pacman -Syu --noconfirm git appstream sudo base-devel
+          useradd -m builder
+          echo "builder ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
 
       - name: Checkout repository
         uses: actions/checkout@v7
@@ -33,29 +35,29 @@ jobs:
         run: mkdir -p build/flatpak
 
       - name: Update Metainfo XML
-        run: |
-          appstreamcli news-to-metainfo --limit=6 ./release_bites.yaml ./build/flatpak/moe.nomm.Nomm.metainfo.xml
+        run: appstreamcli news-to-metainfo --limit=6 ./release_bites.yaml ./build/flatpak/moe.nomm.Nomm.metainfo.xml
 
       - name: Commit and Push changes
         uses: stefanzweifel/git-auto-commit-action@v7
         with:
           commit_message: "Chore: update metainfo.xml release notes"
           file_pattern: "build/flatpak/moe.nomm.Nomm.metainfo.xml"
-      
+
       - name: Update PKGBUILD and .SRCINFO for stable release
         run: |
-          cd build/aur
-          makepkg -sif
-          makepkg --printsrcinfo > .SRCINFO
-          updpkgsums
-          
+          su builder -c "
+            cd '$GITHUB_WORKSPACE/build/aur'
+            updpkgsums
+            makepkg --printsrcinfo > .SRCINFO
+          "
+
       - name: Update PKGBUILD and .SRCINFO for git release
         run: |
-          cd build/aur-nightly
-          makepkg -sif
-          makepkg --printsrcinfo > .SRCINFO
-          updpkgsums
-        
+          su builder -c "
+            cd '$GITHUB_WORKSPACE/build/aur-nightly'
+            updpkgsums
+            makepkg --printsrcinfo > .SRCINFO
+          "
       - name: Commit and Push changes for PKGBUILD
         uses: stefanzweifel/git-auto-commit-action@v7
         with:
