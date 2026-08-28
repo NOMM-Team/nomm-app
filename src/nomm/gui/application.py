@@ -5,6 +5,7 @@ import subprocess
 import shutil
 import gi
 import locale
+from importlib import resources
 
 gi.require_version('Gtk', '4.0')
 gi.require_version('Adw', '1')
@@ -15,8 +16,8 @@ from urllib.parse import urlparse
 from gi.repository import Adw, Gdk, Gio, GLib, Gtk
 
 from nomm.core.game_scanner import scan_all_games
-from nomm.core.tools import (load_yaml,
-                        translate_fuse_path, write_yaml, load_nomm_version)
+from nomm.core.tools import (load_yaml, translate_fuse_path,
+                        write_yaml, load_nomm_version, get_data_dir)
 from nomm.core.user_config import (load_user_config, update_user_config,
                               write_user_config)
 from nomm.platforms.switch import list_emulators, get_emulator_logo
@@ -59,16 +60,11 @@ class Nomm(Adw.Application):
         
         base_path: str = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-        self.initialize_custom_icons(base_path)
+        base_path = get_data_dir()
+        self.initialize_custom_icons(os.path.join(base_path, "assets"))
+        self.default_game_config_path = os.path.join(base_path, "default_game_configs")
+        self.apply_styles()
 
-        if os.path.exists(os.path.join(os.path.dirname(base_path), "assets")):
-            self.assets_path = os.path.join(os.path.dirname(base_path), "assets")
-            self.default_game_config_path = os.path.join(os.path.dirname(base_path), "default_game_configs")
-        else:
-            self.assets_path = os.path.join(base_path, "assets")
-            self.default_game_config_path = os.path.join(base_path, "default_game_configs")
-
-        self.initialize_custom_icons(self.assets_path)            
         self.win = None
 
         self.headers = {
@@ -78,26 +74,45 @@ class Nomm(Adw.Application):
         }
 
     def initialize_custom_icons(self, assets_path):
-        xml_path = os.path.join(assets_path, "resources.gresource.xml")
-        gresource_path = "resources.gresource"
+        system_gresource = "/app/share/nomm/resources.gresource"
+        gresource_path = None
 
-        if os.path.exists(xml_path):
-            icons_dir = os.path.join(assets_path, "icons")
-            
-            subprocess.run([
-                "glib-compile-resources",
-                xml_path,
-                f"--sourcedir={icons_dir}",
-                "--target", gresource_path
-            ])
+        if os.path.exists(system_gresource):
+            gresource_path = system_gresource
+        else:
+            xml_path = os.path.join(assets_path, "resources.gresource.xml")
+            if os.path.exists(xml_path):
+                icons_dir = os.path.join(assets_path, "icons")
+                cache_dir = os.path.join(GLib.get_user_cache_dir(), "nomm")
+                os.makedirs(cache_dir, exist_ok=True)
 
-        if os.path.exists(gresource_path):
+                target_path = os.path.join(cache_dir, "resources.gresource")
+
+                try:
+                    subprocess.run(
+                        [
+                            "glib-compile-resources",
+                            xml_path,
+                            f"--sourcedir={icons_dir}",
+                            "--target",
+                            target_path,
+                        ],
+                        check=True,
+                    )
+                    gresource_path = target_path
+                except (subprocess.SubprocessError, FileNotFoundError) as e:
+                    print(f"[!] Error compiling resources: {e}")
+                    return
+
+        if gresource_path and os.path.exists(gresource_path):
             resource = Gio.Resource.load(gresource_path)
             Gio.resources_register(resource)
-            
-            icon_theme = Gtk.IconTheme.get_for_display(Gdk.Display.get_default())
-            icon_theme.add_resource_path("/com/nomm/Nomm/icons")
-            print("[+] Custom icon theme registered successfully!")
+
+            display = Gdk.Display.get_default()
+            if display:
+                icon_theme = Gtk.IconTheme.get_for_display(display)
+                icon_theme.add_resource_path("/com/nomm/Nomm/icons")
+                print(f"[+] Custom icon theme registered successfully from {gresource_path}")
 
     # Choose either to launch the popup_download, the app or both
     def do_open(self, files, n_files, hint):
@@ -192,25 +207,26 @@ class Nomm(Adw.Application):
                 except Exception as e:
                     print(f"Error copying file {item}: {e}")
     
-    def styles_application(self):
+    def apply_styles(self):
         css_provider = Gtk.CssProvider()
-        base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        css_path = os.path.join(base_dir, "styles", "layout.css")
-            
+
         try:
-            css_provider.load_from_path(css_path)
-            Gtk.StyleContext.add_provider_for_display(
-                Gdk.Display.get_default(),
-                css_provider,
-                Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION
-            )
-            print(f"Successfully loaded styles from {css_path}")
+            css_file = resources.files("nomm.styles").joinpath("layout.css")
+
+            css_provider.load_from_path(str(css_file))
+
+            display = Gdk.Display.get_default()
+            if display:
+                Gtk.StyleContext.add_provider_for_display(
+                    display, css_provider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION
+                )
+                print(f"[+] Successfully loaded styles from {css_file}")
         except Exception as e:
-            print(f"Error loading CSS: {e}")
+            print(f"[!] Error loading CSS: {e}")
             
     def do_activate(self):
         
-        self.styles_application()
+        
         if self.win:
             self.win.present()
             return

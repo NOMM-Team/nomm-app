@@ -51,8 +51,6 @@ modules:
     buildsystem: simple
     build-commands:
       - pip3 install --no-build-isolation --no-deps --prefix=/app .
-      # Install entry point from the src folder to /app/bin
-      # - install -D src/main.py /app/bin/nomm
       # Install desktop file
       - install -D build/flatpak/moe.nomm.Nomm.desktop /app/share/applications/moe.nomm.Nomm.desktop
       # Install metainfo
@@ -60,11 +58,12 @@ modules:
       # Install logo
       - install -D assets/icons/nomm-logo.svg /app/share/icons/hicolor/scalable/apps/moe.nomm.Nomm.svg
       # Other files (shenanigans)
+      - install -d /app/share/nomm
       - cp src/nomm/*.yaml /app/bin/
       - cp release_bites.yaml /app/bin/
       # Copy non-code folders
-      - cp -r assets /app/bin/assets
-      - cp -r default_game_configs /app/bin/default_game_configs
+      - cp -r assets /app/share/nomm/assets
+      - cp -r default_game_configs /app/share/nomm/default_game_configs
       # Localisation
       - |
         find locale -name "*.po" | while read -r po; do

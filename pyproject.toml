@@ -26,6 +26,13 @@ nomm = 'nomm.main:main'
 [tool.setuptools.packages.find]
 where = ['src']
 
+[tool.setuptools.package-data]
+nomm = [
+    "*.yaml",
+    "../release_bites.yaml",
+    "styles/*.css"
+]
+
 [tool.setuptools_scm]
 version_scheme = 'no-guess-dev'
 local_scheme = 'no-local-version'
