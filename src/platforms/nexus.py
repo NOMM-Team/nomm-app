@@ -271,6 +271,7 @@ def _download_nexus_collection(nxm_link: str, headers: dict, final_download_dir:
                 future = executor.submit(downloader.download_mod, direct_url, str(final_download_dir))
                 
                 def on_done(f):
+                    nonlocal success_count
                     success = f.result()
                     if success:
                         success_count += 1

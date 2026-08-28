@@ -1,0 +1,7 @@
+PyGObject==3.54.0
+gi==0.8.1
+PyYAML==6.0.3
+rarfile==4.5
+Requests==2.34.2
+vdf==3.4
+pycairo==1.29.1
