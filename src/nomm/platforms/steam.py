@@ -4,8 +4,8 @@ import vdf
 
 from typing import List, Dict, Optional, Any
 
-from core.user_config import load_user_config, parse_mod_paths
-from core.tools import launch_option_merger, slugify, write_yaml
+from nomm.core.user_config import load_user_config, parse_mod_paths
+from nomm.core.tools import launch_option_merger, slugify, write_yaml
 
 import gettext
 _ = gettext.gettext

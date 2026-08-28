@@ -4,16 +4,16 @@ import gettext
 
 from gi.repository import Adw, Gdk, GdkPixbuf, GObject, Gtk
 
-from core.fomod_manager import (check_for_dependencies,
+from nomm.core.fomod_manager import (check_for_dependencies,
                                 check_for_plugin_dependencies,
                                 generate_source_from_flags,
                                 get_fomod_group_count, get_fomod_group_info,
                                 get_fomod_group_options, get_fomod_step_count,
                                 get_plugin_image_path, get_plugin_type,
                                 have_plugins_images, is_step_visible)
-from core.tools import retrieve_casesensitive_paths
-from gui.text_window import TextWindow
-from core.tools import retrieve_casesensitive_paths
+from nomm.core.tools import retrieve_casesensitive_paths
+from nomm.gui.text_window import TextWindow
+from nomm.core.tools import retrieve_casesensitive_paths
 _ = gettext.gettext
 
 class FomodSelectionDialog(Adw.Window):

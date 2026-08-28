@@ -1,0 +1,35 @@
+[build-system]
+requires = ['setuptools>=82.0.1', 'setuptools-scm>=10.0.5']
+build-backend = 'setuptools.build_meta'
+
+[project]
+name = 'nomm'
+dynamic = ["version"]
+
+dependencies = [
+    "PyGObject>=3.54.0",
+    "PyYAML>=6.0.3",
+    "rarfile>=4.5",
+    "Requests>=2.34.2",
+    "vdf>=3.4"
+]
+
+[project.optional-dependencies]
+test = [
+  "flake8",
+  "pytest"
+]
+
+[project.scripts]
+nomm = 'nomm.main:main'
+
+[tool.setuptools.packages.find]
+where = ['src']
+
+[tool.setuptools_scm]
+version_scheme = 'no-guess-dev'
+local_scheme = 'no-local-version'
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]

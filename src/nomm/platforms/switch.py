@@ -3,8 +3,8 @@ import yaml
 from enum import Enum
 
 from gi.repository import GLib
-from core.tools import load_cached_assets, download_image
-from core.user_config import load_user_config
+from nomm.core.tools import load_cached_assets, download_image
+from nomm.core.user_config import load_user_config
 
 # Ryubing paths
 RYUBING_GAME_PATH = os.path.expanduser("~/.var/app/io.github.ryubing.Ryujinx/config/Ryujinx/games")

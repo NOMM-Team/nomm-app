@@ -7,16 +7,16 @@ from pathlib import Path
 
 from gi.repository import Adw, Gdk, GLib, GObject, Gtk, Gio, GdkPixbuf, Pango
 
-from core.mod_manager import (apply_deployment_map_changes, build_deployment_map,
+from nomm.core.mod_manager import (apply_deployment_map_changes, build_deployment_map,
                               change_mod_index, check_for_conflicts,
                               check_for_deployment_map_change,
                               load_staging_metadata, read_index,
                               toggle_mod_state)
-from platforms.nexus import get_nexus_changelog, endorse_nexus_mod
-from platforms.nexus import get_mod_info as get_nexus_mod_info
-from platforms.gamebanana import get_mod_info as get_gamebanana_mod_info
-from core.tools import timestamp_converter, write_yaml, create_icon_button
-from gui.text_window import TextWindow
+from nomm.platforms.nexus import get_nexus_changelog, endorse_nexus_mod
+from nomm.platforms.nexus import get_mod_info as get_nexus_mod_info
+from nomm.platforms.gamebanana import get_mod_info as get_gamebanana_mod_info
+from nomm.core.tools import timestamp_converter, write_yaml, create_icon_button
+from nomm.gui.text_window import TextWindow
 from typing import Optional, Callable
 
 _ = gettext.gettext

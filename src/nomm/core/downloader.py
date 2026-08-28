@@ -4,7 +4,7 @@ import threading
 import requests
 from gi.repository import GLib, GObject
 
-from gui.notifications import send_download_notification
+from nomm.gui.notifications import send_download_notification
 
 class Downloader(GObject.Object):
     __gsignals__ = {

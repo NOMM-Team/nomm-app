@@ -7,10 +7,10 @@ import requests
 from gi.repository import Adw, Gio, GLib, Gtk
 from enum import Enum
 
-from core.user_config import update_user_config, LibrarySort
-from core.tools import load_yaml, translate_fuse_path, get_nomm_tags, create_icon_button
-from platforms.switch import list_emulators
-from gui.application import APP_VERSION
+from nomm.core.user_config import update_user_config, LibrarySort
+from nomm.core.tools import load_yaml, translate_fuse_path, get_nomm_tags, create_icon_button
+from nomm.platforms.switch import list_emulators
+from nomm.gui.application import APP_VERSION
 
 _ = gettext.gettext
 

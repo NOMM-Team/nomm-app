@@ -2,8 +2,8 @@ import os
 import json
 
 from gi.repository import GLib
-from core.user_config import parse_mod_paths
-from core.tools import slugify, write_yaml, load_cached_assets, download_image
+from nomm.core.user_config import parse_mod_paths
+from nomm.core.tools import slugify, write_yaml, load_cached_assets, download_image
 
 def get_epic_library() -> dict | None:
     epic_flatpak = os.path.expanduser("~/.var/app/com.heroicgameslauncher.hgl/config/heroic/legendaryConfig/legendary/installed.json")

@@ -2,7 +2,7 @@ import os
 import gettext
 
 from gi.repository import GLib
-from core.tools import load_yaml, write_yaml
+from nomm.core.tools import load_yaml, write_yaml
 from typing import List, Dict, Any
 from enum import Enum
 

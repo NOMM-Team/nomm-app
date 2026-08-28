@@ -7,7 +7,7 @@ import gettext
 from pathlib import Path
 from urllib.parse import unquote
 
-from core.fomod_manager import parse_fomod_xml
+from nomm.core.fomod_manager import parse_fomod_xml
 import rarfile
 
 _ = gettext.gettext

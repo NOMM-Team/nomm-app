@@ -2,8 +2,8 @@ import gettext
 import os
 
 from gi.repository import Adw, Gdk, GdkPixbuf, Gtk
-from core.tools import load_yaml, list_archives
-from core.user_config import load_user_config, LibrarySort
+from nomm.core.tools import load_yaml, list_archives
+from nomm.core.user_config import load_user_config, LibrarySort
 
 _ = gettext.gettext
 
