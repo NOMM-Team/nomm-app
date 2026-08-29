@@ -203,8 +203,6 @@ def _download_nexus_mod(nxm_link: str, headers: dict, final_download_dir: Path, 
     except AttributeError:
         file_name = file_url.split('/')[-1].split('?')[0] or "download"
 
-    full_file_path = final_download_dir / file_name
-
     print(f"Downloading {file_name} to {game_folder_name}...")
     user_meta = load_yaml(user_config_dir)
     if user_meta.get('disable_download_window'):

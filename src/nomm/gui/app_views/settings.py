@@ -278,7 +278,8 @@ class SettingsWindow(Adw.Window):
                     timeout=10
                 )
                 is_valid = response.status_code == 200
-            except:
+            except Exception as e:
+                print(f"[!] Error while trying to check API key status: {e}")
                 is_valid = False
 
             def update_ui():

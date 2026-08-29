@@ -477,7 +477,8 @@ def finalise_mod_metadata(filename: str, mod_files: list, deployment_target: dic
         current_staging_metadata["mods"][mod_name]["install_timestamp"] = datetime.now()
         current_staging_metadata["mods"][mod_name]["deployment_path"] = deployment_target["path"]
         if "folder_name" not in current_staging_metadata["mods"][mod_name]:
-            current_staging_metadata["mods"][mod_name]["folder_name"] = current_staging_metadata["mods"][mod_name].get("display_name", current_staging_metadata["mods"][mod_name].get("name"))
+            current_staging_metadata["mods"][mod_name]["folder_name"] = \
+                current_staging_metadata["mods"][mod_name].get("display_name", current_staging_metadata["mods"][mod_name].get("name"))
 
         if mod_name not in current_staging_metadata["index"]:
             current_staging_metadata["index"].append(mod_name)

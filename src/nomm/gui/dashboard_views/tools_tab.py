@@ -70,7 +70,6 @@ class ToolsTab(Gtk.Box):
                 util_dir = Path(self.dashboard.downloads_path) / "utilities"
                 staging_dir = Path(self.dashboard.staging_path) / "utilities" / util["name"]
                 local_zip_path = util_dir / filename
-                target_dir = Path(self.dashboard.game_path) / util.get("utility_path", "")
 
                 stack = Gtk.Stack(transition_type=Gtk.StackTransitionType.CROSSFADE)
 

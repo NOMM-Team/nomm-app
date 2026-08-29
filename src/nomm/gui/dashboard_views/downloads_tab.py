@@ -120,12 +120,8 @@ class DownloadsTab(Gtk.Box):
                 if file_name in metadata.get("mods", {}):
                     # Order of preference: official display_name > deprecated name (from before metadata rework) > file name
                     display_name = metadata["mods"][file_name].get("display_name", file_name)
-                    folder_name = metadata["mods"][file_name].get("folder_name", file_name)
                     version_text = metadata["mods"][file_name].get("version", "—")
                     changelog = metadata["mods"][file_name].get("changelog", "")
-                else:
-                    # Case when there is no metadata in the downloads metadata file
-                    folder_name = file_name
 
                 row = Adw.ActionRow(title=display_name)
                 row.is_installed = installed

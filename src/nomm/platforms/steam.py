@@ -56,7 +56,8 @@ def add_launch_options(steam_base: str, launch_options, steam_id: str):
     if "LaunchOptions" not in game_data:
         localconfig["UserLocalConfigStore"]["Software"]["Valve"]["Steam"]["apps"][str(steam_id)]["LaunchOptions"] = launch_options
     else:
-        localconfig["UserLocalConfigStore"]["Software"]["Valve"]["Steam"]["apps"][str(steam_id)]["LaunchOptions"] = launch_option_merger(game_data["LaunchOptions"], launch_options)
+        localconfig["UserLocalConfigStore"]["Software"]["Valve"]["Steam"]["apps"][str(steam_id)]["LaunchOptions"] = \
+            launch_option_merger(game_data["LaunchOptions"], launch_options)
     with open(localconfig_path, 'w') as vdf_file:
         vdf.dump(localconfig, vdf_file)
 

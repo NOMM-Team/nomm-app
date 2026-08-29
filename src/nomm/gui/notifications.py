@@ -79,7 +79,7 @@ def download_popup(filename, url, dest_folder, downloader):
 
         win.set_child(box)
 
-        lbl_name = Gtk.Label(label=f"Downloading File: <b>{filename}</b>", use_markup=True, xalign=0)
+        lbl_name = Gtk.Label(label=f"Downloading File: <b>{filename}</b> to {dest_path}", use_markup=True, xalign=0)
         progress_bar = Gtk.ProgressBar(show_text=True)
         download_maps[filename] = progress_bar
 

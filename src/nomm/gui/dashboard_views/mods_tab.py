@@ -759,13 +759,10 @@ class ModsTab(Gtk.Box):
                     continue
 
                 mod_metadata = staging_metadata["mods"][mod]
-                try:
-                    folder_name = mod_metadata["folder_name"]
-                except KeyError:
+                if "folder_name" not in mod_metadata:
                     print(f"Staging mod metadata malformed: missing folder_name for mod {mod}")
                     continue
 
-                changelog = mod_metadata.get("changelog", "")
                 mod_link = mod_metadata.get("mod_link", "")
                 mod_files = mod_metadata.get("mod_files", [])
 
