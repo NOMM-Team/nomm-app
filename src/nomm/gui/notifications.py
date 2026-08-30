@@ -2,21 +2,22 @@ import os
 import random
 import threading
 import gettext
-
 import gi
 import yaml
 
 gi.require_version('Notify', '0.7')
 gi.require_version('Gtk', '4.0')
 gi.require_version('GdkPixbuf', '2.0')
-from gi.repository import GdkPixbuf, GLib, Gtk, Notify
+
+from gi.repository import GdkPixbuf, GLib, Gtk, Notify  # noqa: E402
 
 _ = gettext.gettext
+
 
 # This function handle notifications when downloading mods from Nexusmods
 def send_download_notification(status, file_name="", game_name=None, icon_path=None):
     Notify.init("NOMM")
-    
+
     if status == "success":
         title = _("Download Successful")
         full_body = _(f"File {file_name} successfully downloaded for {game_name}")
@@ -47,6 +48,7 @@ def send_download_notification(status, file_name="", game_name=None, icon_path=N
     except Exception as e:
         print(f"libnotify failed: {e}")
 
+
 # Check import before uncommenting the method
 def download_popup(filename, url, dest_folder, downloader):
 
@@ -59,7 +61,7 @@ def download_popup(filename, url, dest_folder, downloader):
 
     # State tracking
     status = {"success": False, "finished": False}
-    
+
     download_maps = {}
 
     def create_ui():
@@ -67,29 +69,29 @@ def download_popup(filename, url, dest_folder, downloader):
         win.set_default_size(400, 150)
 
         box = Gtk.Box(
-            orientation=Gtk.Orientation.VERTICAL, 
-            spacing=12, 
-            margin_top=20, 
-            margin_bottom=20, 
-            margin_start=20, 
+            orientation=Gtk.Orientation.VERTICAL,
+            spacing=12,
+            margin_top=20,
+            margin_bottom=20,
+            margin_start=20,
             margin_end=20
         )
 
         win.set_child(box)
 
-        lbl_name = Gtk.Label(label=f"Downloading File: <b>{filename}</b>", use_markup=True, xalign=0)
+        lbl_name = Gtk.Label(label=f"Downloading File: <b>{filename}</b> to {dest_path}", use_markup=True, xalign=0)
         progress_bar = Gtk.ProgressBar(show_text=True)
         download_maps[filename] = progress_bar
-        
+
         stack = Gtk.Stack()
         stack.set_transition_type(Gtk.StackTransitionType.SLIDE_LEFT)
-        stack.set_transition_duration(500) 
+        stack.set_transition_duration(500)
         stack.set_margin_top(10)
 
         # Labels for the animation swap
         tip_label_a = Gtk.Label(label=("Downloading mod"), wrap=True, use_markup=True)
         tip_label_b = Gtk.Label(label="", wrap=True, use_markup=True)
-        
+
         for lbl in [tip_label_a, tip_label_b]:
             lbl.add_css_class("caption")
             lbl.set_justify(Gtk.Justification.CENTER)
@@ -104,19 +106,19 @@ def download_popup(filename, url, dest_folder, downloader):
         def rotate_tips():
             if status["finished"]:
                 return False
-            
+
             current = stack.get_visible_child_name()
             next_name = "b" if current == "a" else "a"
             next_label = tip_label_b if next_name == "b" else tip_label_a
-            
+
             next_label.set_label(f"<i>{random.choice(SHENANIGANS)}</i>")
             stack.set_visible_child_name(next_name)
             return True
 
         GLib.timeout_add(6000, rotate_tips)
-        
+
         win.present()
-        
+
         def on_download_progress(downloader_inst, download_data):
             file = download_data['filename']
             if file in download_maps:
@@ -142,5 +144,5 @@ def download_popup(filename, url, dest_folder, downloader):
 
         threading.Thread(target=downloader.download_mod, args=(url, dest_folder), daemon=True).start()
         return False
-    
+
     GLib.idle_add(create_ui)

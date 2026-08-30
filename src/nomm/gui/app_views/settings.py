@@ -5,7 +5,6 @@ import webbrowser
 
 import requests
 from gi.repository import Adw, Gio, GLib, Gtk
-from enum import Enum
 
 from nomm.core.user_config import update_user_config, LibrarySort
 from nomm.core.tools import load_yaml, translate_fuse_path, get_nomm_tags, create_icon_button
@@ -13,6 +12,7 @@ from nomm.platforms.switch import list_emulators
 from nomm.gui.application import APP_VERSION
 
 _ = gettext.gettext
+
 
 class SettingsWindow(Adw.Window):
     def __init__(self, app, parent_window, **kwargs):
@@ -41,14 +41,13 @@ class SettingsWindow(Adw.Window):
         )
         title_label.add_css_class("title-1")
 
-
         # Version Button
         version_btn = Gtk.Button()
         version_btn.set_cursor_from_name("pointer")
         button_content = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
         button_content.set_halign(Gtk.Align.CENTER)
         version_btn_label = Gtk.Label(label=_(f"v{APP_VERSION}"))
-        version_btn.set_tooltip_text(_(f"Open changelog on Github"))
+        version_btn.set_tooltip_text(_("Open changelog on Github"))
         button_content.append(version_btn_label)
         version_btn.set_child(button_content)
         version_btn.add_css_class("badge-action-row")
@@ -81,21 +80,19 @@ class SettingsWindow(Adw.Window):
             version_upgrade_button.set_cursor_from_name("pointer")
             title_box.append(version_upgrade_button)
 
-
         content.append(title_box)
         content.append(Gtk.Separator(margin_top=4))
 
         # Everything else is in a scrollbox!
         settings_scrollwindow = Gtk.ScrolledWindow(vexpand=True)
         settings_scrollbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=20,
-                             margin_top=12, margin_bottom=12,
-                             margin_start=12, margin_end=12)
+                                     margin_top=12, margin_bottom=12,
+                                     margin_start=12, margin_end=12)
         settings_scrollwindow.set_child(settings_scrollbox)
 
         # --- STORAGE SECTION ---
         storage_group = Adw.PreferencesGroup(title=_("NOMM Paths"))
         settings_scrollbox.append(storage_group)
-
 
         # Downloads Path Row
         self.path_row = Adw.ActionRow(title=_("Mod Downloads Path"))
@@ -107,7 +104,7 @@ class SettingsWindow(Adw.Window):
         folder_btn = create_icon_button(
             icon_name="mat-folder-managed-symbolic",
             tooltip=_("Change your downloads folder location. This will NOT move all your current files to the new directory."),
-            on_click= lambda b: self.pick_folder(self.path_row, "download_path"),
+            on_click=lambda b: self.pick_folder(self.path_row, "download_path"),
         )
         self.path_row.add_suffix(folder_btn)
         storage_group.add(self.path_row)
@@ -122,7 +119,7 @@ class SettingsWindow(Adw.Window):
         staging_btn = create_icon_button(
             icon_name="mat-folder-managed-symbolic",
             tooltip=_("Change your staging folder location. This will NOT move all your current files to the new directory. "),
-            on_click= lambda b: self.pick_folder(self.staging_row, "staging_path"),
+            on_click=lambda b: self.pick_folder(self.staging_row, "staging_path"),
         )
         self.staging_row.add_suffix(staging_btn)
         storage_group.add(self.staging_row)
@@ -236,7 +233,7 @@ class SettingsWindow(Adw.Window):
         settings_scrollbox.append(community_box)
         content.append(settings_scrollwindow)
 
-        # Close Button        
+        # Close Button
         save_btn = Gtk.Button(label=_("Close"), css_classes=["suggested-action"], margin_top=12)
         save_btn.connect("clicked", lambda b: self.close_settings())
         save_btn.set_cursor_from_name("pointer")
@@ -250,7 +247,7 @@ class SettingsWindow(Adw.Window):
                 folder = dialog.select_folder_finish(result)
                 if folder:
                     print("new folder selected")
-                    folder_path , translated_folder_path = translate_fuse_path(folder)
+                    folder_path, translated_folder_path = translate_fuse_path(folder)
                     update_user_config(config_key, folder_path)
                     update_user_config("translated_"+config_key, translated_folder_path)
                     if translated_folder_path:
@@ -264,7 +261,8 @@ class SettingsWindow(Adw.Window):
 
     def on_validate_clicked(self, btn):
         key = self.api_entry.get_text()
-        if not key: return
+        if not key:
+            return
 
         self.check_btn.set_sensitive(False)
         self.spinner.start()
@@ -280,7 +278,8 @@ class SettingsWindow(Adw.Window):
                     timeout=10
                 )
                 is_valid = response.status_code == 200
-            except:
+            except Exception as e:
+                print(f"[!] Error while trying to check API key status: {e}")
                 is_valid = False
 
             def update_ui():
@@ -316,11 +315,11 @@ class SettingsWindow(Adw.Window):
 
     def create_social_button(self, icon_name, url):
         btn_content = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
-        
+
         img = Gtk.Image.new_from_icon_name(icon_name)
         img.set_pixel_size(48)
         btn_content.append(img)
-        
+
         social_button = Gtk.Button(child=btn_content)
         social_button.add_css_class("flat")
         social_button.set_cursor_from_name("pointer")

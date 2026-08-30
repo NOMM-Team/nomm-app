@@ -10,19 +10,20 @@ from nomm.core.mod_manager import deploy_essential_utility
 
 _ = gettext.gettext
 
+
 class ToolsTab(Gtk.Box):
     def __init__(self, dashboard, downloader):
         super().__init__(orientation=Gtk.Orientation.VERTICAL, spacing=10)
         self.set_margin_start(100)
         self.set_margin_end(100)
         self.set_margin_top(40)
-        
+
         self.dashboard = dashboard
         self.downloader = downloader
         self.download_maps = {}
-        
+
         utilities_cfg = self.dashboard.game_config.get("essential-utilities", {})
-        
+
         if not utilities_cfg or not isinstance(utilities_cfg, dict):
             self.append(Gtk.Label(label=_("No utilities defined."), css_classes=["dim-label"]))
         else:
@@ -32,35 +33,35 @@ class ToolsTab(Gtk.Box):
 
             for util_id, util in utilities_cfg.items():
                 row = Adw.ActionRow(title=util.get("name", util_id))
-                
+
                 file_name = util.get("source").split("/")[-1]
-                
+
                 creator = util.get("creator", "Unknown")
-                link = util.get("creator-link", "#")
-                
+                creator_link = util.get("creator-link", "#")
+
                 creator_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
                 creator_box.set_valign(Gtk.Align.CENTER)
                 creator_box.set_margin_end(12)
-                
+
                 creator_btn = Gtk.Button(label=creator)
                 creator_btn.add_css_class("flat")
-                creator_btn.add_css_class("badge-action-row") 
+                creator_btn.add_css_class("badge-action-row")
                 creator_btn.set_cursor_from_name("pointer")
-                creator_btn.connect("clicked", lambda b, l=link: webbrowser.open(l))
-                
+                creator_btn.connect("clicked", lambda b, link=creator_link: webbrowser.open(link))
+
                 creator_box.append(creator_btn)
                 row.add_prefix(creator_box)
 
                 # Version badge
                 util_version = util.get("version", "—")
-                
+
                 version_badge = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
                 version_badge.set_valign(Gtk.Align.CENTER)
                 version_badge.set_margin_end(15)
-                
+
                 v_label = Gtk.Label(label=str(util_version))
                 v_label.add_css_class("badge-action-row")
-                
+
                 version_badge.append(v_label)
                 row.add_suffix(version_badge)
 
@@ -69,15 +70,14 @@ class ToolsTab(Gtk.Box):
                 util_dir = Path(self.dashboard.downloads_path) / "utilities"
                 staging_dir = Path(self.dashboard.staging_path) / "utilities" / util["name"]
                 local_zip_path = util_dir / filename
-                target_dir = Path(self.dashboard.game_path) / util.get("utility_path", "")
 
                 stack = Gtk.Stack(transition_type=Gtk.StackTransitionType.CROSSFADE)
-                
+
                 # Last progress
                 current_ratio = None
                 if file_name in self.download_maps:
                     current_ratio = self.download_maps[file_name].get_fraction()
-                
+
                 dl_pbar = Gtk.ProgressBar()
                 dl_pbar.set_can_target(False)
                 dl_pbar.add_css_class('dl-tabs-pbar')
@@ -92,10 +92,10 @@ class ToolsTab(Gtk.Box):
                 if current_ratio:
                     dl_pbar.set_fraction(current_ratio)
                 self.download_maps[file_name] = dl_pbar
-                
+
                 # Overlay to display download progress on top of download button
                 overlay = Gtk.Overlay()
-                overlay.set_halign(Gtk.Align.CENTER) 
+                overlay.set_halign(Gtk.Align.CENTER)
                 overlay.set_valign(Gtk.Align.CENTER)
                 overlay.set_child(dl_btn)
                 overlay.add_overlay(dl_pbar)
@@ -104,14 +104,14 @@ class ToolsTab(Gtk.Box):
                 if not staging_dir.exists():
                     inst_btn.add_css_class("suggested-action")
                 inst_btn.connect("clicked", self.on_utility_install_clicked, util)
-                
+
                 stack.add_named(overlay, "download")
                 stack.add_named(inst_btn, "install")
                 stack.set_visible_child_name("install" if local_zip_path.exists() else "download")
-                
+
                 row.add_suffix(stack)
                 list_box.append(row)
-            
+
             scrolled = Gtk.ScrolledWindow(vexpand=True)
             scrolled.set_child(list_box)
             self.append(scrolled)
@@ -129,26 +129,26 @@ class ToolsTab(Gtk.Box):
 
     def on_utility_download_clicked(self, btn, util, stack, pbar, filename):
         source_url = util.get("source")
-        if not source_url: 
+        if not source_url:
             return
 
         btn.set_sensitive(False)
         btn.add_css_class('btn-download-before')
 
         util_dir = os.path.join(self.dashboard.downloads_path, "utilities")
-        
+
         def on_download_progress(downloader_inst, download_data):
             updated_filename = download_data['filename']
             if updated_filename == filename:
                 self.download_maps[filename].set_visible(True)
                 self.download_maps[updated_filename].set_fraction(download_data['progress'])
-        
+
         def on_download_finished(downloader_inst, finished_filename):
             if finished_filename == filename:
                 stack.set_visible_child_name("install")
                 btn.set_sensitive(True)
                 self.download_maps[filename].set_visible(False)
-        
+
         def on_download_error(downloader_inst, e):
             self.dashboard.show_message(_("Download Failed"), str(e.get('error')))
             btn.set_sensitive(True)
@@ -156,23 +156,23 @@ class ToolsTab(Gtk.Box):
         self.downloader.connect('progress-changed', on_download_progress)
         self.downloader.connect('download-complete', on_download_finished)
         self.downloader.connect('download-error', on_download_error)
-            
+
         threading.Thread(target=self.downloader.download_mod, args=(source_url, util_dir), daemon=True).start()
 
     def on_utility_install_clicked(self, btn, util: dict):
         # Base warning message
         msg = _("This process may replace existing game files. Please ensure you have backed up your game directory before proceeding.")
-        
+
         dialog = Adw.MessageDialog(
             transient_for=self.dashboard.app.win,
             heading=_("Confirm Installation")
         )
-        
+
         dialog.set_default_size(500, -1)
 
         # Container for the body content
         content_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)
-        
+
         # Primary warning label
         warning_label = Gtk.Label(label=msg, wrap=True, xalign=0)
         content_box.append(warning_label)
@@ -194,15 +194,17 @@ class ToolsTab(Gtk.Box):
 
             # The code box with copy button
             code_bin = Adw.Bin()
-            code_bin.add_css_class("card") # Gives it the boxed look
+            code_bin.add_css_class("card")  # Gives it the boxed look
 
             code_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
-            code_box.set_margin_start(12); code_box.set_margin_end(6)
-            code_box.set_margin_top(6); code_box.set_margin_bottom(6)
+            code_box.set_margin_start(12)
+            code_box.set_margin_end(6)
+            code_box.set_margin_top(6)
+            code_box.set_margin_bottom(6)
 
             options_label = Gtk.Label(label=launch_options, selectable=True, xalign=0)
             options_label.add_css_class("monospace")
-            
+
             copy_btn = Gtk.Button(icon_name="edit-copy-symbolic")
             copy_btn.set_tooltip_text(_("Copy to Clipboard"))
             copy_btn.add_css_class("flat")
@@ -212,17 +214,17 @@ class ToolsTab(Gtk.Box):
             code_box.set_hexpand(True)
             options_label.set_hexpand(True)
             code_box.append(copy_btn)
-            
+
             code_bin.set_child(code_box)
             content_box.append(code_bin)
 
         # Set the custom box as the extra child of the dialog
         dialog.set_extra_child(content_box)
-        
+
         dialog.add_response("cancel", _("Cancel"))
         dialog.add_response("install", _("Continue"))
         dialog.set_response_appearance("install", Adw.ResponseAppearance.DESTRUCTIVE)
-        
+
         def on_response(d, response_id):
             if response_id == "install":
                 self.execute_utility_install(util)
@@ -233,8 +235,9 @@ class ToolsTab(Gtk.Box):
 
     def execute_utility_install(self, util):
 
-        deploy_essential_utility(util, self.dashboard.downloads_path, self.dashboard.staging_path, self.dashboard.game_path, self.dashboard.app.steam_base, self.dashboard.game_config.get("steam_id"))
-        
+        deploy_essential_utility(util, self.dashboard.downloads_path, self.dashboard.staging_path,
+                                 self.dashboard.game_path, self.dashboard.app.steam_base, self.dashboard.game_config.get("steam_id"))
+
         self.dashboard.show_message(
             _("Success"),
             _("{} has been installed.").format(util.get('name'))

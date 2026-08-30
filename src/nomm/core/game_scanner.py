@@ -1,13 +1,7 @@
 
 import os
-
 import yaml
-
-from gi.repository import GLib
-
 from nomm.core.user_config import update_user_config
-from nomm.core.tools import  write_yaml, load_yaml, slugify
-
 from nomm.platforms import steam, heroic, switch
 
 
@@ -15,13 +9,10 @@ def scan_all_games(game_configs_dir):
     matches = []
     steam_base = steam.get_steam_base_dir()
 
-    user_config_dir = os.path.join(GLib.get_user_data_dir(), 'nomm', 'user_config.yaml')
-    user_config = load_yaml(user_config_dir)
-
     # Pre-load Libraries
-    steam_libraries = steam.get_library_paths(steam_base) # list with paths to Steam libraries
-    epic_library = heroic.get_epic_library() # dict with paths to individual games
-    gog_library = heroic.get_gog_library() # dict with paths to individual games
+    steam_libraries = steam.get_library_paths(steam_base)  # list with paths to Steam libraries
+    epic_library = heroic.get_epic_library()  # dict with paths to individual games
+    gog_library = heroic.get_gog_library()  # dict with paths to individual games
 
     if not os.path.exists(game_configs_dir):
         print(f"Configs directory not found at {game_configs_dir}")
@@ -70,7 +61,7 @@ def scan_all_games(game_configs_dir):
                 matches.append(match)
                 heroic_game_paths.append(match["path"])
                 continue
-    
+
     heroic_libraries = heroic.obtain_heroic_libraries(heroic_game_paths)
     matches += switch.find_matches(game_configs_dir)
     game_libraries = steam_libraries + heroic_libraries

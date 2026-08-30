@@ -8,6 +8,7 @@ from enum import Enum
 
 _ = gettext.gettext
 
+
 class LibrarySort(Enum):
     ALPHABETIC = _("Alphabetical Order")
     NUMBER_OF_MODS = _("Number of Mods")
@@ -26,48 +27,41 @@ class LibrarySort(Enum):
         except ValueError:
             return cls.NUMBER_OF_MODS
 
+
 # changes user setting by changing/writing the value for an associated key string
 def update_user_config(key: str, value: Any) -> None:
-    user_config_path = os.path.join(GLib.get_user_data_dir (), 'nomm', 'user_config.yaml') 
+    user_config_path = os.path.join(GLib.get_user_data_dir(), 'nomm', 'user_config.yaml')
     config = load_yaml(user_config_path)
     config[key] = value
     write_yaml(config, user_config_path)
-    
+
+
 def load_user_config() -> dict:
     """Returns the user's NOMM configuration file data as a dictionary"""
-    user_config_path = os.path.join(GLib.get_user_data_dir (), 'nomm', 'user_config.yaml')
-    try:
-        data = load_yaml(user_config_path)
-    except:
-        print("Error: could not load user config.")
-        return None
-    return data
+    user_config_path = os.path.join(GLib.get_user_data_dir(), 'nomm', 'user_config.yaml')
+    return load_yaml(user_config_path)
+
 
 def write_user_config(data: dict) -> dict:
     """Writes to the user's NOMM configuration file"""
-    try: 
-        user_config_path = os.path.join(GLib.get_user_data_dir (), 'nomm', 'user_config.yaml')
-        write_yaml(data, user_config_path)
-    except:
-        print("Error: could not write to user config.")
-        return False
-    return True
+    user_config_path = os.path.join(GLib.get_user_data_dir(), 'nomm', 'user_config.yaml')
+    return write_yaml(data, user_config_path)
+
 
 def parse_mod_paths(deployment_dicts: list | str, game_path: str, user_data_path: str) -> List[Dict[str, str]]:
 
     # Handle case where there is only one path provided, and it's not a list of dicts
     if not isinstance(deployment_dicts, list):
-        deployment_dicts = [{"name": "default",
-        "path": deployment_dicts}]
-    
+        deployment_dicts = [{"name": "default", "path": deployment_dicts}]
+
     # Parse the paths
     for deployment_dict in deployment_dicts:
         deployment_path = deployment_dict["path"]
-        if "}" not in deployment_path: # NOMM 0.5 Format
+        if "}" not in deployment_path:  # NOMM 0.5 Format
             deployment_path = os.path.join(game_path, deployment_path)
-        else: # NOMM 0.6+ Format
+        else:  # NOMM 0.6+ Format
             deployment_path = deployment_path.replace("{game_path}", game_path)
             deployment_path = deployment_path.replace("{user_data_path}", user_data_path)
         deployment_dict["path"] = deployment_path
-    
+
     return deployment_dicts

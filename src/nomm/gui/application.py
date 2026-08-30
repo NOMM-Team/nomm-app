@@ -6,27 +6,25 @@ import shutil
 import gi
 import locale
 from importlib import resources
-
-gi.require_version('Gtk', '4.0')
-gi.require_version('Adw', '1')
-gi.require_version('Notify', '0.7')
-
 from pathlib import Path
 from urllib.parse import urlparse
-from gi.repository import Adw, Gdk, Gio, GLib, Gtk
 
 from nomm.core.game_scanner import scan_all_games
 from nomm.core.tools import (load_yaml, translate_fuse_path,
-                        write_yaml, load_nomm_version, get_data_dir)
+                             write_yaml, load_nomm_version, get_data_dir)
 from nomm.core.user_config import (load_user_config, update_user_config,
-                              write_user_config)
+                                   write_user_config)
 from nomm.platforms.switch import list_emulators, get_emulator_logo
 from nomm.gui.app_views.library_view import LibraryView
 from nomm.gui.dashboard import GameDashboard
 from nomm.platforms.nexus import handle_nexus_link
 from nomm.platforms.gamebanana import handle_gamebanana_link
-
 from nomm.platforms.steam import get_username_from_steam_id, get_steam_base_dir
+
+gi.require_version('Gtk', '4.0')
+gi.require_version('Adw', '1')
+gi.require_version('Notify', '0.7')
+from gi.repository import Adw, Gdk, Gio, GLib, Gtk  # noqa: E402
 
 APP_NAME = 'moe.nomm.Nomm'
 APP_VERSION = load_nomm_version()
@@ -45,11 +43,12 @@ except AttributeError:
 
 _ = gettext.gettext
 
+
 class Nomm(Adw.Application):
     def __init__(self, **kwargs):
-        
+
         self.downloader = kwargs.pop('downloader', None)
-        
+
         super().__init__(application_id=APP_NAME, flags=Gio.ApplicationFlags.HANDLES_OPEN, **kwargs)
         self.matches: list[dict] = []
         self.steam_base = get_steam_base_dir()
@@ -57,7 +56,7 @@ class Nomm(Adw.Application):
         user_data_dir: str = os.path.join(GLib.get_user_data_dir(), 'nomm')
         self.user_config_path: str = os.path.join(user_data_dir, "user_config.yaml")
         self.game_config_path: str = os.path.join(user_data_dir, "game_configs")
-        
+
         base_path: str = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
         base_path = get_data_dir()
@@ -156,8 +155,8 @@ class Nomm(Adw.Application):
             print(f"NOMM does not handle mod platform {target}")
             return False
 
-    # Release application.py from self.hold so the download stops happening as background task allowing you to 
-    # close the downloader while keeping the download active in the mod manager and disconnect the event once 
+    # Release application.py from self.hold so the download stops happening as background task allowing you to
+    # close the downloader while keeping the download active in the mod manager and disconnect the event once
     # download is done
     def _connect_release_on_finish(self, *_args):
         state = {"released": False}
@@ -173,22 +172,22 @@ class Nomm(Adw.Application):
         handler_ids.append(self.downloader.connect("download-complete", on_finished))
         handler_ids.append(self.downloader.connect("download-error", on_finished))
         handler_ids.append(self.downloader.connect("download-metadata-ready", on_finished))
-    
-    # Cancels downloads when shutting down the app by switching 
+
+    # Cancels downloads when shutting down the app by switching
     # the download thread event with cancel_all empty event
     def do_shutdown(self):
         self.downloader.cancel_all()
         Adw.Application.do_shutdown(self)
-                  
+
     def sync_configs(self):
         """Synchronises game configs from bundled YAMLs to user YAMLs (including subfolders)"""
         print("Synchronising YAML game_configs")
         src, dest = self.default_game_config_path, self.game_config_path
-        
-        if not os.path.exists(src): 
+
+        if not os.path.exists(src):
             return
-            
-        if not os.path.exists(dest): 
+
+        if not os.path.exists(dest):
             os.makedirs(dest)
 
         for item in os.listdir(src):
@@ -200,13 +199,13 @@ class Nomm(Adw.Application):
                     shutil.copytree(src_item, dest_item, dirs_exist_ok=True)
                 except Exception as e:
                     print(f"Error copying folder {item}: {e}")
-    
+
             elif item.lower().endswith((".yaml", ".yml")):
                 try:
                     shutil.copy2(src_item, dest_item)
                 except Exception as e:
                     print(f"Error copying file {item}: {e}")
-    
+
     def apply_styles(self):
         css_provider = Gtk.CssProvider()
 
@@ -223,10 +222,9 @@ class Nomm(Adw.Application):
                 print(f"[+] Successfully loaded styles from {css_file}")
         except Exception as e:
             print(f"[!] Error loading CSS: {e}")
-            
+
     def do_activate(self):
-        
-        
+
         if self.win:
             self.win.present()
             return
@@ -249,13 +247,16 @@ class Nomm(Adw.Application):
 
     def remove_stack_child(self, name):
         child = self.stack.get_child_by_name(name)
-        if child: self.stack.remove(child)
+        if child:
+            self.stack.remove(child)
 
     def show_welcome_screen(self):
         self.remove_stack_child("welcome")
         status_page = Adw.StatusPage(
             title=_("Welcome to the Native Open Mod Manager (NOMM) app!"),
-            description=_("This app is still in early development, so expect some bugs and missing features.\nI hope you can still enjoy what the app currently offers and please don't forget that you can report any bugs or request features on the Github!"),
+            description=_("This app is still in early development, so expect some bugs and missing features.\n\
+                           I hope you can still enjoy what the app currently offers and please don't forget that\
+                           you can report any bugs or request features on the Github!"),
             icon_name="nomm-logo"
         )
         status_page.add_css_class("setup-page")
@@ -265,7 +266,7 @@ class Nomm(Adw.Application):
         btn.set_margin_top(24)
         btn.add_css_class("suggested-action")
         btn.connect("clicked", self.show_downloads_folder_select_screen)
-        
+
         status_page.set_child(btn)
         self.stack.add_named(status_page, "welcome")
         self.stack.set_visible_child_name("welcome")
@@ -275,7 +276,9 @@ class Nomm(Adw.Application):
         self.remove_stack_child("download-select")
         status_page = Adw.StatusPage(
             title=_("Select your mods download folder"),
-            description=_("Please select the folder where mod archives will be downloaded.\nMod downloads will be categorised by game name.\nI recommend you create a nomm directory at the end of your target path"),
+            description=_("Please select the folder where mod archives will be downloaded.\n\
+                           Mod downloads will be categorised by game name.\nI recommend you create\
+                           a nomm directory at the end of your target path"),
             icon_name="downloaded-symbolic"
         )
         status_page.add_css_class("setup-page")
@@ -285,7 +288,7 @@ class Nomm(Adw.Application):
         btn.add_css_class("suggested-action")
         btn.set_margin_top(24)
         btn.connect("clicked", self.on_select_downloads_folder_clicked)
-        
+
         status_page.set_child(btn)
         self.stack.add_named(status_page, "download-select")
         self.stack.set_visible_child_name("download-select")
@@ -310,14 +313,17 @@ class Nomm(Adw.Application):
         status_page.add_css_class("setup-page")
         vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12, halign=Gtk.Align.CENTER)
         warning_label = Gtk.Label(wrap=True, max_width_chars=50, justify=Gtk.Justification.CENTER)
-        warning_label.set_markup(_("<b>Important:</b> If using Flatpaks for your platforms (Steam, Heroic, etc.), ensure they have permission to access this folder (you can do this via command line or Flatseal)."))
+        warning_label.set_markup(_("<b>Important:</b> If using Flatpaks for your platforms (Steam, Heroic, etc.),\
+                                    ensure they have permission to access this folder (you can do this via command line or Flatseal)."))
         warning_label.add_css_class("error")
         btn = Gtk.Button(label=_("Set Mod Staging Path"), margin_top=12, halign=Gtk.Align.CENTER)
         btn.add_css_class("suggested-action")
         btn.connect("clicked", self.on_select_staging_folder_clicked)
-        vbox.append(warning_label); vbox.append(btn)
+        vbox.append(warning_label)
+        vbox.append(btn)
         status_page.set_child(vbox)
-        self.stack.add_named(status_page, "staging-select"); self.stack.set_visible_child_name("staging-select")
+        self.stack.add_named(status_page, "staging-select")
+        self.stack.set_visible_child_name("staging-select")
         GLib.timeout_add(100, lambda: status_page.add_css_class("visible"))
 
     def on_select_staging_folder_clicked(self, btn):
@@ -341,13 +347,15 @@ class Nomm(Adw.Application):
         entry_box.set_margin_top(24)
 
         self.api_entry = Gtk.Entry(placeholder_text=_("Enter API Key..."), width_request=400, visibility=False)
-        
+
         cont_btn = Gtk.Button(label=_("Continue"))
         cont_btn.add_css_class("suggested-action")
         cont_btn.connect("clicked", lambda b: self.store_api_key(self.api_entry.get_text()))
-        entry_box.append(self.api_entry); entry_box.append(cont_btn)
+        entry_box.append(self.api_entry)
+        entry_box.append(cont_btn)
         status_page.set_child(entry_box)
-        self.stack.add_named(status_page, "api_key"); self.stack.set_visible_child_name("api_key")
+        self.stack.add_named(status_page, "api_key")
+        self.stack.set_visible_child_name("api_key")
 
     def store_api_key(self, api_key):
         self.temp_config["nexus_api_key"] = api_key
@@ -360,12 +368,12 @@ class Nomm(Adw.Application):
             self.steam_user_id_handler()
         elif len(emulators) > 1:
             self.show_preferred_emulator_screen(emulators)
-        else: # 0 emulators found
+        else:  # 0 emulators found
             self.steam_user_id_handler()
 
     def show_preferred_emulator_screen(self, emulators):
         self.remove_stack_child("preferred_emu")
-        
+
         status_page = Adw.StatusPage(
             title=_("Select Your Preferred Switch Emulator"),
             description=_("Multiple Switch emulators were detected on your system.\n"
@@ -380,13 +388,12 @@ class Nomm(Adw.Application):
         # Horizontal row to hold the selectable emulator buttons
         cards_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=16, halign=Gtk.Align.CENTER)
 
-        selected_emulator = {"name": emulators[0]} # Store currently highlighted choice
+        selected_emulator = {"name": emulators[0]}  # Store currently highlighted choice
 
         # Group buttons together so selecting one unchecks the others (Radio functionality)
         group_button = None
 
         for emu_name in emulators:
-            logo_path = get_emulator_logo(emu_name)
 
             # Container for each emulator option card
             emu_card = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8, halign=Gtk.Align.CENTER)
@@ -405,12 +412,12 @@ class Nomm(Adw.Application):
             # Toggle Button wrapper to make the card clickable
             btn = Gtk.ToggleButton()
             btn.set_child(emu_card)
-            btn.add_css_class("card") # Gives it a nice Libadwaita rounded card border
+            btn.add_css_class("card")  # Gives it a nice Libadwaita rounded card border
 
             # Radio-button behavior setup
             if group_button is None:
                 group_button = btn
-                btn.set_active(True) # Select the first one by default
+                btn.set_active(True)  # Select the first one by default
             else:
                 btn.set_group(group_button)
 
@@ -427,7 +434,7 @@ class Nomm(Adw.Application):
         # Continue Button
         cont_btn = Gtk.Button(label=_("Continue"), halign=Gtk.Align.CENTER, width_request=160)
         cont_btn.add_css_class("suggested-action")
-        
+
         def on_continue_clicked(b):
             self.temp_config["preferred_switch_emulator"] = selected_emulator["name"]
             self.steam_user_id_handler()
@@ -436,7 +443,7 @@ class Nomm(Adw.Application):
         content_box.append(cont_btn)
 
         status_page.set_child(content_box)
-        
+
         self.stack.add_named(status_page, "preferred_emu")
         self.stack.set_visible_child_name("preferred_emu")
 
@@ -459,7 +466,7 @@ class Nomm(Adw.Application):
         status_page = Adw.StatusPage(
             title=_("Select Your Steam user ID"),
             description=_("Multiple Steam user IDs were detected in your Steam installation.\n"
-            "Please select the one that you want to configure when using NOMM."),
+                          "Please select the one that you want to configure when using NOMM."),
             icon_name="steam-logo"
         )
 
@@ -469,13 +476,11 @@ class Nomm(Adw.Application):
         list_box.set_selection_mode(Gtk.SelectionMode.NONE)
         list_box.set_valign(Gtk.Align.START)
 
-
         options = []
         for steam_user_id in steam_user_ids:
             options.append({
                 "id": steam_user_id,
                 "username": get_username_from_steam_id(steam_user_id, self.steam_base)})
-
 
         for opt in options:
             row = Adw.ActionRow(title=opt["id"], subtitle=opt["username"])
@@ -513,8 +518,10 @@ class Nomm(Adw.Application):
         spinner.start()
         label = Gtk.Label(label=_("NOMM: Searching for games..."))
         label.add_css_class("title-1")
-        box.append(spinner); box.append(label)
-        self.stack.add_named(box, "loading"); self.stack.set_visible_child_name("loading")
+        box.append(spinner)
+        box.append(label)
+        self.stack.add_named(box, "loading")
+        self.stack.set_visible_child_name("loading")
         import threading
         threading.Thread(target=self.run_background_workflow, daemon=True).start()
 
@@ -526,7 +533,7 @@ class Nomm(Adw.Application):
         essential_paths = [user_config["download_path"], user_config["staging_path"]]
         print(f"Checking for access rights to essential paths: {essential_paths}")
         self.locked_essential_paths = [path for path in essential_paths if not os.access(path, os.W_OK)]
-        
+
         # Check which game libraries are locked (No Write Access)
         print(f"Checking for access rights to library paths: {game_libraries}")
         self.locked_libraries = [lib for lib in game_libraries if not os.access(lib, os.W_OK)]
@@ -548,11 +555,11 @@ class Nomm(Adw.Application):
         # Get the default display directly from Gdk
         display = Gdk.Display.get_default()
         clipboard = display.get_clipboard()
-        
+
         # In GTK4, use .set_content() or .set() depending on your version
         # .set(text) is a convenience method added in later GTK4 updates
         clipboard.set(text)
-        
+
         # Visual feedback
         btn.set_icon_name("object-select-symbolic")
         GLib.timeout_add(1000, lambda: btn.set_icon_name("edit-copy-symbolic"))
@@ -562,8 +569,8 @@ class Nomm(Adw.Application):
             icon_name="system-lock-screen-symbolic",
             title=_("Permissions Missing"),
             description=_("NOMM needs some extra permissions to read/write to specific folders.\n"
-                        "This is used so that NOMM can find your games and install &amp; deploy mods properly.\n"
-                        "Please copy the command below and run it in your terminal.")
+                          "This is used so that NOMM can find your games and install &amp; deploy mods properly.\n"
+                          "Please copy the command below and run it in your terminal.")
         )
 
         # Generate the command
@@ -576,27 +583,29 @@ class Nomm(Adw.Application):
 
         # We use a horizontal box to keep the TextView and Copy button together
         cmd_container = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
-        
+
         # TextView setup
         text_view = Gtk.TextView()
         text_view.set_editable(False)
         text_view.set_cursor_visible(False)
-        text_view.set_wrap_mode(Gtk.WrapMode.WORD_CHAR) # Essential for wrapping long paths
+        text_view.set_wrap_mode(Gtk.WrapMode.WORD_CHAR)  # Essential for wrapping long paths
         text_view.set_monospace(True)
-        text_view.add_css_class("card") # Adds a nice background/border in Libadwaita
-        
+        text_view.add_css_class("card")  # Adds a nice background/border in Libadwaita
+
         # Insert the command into the TextView buffer
         buffer = text_view.get_buffer()
         buffer.set_text(full_command)
-        
+
         # Set a minimum size so it looks like a "block"
-        text_view.set_size_request(450, 100) 
+        text_view.set_size_request(450, 100)
         # Add some internal padding
-        text_view.set_left_margin(10); text_view.set_right_margin(10)
-        text_view.set_top_margin(10); text_view.set_bottom_margin(10)
+        text_view.set_left_margin(10)
+        text_view.set_right_margin(10)
+        text_view.set_top_margin(10)
+        text_view.set_bottom_margin(10)
 
         copy_btn = Gtk.Button(icon_name="edit-copy-symbolic", tooltip_text=_("Copy to Clipboard"))
-        copy_btn.set_valign(Gtk.Align.START) # Keep button at the top of the multi-line block
+        copy_btn.set_valign(Gtk.Align.START)  # Keep button at the top of the multi-line block
         copy_btn.add_css_class("suggested-action")
         copy_btn.connect("clicked", self.copy_to_clipboard, full_command)
 
@@ -619,10 +628,10 @@ class Nomm(Adw.Application):
         # Button: Quit (Accented/Blue)
         quit_btn = Gtk.Button(label=_("Quit"))
         quit_btn.add_css_class("pill")
-        quit_btn.add_css_class("suggested-action") # This provides the accent color
+        quit_btn.add_css_class("suggested-action")  # This provides the accent color
         quit_btn.connect("clicked", lambda x: self.quit())
         button_row.append(quit_btn)
-        
+
         # Continue buttons will NOT be displayed if missing an essential path
         if not self.locked_essential_paths:
             # Button: Continue anyway
@@ -631,13 +640,12 @@ class Nomm(Adw.Application):
             continue_btn.connect("clicked", lambda x: self.show_library_ui())
             button_row.append(continue_btn)
 
-            # Button: Continue and ignore 
+            # Button: Continue and ignore
             continue_ignore_btn = Gtk.Button(label=_("Continue & Ignore"))
             continue_ignore_btn.add_css_class("pill")
             continue_ignore_btn.connect("clicked", lambda x: self.ignore_libraries())
             button_row.append(continue_ignore_btn)
-        
-        
+
         action_box.append(button_row)
 
         self.remove_stack_child("permissions")
@@ -660,7 +668,7 @@ class Nomm(Adw.Application):
 
     def show_library_ui(self):
         self.remove_stack_child("library")
-        
+
         # If user has selected launcher skip option, launch game profile directly
         user_config = load_yaml(self.user_config_path)
         if user_config.get('enable_launcher_skip') and user_config.get("last_selected_game"):
@@ -670,14 +678,15 @@ class Nomm(Adw.Application):
                 return
 
         library_view = LibraryView(self, self.matches)
-        
+
         self.stack.add_named(library_view, "library")
         self.stack.set_visible_child_name("library")
 
     def on_game_clicked(self, game_data):
         config = load_yaml(self.user_config_path)
-        if config.get('enable_fullscreen'): self.win.fullscreen()
-        
+        if config.get('enable_fullscreen'):
+            self.win.fullscreen()
+
         if config.get("download_path"):
             os.makedirs(os.path.join(config.get("download_path"), game_data['name']), exist_ok=True)
 
@@ -696,13 +705,14 @@ class Nomm(Adw.Application):
 
     def return_to_library(self):
         self.win.set_title("NOMM")
-        if load_yaml(self.user_config_path).get('enable_fullscreen'): self.win.unfullscreen()
-        
+        if load_yaml(self.user_config_path).get('enable_fullscreen'):
+            self.win.unfullscreen()
+
         # Creates the library_view if it has not been set before
         if not self.stack.get_child_by_name("library"):
             library_view = LibraryView(self, self.matches)
             self.stack.add_named(library_view, "library")
-        
+
         self.stack.set_visible_child_name("library")
 
     def on_settings_clicked(self, button):
@@ -713,6 +723,6 @@ class Nomm(Adw.Application):
     def manual_library_refresh(self):
         """Resets some logic when the user does a manual refresh"""
         # Reset ignored libraries
-        update_user_config("ignored_libraries",[])
+        update_user_config("ignored_libraries", [])
         self.sync_configs()
         self.show_loading_and_scan()
