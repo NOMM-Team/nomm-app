@@ -1,6 +1,7 @@
 import gettext
 import os
 import gi
+from typing import Callable
 from nomm.core.tools import list_archives
 from nomm.core.user_config import load_user_config, LibrarySort
 
@@ -171,22 +172,47 @@ class LibraryView(Gtk.Box):
             margin_top=30,
             margin_end=30,
         )
-        refresh_icon = Gtk.Image.new_from_icon_name("radar-symbolic")
-        refresh_icon.set_pixel_size(42)
-        refresh_btn = Gtk.Button(child=refresh_icon)
-        refresh_btn.set_cursor_from_name("pointer")
-        refresh_btn.set_size_request(74, 74)
-        refresh_btn.add_css_class("refresh-fab")
-        refresh_btn.connect("clicked", lambda b: self.app.manual_library_refresh())
 
-        settings_icon = Gtk.Image.new_from_icon_name("mat-settings-symbolic")
-        settings_icon.set_pixel_size(42)
-        settings_btn = Gtk.Button(child=settings_icon)
-        settings_btn.set_cursor_from_name("pointer")
-        settings_btn.set_size_request(74, 74)
-        settings_btn.add_css_class("refresh-fab")
-        settings_btn.connect("clicked", self.app.on_settings_clicked)
+        def create_library_fab_button(
+            *,
+            icon_name: str,
+            tooltip: str,
+            on_click: Callable,
+        ) -> Gtk.Button:
 
+            icon = Gtk.Image.new_from_icon_name(icon_name)
+            icon.set_pixel_size(42)
+
+            button = Gtk.Button(child=icon)
+            button.add_css_class("refresh-fab")
+            button.set_size_request(74, 74)
+            button.set_tooltip_text(tooltip)
+            button.set_cursor_from_name("pointer")
+
+            if on_click:
+                button.connect("clicked", on_click)
+
+            return button
+
+        build_config_btn = create_library_fab_button(
+            icon_name="add-configuration-symbolic",
+            tooltip=_("Create a custom configuration"),
+            on_click=self.app.manual_library_refresh
+        )
+
+        refresh_btn = create_library_fab_button(
+            icon_name="radar-symbolic",
+            tooltip=_("Update configurations and re-scan game libraries"),
+            on_click=self.app.manual_library_refresh
+        )
+
+        settings_btn = create_library_fab_button(
+            icon_name="mat-settings-symbolic",
+            tooltip=_("Open the settings menu"),
+            on_click=self.app.on_settings_clicked
+        )
+
+        fab_box.append(build_config_btn)
         fab_box.append(refresh_btn)
         fab_box.append(settings_btn)
         overlay.add_overlay(fab_box)

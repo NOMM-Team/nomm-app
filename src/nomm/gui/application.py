@@ -704,7 +704,7 @@ class Nomm(Adw.Application):
         settings_win = SettingsWindow(self, parent_window=self.win)
         settings_win.present()
 
-    def manual_library_refresh(self):
+    def manual_library_refresh(self, button):
         """Resets some logic when the user does a manual refresh"""
         # Reset ignored libraries
         update_user_config("ignored_libraries", [])

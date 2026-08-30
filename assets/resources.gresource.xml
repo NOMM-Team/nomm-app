@@ -36,5 +36,6 @@
     <file>mat-delete-symbolic.svg</file>
     <file>mat-delete-forever-symbolic.svg</file>
     <file>folder-staging-symbolic.svg</file>
+    <file>add-configuration-symbolic.svg</file>
   </gresource>
 </gresources>
