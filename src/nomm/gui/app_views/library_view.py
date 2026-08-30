@@ -1,9 +1,11 @@
 import gettext
 import os
-
-from gi.repository import Adw, Gdk, GdkPixbuf, Gtk
+import gi
 from nomm.core.tools import list_archives
 from nomm.core.user_config import load_user_config, LibrarySort
+
+gi.require_version('Adw', '1')
+from gi.repository import Adw, Gdk, GdkPixbuf, Gtk  # noqa: E402
 
 _ = gettext.gettext
 

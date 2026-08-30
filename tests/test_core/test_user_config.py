@@ -5,7 +5,7 @@ import hashlib
 from os import path
 import os
 from pathlib import Path
-from gi.repository import GLib
+
 from nomm.core.user_config import load_user_config
 from nomm.core.tools import write_yaml
 from nomm.core.user_config import load_yaml
@@ -13,6 +13,7 @@ from nomm.core.user_config import update_user_config
 from nomm.core.downloader import Downloader
 
 gi.require_version('Gtk', '4.0')
+from gi.repository import GLib  # noqa: E402
 
 
 def test_load_yaml():

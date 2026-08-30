@@ -8,7 +8,7 @@ import locale
 from importlib import resources
 from pathlib import Path
 from urllib.parse import urlparse
-from gi.repository import Adw, Gdk, Gio, GLib, Gtk
+
 from nomm.core.game_scanner import scan_all_games
 from nomm.core.tools import (load_yaml, translate_fuse_path,
                              write_yaml, load_nomm_version, get_data_dir)
@@ -24,6 +24,7 @@ from nomm.platforms.steam import get_username_from_steam_id, get_steam_base_dir
 gi.require_version('Gtk', '4.0')
 gi.require_version('Adw', '1')
 gi.require_version('Notify', '0.7')
+from gi.repository import Adw, Gdk, Gio, GLib, Gtk  # noqa: E402
 
 APP_NAME = 'moe.nomm.Nomm'
 APP_VERSION = load_nomm_version()

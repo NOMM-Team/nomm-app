@@ -5,11 +5,11 @@ import gettext
 import gi
 import yaml
 
-from gi.repository import GdkPixbuf, GLib, Gtk, Notify
-
 gi.require_version('Notify', '0.7')
 gi.require_version('Gtk', '4.0')
 gi.require_version('GdkPixbuf', '2.0')
+
+from gi.repository import GdkPixbuf, GLib, Gtk, Notify  # noqa: E402
 
 _ = gettext.gettext
 
