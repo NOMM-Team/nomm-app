@@ -40,9 +40,9 @@ class LibrarySort(Enum):
 
 # changes user setting by changing/writing the value for an associated key string
 def update_user_config(key: str, value: Any) -> None:
-    config = load_yaml(USER_CONFIG_PATH)
+    config = load_user_config()
     config[key] = value
-    write_yaml(config, USER_CONFIG_PATH)
+    write_user_config(config)
 
 
 def load_user_config() -> dict:
