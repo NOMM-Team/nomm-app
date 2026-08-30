@@ -510,7 +510,7 @@ class Nomm(Adw.Application):
         threading.Thread(target=self.run_background_workflow, daemon=True).start()
 
     def run_background_workflow(self):
-        self.matches, game_libraries = scan_all_games()
+        self.matches, self.game_libraries = scan_all_games()
 
         # Check if there are essential paths that are locked (staging & downloads folders)
         user_config = load_user_config()
@@ -519,8 +519,8 @@ class Nomm(Adw.Application):
         self.locked_essential_paths = [path for path in essential_paths if not os.access(path, os.W_OK)]
 
         # Check which game libraries are locked (No Write Access)
-        print(f"Checking for access rights to library paths: {game_libraries}")
-        self.locked_libraries = [lib for lib in game_libraries if not os.access(lib, os.W_OK)]
+        print(f"Checking for access rights to library paths: {self.game_libraries}")
+        self.locked_libraries = [lib for lib in self.game_libraries if not os.access(lib, os.W_OK)]
 
         user_config = load_user_config()
         if "ignored_libraries" in user_config:
@@ -698,6 +698,29 @@ class Nomm(Adw.Application):
             self.stack.add_named(library_view, "library")
 
         self.stack.set_visible_child_name("library")
+
+    def on_configuration_builder_clicked(self, button):
+        from nomm.gui.app_views.configuration_builder import PlatformChoiceDialog, ConfigurationBuilderWindow
+
+        def on_dialog_completed(data):
+            # Launch the main configuration form window with the returned data
+            config_window = ConfigurationBuilderWindow(
+                self.app if hasattr(self, "app") else self,
+                parent_window=self.get_active_window(),
+                initial_data=data,
+            )
+            config_window.present()
+
+        # Get the current active application window to pass as parent
+        parent = (
+            self.get_active_window()
+            if hasattr(self, "get_active_window")
+            else self
+        )
+        dialog = PlatformChoiceDialog(
+            parent_window=parent, app=self, callback=on_dialog_completed
+        )
+        dialog.present()
 
     def on_settings_clicked(self, button):
         from nomm.gui.app_views.settings import SettingsWindow

@@ -127,7 +127,7 @@ class LibraryView(Gtk.Box):
         if platform == "steam":
             platform_badge = Gtk.Image.new_from_icon_name("steam-logo")
         elif platform == "heroic-epic":
-            platform_badge = Gtk.Image.new_from_icon_name("epic-logo-symbolic")
+            platform_badge = Gtk.Image.new_from_icon_name("epic-logo")
         elif platform == "heroic-gog":
             platform_badge = Gtk.Image.new_from_icon_name("gog-logo-symbolic")
         elif platform == "switch":
@@ -197,7 +197,7 @@ class LibraryView(Gtk.Box):
         build_config_btn = create_library_fab_button(
             icon_name="add-configuration-symbolic",
             tooltip=_("Create a custom configuration"),
-            on_click=self.app.manual_library_refresh
+            on_click=self.app.on_configuration_builder_clicked
         )
 
         refresh_btn = create_library_fab_button(

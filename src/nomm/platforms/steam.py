@@ -1,7 +1,6 @@
 import os
-
 import vdf
-
+from pathlib import Path
 from typing import List, Dict, Optional, Any
 
 from nomm.core.user_config import load_user_config, parse_mod_paths
@@ -9,6 +8,8 @@ from nomm.core.tools import launch_option_merger, slugify
 
 import gettext
 _ = gettext.gettext
+
+TOOL_APP_IDS = []
 
 
 def get_steam_base_dir() -> Optional[str]:
@@ -22,6 +23,44 @@ def get_steam_base_dir() -> Optional[str]:
         if os.path.exists(p):
             return p
     return None
+
+
+def get_installed_steam_games(game_libraries):
+
+    steam_libraries = []
+    for game_library in game_libraries:
+        if "steam" in game_library:
+            steam_libraries.append(os.path.dirname(game_library))
+
+    installed_games = []
+
+    for steam_library in steam_libraries:
+        steam_library_path = Path(steam_library)
+        if not steam_library_path.exists():
+            continue
+
+        for manifest_file in steam_library_path.glob("appmanifest_*.acf"):
+            try:
+                with open(manifest_file, "r", encoding="utf-8", errors="ignore") as f:
+                    data = vdf.load(f)
+
+                app_state = data.get("AppState", {})
+                appid = int(app_state.get("appid", 0))
+                name = app_state.get("name")
+
+                # Filter out non-games / runtime tools (e.g., Steamworks Shared)
+                if appid and name and appid not in (228980, 1070560):
+                    installed_games.append(
+                        {
+                            "name": name,
+                            "appid": appid,
+                            "installdir": app_state.get("installdir", ""),
+                        }
+                    )
+            except Exception as e:
+                print(f"Error reading {manifest_file}: {e}")
+    installed_games = sorted(installed_games, key=lambda g: g["name"].lower())
+    return installed_games
 
 
 def get_library_paths(steam_base) -> List[str]:
