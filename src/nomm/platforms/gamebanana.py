@@ -69,7 +69,7 @@ def get_mod_info(headers: dict, mod_id: str, download_dir: Path, current_mod_sta
 
 # Interprets nxm links and launchs notification
 def handle_gamebanana_link(link: str, downloader: Downloader, headers: dict) -> bool:
-
+    # link example: nomm://gb/switch/0100152000022000/708958?url=https://gamebanana.com/mmdl/1795390
     app_dir = os.path.join(GLib.get_user_data_dir(), "nomm")
     user_config_dir = os.path.join(app_dir, "user_config.yaml")
     user_config = load_yaml(user_config_dir)
@@ -174,10 +174,14 @@ def _fetch_and_write_mod_metadata(headers: dict, download_dir: Path, mod_id: str
     mod_metadata["mod_id"] = mod_id
 
     with meta_lock:
-        downloads_metadata = load_yaml(downloads_metadata_path)
+        if os.path.exists(downloads_metadata_path):
+            downloads_metadata = load_yaml(downloads_metadata_path)
+        else:
+            downloads_metadata = {}
 
         if "mods" not in downloads_metadata:
             downloads_metadata["mods"] = {}
+
         downloads_metadata["info"] = {}
         downloads_metadata["info"]["game"] = game_folder_name
         downloads_metadata["mods"][file_name] = mod_metadata
