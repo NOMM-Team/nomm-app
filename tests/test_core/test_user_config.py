@@ -49,7 +49,7 @@ def test_update_user_config():
 
 
 def test_download_file(tmpdir):
-    url = "https://github.com/Allexio/nomm/releases/download/0.5.0/nomm.flatpak"
+    url = "https://github.com/nomm-team/nomm-app/releases/download/0.5.0/nomm.flatpak"
     downloader = Downloader()
     dir = tmpdir.mkdir("downloads")
     thing = downloader.download_mod(url, dir)
@@ -78,36 +78,36 @@ def test_retrieve_casesensitive_filepath(tmpdir):
 
 
 def test_get_archive_type(tmpdir):
-    url = "https://github.com/Allexio/nomm/archive/refs/tags/0.5.0.zip"
+    url = "https://github.com/nomm-team/nomm-app/archive/refs/tags/0.5.0.zip"
     dir = tmpdir.mkdir("downloads")
     downloader = Downloader()
     downloader.download_mod(url, dir)
-    filepath = os.path.abspath(dir.join("nomm-0.5.0.zip"))
+    filepath = os.path.abspath(dir.join("nomm-app-0.5.0.zip"))
 
     assert get_archive_type(filepath) == "zip"
 
 
 def test_extract_archive(tmpdir):
-    url = "https://github.com/Allexio/nomm/archive/refs/tags/0.5.0.zip"
+    url = "https://github.com/nomm-team/nomm-app/archive/refs/tags/0.5.0.zip"
     dir = tmpdir.mkdir("downloads")
     dest = tmpdir.mkdir("target")
     downloader = Downloader()
     downloader.download_mod(url, dir)
-    filepath = os.path.abspath(dir.join("nomm-0.5.0.zip"))
-    target_dir = os.path.abspath(dest.join("nomm-0.5.0"))
+    filepath = os.path.abspath(dir.join("nomm-app-0.5.0.zip"))
+    target_dir = os.path.abspath(dest.join("nomm-app-0.5.0"))
 
     assert extract_archive(filepath, dest)
     assert path.exists(target_dir)
 
 
 def test_get_relative_files(tmpdir):
-    url = "https://github.com/Allexio/nomm/archive/refs/tags/0.5.0.zip"
+    url = "https://github.com/nomm-team/nomm-app/archive/refs/tags/0.5.0.zip"
     dir = tmpdir.mkdir("downloads")
     dest = tmpdir.mkdir("target")
     downloader = Downloader()
     downloader.download_mod(url, dir)
-    filepath = os.path.abspath(dir.join("nomm-0.5.0.zip"))
-    target_dir = os.path.abspath(dest.join("nomm-0.5.0"))
+    filepath = os.path.abspath(dir.join("nomm-app-0.5.0.zip"))
+    target_dir = os.path.abspath(dest.join("nomm-app-0.5.0"))
 
     extract_archive(filepath, dest)
     file_list = get_all_relative_files(dest)
