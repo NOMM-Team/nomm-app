@@ -61,9 +61,8 @@ modules:
       - install -d /app/share/nomm
       - cp src/nomm/*.yaml /app/bin/
       - cp release_bites.yaml /app/bin/
-      # Copy non-code folders
+      # Copy assets
       - cp -r assets /app/share/nomm/assets
-      - cp -r default_game_configs /app/share/nomm/default_game_configs
       # Localisation
       - |
         find locale -name "*.po" | while read -r po; do

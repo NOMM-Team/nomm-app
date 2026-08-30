@@ -11,7 +11,8 @@ dependencies = [
     "PyYAML>=6.0.3",
     "rarfile>=4.5",
     "Requests>=2.34.2",
-    "vdf>=3.4"
+    "vdf>=3.4",
+    "dulwich"
 ]
 
 [project.optional-dependencies]

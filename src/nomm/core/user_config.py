@@ -8,6 +8,16 @@ from enum import Enum
 
 _ = gettext.gettext
 
+if ".local" in GLib.get_user_data_dir():  # local installation i.e. running python
+    DATA_DIR = os.path.join(GLib.get_user_data_dir(), "nomm")
+else:  # a flatpak, no need to add "nomm" parent folder
+    DATA_DIR = os.path.join(GLib.get_user_data_dir())
+
+USER_CONFIG_PATH = os.path.join(DATA_DIR, "user_config.yaml")
+PRESET_GAME_CONFIG_PATH = os.path.join(DATA_DIR, "preset_game_configs")
+CUSTOM_GAME_CONFIG_PATH = os.path.join(DATA_DIR, "custom_game_configs")
+SWITCH_GAME_CONFIG_PATH = os.path.join(DATA_DIR, "preset_game_configs", "emulation", "switch.yaml")
+
 
 class LibrarySort(Enum):
     ALPHABETIC = _("Alphabetical Order")
@@ -30,22 +40,19 @@ class LibrarySort(Enum):
 
 # changes user setting by changing/writing the value for an associated key string
 def update_user_config(key: str, value: Any) -> None:
-    user_config_path = os.path.join(GLib.get_user_data_dir(), 'nomm', 'user_config.yaml')
-    config = load_yaml(user_config_path)
+    config = load_yaml(USER_CONFIG_PATH)
     config[key] = value
-    write_yaml(config, user_config_path)
+    write_yaml(config, USER_CONFIG_PATH)
 
 
 def load_user_config() -> dict:
     """Returns the user's NOMM configuration file data as a dictionary"""
-    user_config_path = os.path.join(GLib.get_user_data_dir(), 'nomm', 'user_config.yaml')
-    return load_yaml(user_config_path)
+    return load_yaml(USER_CONFIG_PATH)
 
 
 def write_user_config(data: dict) -> dict:
     """Writes to the user's NOMM configuration file"""
-    user_config_path = os.path.join(GLib.get_user_data_dir(), 'nomm', 'user_config.yaml')
-    return write_yaml(data, user_config_path)
+    return write_yaml(data, USER_CONFIG_PATH)
 
 
 def parse_mod_paths(deployment_dicts: list | str, game_path: str, user_data_path: str) -> List[Dict[str, str]]:

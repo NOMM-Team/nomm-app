@@ -2,18 +2,16 @@ import gettext
 import os
 import threading
 import subprocess
-import shutil
 import gi
 import locale
 from importlib import resources
-from pathlib import Path
 from urllib.parse import urlparse
+from dulwich import porcelain
 
 from nomm.core.game_scanner import scan_all_games
-from nomm.core.tools import (load_yaml, translate_fuse_path,
-                             write_yaml, load_nomm_version, get_data_dir)
+from nomm.core.tools import translate_fuse_path, load_nomm_version, get_bundled_data_dir
 from nomm.core.user_config import (load_user_config, update_user_config,
-                                   write_user_config)
+                                   write_user_config, PRESET_GAME_CONFIG_PATH)
 from nomm.platforms.switch import list_emulators, get_emulator_logo
 from nomm.gui.app_views.library_view import LibraryView
 from nomm.gui.dashboard import GameDashboard
@@ -53,15 +51,14 @@ class Nomm(Adw.Application):
         self.matches: list[dict] = []
         self.steam_base = get_steam_base_dir()
 
-        user_data_dir: str = os.path.join(GLib.get_user_data_dir(), 'nomm')
-        self.user_config_path: str = os.path.join(user_data_dir, "user_config.yaml")
-        self.game_config_path: str = os.path.join(user_data_dir, "game_configs")
+        user_data_dir: str = GLib.get_user_data_dir()
+        print(f"NOMM data path is: {user_data_dir}")
+        self.update_game_configurations()
 
         base_path: str = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-        base_path = get_data_dir()
+        base_path = get_bundled_data_dir()
         self.initialize_custom_icons(os.path.join(base_path, "assets"))
-        self.default_game_config_path = os.path.join(base_path, "default_game_configs")
         self.apply_styles()
 
         self.win = None
@@ -71,6 +68,21 @@ class Nomm(Adw.Application):
             'Application-Version': APP_VERSION,
             'User-Agent': f'{APP_NAME}/{APP_VERSION} (Linux; Flatpak) Requests/Python'
         }
+
+    def update_game_configurations(self):
+        repo_url = "https://github.com/NOMM-Team/nomm-configurations.git"
+        try:
+            if os.path.exists(os.path.join(PRESET_GAME_CONFIG_PATH, ".git")):
+                # If the repo already exists, pull updates
+                print("[+] Updating default game configurations to latest version...")
+                porcelain.pull(PRESET_GAME_CONFIG_PATH)
+            else:
+                # If it doesn't exist yet, clone it
+                print("[+] Initialising default game configurations...")
+                print(f"[+] Cloning {repo_url} into {PRESET_GAME_CONFIG_PATH}...")
+                porcelain.clone(repo_url, PRESET_GAME_CONFIG_PATH)
+        except Exception as e:
+            print(f"[!] Git operation failed: {e}")
 
     def initialize_custom_icons(self, assets_path):
         system_gresource = "/app/share/nomm/resources.gresource"
@@ -179,33 +191,6 @@ class Nomm(Adw.Application):
         self.downloader.cancel_all()
         Adw.Application.do_shutdown(self)
 
-    def sync_configs(self):
-        """Synchronises game configs from bundled YAMLs to user YAMLs (including subfolders)"""
-        print("Synchronising YAML game_configs")
-        src, dest = self.default_game_config_path, self.game_config_path
-
-        if not os.path.exists(src):
-            return
-
-        if not os.path.exists(dest):
-            os.makedirs(dest)
-
-        for item in os.listdir(src):
-            src_item = Path(src) / item
-            dest_item = Path(dest) / item
-
-            if src_item.is_dir():
-                try:
-                    shutil.copytree(src_item, dest_item, dirs_exist_ok=True)
-                except Exception as e:
-                    print(f"Error copying folder {item}: {e}")
-
-            elif item.lower().endswith((".yaml", ".yml")):
-                try:
-                    shutil.copy2(src_item, dest_item)
-                except Exception as e:
-                    print(f"Error copying file {item}: {e}")
-
     def apply_styles(self):
         css_provider = Gtk.CssProvider()
 
@@ -237,11 +222,10 @@ class Nomm(Adw.Application):
         self.stack.set_transition_type(Gtk.StackTransitionType.CROSSFADE)
         self.win.set_content(self.stack)
 
-        if not os.path.exists(self.user_config_path):
-            self.sync_configs()
-            self.show_welcome_screen()
-        else:
+        if load_user_config():
             self.show_loading_and_scan()
+        else:
+            self.show_welcome_screen()
 
         self.win.present()
 
@@ -506,7 +490,7 @@ class Nomm(Adw.Application):
         self.finalize_setup()
 
     def finalize_setup(self):
-        write_yaml(self.temp_config, self.user_config_path)
+        write_user_config(self.temp_config)
         self.show_loading_and_scan()
 
     # Scan logic
@@ -526,7 +510,7 @@ class Nomm(Adw.Application):
         threading.Thread(target=self.run_background_workflow, daemon=True).start()
 
     def run_background_workflow(self):
-        self.matches, game_libraries = scan_all_games(self.game_config_path)
+        self.matches, game_libraries = scan_all_games()
 
         # Check if there are essential paths that are locked (staging & downloads folders)
         user_config = load_user_config()
@@ -670,7 +654,7 @@ class Nomm(Adw.Application):
         self.remove_stack_child("library")
 
         # If user has selected launcher skip option, launch game profile directly
-        user_config = load_yaml(self.user_config_path)
+        user_config = load_user_config()
         if user_config.get('enable_launcher_skip') and user_config.get("last_selected_game"):
             game_info = next((m for m in self.matches if m["name"] == user_config.get("last_selected_game")), None)
             if game_info:
@@ -683,7 +667,7 @@ class Nomm(Adw.Application):
         self.stack.set_visible_child_name("library")
 
     def on_game_clicked(self, game_data):
-        config = load_yaml(self.user_config_path)
+        config = load_user_config()
         if config.get('enable_fullscreen'):
             self.win.fullscreen()
 
@@ -705,7 +689,7 @@ class Nomm(Adw.Application):
 
     def return_to_library(self):
         self.win.set_title("NOMM")
-        if load_yaml(self.user_config_path).get('enable_fullscreen'):
+        if load_user_config().get('enable_fullscreen'):
             self.win.unfullscreen()
 
         # Creates the library_view if it has not been set before
@@ -724,5 +708,5 @@ class Nomm(Adw.Application):
         """Resets some logic when the user does a manual refresh"""
         # Reset ignored libraries
         update_user_config("ignored_libraries", [])
-        self.sync_configs()
+        self.update_game_configurations()
         self.show_loading_and_scan()

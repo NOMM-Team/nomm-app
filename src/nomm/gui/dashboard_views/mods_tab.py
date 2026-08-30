@@ -70,11 +70,11 @@ class ModsTab(Gtk.Box):
             on_click=self.check_for_updates
         )
 
-        if "wiki_link" in dashboard.game_config:
+        if "wiki_link" in dashboard.game_info:
             wiki_btn = create_icon_button(
                 icon_name="globe-book-symbolic",
                 tooltip=_("Open wiki page"),
-                on_click=lambda x: webbrowser.open(f"https://nomm.moe/docs/game-guides/{dashboard.game_config["wiki_link"]}")
+                on_click=lambda x: webbrowser.open(f"https://nomm.moe/docs/game-guides/{dashboard.game_info["wiki_link"]}")
             )
             wiki_btn.set_hexpand(True)
             action_bar.append(wiki_btn)
@@ -700,7 +700,7 @@ class ModsTab(Gtk.Box):
         picker.show()
 
     def on_endorse_button_clicked(self, button, mod_info: dict, mod_index: str, unendorse: bool):
-        if endorse_nexus_mod(self.dashboard.headers, self.dashboard.game_config["nexus_id"], mod_info["mod_id"], unendorse):
+        if endorse_nexus_mod(self.dashboard.headers, self.dashboard.game_info["nexus_id"], mod_info["mod_id"], unendorse):
             if unendorse:  # we just unendorsed the mod
                 print(f"Successfully unendorsed mod {mod_info.get("alias", mod_info.get("display_name"))}")
                 self.endorse_btn_label.set_label(str(mod_info["endorsements"]))

@@ -1,9 +1,8 @@
 import os
 import json
 
-from gi.repository import GLib
-from nomm.core.user_config import parse_mod_paths
-from nomm.core.tools import slugify, write_yaml, load_cached_assets, download_image
+from nomm.core.user_config import parse_mod_paths, DATA_DIR
+from nomm.core.tools import slugify, load_cached_assets, download_image
 
 
 def get_epic_library() -> dict | None:
@@ -38,13 +37,10 @@ def get_gog_library() -> dict | None:
         print(f"Error loading GOG JSON: {e}")
 
 
-def find_epic_game(yaml_data, yaml_path, game_title, installed_epic):
+def find_epic_game(yaml_data, game_title, installed_epic):
     for app_id, game_info in installed_epic.items():
         if slugify(game_info.get("title", "")) == slugify(game_title):
             game_path = game_info.get("install_path", "")
-            yaml_data["platform"] = "heroic-epic"
-            yaml_data["game_path"] = game_path
-            write_yaml(yaml_data, yaml_path)
 
             # mod path parsing
             # TODO: add support for heroic/EPIC user data path
@@ -57,24 +53,23 @@ def find_epic_game(yaml_data, yaml_path, game_title, installed_epic):
                 "path": game_path,
                 "app_id": app_id,
                 "platform": "heroic-epic",
-                "game_config_path": yaml_path,
                 "mod_paths": mod_paths,
                 "utilities": yaml_data.get("essential-utilities"),
-                "accent_colour": yaml_data.get("accent_colour")
+                "accent_colour": yaml_data.get("accent_colour"),
+                "load_order_path": yaml_data.get("load_order_path"),
+                "wiki_link": yaml_data.get("wiki_link"),
+                "nexus_id": yaml_data.get("nexus_id")
             }
     return None
 
 
-def find_gog_game(yaml_data, yaml_path, game_title, installed_gog):
+def find_gog_game(yaml_data, game_title, installed_gog):
     if not yaml_data.get("gog_id"):
         return None
 
     for game_info in installed_gog.get("installed", []):
         if slugify(game_info.get("appName", "")) == slugify(str(yaml_data["gog_id"])):
             game_path = game_info.get("install_path", "")
-            yaml_data["platform"] = "heroic-gog"
-            yaml_data["game_path"] = game_path
-            write_yaml(yaml_data, yaml_path)
 
             # mod path parsing
             # TODO: add support for heroic/GOG user data path
@@ -87,10 +82,12 @@ def find_gog_game(yaml_data, yaml_path, game_title, installed_gog):
                 "path": game_path,
                 "app_id": yaml_data["gog_id"],
                 "platform": "heroic-gog",
-                "game_config_path": yaml_path,
                 "mod_paths": mod_paths,
                 "utilities": yaml_data.get("essential-utilities"),
-                "accent_colour": yaml_data.get("accent_colour")
+                "accent_colour": yaml_data.get("accent_colour"),
+                "load_order_path": yaml_data.get("load_order_path"),
+                "wiki_link": yaml_data.get("wiki_link"),
+                "nexus_id": yaml_data.get("nexus_id")
             }
     return None
 
@@ -126,7 +123,7 @@ def download_heroic_assets(game_title: str, appName: str, platform: str):
     if not os.path.exists(json_path):
         json_path = os.path.expanduser("~/.config/heroic/store/download-manager.json")  # not flatpak
 
-    cache_base = os.path.join(GLib.get_user_data_dir(), "nomm", "image-cache", f"{platform}", f"{game_title}")
+    cache_base = os.path.join(DATA_DIR, "image-cache", f"{platform}", f"{game_title}")
 
     if not os.path.exists(json_path):
         print(f"Heroic config not found at {json_path}")

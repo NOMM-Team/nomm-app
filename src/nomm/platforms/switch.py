@@ -2,9 +2,8 @@ import os
 import yaml
 from enum import Enum
 
-from gi.repository import GLib
 from nomm.core.tools import load_cached_assets, download_image
-from nomm.core.user_config import load_user_config
+from nomm.core.user_config import load_user_config, SWITCH_GAME_CONFIG_PATH, DATA_DIR
 
 # Ryubing paths
 RYUBING_GAME_PATH = os.path.expanduser("~/.var/app/io.github.ryubing.Ryujinx/config/Ryujinx/games")
@@ -24,10 +23,9 @@ class EmulatorName(Enum):
     CITRON = "Citron"
 
 
-def find_matches(game_configs_dir) -> list:
+def find_matches() -> list:
 
-    switch_config_path = os.path.join(game_configs_dir, "emulation/switch.yaml")
-    if not os.path.exists(switch_config_path) or list_emulators() == []:
+    if not os.path.exists(SWITCH_GAME_CONFIG_PATH) or list_emulators() == []:
         return []
 
     PLATFORM = "switch"
@@ -41,7 +39,7 @@ def find_matches(game_configs_dir) -> list:
         return []
 
     try:
-        with open(switch_config_path, 'r') as f:
+        with open(SWITCH_GAME_CONFIG_PATH, 'r') as f:
             supported_switch_games = yaml.safe_load(f)
     except Exception as e:
         print(f"Was not able to load switch config - is it improperly formatted? {e}")
@@ -68,7 +66,7 @@ def find_matches(game_configs_dir) -> list:
         if game_id in installed_games:
             art = load_cached_assets(game["full_name"], PLATFORM)
             if not art:
-                cache_base = os.path.join(GLib.get_user_data_dir(), "nomm", "image-cache", PLATFORM, f"{game["full_name"]}")
+                cache_base = os.path.join(DATA_DIR, "image-cache", PLATFORM, f"{game["full_name"]}")
                 grid_path = os.path.join(cache_base, "art_grid.jpg")
                 download_image(game["grid_url"], grid_path)
                 hero_path = os.path.join(cache_base, "art_hero.jpg")
@@ -85,7 +83,6 @@ def find_matches(game_configs_dir) -> list:
                     "path": os.path.join(game_path, game_id),
                     "app_id": game_id,
                     "platform": PLATFORM,
-                    "game_config_path": switch_config_path,
                     "mod_paths": mod_paths,
                     "utilities": None,
                     "accent_colour": None
