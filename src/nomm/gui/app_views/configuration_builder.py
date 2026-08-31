@@ -582,7 +582,7 @@ class ConfigurationBuilderWindow(Adw.Window):
         group.add(launch_opts_row)
 
         delete_btn = Gtk.Button(
-            icon_name="user-trash-symbolic",
+            icon_name="mat-delete-symbolic",
             css_classes=["flat", "destructive-action"],
         )
         delete_btn.set_tooltip_text(_("Remove Utility"))
