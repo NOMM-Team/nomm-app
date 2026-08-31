@@ -67,7 +67,7 @@ class PlatformChoiceDialog(Adw.MessageDialog):
         content_box.set_margin_top(12)
         cards_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=16, halign=Gtk.Align.CENTER)
 
-        selected_starter = {"name": "Custom"}  # Store currently highlighted choice
+        selected_starter = {"name": None}
 
         # Group buttons together so selecting one unchecks the others (Radio functionality)
         group_button = None
@@ -101,7 +101,7 @@ class PlatformChoiceDialog(Adw.MessageDialog):
 
         # Dynamic description label positioned above the action button
         desc_label = Gtk.Label(
-            label=options[0]["text"],
+            label="\n",
             wrap=True,
             justify=Gtk.Justification.CENTER,
             max_width_chars=50,
@@ -132,7 +132,6 @@ class PlatformChoiceDialog(Adw.MessageDialog):
             # Radio-button behavior setup
             if group_button is None:
                 group_button = btn
-                btn.set_active(True)
             else:
                 btn.set_group(group_button)
 
@@ -142,6 +141,7 @@ class PlatformChoiceDialog(Adw.MessageDialog):
                     selected_starter["name"] = name
                     selected_starter["icon"] = icon
                     desc_label.set_text(text)
+                    cont_btn.set_sensitive(True)
 
             btn.connect("toggled", on_toggled)
             cards_box.append(btn)
@@ -150,6 +150,7 @@ class PlatformChoiceDialog(Adw.MessageDialog):
 
         cont_btn = Gtk.Button(label=_("Continue"), halign=Gtk.Align.CENTER, width_request=160)
         cont_btn.add_css_class("suggested-action")
+        cont_btn.set_sensitive(False)
 
         def on_continue_clicked(btn):
             if selected_starter["name"] != "Custom":
