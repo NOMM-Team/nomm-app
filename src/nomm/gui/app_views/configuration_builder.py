@@ -83,14 +83,14 @@ class PlatformChoiceDialog(Adw.MessageDialog):
             {
                 "name": "GOG",
                 "icon": "gog-logo-symbolic",
-                "text": "Start building from a GOG game that is already installed on your system.\n"
-                        "Some configuration fields will be pre-filled for your convenience."
+                "text": "Starting from a GOG game is not implemented yet, but will be soon!\n"
+                        "We apologise for the inconvenience."
             },
             {
                 "name": "Epic",
                 "icon": "epic-logo",
-                "text": "Start building from an Epic game that is already installed on your system.\n"
-                        "Some configuration fields will be pre-filled for your convenience."
+                "text": "Starting from an Epic game is not implemented yet, but will be soon!\n"
+                        "We apologise for the inconvenience."
             },
             {
                 "name": "Custom",
@@ -142,6 +142,10 @@ class PlatformChoiceDialog(Adw.MessageDialog):
                     selected_starter["name"] = name
                     selected_starter["icon"] = icon
                     desc_label.set_text(text)
+                    
+                if name in ["GOG", "Epic"]:
+                    cont_btn.set_sensitive(False)
+                else:
                     cont_btn.set_sensitive(True)
 
             btn.connect("toggled", on_toggled)
