@@ -42,8 +42,8 @@ def test_get_library_paths_success(tmp_path):
 
     result = steam.get_library_paths(str(tmp_path))
 
-    expected_path_1 = os.path.normpath(os.path.join(str(lib1), "steamapps/common"))
-    expected_path_2 = os.path.normpath(os.path.join(str(lib2), "steamapps/common"))
+    expected_path_1 = os.path.normpath(os.path.join(str(lib1), "steamapps"))
+    expected_path_2 = os.path.normpath(os.path.join(str(lib2), "steamapps"))
 
     assert len(result) == 2
     assert expected_path_1 in result
