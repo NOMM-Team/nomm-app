@@ -1,10 +1,11 @@
 import gi
 import gettext
+from nomm.platforms.steam import get_installed_steam_games, get_art
 
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 from gi.repository import Adw, Gtk, GLib  # noqa: E402
-from nomm.platforms.steam import get_installed_steam_games
+
 _ = gettext.gettext
 
 
@@ -18,7 +19,7 @@ class PlatformChoiceDialog(Adw.MessageDialog):
         self.stack = Gtk.Stack()
         self.stack.set_transition_type(Gtk.StackTransitionType.SLIDE_LEFT_RIGHT)
         self.set_extra_child(self.stack)
-
+        self.stack.set_size_request(580, 785)
         self.show_builder_intro()
 
     def remove_stack_child(self, name):
@@ -160,11 +161,11 @@ class PlatformChoiceDialog(Adw.MessageDialog):
         self.stack.add_named(status_page, "app_builder_starter")
         self.stack.set_visible_child_name("app_builder_starter")
 
-    def starter_game_picker(self, platform):
+    def starter_game_picker(self, platform: dict):
         self.remove_stack_child("starter_game_picker")
         if platform["name"] == "Steam":
             installed_games = get_installed_steam_games(self.app.game_libraries)
-            game_names = [game['name'] for game in installed_games]
+            game_names: list[str] = [game['name'] for game in installed_games]
         status_page = Adw.StatusPage(
             title=_("Select your game"),
             description=_("Please select the game you want to build a configuration for"),
@@ -177,14 +178,47 @@ class PlatformChoiceDialog(Adw.MessageDialog):
         )
         content_box.set_margin_top(12)
 
-        # Dropdown with search/type-to-filter support
+        bg_picture = Gtk.Picture()
+        bg_picture.set_content_fit(Gtk.ContentFit.COVER)
+        bg_picture.set_opacity(0.3)
+        bg_picture.set_hexpand(False)
+        bg_picture.set_vexpand(False)
+        bg_picture.set_size_request(-1, 250)
+        bg_picture.set_halign(Gtk.Align.FILL)
+        bg_picture.set_valign(Gtk.Align.CENTER)
+
         string_list = Gtk.StringList.new(game_names)
-        dropdown = Gtk.DropDown.new(string_list, None)
+
+        expression = Gtk.PropertyExpression.new(
+            Gtk.StringObject, None, "string"
+        )
+
+        dropdown = Gtk.DropDown.new(string_list, expression)
         dropdown.set_enable_search(True)
         content_box.append(dropdown)
 
-        cont_btn = Gtk.Button(label=_("Continue"), halign=Gtk.Align.CENTER, width_request=160)
+        cont_btn = Gtk.Button(
+            label=_("Continue"), halign=Gtk.Align.CENTER, width_request=160
+        )
         cont_btn.add_css_class("suggested-action")
+
+        def on_game_selection_changed(dropdown, param):
+            selected_idx = dropdown.get_selected()
+            if (
+                selected_idx != Gtk.INVALID_LIST_POSITION
+                and selected_idx < len(installed_games)
+            ):
+                selected_game = installed_games[selected_idx]
+                app_id = selected_game.get("appid")
+                art = get_art(self.app.steam_base, app_id)
+                if art and "poster" in art:
+                    bg_picture.set_filename(art["poster"])
+                    return
+            bg_picture.set_filename(None)
+
+        dropdown.connect("notify::selected", on_game_selection_changed)
+        if installed_games:
+            on_game_selection_changed(dropdown, None)
 
         def on_continue_clicked(btn):
             selected_idx = dropdown.get_selected()
@@ -193,14 +227,20 @@ class PlatformChoiceDialog(Adw.MessageDialog):
                 and selected_idx < len(installed_games)
             ):
                 selected_game = installed_games[selected_idx]
-                # Send the game dict & platform context to your next builder method
                 self.on_game_selected(selected_game, platform)
 
         cont_btn.connect("clicked", on_continue_clicked)
         content_box.append(cont_btn)
+
         status_page.set_child(content_box)
-        self.stack.add_named(status_page, "starter_game_picker")
+
+        overlay = Gtk.Overlay()
+        overlay.set_child(bg_picture)
+        overlay.add_overlay(status_page)
+
+        self.stack.add_named(overlay, "starter_game_picker")
         self.stack.set_visible_child_name("starter_game_picker")
+
 
 class ConfigurationBuilderWindow(Adw.MessageDialog):
     pass
