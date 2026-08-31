@@ -700,23 +700,25 @@ class Nomm(Adw.Application):
         self.stack.set_visible_child_name("library")
 
     def on_configuration_builder_clicked(self, button):
-        from nomm.gui.app_views.configuration_builder import PlatformChoiceDialog, ConfigurationBuilderWindow
+        from nomm.gui.app_views.configuration_builder import (
+            ConfigurationBuilderWindow,
+            PlatformChoiceDialog,
+        )
 
-        def on_dialog_completed(data):
-            # Launch the main configuration form window with the returned data
-            config_window = ConfigurationBuilderWindow(
-                self.app if hasattr(self, "app") else self,
-                parent_window=self.get_active_window(),
-                initial_data=data,
-            )
-            config_window.present()
-
-        # Get the current active application window to pass as parent
         parent = (
             self.get_active_window()
             if hasattr(self, "get_active_window")
             else self
         )
+
+        def on_dialog_completed(data):
+            # Launch the main configuration form window with pre-filled dictionary
+            config_window = ConfigurationBuilderWindow(
+                parent_window=parent,
+                initial_data=data,
+            )
+            config_window.present()
+
         dialog = PlatformChoiceDialog(
             parent_window=parent, app=self, callback=on_dialog_completed
         )

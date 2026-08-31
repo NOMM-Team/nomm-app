@@ -1,10 +1,13 @@
 import gi
 import gettext
+import os
 from nomm.platforms.steam import get_installed_steam_games, get_art
+from nomm.core.user_config import CUSTOM_GAME_CONFIG_PATH
+from nomm.core.tools import write_yaml
 
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
-from gi.repository import Adw, Gtk, GLib  # noqa: E402
+from gi.repository import Adw, Gtk, GLib, Gdk  # noqa: E402
 
 _ = gettext.gettext
 
@@ -227,7 +230,14 @@ class PlatformChoiceDialog(Adw.MessageDialog):
                 and selected_idx < len(installed_games)
             ):
                 selected_game = installed_games[selected_idx]
-                self.on_game_selected(selected_game, platform)
+                prefilled_data = {
+                    "name": selected_game.get("name", ""),
+                    "steam_id": str(selected_game.get("appid", "")),
+                    "steam_folder_name": selected_game.get("installdir", "")
+                }
+                self.close()
+                if self.callback:
+                    self.callback(prefilled_data)
 
         cont_btn.connect("clicked", on_continue_clicked)
         content_box.append(cont_btn)
@@ -242,5 +252,341 @@ class PlatformChoiceDialog(Adw.MessageDialog):
         self.stack.set_visible_child_name("starter_game_picker")
 
 
-class ConfigurationBuilderWindow(Adw.MessageDialog):
-    pass
+class ConfigurationBuilderWindow(Adw.Window):
+    """Main configuration builder window featuring custom toggle button tabs."""
+
+    def __init__(self, parent_window, initial_data: dict | None = None):
+        super().__init__(transient_for=parent_window, modal=True)
+        self.set_title(_("Configuration Builder"))
+        self.set_default_size(700, 600)
+
+        # Main layout container
+        main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        self.set_content(main_box)
+
+        # Header Bar
+        header = Adw.HeaderBar()
+        main_box.append(header)
+
+        # Custom Tab Buttons Container
+        tab_container = Gtk.Box(
+            orientation=Gtk.Orientation.HORIZONTAL, homogeneous=True
+        )
+
+        self.game_info_btn = Gtk.ToggleButton(
+            label=_("Game Info"), css_classes=["overlay-tab"]
+        )
+        self.game_info_btn.set_cursor_from_name("pointer")
+        tab_container.append(self.game_info_btn)
+
+        self.modding_info_btn = Gtk.ToggleButton(
+            label=_("Modding Paths"), css_classes=["overlay-tab"]
+        )
+        self.modding_info_btn.set_cursor_from_name("pointer")
+        self.modding_info_btn.set_group(self.game_info_btn)
+        tab_container.append(self.modding_info_btn)
+
+        self.utilities_btn = Gtk.ToggleButton(
+            label=_("Utilities"), css_classes=["overlay-tab"]
+        )
+        self.utilities_btn.set_cursor_from_name("pointer")
+        self.utilities_btn.set_group(self.game_info_btn)
+        tab_container.append(self.utilities_btn)
+
+        main_box.append(tab_container)
+
+        self.stack = Gtk.Stack()
+        self.stack.set_transition_type(Gtk.StackTransitionType.SLIDE_LEFT_RIGHT)
+        self.stack.set_vexpand(True)
+
+        self.game_info_view = self._build_game_info_tab(initial_data or {})
+        self.modding_info_view = self._build_modding_paths_tab()
+        self.utilities_view = self._build_empty_tab(_("Utilities"))
+
+        self.stack.add_named(self.game_info_view, "game_info")
+        self.stack.add_named(self.modding_info_view, "modding_info")
+        self.stack.add_named(self.utilities_view, "utilities")
+
+        main_box.append(self.stack)
+
+        def _on_tab_toggled(btn, stack_name):
+            if btn.get_active():
+                self.stack.set_visible_child_name(stack_name)
+
+        self.game_info_btn.connect("toggled", _on_tab_toggled, "game_info")
+        self.modding_info_btn.connect("toggled", _on_tab_toggled, "modding_info")
+        self.utilities_btn.connect("toggled", _on_tab_toggled, "utilities")
+
+        self.game_info_btn.set_active(True)
+
+        action_bar = Gtk.ActionBar()
+        self.continue_btn = Gtk.Button(label=_("Save"))
+        self.continue_btn.add_css_class("suggested-action")
+        self.continue_btn.connect("clicked", self._on_continue_clicked)
+        action_bar.pack_end(self.continue_btn)
+        main_box.append(action_bar)
+
+    def _build_game_info_tab(self, initial_data: dict) -> Gtk.Widget:
+        """Builds the Game Information form tab view."""
+        page_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=16)
+        page_box.set_margin_top(16)
+        page_box.set_margin_bottom(16)
+        page_box.set_margin_start(16)
+        page_box.set_margin_end(16)
+
+        preferences_group = Adw.PreferencesGroup(
+            title=_("General Game Information"),
+            description=_("Provide core details and identifiers for the target game."),
+        )
+
+        self.name_row = Adw.EntryRow(title=_("Game Title *"))
+        self.name_row.set_text(str(initial_data.get("name", "")))
+        preferences_group.add(self.name_row)
+
+        self.steam_id_row = Adw.EntryRow(title=_("Steam App ID"))
+        self.steam_id_row.set_text(str(initial_data.get("steam_id", "")))
+
+        def _on_steam_id_changed(entry):
+            text = entry.get_text()
+            filtered = "".join(c for c in text if c.isdigit())
+            if text != filtered:
+                entry.set_text(filtered)
+
+        self.steam_id_row.connect("changed", _on_steam_id_changed)
+        preferences_group.add(self.steam_id_row)
+
+        self.steam_folder_row = Adw.EntryRow(title=_("Steam Folder Name"))
+        self.steam_folder_row.set_text(str(initial_data.get("steam_folder_name", "")))
+        preferences_group.add(self.steam_folder_row)
+
+        self.gog_id_row = Adw.EntryRow(title=_("GOG Game ID"))
+        self.gog_id_row.set_text(str(initial_data.get("gog_id", "")))
+        preferences_group.add(self.gog_id_row)
+
+        self.nexus_id_row = Adw.EntryRow(title=_("Nexus ID"))
+        preferences_group.add(self.nexus_id_row)
+
+        self.color_row = Adw.ActionRow(title=_("Accent Color"))
+        self.color_dialog = Gtk.ColorDialog()
+        self.color_button = Gtk.ColorDialogButton(dialog=self.color_dialog)
+
+        initial_color = "#3584e4"
+        rgba = Gdk.RGBA()
+        if not rgba.parse(initial_color):
+            rgba.parse("#3584e4")
+        self.color_button.set_rgba(rgba)
+
+        self.color_row.add_suffix(self.color_button)
+        preferences_group.add(self.color_row)
+
+        self.wiki_link_row = Adw.EntryRow(title=_("Wiki URL"))
+        self.wiki_link_row.set_text(str(initial_data.get("wiki_link", "")))
+        preferences_group.add(self.wiki_link_row)
+
+        page_box.append(preferences_group)
+
+        scrolled = Gtk.ScrolledWindow()
+        scrolled.set_child(page_box)
+        scrolled.set_vexpand(True)
+        return scrolled
+
+    def _build_modding_paths_tab(self) -> Gtk.Widget:
+        """Builds the Modding Paths configuration tab."""
+        self.modding_groups_container = Gtk.Box(
+            orientation=Gtk.Orientation.VERTICAL, spacing=16
+        )
+
+        # Main scrollable view
+        scrolled = Gtk.ScrolledWindow()
+        scrolled.set_vexpand(True)
+
+        main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=16)
+        main_box.set_margin_top(16)
+        main_box.set_margin_bottom(16)
+        main_box.set_margin_start(16)
+        main_box.set_margin_end(16)
+
+        main_box.append(self.modding_groups_container)
+
+        # Add Path Group Button
+        add_btn = Gtk.Button(label=_("Add Modding Path"))
+        add_btn.add_css_class("pill")
+        add_btn.set_halign(Gtk.Align.CENTER)
+        add_btn.set_cursor_from_name("pointer")
+        add_btn.connect("clicked", lambda _: self._add_modding_path_group())
+        main_box.append(add_btn)
+
+        scrolled.set_child(main_box)
+
+        # Populate default group
+        default_data = {
+            "name": "Default path",
+            "description": "The default path where mods will be extracted to",
+            "base": "{game_path}",
+            "path": "/",
+        }
+        self._add_modding_path_group(default_data, is_first=True)
+
+        return scrolled
+
+    def _add_modding_path_group(
+        self, data: dict | None = None, is_first: bool = False
+    ) -> None:
+        """Creates and appends a triplet path configuration row group."""
+        data = data or {"name": "", "description": "", "base": "{game_path}", "path": ""}
+
+        group = Adw.PreferencesGroup()
+
+        # Name Row
+        name_row = Adw.EntryRow(title=_("Path Identifier *"))
+        name_row.set_text(data.get("name", ""))
+        group.add(name_row)
+
+        # Description Row
+        desc_row = Adw.EntryRow(title=_("Description *"))
+        desc_row.set_text(data.get("description", ""))
+        group.add(desc_row)
+
+        # Combined Path Row (Dropdown prefix + Entry path)
+        path_row = Adw.ActionRow(title=_("Path *"))
+
+        base_combo = Gtk.DropDown.new_from_strings(
+            [_("Game Installation Path"), _("User Data Path")]
+        )
+        base_combo.set_valign(Gtk.Align.CENTER)
+
+        if data.get("base") == "{user_data}":
+            base_combo.set_selected(1)
+        else:
+            base_combo.set_selected(0)
+
+        path_entry = Gtk.Entry(placeholder_text="/")
+        path_entry.set_hexpand(True)
+        path_entry.set_valign(Gtk.Align.CENTER)
+        path_entry.set_text(data.get("path", ""))
+
+        path_row.add_suffix(base_combo)
+        path_row.add_suffix(path_entry)
+        group.add(path_row)
+
+        if not is_first:  # Only add the delete button if it's NOT the first group
+            delete_btn = Gtk.Button(
+                icon_name="mat-delete-symbolic",
+                css_classes=["flat", "destructive-action"],
+            )
+            delete_btn.set_tooltip_text(_("Remove Path"))
+            delete_btn.set_cursor_from_name("pointer")
+
+            def _on_delete(_):
+                self.modding_groups_container.remove(group)
+
+            delete_btn.connect("clicked", _on_delete)
+            group.set_header_suffix(delete_btn)
+
+        group.widgets = {
+            "name_row": name_row,
+            "desc_row": desc_row,
+            "base_combo": base_combo,
+            "path_entry": path_entry,
+        }
+
+        self.modding_groups_container.append(group)
+
+    def _update_modding_delete_buttons(self) -> None:
+        """Ensures at least 1 path group remains by toggling delete button sensitivity."""
+        children = []
+        child = self.modding_groups_container.get_first_child()
+        while child:
+            children.append(child)
+            child = child.get_next_sibling()
+
+        can_delete = len(children) > 1
+        for grp in children:
+            if hasattr(grp, "widgets"):
+                grp.widgets["delete_btn"].set_sensitive(can_delete)
+
+    def _build_empty_tab(self, title: str) -> Gtk.Widget:
+        """Helper to generate placeholder views."""
+        return Adw.StatusPage(
+            title=title, description=_("Configuration options coming soon...")
+        )
+
+    def _on_continue_clicked(self, button):
+        has_error = False
+
+        name_val = self.name_row.get_text().strip()
+        if not name_val: # game name is compulsory
+            self.name_row.add_css_class("error")
+            has_error = True
+        else:
+            self.name_row.remove_css_class("error")
+
+        modding_paths = []
+        child = self.modding_groups_container.get_first_child()
+
+        while child:
+            if hasattr(child, "widgets"):
+                w = child.widgets
+                name = w["name_row"].get_text().strip()
+                desc = w["desc_row"].get_text().strip()
+                path_segment = w["path_entry"].get_text().strip()
+
+                for widget, val in [
+                    (w["name_row"], name),
+                    (w["desc_row"], desc),
+                ]:
+                    if not val:
+                        widget.add_css_class("error")
+                        has_error = True
+                    else:
+                        widget.remove_css_class("error")
+
+                if not path_segment:
+                    w["path_entry"].add_css_class("error")
+                    has_error = True
+                else:
+                    w["path_entry"].remove_css_class("error")
+
+                base_prefix = (
+                    "{user_data}"
+                    if w["base_combo"].get_selected() == 1
+                    else "{game_path}"
+                )
+
+                # Format slashes cleanly
+                if not path_segment.startswith("/"):
+                    path_segment = f"/{path_segment}"
+
+                full_path = f"{base_prefix}{path_segment}"
+
+                modding_paths.append(
+                    {"name": name, "description": desc, "path": full_path}
+                )
+
+            child = child.get_next_sibling()
+
+        # If validation fails, stay on or jump to invalid tab
+        if has_error:
+            if not name_val:
+                self.game_info_btn.set_active(True)
+            else:
+                self.modding_info_btn.set_active(True)
+            return
+
+        rgba = self.color_button.get_rgba()
+        hex_color = f"#{int(rgba.red * 255):02x}{int(rgba.green * 255):02x}{int(rgba.blue * 255):02x}"
+
+        config_data = {
+            "name": name_val,
+            "steam_id": self.steam_id_row.get_text().strip(),
+            "steam_folder_name": self.steam_folder_row.get_text().strip(),
+            "gog_id": self.gog_id_row.get_text().strip(),
+            "nexus_id": self.nexus_id_row.get_text().strip(),
+            "accent_colour": hex_color,
+            "wiki_link": self.wiki_link_row.get_text().strip(),
+            "mods_path": modding_paths
+        }
+        custom_configuration_path = os.path.join(CUSTOM_GAME_CONFIG_PATH, name_val.replace(" ", "_").lower()+".yaml")
+        write_yaml(config_data, custom_configuration_path)
+        print(f"New custom configuration for game {name_val} saved to {custom_configuration_path}")
+        self.close()
