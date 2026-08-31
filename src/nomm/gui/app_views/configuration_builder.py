@@ -307,7 +307,7 @@ class ConfigurationBuilderWindow(Adw.Window):
 
         self.game_info_view = self._build_game_info_tab(initial_data or {})
         self.modding_info_view = self._build_modding_paths_tab()
-        self.utilities_view = self._build_empty_tab(_("Utilities"))
+        self.utilities_view = self._build_utilities_tab()
 
         self.stack.add_named(self.game_info_view, "game_info")
         self.stack.add_named(self.modding_info_view, "modding_info")
@@ -328,7 +328,7 @@ class ConfigurationBuilderWindow(Adw.Window):
         action_bar = Gtk.ActionBar()
         self.continue_btn = Gtk.Button(label=_("Save"))
         self.continue_btn.add_css_class("suggested-action")
-        self.continue_btn.connect("clicked", self._on_continue_clicked)
+        self.continue_btn.connect("clicked", self._on_save_clicked)
         action_bar.pack_end(self.continue_btn)
         main_box.append(action_bar)
 
@@ -511,13 +511,95 @@ class ConfigurationBuilderWindow(Adw.Window):
             if hasattr(grp, "widgets"):
                 grp.widgets["delete_btn"].set_sensitive(can_delete)
 
-    def _build_empty_tab(self, title: str) -> Gtk.Widget:
-        """Helper to generate placeholder views."""
-        return Adw.StatusPage(
-            title=title, description=_("Configuration options coming soon...")
+    def _build_utilities_tab(self) -> Gtk.Widget:
+        """Builds the Utilities form tab view."""
+        self.utility_groups_container = Gtk.Box(
+            orientation=Gtk.Orientation.VERTICAL, spacing=16
         )
 
-    def _on_continue_clicked(self, button):
+        scrolled = Gtk.ScrolledWindow()
+        scrolled.set_vexpand(True)
+
+        main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=16)
+        main_box.set_margin_top(16)
+        main_box.set_margin_bottom(16)
+        main_box.set_margin_start(16)
+        main_box.set_margin_end(16)
+
+        main_box.append(self.utility_groups_container)
+
+        # Add Utility Button
+        add_btn = Gtk.Button(label=_("Add Utility"))
+        add_btn.add_css_class("pill")
+        add_btn.set_halign(Gtk.Align.CENTER)
+        add_btn.set_cursor_from_name("pointer")
+        add_btn.connect("clicked", lambda _: self._add_utility_group())
+        main_box.append(add_btn)
+
+        scrolled.set_child(main_box)
+        return scrolled
+
+    def _add_utility_group(self, data: dict | None = None) -> None:
+        """Creates and appends a single utility group to the container."""
+        data = data or {}
+
+        group = Adw.PreferencesGroup()
+
+        name_row = Adw.EntryRow(title=_("Name *"))
+        name_row.set_text(data.get("name", ""))
+        group.add(name_row)
+
+        version_row = Adw.EntryRow(title=_("Version *"))
+        version_row.set_text(data.get("version", ""))
+        group.add(version_row)
+
+        creator_row = Adw.EntryRow(title=_("Creator *"))
+        creator_row.set_text(data.get("creator", ""))
+        group.add(creator_row)
+
+        creator_link_row = Adw.EntryRow(title=_("Creator Link (URL) *"))
+        creator_link_row.set_text(data.get("creator-link", ""))
+        group.add(creator_link_row)
+
+        source_row = Adw.EntryRow(title=_("Source (URL) *"))
+        source_row.set_text(data.get("source", ""))
+        group.add(source_row)
+
+        utility_path_row = Adw.EntryRow(title=_("Utility Path *"))
+        utility_path_row.set_text(data.get("utility_path", ""))
+        group.add(utility_path_row)
+
+        enable_cmd_row = Adw.EntryRow(title=_("Enable Command (Optional)"))
+        enable_cmd_row.set_text(data.get("enable_command", ""))
+        group.add(enable_cmd_row)
+
+        launch_opts_row = Adw.EntryRow(title=_("Launch Options (Optional)"))
+        launch_opts_row.set_text(data.get("launch_options", ""))
+        group.add(launch_opts_row)
+
+        delete_btn = Gtk.Button(
+            icon_name="user-trash-symbolic",
+            css_classes=["flat", "destructive-action"],
+        )
+        delete_btn.set_tooltip_text(_("Remove Utility"))
+        delete_btn.set_cursor_from_name("pointer")
+        delete_btn.connect("clicked", lambda _: self.utility_groups_container.remove(group))
+        group.set_header_suffix(delete_btn)
+
+        group.widgets = {
+            "name": name_row,
+            "version": version_row,
+            "creator": creator_row,
+            "creator-link": creator_link_row,
+            "source": source_row,
+            "utility_path": utility_path_row,
+            "enable_command": enable_cmd_row,
+            "launch_options": launch_opts_row,
+        }
+
+        self.utility_groups_container.append(group)
+
+    def _on_save_clicked(self, button):
         has_error = False
 
         name_val = self.name_row.get_text().strip()
@@ -571,10 +653,52 @@ class ConfigurationBuilderWindow(Adw.Window):
 
             child = child.get_next_sibling()
 
+        utilities_data = {}
+        invalid_utility_tab = False
+        util_child = self.utility_groups_container.get_first_child()
+
+        while util_child:
+            if hasattr(util_child, "widgets"):
+                w = util_child.widgets
+
+                # Required fields check
+                required_fields = [
+                    "name", "version", "creator", 
+                    "creator-link", "source", "utility_path"
+                ]
+
+                group_valid = True
+                entry_values = {}
+
+                for key, widget in w.items():
+                    val = widget.get_text().strip()
+
+                    if key in required_fields:
+                        if not val:
+                            widget.add_css_class("error")
+                            group_valid = False
+                            invalid_utility_tab = True
+                        else:
+                            widget.remove_css_class("error")
+
+                    if key == "name":
+                        utility_id = "".join("_" if c == " " else c for c in val if c.isalnum() or c == " ").lower().strip("_")
+                    else:
+                        entry_values[key] = val
+
+                if group_valid:
+                    utilities_data[utility_id] = entry_values
+                else:
+                    has_error = True
+
+            util_child = util_child.get_next_sibling()
+
         # If validation fails, stay on or jump to invalid tab
         if has_error:
             if not name_val:
                 self.game_info_btn.set_active(True)
+            elif invalid_utility_tab:
+                self.utilities_btn.set_active(True)
             else:
                 self.modding_info_btn.set_active(True)
             return
@@ -590,7 +714,8 @@ class ConfigurationBuilderWindow(Adw.Window):
             "nexus_id": self.nexus_id_row.get_text().strip(),
             "accent_colour": hex_color,
             "wiki_link": self.wiki_link_row.get_text().strip(),
-            "mods_path": modding_paths
+            "mods_path": modding_paths,
+            "essential_utilities": utilities_data
         }
         custom_configuration_path = os.path.join(CUSTOM_GAME_CONFIG_PATH, name_val.replace(" ", "_").lower()+".yaml")
         write_yaml(config_data, custom_configuration_path)
