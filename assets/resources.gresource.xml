@@ -38,5 +38,6 @@
     <file>folder-staging-symbolic.svg</file>
     <file>add-configuration-symbolic.svg</file>
     <file>mat-edit-document-symbolic.svg</file>
+    <file>mat-edit-symbolic.svg</file>
   </gresource>
 </gresources>
