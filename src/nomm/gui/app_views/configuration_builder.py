@@ -4,6 +4,7 @@ import os
 from nomm.platforms.steam import get_installed_steam_games, get_art
 from nomm.core.user_config import CUSTOM_GAME_CONFIG_PATH
 from nomm.core.tools import write_yaml
+from nomm.gui.text_window import TextWindow
 
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
@@ -596,3 +597,10 @@ class ConfigurationBuilderWindow(Adw.Window):
         print(f"New custom configuration for game {name_val} saved to {custom_configuration_path}")
         self.app.show_loading_and_scan()
         self.close()
+        if len(os.listdir(CUSTOM_GAME_CONFIG_PATH)) == 1:
+            message_to_user: str = _("Congrats on creating your first game configuration!\n"
+                                     "Once you've tested it and made sure it works, please don't hesitate to share it with the NOMM "
+                                     "community on our Game Configuration Github repo!\n\n"
+                                     "We sincerely hope you continue to enjoy using NOMM :)")
+            desc_win = TextWindow(self.app.win, "First configuration created!", message_to_user, text_type="markup")
+            desc_win.present()
