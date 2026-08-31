@@ -59,7 +59,7 @@ class PlatformChoiceDialog(Adw.MessageDialog):
         status_page = Adw.StatusPage(
             title=_("How do you want to start building?"),
             description=_("Please choose how you would like to start building your configuration.\n"
-                          "You can either start from scratch or, if the game is already installed, with some fields pre-filled."),
+                          "You can either start from scratch or with some fields pre-filled."),
             icon_name="add-configuration-symbolic"
         )
 
@@ -153,7 +153,10 @@ class PlatformChoiceDialog(Adw.MessageDialog):
         cont_btn.set_sensitive(False)
 
         def on_continue_clicked(btn):
-            if selected_starter["name"] != "Custom":
+            if selected_starter["name"] == "Custom":
+                self.close()
+                self.callback({})
+            else:
                 self.starter_game_picker(selected_starter)
 
         cont_btn.connect("clicked", on_continue_clicked)
@@ -256,10 +259,11 @@ class PlatformChoiceDialog(Adw.MessageDialog):
 class ConfigurationBuilderWindow(Adw.Window):
     """Main configuration builder window featuring custom toggle button tabs."""
 
-    def __init__(self, parent_window, initial_data: dict | None = None):
+    def __init__(self, parent_window, app, initial_data: dict | None = None):
         super().__init__(transient_for=parent_window, modal=True)
         self.set_title(_("Configuration Builder"))
         self.set_default_size(700, 600)
+        self.app = app
 
         # Main layout container
         main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
@@ -516,7 +520,7 @@ class ConfigurationBuilderWindow(Adw.Window):
         has_error = False
 
         name_val = self.name_row.get_text().strip()
-        if not name_val: # game name is compulsory
+        if not name_val:  # game name is compulsory
             self.name_row.add_css_class("error")
             has_error = True
         else:
@@ -590,4 +594,5 @@ class ConfigurationBuilderWindow(Adw.Window):
         custom_configuration_path = os.path.join(CUSTOM_GAME_CONFIG_PATH, name_val.replace(" ", "_").lower()+".yaml")
         write_yaml(config_data, custom_configuration_path)
         print(f"New custom configuration for game {name_val} saved to {custom_configuration_path}")
+        self.app.show_loading_and_scan()
         self.close()

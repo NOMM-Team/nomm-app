@@ -715,7 +715,8 @@ class Nomm(Adw.Application):
             # Launch the main configuration form window with pre-filled dictionary
             config_window = ConfigurationBuilderWindow(
                 parent_window=parent,
-                initial_data=data,
+                app=self,
+                initial_data=data
             )
             config_window.present()
 
