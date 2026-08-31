@@ -1,4 +1,14 @@
 ---
+Version: "0.13.0"
+Date: 2026-08-31
+Description: |-
+  Release bites
+   * Overhaul project structure to be more in line with python packaging standards
+   * Split the repo into different repos, move default configs to their own repo
+   * Rework the separation between default configs and custom configs
+   * Add a new config builder
+   * Add unit test & linting framework
+---
 Version: "0.12.6"
 Date: 2026-08-26
 Description: |-
