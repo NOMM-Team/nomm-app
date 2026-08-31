@@ -142,7 +142,7 @@ class PlatformChoiceDialog(Adw.MessageDialog):
                     selected_starter["name"] = name
                     selected_starter["icon"] = icon
                     desc_label.set_text(text)
-                    
+
                 if name in ["GOG", "Epic"]:
                     cont_btn.set_sensitive(False)
                 else:
@@ -667,7 +667,7 @@ class ConfigurationBuilderWindow(Adw.Window):
 
                 # Required fields check
                 required_fields = [
-                    "name", "version", "creator", 
+                    "name", "version", "creator",
                     "creator-link", "source", "utility_path"
                 ]
 
