@@ -28,20 +28,20 @@ def get_steam_base_dir() -> Optional[str]:
 def get_installed_steam_games(game_libraries):
 
     steam_libraries = []
+
     for game_library in game_libraries:
         if "steam" in game_library:
-            steam_libraries.append(os.path.dirname(game_library))
+            if Path(game_library).exists():
+                steam_libraries.append(Path(game_library))
+
+    print(f"Unique Steam Libraries: {steam_libraries}")
 
     installed_games = []
 
     for steam_library in steam_libraries:
-        steam_library_path = Path(steam_library)
-        if not steam_library_path.exists():
-            continue
-
-        for manifest_file in steam_library_path.glob("appmanifest_*.acf"):
+        for manifest_file in steam_library.glob("appmanifest_*.acf"):
             try:
-                with open(manifest_file, "r", encoding="utf-8", errors="ignore") as f:
+                with open(manifest_file, "r", encoding="utf-8") as f:
                     data = vdf.load(f)
 
                 app_state = data.get("AppState", {})
@@ -50,6 +50,7 @@ def get_installed_steam_games(game_libraries):
 
                 # Filter out non-games / runtime tools (e.g., Steamworks Shared)
                 if appid and name and appid not in (228980, 1070560):
+                    print(name)
                     installed_games.append(
                         {
                             "name": name,
@@ -78,7 +79,7 @@ def get_library_paths(steam_base) -> List[str]:
             for index in folders:
                 path = folders[index].get("path")
                 if path:
-                    full_path = os.path.join(path, "steamapps/common")
+                    full_path = os.path.join(path, "steamapps")
                     libraries.append(os.path.normpath(full_path))
     except Exception as e:
         print(f"Error parsing VDF at {vdf_path}: {e}")
@@ -141,6 +142,7 @@ def find_game(yaml_data, game_title, found_libs, steam_base) -> List[Dict[str, A
     slug_yaml_name = slugify(yaml_game_name)
 
     for lib in found_libs:
+        lib = lib + "/common"
         if not os.path.exists(lib):
             continue
         for folder in os.listdir(lib):
