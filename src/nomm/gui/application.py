@@ -4,6 +4,7 @@ import threading
 import subprocess
 import gi
 import locale
+from pathlib import Path
 from importlib import resources
 from urllib.parse import urlparse
 from dulwich import porcelain
@@ -11,7 +12,7 @@ from dulwich import porcelain
 from nomm.core.game_scanner import scan_all_games
 from nomm.core.tools import translate_fuse_path, load_nomm_version, get_bundled_data_dir
 from nomm.core.user_config import (load_user_config, update_user_config,
-                                   write_user_config, PRESET_GAME_CONFIG_PATH)
+                                   write_user_config, PRESET_GAME_CONFIG_PATH, DATA_DIR)
 from nomm.platforms.switch import list_emulators, get_emulator_logo
 from nomm.gui.app_views.library_view import LibraryView
 from nomm.gui.dashboard import GameDashboard
@@ -260,12 +261,18 @@ class Nomm(Adw.Application):
         self.remove_stack_child("download-select")
         status_page = Adw.StatusPage(
             title=_("Select your mods download folder"),
-            description=_("Please select the folder where mod archives will be downloaded.\n"
-                          "Mod downloads will be categorised by game name.\nIt is recommended that you create "
-                          "a nomm directory at the end of your target path"),
+            description=_("Please select the folder where mod archives will be downloaded."),
             icon_name="downloaded-symbolic"
         )
         status_page.add_css_class("setup-page")
+        vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12, halign=Gtk.Align.CENTER)
+
+        info_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0, halign=Gtk.Align.CENTER)
+        info_box.add_css_class("info-card")
+
+        info_label = Gtk.Label(wrap=True, max_width_chars=50, justify=Gtk.Justification.CENTER)
+        info_label.set_text(_("We recommend that you create a nomm directory at the end of your target path"))
+        info_box.append(info_label)
 
         btn = Gtk.Button(label=_("Set Mod Download Path"))
         btn.set_halign(Gtk.Align.CENTER)
@@ -273,7 +280,9 @@ class Nomm(Adw.Application):
         btn.set_margin_top(24)
         btn.connect("clicked", self.on_select_downloads_folder_clicked)
 
-        status_page.set_child(btn)
+        vbox.append(info_box)
+        vbox.append(btn)
+        status_page.set_child(vbox)
         self.stack.add_named(status_page, "download-select")
         self.stack.set_visible_child_name("download-select")
         GLib.timeout_add(100, lambda: status_page.add_css_class("visible"))
@@ -291,24 +300,47 @@ class Nomm(Adw.Application):
         self.remove_stack_child("staging-select")
         status_page = Adw.StatusPage(
             title="Select your staging folder",
-            description="Please select the folder where mods will be temporarily stored.",
+            description="Please choose where mods will be extracted to",
             icon_name="folder-staging-symbolic"
         )
         status_page.add_css_class("setup-page")
         vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12, halign=Gtk.Align.CENTER)
-        warning_label = Gtk.Label(wrap=True, max_width_chars=50, justify=Gtk.Justification.CENTER)
-        warning_label.set_markup(_("<b>Important:</b> If using Flatpaks for your platforms (Steam, Heroic, etc.), ensure they\n"
-                                   "have permission to access this folder (you can do this via command line or Flatseal)."))
-        warning_label.add_css_class("error")
-        btn = Gtk.Button(label=_("Set Mod Staging Path"), margin_top=12, halign=Gtk.Align.CENTER)
-        btn.add_css_class("suggested-action")
-        btn.connect("clicked", self.on_select_staging_folder_clicked)
-        vbox.append(warning_label)
-        vbox.append(btn)
+
+        warning_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0, halign=Gtk.Align.CENTER)
+        warning_box.add_css_class("warning-card")
+
+        warning_label = Gtk.Label(
+            wrap=True, max_width_chars=50, justify=Gtk.Justification.CENTER
+        )
+        warning_label.set_text(_("If using Flatpaks for your platforms (Steam, Heroic, etc.), ensure they have\n"
+                                 "permission to access this folder (you can do this via command line or Flatseal)."))
+        warning_box.append(warning_label)
+
+        hbox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12, halign=Gtk.Align.CENTER)
+        custom_path_btn = Gtk.Button(label=_("Set Custom Mod Staging Path"), margin_top=12, halign=Gtk.Align.CENTER)
+        custom_path_btn.set_tooltip_text(_("Extracted mods will be stored in a directory of your choosing"))
+        custom_path_btn.connect("clicked", self.on_select_staging_folder_clicked)
+
+        nomm_path_btn = Gtk.Button(label=_("Use NOMM data folder"), margin_top=12, halign=Gtk.Align.CENTER)
+        nomm_path_btn.set_tooltip_text(_("Extracted mods will be stored in the NOMM data directory, on your system drive"))
+        nomm_path_btn.add_css_class("suggested-action")
+        nomm_path_btn.connect("clicked", self.on_select_default_nomm_staging_folder_clicked)
+
+        vbox.append(warning_box)
+        hbox.append(custom_path_btn)
+        hbox.append(nomm_path_btn)
+        vbox.append(hbox)
         status_page.set_child(vbox)
+
         self.stack.add_named(status_page, "staging-select")
         self.stack.set_visible_child_name("staging-select")
         GLib.timeout_add(100, lambda: status_page.add_css_class("visible"))
+
+    def on_select_default_nomm_staging_folder_clicked(self, btn):
+        staging_path = os.path.join(DATA_DIR, "/staged-mods/")
+        Path(staging_path).parent.mkdir(parents=True, exist_ok=True)
+        self.temp_config["staging_path"] = staging_path
+        self.show_nexus_api_key_screen()
 
     def on_select_staging_folder_clicked(self, btn):
         dialog = Gtk.FileDialog(title=_("Select Mod Staging Folder"))

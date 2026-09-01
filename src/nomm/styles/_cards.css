@@ -7,3 +7,19 @@
     filter: brightness(1.1) contrast(1.05);
     box-shadow: 0 0 15px rgba(255, 255, 255, 0.1), 0 12px 30px rgba(0,0,0,0.6);
 }
+
+.warning-card {
+    background-color: rgba(229, 165, 10, 0.15);
+    border: 1px solid rgba(229, 165, 10, 0.4);
+    color: #e5a50a;
+    border-radius: 12px;
+    padding: 12px 16px;
+}
+
+.info-card {
+    background-color: rgba(53, 132, 228, 0.15);
+    border: 1px solid rgba(53, 132, 228, 0.4);
+    color: #3584e4;
+    border-radius: 12px;
+    padding: 12px 16px;
+}
