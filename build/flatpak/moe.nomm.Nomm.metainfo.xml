@@ -1,90 +1,93 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <component type="desktop-application">
   <id>moe.nomm.Nomm</id>
+  <name>Nomm</name>
+  <summary>Modern Linux-First Mod Manager</summary>
   <metadata_license>CC0-1.0</metadata_license>
   <project_license>GPL-3.0</project_license>
+  <description>
+    <p>NOMM is a stupid simple, super clean "native" (as in it runs on Linux without having to use translation
+    tools...) mod manager for Linux. The goal here is to keep the setup really simple for users like
+    me who don't need the super advanced/complex features. Just a few clicks on a clean, modern interface,
+    and you're done :)</p>
+    <p>Don't expect NOMM to manage mods for something like Skyrim. There are specific tools for that
+    (see NaK or Jackify).</p>
+    <p>Instead, think of NOMM as more of a general purpose tool for most games that just need you to
+    point to a directory and extract some mod archives.</p>
+  </description>
   <developer id="moe.nomm">
     <name>NOMM Team</name>
   </developer>
-  <name>Nomm</name>
-  <summary>Modern Linux-First Mod Manager</summary>
-  <description>
-    <p>
-      NOMM is a stupid simple, super clean &quot;native&quot; (as in it runs on Linux without having to use translation tools...) mod manager for Linux. The goal here is to keep the setup really simple for users like me who don&apos;t need the super advanced/complex features. Just a few clicks on a clean, modern interface, and you&apos;re done :)
-    </p>
-    <p>
-      Don&apos;t expect NOMM to manage mods for something like Skyrim. There are specific tools for that (see NaK or Jackify).
-    </p>
-    <p>
-      Instead, think of NOMM as more of a general purpose tool for most games that just need you to point to a directory and extract some mod archives.
-    </p>
-  </description>
   <launchable type="desktop-id">moe.nomm.Nomm.desktop</launchable>
-  <branding>
-    <color type="primary" scheme_preference="light">#9baebc</color>
-    <color type="primary" scheme_preference="dark">#374955</color>
-  </branding>
-  <content_rating type="oars-1.1">
-    <content_attribute id="language-humor">mild</content_attribute>
-  </content_rating>
   <url type="homepage">https://nomm.moe</url>
   <url type="bugtracker">https://github.com/allexio/nomm/issues</url>
   <url type="vcs-browser">https://github.com/allexio/nomm</url>
   <screenshots>
     <screenshot type="default">
-      <image>https://i.imgur.com/hg6wNFQ.jpeg</image>
+      <image type="source">https://i.imgur.com/hg6wNFQ.jpeg</image>
     </screenshot>
     <screenshot>
-      <image>https://i.imgur.com/JouzFj2.png</image>
+      <image type="source">https://i.imgur.com/JouzFj2.png</image>
     </screenshot>
   </screenshots>
+  <branding>
+    <color type="primary" scheme_preference="light">#9baebc</color>
+    <color type="primary" scheme_preference="dark">#374955</color>
+  </branding>
   <releases>
-    <release version="0.12.6" date="2026-08-26">
-      <url type="details">https://github.com/Allexio/nomm/releases/tag/0.12.6</url>
+    <release type="stable" version="0.13.0" date="2026-08-28T00:00:00Z">
       <description>
         <p>Release bites</p>
-          <ul>
-            <li>Use portal path instead of real path for staging and downloads</li>
-          </ul>
+        <ul>
+          <li>Set up automated workflow for adding release notes to flatpak</li>
+        </ul>
       </description>
     </release>
-    <release version="0.12.5" date="2026-08-24">
-      <url type="details">https://github.com/Allexio/nomm/releases/tag/0.12.5</url>
+    <release type="stable" version="0.12.6" date="2026-08-26T00:00:00Z">
       <description>
         <p>Release bites</p>
-          <ul>
-            <li>Fixed regression stopping utilities from being correctly downloaded</li>
-          </ul>
+        <ul>
+          <li>Use portal path instead of real path for staging and downloads</li>
+        </ul>
       </description>
     </release>
-    <release version="0.12.4" date="2026-08-24">
-      <url type="details">https://github.com/Allexio/nomm/releases/tag/0.12.4</url>
+    <release type="stable" version="0.12.5" date="2026-08-24T00:00:00Z">
       <description>
         <p>Release bites</p>
-          <ul>
-            <li>NOMM can now be properly launched even when no Steam installation is present on user system</li>
-            <li>Fixed some minor UI issues in first time setup screens (bundled icons, staging select button width, crossfade)</li>
-          </ul>
+        <ul>
+          <li>Fixed regression stopping utilities from being correctly downloaded</li>
+        </ul>
       </description>
     </release>
-    <release version="0.12.3" date="2026-08-23">
-      <url type="details">https://github.com/Allexio/nomm/releases/tag/0.12.3</url>
+    <release type="stable" version="0.12.4" date="2026-08-24T00:00:00Z">
       <description>
         <p>Release bites</p>
-          <ul>
-            <li>Additional changes for Flathub support</li>
-          </ul>
+        <ul>
+          <li>NOMM can now be properly launched even when no Steam installation is present on user system</li>
+          <li>Fixed some minor UI issues in first time setup screens (bundled icons, staging select button
+          width, crossfade)</li>
+        </ul>
       </description>
     </release>
-    <release version="0.12.2" date="2026-08-19">
-      <url type="details">https://github.com/Allexio/nomm/releases/tag/0.12.2</url>
+    <release type="stable" version="0.12.3" date="2026-08-23T00:00:00Z">
       <description>
         <p>Release bites</p>
-          <ul>
-            <li>Name change from com.nomm.Nomm to moe.nomm.Nomm</li>
-            <li>Minor bugfix during first launch with GOG games installed</li>
-          </ul>
+        <ul>
+          <li>Additional changes for Flathub support</li>
+        </ul>
+      </description>
+    </release>
+    <release type="stable" version="0.12.2" date="2026-08-19T00:00:00Z">
+      <description>
+        <p>Release bites</p>
+        <ul>
+          <li>Name change from com.nomm.Nomm to moe.nomm.Nomm</li>
+          <li>Minor bugfix during first launch with GOG games installed</li>
+        </ul>
       </description>
     </release>
   </releases>
+  <content_rating type="oars-1.1">
+    <content_attribute id="language-humor">mild</content_attribute>
+  </content_rating>
 </component>
