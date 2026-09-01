@@ -467,15 +467,20 @@ class ConfigurationBuilderWindow(Adw.Window):
         # Name Row
         name_row = Adw.EntryRow(title=_("Path Identifier *"))
         name_row.set_text(data.get("name", ""))
+        name_row.set_tooltip_text(_("When multiple paths are defined, this will be the name of the path that will be shown to users in the UI"))
         group.add(name_row)
 
         # Description Row
         desc_row = Adw.EntryRow(title=_("Description *"))
         desc_row.set_text(data.get("description", ""))
+        desc_row.set_tooltip_text(_("When multiple paths are defined, this will be the description visible to help users "
+                                    "understand which path they should select for the mod they are installing"))
         group.add(desc_row)
 
         # Combined Path Row (Dropdown prefix + Entry path)
         path_row = Adw.ActionRow(title=_("Path *"))
+        path_row.set_tooltip_text(_("The deployment path has to start either at the root of the installed game files (most often it's this one), "
+                                    "or in the user data (ex. Steam compatdata folder). Pick one of the two and then set the rest of the path."))
 
         base_combo = Gtk.DropDown.new_from_strings(
             [_("Game Installation Path"), _("User Data Path")]
