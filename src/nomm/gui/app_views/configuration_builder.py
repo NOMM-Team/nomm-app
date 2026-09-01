@@ -4,7 +4,6 @@ import os
 from nomm.platforms.steam import get_installed_steam_games, get_art
 from nomm.core.user_config import CUSTOM_GAME_CONFIG_PATH
 from nomm.core.tools import write_yaml
-from nomm.gui.text_window import TextWindow
 
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
@@ -274,60 +273,34 @@ class ConfigurationBuilderWindow(Adw.Window):
         main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
         self.set_content(main_box)
 
-        # Header Bar
-        header = Adw.HeaderBar()
-        main_box.append(header)
-
-        # Custom Tab Buttons Container
-        tab_container = Gtk.Box(
-            orientation=Gtk.Orientation.HORIZONTAL, homogeneous=True
-        )
-
-        self.game_info_btn = Gtk.ToggleButton(
-            label=_("Game Info"), css_classes=["overlay-tab"]
-        )
-        self.game_info_btn.set_cursor_from_name("pointer")
-        tab_container.append(self.game_info_btn)
-
-        self.modding_info_btn = Gtk.ToggleButton(
-            label=_("Modding Paths"), css_classes=["overlay-tab"]
-        )
-        self.modding_info_btn.set_cursor_from_name("pointer")
-        self.modding_info_btn.set_group(self.game_info_btn)
-        tab_container.append(self.modding_info_btn)
-
-        self.utilities_btn = Gtk.ToggleButton(
-            label=_("Utilities"), css_classes=["overlay-tab"]
-        )
-        self.utilities_btn.set_cursor_from_name("pointer")
-        self.utilities_btn.set_group(self.game_info_btn)
-        tab_container.append(self.utilities_btn)
-
-        main_box.append(tab_container)
-
-        self.stack = Gtk.Stack()
-        self.stack.set_transition_type(Gtk.StackTransitionType.SLIDE_LEFT_RIGHT)
+        self.stack = Adw.ViewStack()
         self.stack.set_vexpand(True)
+
+        header = Adw.HeaderBar()
+        switcher = Adw.ViewSwitcher()
+        switcher.set_stack(self.stack)
+        switcher.set_policy(Adw.ViewSwitcherPolicy.WIDE)
+        header.set_title_widget(switcher)
+        main_box.append(header)
 
         self.game_info_view = self._build_game_info_tab(initial_data or {})
         self.modding_info_view = self._build_modding_paths_tab()
         self.utilities_view = self._build_utilities_tab()
 
-        self.stack.add_named(self.game_info_view, "game_info")
-        self.stack.add_named(self.modding_info_view, "modding_info")
-        self.stack.add_named(self.utilities_view, "utilities")
+        self.game_info_page = self.stack.add_titled(self.game_info_view, "game_info", _("Game Info"))
+        self.game_info_page.set_icon_name("mat-game-controller-symbolic")
+
+        self.modding_info_page = self.stack.add_titled(self.modding_info_view, "modding_info", _("Modding Paths"))
+        self.modding_info_page.set_icon_name("mat-folder-managed-symbolic")
+
+        self.utilities_page = self.stack.add_titled(self.utilities_view, "utilities", _("Utilities"))
+        self.utilities_page.set_icon_name("mat-wrench-symbolic")
 
         main_box.append(self.stack)
 
         def _on_tab_toggled(btn, stack_name):
             if btn.get_active():
                 self.stack.set_visible_child_name(stack_name)
-
-        self.game_info_btn.connect("toggled", _on_tab_toggled, "game_info")
-        self.modding_info_btn.connect("toggled", _on_tab_toggled, "modding_info")
-        self.utilities_btn.connect("toggled", _on_tab_toggled, "utilities")
-
-        self.game_info_btn.set_active(True)
 
         action_bar = Gtk.ActionBar()
         self.continue_btn = Gtk.Button(label=_("Save"))
@@ -418,7 +391,6 @@ class ConfigurationBuilderWindow(Adw.Window):
             orientation=Gtk.Orientation.VERTICAL, spacing=16
         )
 
-        # Main scrollable view
         scrolled = Gtk.ScrolledWindow()
         scrolled.set_vexpand(True)
 
@@ -437,7 +409,6 @@ class ConfigurationBuilderWindow(Adw.Window):
 
         main_box.append(self.modding_groups_container)
 
-        # Add Path Group Button
         add_btn = Gtk.Button(label=_("Add Modding Path"))
         add_btn.add_css_class("pill")
         add_btn.set_halign(Gtk.Align.CENTER)
@@ -447,7 +418,6 @@ class ConfigurationBuilderWindow(Adw.Window):
 
         scrolled.set_child(main_box)
 
-        # Populate default group
         default_data = {
             "name": "Default path",
             "description": "The default path where mods will be extracted to",
@@ -743,13 +713,14 @@ class ConfigurationBuilderWindow(Adw.Window):
             util_child = util_child.get_next_sibling()
 
         # If validation fails, stay on or jump to invalid tab
+        # Updated validation navigation:
         if has_error:
             if not name_val:
-                self.game_info_btn.set_active(True)
+                self.stack.set_visible_child_name("game_info")
             elif invalid_utility_tab:
-                self.utilities_btn.set_active(True)
+                self.stack.set_visible_child_name("utilities")
             else:
-                self.modding_info_btn.set_active(True)
+                self.stack.set_visible_child_name("modding_info")
             return
 
         rgba = self.color_button.get_rgba()
@@ -770,11 +741,39 @@ class ConfigurationBuilderWindow(Adw.Window):
         write_yaml(config_data, custom_configuration_path)
         print(f"New custom configuration for game {name_val} saved to {custom_configuration_path}")
         self.app.show_loading_and_scan()
-        self.close()
+
         if len(os.listdir(CUSTOM_GAME_CONFIG_PATH)) == 1:
-            message_to_user: str = _("Congrats on creating your first game configuration!\n"
-                                     "Once you've tested it and made sure it works, please don't hesitate to share it with the NOMM "
-                                     "community on our Game Configuration Github repo!\n\n"
-                                     "We sincerely hope you continue to enjoy using NOMM :)")
-            desc_win = TextWindow(self.app.win, "First configuration created!", message_to_user, text_type="markup")
-            desc_win.present()
+            self.show_congrats_dialog()
+        else:
+            self.close()
+
+    def show_congrats_dialog(self):
+        dialog = Adw.AlertDialog(
+            heading=_("First Configuration Created!"),
+            body=_(
+                "Congrats on creating your first game configuration!\n\n"
+                "Once you've tested it and made sure it works, please don't hesitate "
+                "to share it with the NOMM community on our Game Configuration GitHub repo!\n\n"
+                "We sincerely hope you continue to enjoy using NOMM :)"
+            ),
+        )
+
+        icon = Gtk.Image.new_from_icon_name("nomm-logo")
+        icon.set_pixel_size(48)
+        icon.add_css_class("accent")
+        dialog.set_extra_child(icon)
+
+        dialog.add_response("ok", _("Got it!"))
+        dialog.add_response("github", _("Open GitHub Repo"))
+
+        dialog.set_default_response("ok")
+        dialog.set_response_appearance("github", Adw.ResponseAppearance.SUGGESTED)
+
+        def _on_response(dialog_obj, response_id):
+            if response_id == "github":
+                uri_launcher = Gtk.UriLauncher(uri="https://github.com/nomm-team/nomm-configurations")
+                uri_launcher.launch(None, None, None)
+            self.close()
+
+        dialog.connect("response", _on_response)
+        dialog.present(self)

@@ -8,6 +8,7 @@ Description: |-
    * Rework the separation between default configs and custom configs
    * Add a new config builder
    * Add unit test & linting framework
+   * Rework first time setup UX
 ---
 Version: "0.12.6"
 Date: 2026-08-26

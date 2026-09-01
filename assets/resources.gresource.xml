@@ -39,5 +39,7 @@
     <file>add-configuration-symbolic.svg</file>
     <file>mat-edit-document-symbolic.svg</file>
     <file>mat-edit-symbolic.svg</file>
+    <file>mat-wrench-symbolic.svg</file>
+    <file>mat-game-controller-symbolic.svg</file>
   </gresource>
 </gresources>
