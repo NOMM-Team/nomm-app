@@ -385,6 +385,8 @@ class ConfigurationBuilderWindow(Adw.Window):
         self.color_row = Adw.ActionRow(title=_("Accent Color"))
         self.color_dialog = Gtk.ColorDialog()
         self.color_button = Gtk.ColorDialogButton(dialog=self.color_dialog)
+        self.color_button.set_margin_top(7)
+        self.color_button.set_margin_bottom(7)
         self.color_row.set_tooltip_text(_("A colour that represents the game's art. This is used when the 'Per Game Accent Colour' option is enabled. "
                                           "The accent colour of NOMM will switch to this colour when the game is being modded."))
 
@@ -580,34 +582,48 @@ class ConfigurationBuilderWindow(Adw.Window):
 
         name_row = Adw.EntryRow(title=_("Name *"))
         name_row.set_text(data.get("name", ""))
+        name_row.set_tooltip_text(_("The name of the utility"))
         group.add(name_row)
 
         version_row = Adw.EntryRow(title=_("Version *"))
         version_row.set_text(data.get("version", ""))
+        version_row.set_tooltip_text(_("The version of the utility that you will be linking to"))
         group.add(version_row)
 
         creator_row = Adw.EntryRow(title=_("Creator *"))
         creator_row.set_text(data.get("creator", ""))
+        creator_row.set_tooltip_text(_("The name of the creator of the utility"))
         group.add(creator_row)
 
         creator_link_row = Adw.EntryRow(title=_("Creator Link (URL) *"))
         creator_link_row.set_text(data.get("creator-link", ""))
+        creator_link_row.set_tooltip_text(_("A link to the creator's page (Github, social media, Patreon, Nexus...) "
+                                            "ideally ask the creator which one should be used."))
         group.add(creator_link_row)
 
         source_row = Adw.EntryRow(title=_("Source (URL) *"))
         source_row.set_text(data.get("source", ""))
+        source_row.set_tooltip_text(_("The link from where NOMM will download the utility. Keep in mind this NEEDS to be an actual download link."
+                                      "Not a link to the page where the download link is. "
+                                      "Do NOT use Nexus Mods download links for this as most users will not be able to use it. "
+                                      "If no link outside of Nexus exists, you may ask the creator if they can upload it somehwere else such as Github"))
         group.add(source_row)
 
         utility_path_row = Adw.EntryRow(title=_("Utility Path *"))
         utility_path_row.set_text(data.get("utility_path", ""))
+        utility_path_row.set_tooltip_text(_("The path where the utility needs to be deployed to"))
         group.add(utility_path_row)
 
         enable_cmd_row = Adw.EntryRow(title=_("Enable Command (Optional)"))
         enable_cmd_row.set_text(data.get("enable_command", ""))
+        enable_cmd_row.set_tooltip_text(_("Some utilities require commands to be run in the shell after installation, add these here. "
+                                          "This is a dangerous option so any configuration that uses this will be reviewed closely."))
         group.add(enable_cmd_row)
 
         launch_opts_row = Adw.EntryRow(title=_("Launch Options (Optional)"))
         launch_opts_row.set_text(data.get("launch_options", ""))
+        launch_opts_row.set_tooltip_text(_("Some utilities require the user to add launch options to the game. "
+                                           "This can be handled automatically by NOMM if you add the command here."))
         group.add(launch_opts_row)
 
         delete_btn = Gtk.Button(
