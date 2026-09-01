@@ -1,6 +1,7 @@
 ---
 Version: "0.13.0"
 Date: 2026-09-01
+URL: https://github.com/nomm-team/nomm-app/releases/0.13.0
 Description: |-
   Release bites
    * Overhaul project structure to be more in line with python packaging standards
@@ -13,18 +14,21 @@ Description: |-
 ---
 Version: "0.12.6"
 Date: 2026-08-26
+URL: https://github.com/nomm-team/nomm-app/releases/0.12.6
 Description: |-
   Release bites
    * Use portal path instead of real path for staging and downloads
 ---
 Version: "0.12.5"
 Date: 2026-08-24
+URL: https://github.com/nomm-team/nomm-app/releases/0.12.5
 Description: |-
   Release bites
    * Fixed regression stopping utilities from being correctly downloaded
 ---
 Version: "0.12.4"
 Date: 2026-08-24
+URL: https://github.com/nomm-team/nomm-app/releases/0.12.4
 Description: |-
   Release bites
    * NOMM can now be properly launched even when no Steam installation is present on user system
@@ -33,12 +37,14 @@ Description: |-
 ---
 Version: "0.12.3"
 Date: 2026-08-23
+URL: https://github.com/nomm-team/nomm-app/releases/0.12.3
 Description: |-
   Release bites
    * Additional changes for Flathub support
 ---
 Version: "0.12.2"
 Date: 2026-08-19
+URL: https://github.com/nomm-team/nomm-app/releases/0.12.2
 Description: |-
   Release bites
    * Name change from com.nomm.Nomm to moe.nomm.Nomm
