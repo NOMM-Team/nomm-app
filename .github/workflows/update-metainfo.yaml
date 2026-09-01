@@ -43,23 +43,23 @@ jobs:
           commit_message: "Chore: update metainfo.xml release notes"
           file_pattern: "build/flatpak/moe.nomm.Nomm.metainfo.xml"
 
-      - name: Update PKGBUILD and .SRCINFO for stable release
-        run: |
-          su builder -c "
-            cd '$GITHUB_WORKSPACE/build/aur'
-            updpkgsums
-            makepkg --printsrcinfo > .SRCINFO
-          "
-
-      - name: Update PKGBUILD and .SRCINFO for git release
-        run: |
-          su builder -c "
-            cd '$GITHUB_WORKSPACE/build/aur-nightly'
-            updpkgsums
-            makepkg --printsrcinfo > .SRCINFO
-          "
-      - name: Commit and Push changes for PKGBUILD
-        uses: stefanzweifel/git-auto-commit-action@v7
-        with:
-          commit_message: "Chore: bumped PKGBUILD version"
-          file_pattern: "build/aur/PKGBUILD build/aur/.SRCINFO build/aur-nightly/PKGBUILD build/aur-nightly/.SRCINFO"
+#      - name: Update PKGBUILD and .SRCINFO for stable release
+#        run: |
+#          su builder -c "
+#            cd '$GITHUB_WORKSPACE/build/aur'
+#            updpkgsums
+#            makepkg --printsrcinfo > .SRCINFO
+#          "
+#
+#      - name: Update PKGBUILD and .SRCINFO for git release
+#        run: |
+#          su builder -c "
+#            cd '$GITHUB_WORKSPACE/build/aur-nightly'
+#            updpkgsums
+#            makepkg --printsrcinfo > .SRCINFO
+#          "
+#      - name: Commit and Push changes for PKGBUILD
+#        uses: stefanzweifel/git-auto-commit-action@v7
+#        with:
+#          commit_message: "Chore: bumped PKGBUILD version"
+#          file_pattern: "build/aur/PKGBUILD build/aur/.SRCINFO build/aur-nightly/PKGBUILD build/aur-nightly/.SRCINFO"
