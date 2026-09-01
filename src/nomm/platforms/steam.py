@@ -5,7 +5,7 @@ import vdf
 from typing import List, Dict, Optional, Any
 
 from nomm.core.user_config import load_user_config, parse_mod_paths
-from nomm.core.tools import launch_option_merger, slugify, write_yaml
+from nomm.core.tools import launch_option_merger, slugify
 
 import gettext
 _ = gettext.gettext
@@ -96,7 +96,7 @@ def get_art(steam_base: str, app_id: str):
     return None
 
 
-def find_game(yaml_data, yaml_path, game_title, found_libs, steam_base) -> List[Dict[str, Any]]:
+def find_game(yaml_data, game_title, found_libs, steam_base) -> List[Dict[str, Any]]:
     """Scans for a specific game in previously detected Steam libraries"""
     yaml_game_name = yaml_data.get("steam_folder_name", game_title)
     slug_yaml_name = slugify(yaml_game_name)
@@ -107,13 +107,10 @@ def find_game(yaml_data, yaml_path, game_title, found_libs, steam_base) -> List[
         for folder in os.listdir(lib):
             if slugify(folder) == slug_yaml_name:
                 game_path = os.path.join(lib, folder)
-                yaml_data["platform"] = "steam"
-                yaml_data["game_path"] = game_path
-                write_yaml(yaml_data, yaml_path)
 
                 # mod path parsing
                 user_data_path = os.path.dirname(os.path.dirname(game_path)) + "/compatdata/" + str(yaml_data["steam_id"]) + "/pfx"
-                mod_paths = parse_mod_paths(yaml_data["mods_path"], game_path, user_data_path)
+                mod_paths: list[dict[str, str]] = parse_mod_paths(yaml_data["mods_path"], game_path, user_data_path)
 
                 return {
                     "name": game_title,
@@ -121,9 +118,11 @@ def find_game(yaml_data, yaml_path, game_title, found_libs, steam_base) -> List[
                     "path": game_path,
                     "app_id": yaml_data.get("steam_id"),
                     "platform": "steam",
-                    "game_config_path": yaml_path,
                     "mod_paths": mod_paths,
                     "utilities": yaml_data.get("essential-utilities"),
-                    "accent_colour": yaml_data.get("accent_colour")
+                    "accent_colour": yaml_data.get("accent_colour"),
+                    "load_order_path": yaml_data.get("load_order_path"),
+                    "wiki_link": yaml_data.get("wiki_link"),
+                    "nexus_id": yaml_data.get("nexus_id")
                 }
     return None

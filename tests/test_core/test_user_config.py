@@ -6,18 +6,15 @@ from os import path
 import os
 from pathlib import Path
 
-from nomm.core.user_config import load_user_config
+from nomm.core.user_config import load_user_config, load_yaml, update_user_config, DATA_DIR
 from nomm.core.tools import write_yaml
-from nomm.core.user_config import load_yaml
-from nomm.core.user_config import update_user_config
 from nomm.core.downloader import Downloader
 
 gi.require_version('Gtk', '4.0')
-from gi.repository import GLib  # noqa: E402
 
 
 def test_load_yaml():
-    user_config_path = os.path.join(GLib.get_user_data_dir(), 'nomm', 'user_config.yaml')
+    user_config_path = os.path.join(DATA_DIR, 'user_config.yaml')
     config = {
         "api_key": "",
         "download_paths": []
@@ -30,7 +27,7 @@ def test_load_yaml():
 
 
 def test_update_user_config():
-    user_config_path = os.path.join(GLib.get_user_data_dir(), 'nomm', 'user_config.yaml')
+    user_config_path = os.path.join(DATA_DIR, 'user_config.yaml')
     config = {
         "api_key": "",
         "download_paths": []

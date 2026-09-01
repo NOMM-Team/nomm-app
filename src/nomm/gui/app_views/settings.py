@@ -1,13 +1,12 @@
 import gettext
-import os
 import threading
 import webbrowser
 
 import requests
 from gi.repository import Adw, Gio, GLib, Gtk
 
-from nomm.core.user_config import update_user_config, LibrarySort
-from nomm.core.tools import load_yaml, translate_fuse_path, get_nomm_tags, create_icon_button
+from nomm.core.user_config import update_user_config, LibrarySort, DATA_DIR, load_user_config
+from nomm.core.tools import translate_fuse_path, get_nomm_tags, create_icon_button
 from nomm.platforms.switch import list_emulators
 from nomm.gui.application import APP_VERSION
 
@@ -20,10 +19,7 @@ class SettingsWindow(Adw.Window):
         self.app = app
         self.set_default_size(500, 670)
 
-        self.user_config_dir = os.path.join(GLib.get_user_data_dir(), "nomm",)
-        self.user_config_path = os.path.join(self.user_config_dir, "user_config.yaml")
-
-        user_config = load_yaml(self.user_config_path)
+        user_config = load_user_config()
 
         content = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=20, margin_top=24, margin_bottom=24, margin_start=24, margin_end=24)
         self.set_content(content)
@@ -126,12 +122,12 @@ class SettingsWindow(Adw.Window):
 
         # Config Path Row
         self.config_path_row = Adw.ActionRow(title=_("NOMM Configuration Path"))
-        self.config_path_row.set_subtitle(self.user_config_dir)
+        self.config_path_row.set_subtitle(DATA_DIR)
 
         config_path_btn = create_icon_button(
             icon_name="mat-folder-symbolic",
             tooltip=_("Go to your NOMM configuration folder location. This path is not modifiable and depends on your NOMM installation type."),
-            on_click=lambda b: webbrowser.open(f"file://{self.user_config_dir}"),
+            on_click=lambda b: webbrowser.open(f"file://{DATA_DIR}"),
         )
         self.config_path_row.add_suffix(config_path_btn)
         storage_group.add(self.config_path_row)

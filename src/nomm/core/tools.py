@@ -241,7 +241,8 @@ def slugify(text: str) -> str:
 
 def load_cached_assets(game_name: str, platform: str) -> dict[str, str]:
     """Attempts to load game poster and hero from cache, or downloads them"""
-    cache_base = os.path.join(GLib.get_user_data_dir(), "nomm", "image-cache", f"{platform}", f"{game_name}")
+    from nomm.core.user_config import DATA_DIR
+    cache_base = os.path.join(DATA_DIR, "image-cache", f"{platform}", f"{game_name}")
 
     if os.path.exists(cache_base):
         existing_files = {}
@@ -322,7 +323,7 @@ def load_nomm_version() -> str:
     return release_bites[0]["Version"]
 
 
-def get_data_dir() -> str:
+def get_bundled_data_dir() -> str:
     """Returns the absolute path to the directory containing assets/ and config files."""
     candidates = [
         "/app/share/nomm",  # Flatpak directory

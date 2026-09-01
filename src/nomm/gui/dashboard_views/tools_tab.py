@@ -22,7 +22,7 @@ class ToolsTab(Gtk.Box):
         self.downloader = downloader
         self.download_maps = {}
 
-        utilities_cfg = self.dashboard.game_config.get("essential-utilities", {})
+        utilities_cfg = self.dashboard.game_info.get("utilities", {})
 
         if not utilities_cfg or not isinstance(utilities_cfg, dict):
             self.append(Gtk.Label(label=_("No utilities defined."), css_classes=["dim-label"]))
@@ -117,7 +117,7 @@ class ToolsTab(Gtk.Box):
             self.append(scrolled)
 
         # Load Order Button
-        load_order_rel = self.dashboard.game_config.get("load_order_path")
+        load_order_rel = self.dashboard.game_info.get("load_order_path")
         if load_order_rel:
             btn_container = Gtk.CenterBox(margin_top=20, margin_bottom=20)
             load_order_btn = Gtk.Button(label=_("Edit Load Order"), css_classes=["pill"])
@@ -236,7 +236,7 @@ class ToolsTab(Gtk.Box):
     def execute_utility_install(self, util):
 
         deploy_essential_utility(util, self.dashboard.downloads_path, self.dashboard.staging_path,
-                                 self.dashboard.game_path, self.dashboard.app.steam_base, self.dashboard.game_config.get("steam_id"))
+                                 self.dashboard.game_path, self.dashboard.app.steam_base, self.dashboard.app_id)
 
         self.dashboard.show_message(
             _("Success"),

@@ -7,7 +7,7 @@ from pathlib import Path
 import rarfile
 from gi.repository import Adw, Gdk, Gio, Gtk
 
-from nomm.core.tools import load_yaml, write_yaml
+from nomm.core.user_config import load_user_config, update_user_config
 from nomm.core.mod_manager import (completely_uninstall_mod, get_metadata_path, get_mod_statistics,
                                    load_staging_metadata, remove_mod_from_metadata)
 from nomm.core.colour_manager import set_accent_colour, reset_accent_colour
@@ -24,12 +24,13 @@ class GameDashboard(Gtk.Box):
     def __init__(self, application, game_info, **kwargs):
         super().__init__(orientation=Gtk.Orientation.VERTICAL, **kwargs)
         self.app = application
+        self.game_info = game_info
         self.game_name = game_info["name"]
         self.game_path = game_info["path"]
         self.platform = game_info["platform"]
         self.app_id = game_info.get("app_id")
-        self.game_config = load_yaml(game_info["game_config_path"])
-        user_config = load_yaml(application.user_config_path)
+        # self.game_config = load_yaml(game_info["game_config_path"])
+        user_config = load_user_config()
         self.downloads_path = str(Path(os.path.join(Path(user_config.get("download_path")), self.game_name)))
         self.staging_path = Path(os.path.join(Path(user_config.get("staging_path")), self.game_name))
         self.staging_metadata_path = get_metadata_path(self.staging_path, is_staging=True)
@@ -256,9 +257,7 @@ class GameDashboard(Gtk.Box):
             self.update_indicators()
 
     def on_back_clicked(self, btn):
-        user_config = load_yaml(self.app.user_config_path)
-        user_config["last_selected_game"] = "dashboard"
-        write_yaml(user_config, self.app.user_config_path)
+        update_user_config("last_selected_game", "dashboard")
         reset_accent_colour(self._accent_style_provider)
         self.app.return_to_library()
 
