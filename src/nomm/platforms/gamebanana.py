@@ -9,6 +9,7 @@ from urllib.error import HTTPError
 import requests
 from gi.repository import GLib
 
+from nomm.core.user_config import load_user_config, SWITCH_GAME_CONFIG_PATH
 from nomm.core.mod_manager import get_metadata_path, meta_lock
 from nomm.core.downloader import Downloader
 from nomm.gui.notifications import download_popup, send_download_notification
@@ -70,9 +71,7 @@ def get_mod_info(headers: dict, mod_id: str, download_dir: Path, current_mod_sta
 # Interprets nxm links and launchs notification
 def handle_gamebanana_link(link: str, downloader: Downloader, headers: dict) -> bool:
     # link example: nomm://gb/switch/0100152000022000/708958?url=https://gamebanana.com/mmdl/1795390
-    app_dir = os.path.join(GLib.get_user_data_dir(), "nomm")
-    user_config_dir = os.path.join(app_dir, "user_config.yaml")
-    user_config = load_yaml(user_config_dir)
+    user_config = load_user_config()
     base_download_path = user_config.get("download_path")
 
     # Api_key checked here to prevent from storing useless data (compared to where it was)
@@ -90,10 +89,9 @@ def handle_gamebanana_link(link: str, downloader: Downloader, headers: dict) -> 
     print(f"Switch Title ID: {mod_switch_id}")
     print(f"Mod ID: {mod_id}")
 
-    switch_config_path = os.path.join(app_dir, "game_configs", "emulation", "switch.yaml")
-    if not os.path.exists(switch_config_path):
+    if not os.path.exists(SWITCH_GAME_CONFIG_PATH):
         return
-    switch_config = load_yaml(switch_config_path)
+    switch_config = load_yaml(SWITCH_GAME_CONFIG_PATH)
 
     game_folder_name = ""
     for game in switch_config:
@@ -114,11 +112,11 @@ def handle_gamebanana_link(link: str, downloader: Downloader, headers: dict) -> 
     download_url = parse_qs(parsed.query).get("url", [None])[0]
 
     # Download mod
-    return _download_gb_mod(download_url, headers, download_dir, mod_id, game_folder_name, user_config_dir, downloader)
+    return _download_gb_mod(download_url, headers, download_dir, mod_id, game_folder_name, user_config, downloader)
 
 
 def _download_gb_mod(mod_url: str, headers: dict, download_dir: Path, mod_id: str,
-                     game_folder_name: str, user_config_dir, downloader: Downloader) -> bool:
+                     game_folder_name: str, user_config: dict, downloader: Downloader) -> bool:
 
     response = requests.head(mod_url, allow_redirects=True, headers=headers, timeout=10)
     download_url = response.url
@@ -149,9 +147,8 @@ def _download_gb_mod(mod_url: str, headers: dict, download_dir: Path, mod_id: st
     downloader.connect('download-error', on_download_error)
 
     print(f"Downloading {file_name} to {game_folder_name}...")
-    user_meta = load_yaml(user_config_dir)
 
-    if user_meta.get('disable_download_window'):
+    if user_config.get('disable_download_window'):
         threading.Thread(
             target=downloader.download_mod,
             args=(download_url, str(download_dir)),
