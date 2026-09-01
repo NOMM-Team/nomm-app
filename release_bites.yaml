@@ -1,8 +1,14 @@
 ---
 Version: "0.13.0"
-Date: 2026-08-28
+Date: 2026-09-01
 Description: |-
   Release bites
+   * Overhaul project structure to be more in line with python packaging standards
+   * Split the repo into different repos, move default configs to their own repo
+   * Rework the separation between default configs and custom configs
+   * Add a new config builder
+   * Add unit test & linting framework
+   * Rework first time setup UX
    * Set up automated workflow for adding release notes to flatpak
 ---
 Version: "0.12.6"

@@ -35,10 +35,16 @@
     <color type="primary" scheme_preference="dark">#374955</color>
   </branding>
   <releases>
-    <release type="stable" version="0.13.0" date="2026-08-28T00:00:00Z">
+    <release type="stable" version="0.13.0" date="2026-09-01T00:00:00Z">
       <description>
         <p>Release bites</p>
         <ul>
+          <li>Overhaul project structure to be more in line with python packaging standards</li>
+          <li>Split the repo into different repos, move default configs to their own repo</li>
+          <li>Rework the separation between default configs and custom configs</li>
+          <li>Add a new config builder</li>
+          <li>Add unit test &amp; linting framework</li>
+          <li>Rework first time setup UX</li>
           <li>Set up automated workflow for adding release notes to flatpak</li>
         </ul>
       </description>

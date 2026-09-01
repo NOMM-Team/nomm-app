@@ -1,7 +1,6 @@
 import os
-
 import vdf
-
+from pathlib import Path
 from typing import List, Dict, Optional, Any
 
 from nomm.core.user_config import load_user_config, parse_mod_paths
@@ -9,6 +8,11 @@ from nomm.core.tools import launch_option_merger, slugify
 
 import gettext
 _ = gettext.gettext
+
+TOOL_APP_IDS: list[int] = [1887720, 432054, 432053, 376798, 376797, 352053, 352052, 314648, 314647, 270084, 270083, 858280, 930400,
+                           961940, 996510, 1054830, 1113280, 1161040, 1245040, 1420170, 1493710, 1580130, 1826330, 1887720, 2180100,
+                           2230260, 2348590, 2805730, 3086180, 3658110, 4628710, 4628740, 4427310, 4862110, 1391110, 1070560,
+                           4185400, 4183110, 3810310, 1628350, 228980]
 
 
 def get_steam_base_dir() -> Optional[str]:
@@ -22,6 +26,43 @@ def get_steam_base_dir() -> Optional[str]:
         if os.path.exists(p):
             return p
     return None
+
+
+def get_installed_steam_games(game_libraries):
+
+    steam_libraries = []
+
+    for game_library in game_libraries:
+        if "steam" in game_library:
+            if Path(game_library).exists():
+                steam_libraries.append(Path(game_library))
+
+    print(f"Unique Steam Libraries: {steam_libraries}")
+
+    installed_games = []
+
+    for steam_library in steam_libraries:
+        for manifest_file in steam_library.glob("appmanifest_*.acf"):
+            try:
+                with open(manifest_file, "r", encoding="utf-8") as f:
+                    data = vdf.load(f)
+
+                app_state = data.get("AppState", {})
+                appid = int(app_state.get("appid", 0))
+                name = app_state.get("name")
+
+                if appid and name and appid not in TOOL_APP_IDS:
+                    installed_games.append(
+                        {
+                            "name": name,
+                            "appid": appid,
+                            "installdir": app_state.get("installdir", ""),
+                        }
+                    )
+            except Exception as e:
+                print(f"Error reading {manifest_file}: {e}")
+    installed_games = sorted(installed_games, key=lambda g: g["name"].lower())
+    return installed_games
 
 
 def get_library_paths(steam_base) -> List[str]:
@@ -39,7 +80,7 @@ def get_library_paths(steam_base) -> List[str]:
             for index in folders:
                 path = folders[index].get("path")
                 if path:
-                    full_path = os.path.join(path, "steamapps/common")
+                    full_path = os.path.join(path, "steamapps")
                     libraries.append(os.path.normpath(full_path))
     except Exception as e:
         print(f"Error parsing VDF at {vdf_path}: {e}")
@@ -102,6 +143,7 @@ def find_game(yaml_data, game_title, found_libs, steam_base) -> List[Dict[str, A
     slug_yaml_name = slugify(yaml_game_name)
 
     for lib in found_libs:
+        lib = lib + "/common"
         if not os.path.exists(lib):
             continue
         for folder in os.listdir(lib):

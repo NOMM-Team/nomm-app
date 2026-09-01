@@ -9,7 +9,7 @@
     <!-- game platform icons -->
     <file>gog-logo-symbolic.svg</file>
     <file>steam-logo.svg</file>
-    <file>epic-logo-symbolic.svg</file>
+    <file>epic-logo.svg</file>
     <file>switch-logo-symbolic.svg</file>
     <file>citron-logo.svg</file>
     <file>eden-logo.svg</file>
@@ -36,5 +36,10 @@
     <file>mat-delete-symbolic.svg</file>
     <file>mat-delete-forever-symbolic.svg</file>
     <file>folder-staging-symbolic.svg</file>
+    <file>add-configuration-symbolic.svg</file>
+    <file>mat-edit-document-symbolic.svg</file>
+    <file>mat-edit-symbolic.svg</file>
+    <file>mat-wrench-symbolic.svg</file>
+    <file>mat-game-controller-symbolic.svg</file>
   </gresource>
 </gresources>

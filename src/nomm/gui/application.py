@@ -238,9 +238,9 @@ class Nomm(Adw.Application):
         self.remove_stack_child("welcome")
         status_page = Adw.StatusPage(
             title=_("Welcome to the Native Open Mod Manager (NOMM) app!"),
-            description=_("This app is still in early development, so expect some bugs and missing features.\n\
-                           I hope you can still enjoy what the app currently offers and please don't forget that\
-                           you can report any bugs or request features on the Github!"),
+            description=_("This app is still in early development, so expect some bugs and missing features.\n"
+                          "We hope you can still enjoy what the app currently offers and please don't forget that "
+                          "you can report any bugs or request features on the Github!"),
             icon_name="nomm-logo"
         )
         status_page.add_css_class("setup-page")
@@ -260,9 +260,9 @@ class Nomm(Adw.Application):
         self.remove_stack_child("download-select")
         status_page = Adw.StatusPage(
             title=_("Select your mods download folder"),
-            description=_("Please select the folder where mod archives will be downloaded.\n\
-                           Mod downloads will be categorised by game name.\nI recommend you create\
-                           a nomm directory at the end of your target path"),
+            description=_("Please select the folder where mod archives will be downloaded.\n"
+                          "Mod downloads will be categorised by game name.\nIt is recommended that you create "
+                          "a nomm directory at the end of your target path"),
             icon_name="downloaded-symbolic"
         )
         status_page.add_css_class("setup-page")
@@ -297,8 +297,8 @@ class Nomm(Adw.Application):
         status_page.add_css_class("setup-page")
         vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12, halign=Gtk.Align.CENTER)
         warning_label = Gtk.Label(wrap=True, max_width_chars=50, justify=Gtk.Justification.CENTER)
-        warning_label.set_markup(_("<b>Important:</b> If using Flatpaks for your platforms (Steam, Heroic, etc.),\
-                                    ensure they have permission to access this folder (you can do this via command line or Flatseal)."))
+        warning_label.set_markup(_("<b>Important:</b> If using Flatpaks for your platforms (Steam, Heroic, etc.), ensure they\n"
+                                   "have permission to access this folder (you can do this via command line or Flatseal)."))
         warning_label.add_css_class("error")
         btn = Gtk.Button(label=_("Set Mod Staging Path"), margin_top=12, halign=Gtk.Align.CENTER)
         btn.add_css_class("suggested-action")
@@ -510,7 +510,7 @@ class Nomm(Adw.Application):
         threading.Thread(target=self.run_background_workflow, daemon=True).start()
 
     def run_background_workflow(self):
-        self.matches, game_libraries = scan_all_games()
+        self.matches, self.game_libraries = scan_all_games()
 
         # Check if there are essential paths that are locked (staging & downloads folders)
         user_config = load_user_config()
@@ -519,8 +519,8 @@ class Nomm(Adw.Application):
         self.locked_essential_paths = [path for path in essential_paths if not os.access(path, os.W_OK)]
 
         # Check which game libraries are locked (No Write Access)
-        print(f"Checking for access rights to library paths: {game_libraries}")
-        self.locked_libraries = [lib for lib in game_libraries if not os.access(lib, os.W_OK)]
+        print(f"Checking for access rights to library paths: {self.game_libraries}")
+        self.locked_libraries = [lib for lib in self.game_libraries if not os.access(lib, os.W_OK)]
 
         user_config = load_user_config()
         if "ignored_libraries" in user_config:
@@ -699,12 +699,38 @@ class Nomm(Adw.Application):
 
         self.stack.set_visible_child_name("library")
 
+    def on_configuration_builder_clicked(self, button):
+        from nomm.gui.app_views.configuration_builder import (
+            ConfigurationBuilderWindow,
+            PlatformChoiceDialog,
+        )
+
+        parent = (
+            self.get_active_window()
+            if hasattr(self, "get_active_window")
+            else self
+        )
+
+        def on_dialog_completed(data):
+            # Launch the main configuration form window with pre-filled dictionary
+            config_window = ConfigurationBuilderWindow(
+                parent_window=parent,
+                app=self,
+                initial_data=data
+            )
+            config_window.present()
+
+        dialog = PlatformChoiceDialog(
+            parent_window=parent, app=self, callback=on_dialog_completed
+        )
+        dialog.present()
+
     def on_settings_clicked(self, button):
         from nomm.gui.app_views.settings import SettingsWindow
         settings_win = SettingsWindow(self, parent_window=self.win)
         settings_win.present()
 
-    def manual_library_refresh(self):
+    def manual_library_refresh(self, button):
         """Resets some logic when the user does a manual refresh"""
         # Reset ignored libraries
         update_user_config("ignored_libraries", [])
