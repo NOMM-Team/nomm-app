@@ -346,15 +346,18 @@ class ConfigurationBuilderWindow(Adw.Window):
 
         preferences_group = Adw.PreferencesGroup(
             title=_("General Game Information"),
-            description=_("Provide core details and identifiers for the target game."),
+            description=_("Provide details on the target game.\n"
+                          "Technically the only required field is the name, but please try and fill as many fields as you can."),
         )
 
         self.name_row = Adw.EntryRow(title=_("Game Title *"))
         self.name_row.set_text(str(initial_data.get("name", "")))
+        self.name_row.set_tooltip_text(_("The full name of the game, as it shows up on game stores. Do NOT remove any numbers, spaces or symbols."))
         preferences_group.add(self.name_row)
 
         self.steam_id_row = Adw.EntryRow(title=_("Steam App ID"))
         self.steam_id_row.set_text(str(initial_data.get("steam_id", "")))
+        self.steam_id_row.set_tooltip_text(_("The standard, numerical, Steam app ID. Can be looked up on SteamDB or on the game's store page URL."))
 
         def _on_steam_id_changed(entry):
             text = entry.get_text()
@@ -367,18 +370,23 @@ class ConfigurationBuilderWindow(Adw.Window):
 
         self.steam_folder_row = Adw.EntryRow(title=_("Steam Folder Name"))
         self.steam_folder_row.set_text(str(initial_data.get("steam_folder_name", "")))
+        self.steam_folder_row.set_tooltip_text(_("The Steam folder name that can be seen in the steamapps/common folder"))
         preferences_group.add(self.steam_folder_row)
 
         self.gog_id_row = Adw.EntryRow(title=_("GOG Game ID"))
         self.gog_id_row.set_text(str(initial_data.get("gog_id", "")))
+        self.gog_id_row.set_tooltip_text(_("The GOG ID of the game, if the game is sold on GOG"))
         preferences_group.add(self.gog_id_row)
 
         self.nexus_id_row = Adw.EntryRow(title=_("Nexus ID"))
+        self.nexus_id_row.set_tooltip_text(_("The Nexus ID of the game, if the game has a page on the Nexus Mods platform"))
         preferences_group.add(self.nexus_id_row)
 
         self.color_row = Adw.ActionRow(title=_("Accent Color"))
         self.color_dialog = Gtk.ColorDialog()
         self.color_button = Gtk.ColorDialogButton(dialog=self.color_dialog)
+        self.color_row.set_tooltip_text(_("A colour that represents the game's art. This is used when the 'Per Game Accent Colour' option is enabled. "
+                                          "The accent colour of NOMM will switch to this colour when the game is being modded."))
 
         initial_color = "#3584e4"
         rgba = Gdk.RGBA()
@@ -391,6 +399,8 @@ class ConfigurationBuilderWindow(Adw.Window):
 
         self.wiki_link_row = Adw.EntryRow(title=_("Wiki URL"))
         self.wiki_link_row.set_text(str(initial_data.get("wiki_link", "")))
+        self.wiki_link_row.set_tooltip_text(_("If you plan to create a wiki page on the NOMM wiki to help users mod this game, "
+                                              "you can add the link to it here."))
         preferences_group.add(self.wiki_link_row)
 
         page_box.append(preferences_group)
@@ -415,6 +425,13 @@ class ConfigurationBuilderWindow(Adw.Window):
         main_box.set_margin_bottom(16)
         main_box.set_margin_start(16)
         main_box.set_margin_end(16)
+
+        header_group = Adw.PreferencesGroup(
+            title=_("Modding Paths Configuration"),
+            description=_("Define the locations where mods will be deployed to.\n"
+                          "There has to be at least one path group, but you can add more if you want."),
+        )
+        main_box.append(header_group)
 
         main_box.append(self.modding_groups_container)
 
@@ -529,6 +546,13 @@ class ConfigurationBuilderWindow(Adw.Window):
         main_box.set_margin_bottom(16)
         main_box.set_margin_start(16)
         main_box.set_margin_end(16)
+
+        header_group = Adw.PreferencesGroup(
+            title=_("Utilities Configuration"),
+            description=_("Define potential utilities that could be useful to have installed for this game.\n"
+                          "These can be mod frameworks or tools that will be helpful for users."),
+        )
+        main_box.append(header_group)
 
         main_box.append(self.utility_groups_container)
 
