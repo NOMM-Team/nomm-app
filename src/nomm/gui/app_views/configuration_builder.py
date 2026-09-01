@@ -603,10 +603,10 @@ class ConfigurationBuilderWindow(Adw.Window):
 
         source_row = Adw.EntryRow(title=_("Source (URL) *"))
         source_row.set_text(data.get("source", ""))
-        source_row.set_tooltip_text(_("The link from where NOMM will download the utility. Keep in mind this NEEDS to be an actual download link."
+        source_row.set_tooltip_text(_("The link from where NOMM will download the utility. Keep in mind this NEEDS to be an actual download link. "
                                       "Not a link to the page where the download link is. "
                                       "Do NOT use Nexus Mods download links for this as most users will not be able to use it. "
-                                      "If no link outside of Nexus exists, you may ask the creator if they can upload it somehwere else such as Github"))
+                                      "If no link outside of Nexus exists, you may ask the creator if they can upload it somewhere else such as Github"))
         group.add(source_row)
 
         utility_path_row = Adw.EntryRow(title=_("Utility Path *"))
@@ -623,7 +623,7 @@ class ConfigurationBuilderWindow(Adw.Window):
         launch_opts_row = Adw.EntryRow(title=_("Launch Options (Optional)"))
         launch_opts_row.set_text(data.get("launch_options", ""))
         launch_opts_row.set_tooltip_text(_("Some utilities require the user to add launch options to the game. "
-                                           "This can be handled automatically by NOMM if you add the command here."))
+                                           "This can be handled automatically by NOMM if you add the options here."))
         group.add(launch_opts_row)
 
         delete_btn = Gtk.Button(
