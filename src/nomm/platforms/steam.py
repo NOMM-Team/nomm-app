@@ -9,7 +9,10 @@ from nomm.core.tools import launch_option_merger, slugify
 import gettext
 _ = gettext.gettext
 
-TOOL_APP_IDS = []
+TOOL_APP_IDS: list[int] = [1887720, 432054, 432053, 376798, 376797, 352053, 352052, 314648, 314647, 270084, 270083, 858280, 930400,
+                           961940, 996510, 1054830, 1113280, 1161040, 1245040, 1420170, 1493710, 1580130, 1826330, 1887720, 2180100,
+                           2230260, 2348590, 2805730, 3086180, 3658110, 4628710, 4628740, 4427310, 4862110, 1391110, 1070560,
+                           4185400, 4183110, 3810310, 1628350]
 
 
 def get_steam_base_dir() -> Optional[str]:
@@ -48,9 +51,7 @@ def get_installed_steam_games(game_libraries):
                 appid = int(app_state.get("appid", 0))
                 name = app_state.get("name")
 
-                # Filter out non-games / runtime tools (e.g., Steamworks Shared)
-                if appid and name and appid not in (228980, 1070560):
-                    print(name)
+                if appid and name and appid not in TOOL_APP_IDS:
                     installed_games.append(
                         {
                             "name": name,
