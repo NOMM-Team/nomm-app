@@ -374,17 +374,27 @@ class Nomm(Adw.Application):
         self.remove_stack_child("api_key")
         status_page = Adw.StatusPage(
             title=_("Nexus API Key"),
-            description=_("If you want to download mods from Nexus Mods, enter your API Key (Site Preferences > API Keys > scroll all the way down)"),
+            description=_("If you want to download mods from Nexus Mods, enter your API Key. This is optional."),
             icon_name="dialog-password-symbolic"
         )
         entry_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12, halign=Gtk.Align.CENTER)
         entry_box.set_margin_top(24)
+
+        info_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0, halign=Gtk.Align.CENTER)
+        info_box.add_css_class("info-card")
+
+        info_label = Gtk.Label(wrap=True, max_width_chars=50, justify=Gtk.Justification.CENTER)
+        info_label.set_text(_("You can obtain your key from the Nexus website by clicking on your profile icon top right, "
+                              "then:\nSite Preferences > API Keys > scroll all the way down and copy the personal API key"))
+        info_box.append(info_label)
 
         self.api_entry = Gtk.Entry(placeholder_text=_("Enter API Key..."), width_request=400, visibility=False)
 
         cont_btn = Gtk.Button(label=_("Continue"))
         cont_btn.add_css_class("suggested-action")
         cont_btn.connect("clicked", lambda b: self.store_api_key(self.api_entry.get_text()))
+        cont_btn.set_halign(Gtk.Align.CENTER)
+        entry_box.append(info_box)
         entry_box.append(self.api_entry)
         entry_box.append(cont_btn)
         status_page.set_child(entry_box)
