@@ -61,7 +61,6 @@ class Nomm(Adw.Application):
         base_path = get_bundled_data_dir()
         self.initialize_custom_icons(os.path.join(base_path, "assets"))
         self.apply_styles()
-
         self.win = None
 
         self.headers = {
@@ -255,6 +254,10 @@ class Nomm(Adw.Application):
         status_page.set_child(btn)
         self.stack.add_named(status_page, "welcome")
         self.stack.set_visible_child_name("welcome")
+
+        # instantiate temp_config
+        self.temp_config = {"library_paths": []}
+
         GLib.timeout_add(100, lambda: status_page.add_css_class("visible"))
 
     def show_downloads_folder_select_screen(self, btn=None):
@@ -274,18 +277,31 @@ class Nomm(Adw.Application):
         info_label.set_text(_("We recommend that you create a nomm directory at the end of your target path"))
         info_box.append(info_label)
 
-        btn = Gtk.Button(label=_("Set Mod Download Path"))
-        btn.set_halign(Gtk.Align.CENTER)
-        btn.add_css_class("suggested-action")
-        btn.set_margin_top(24)
-        btn.connect("clicked", self.on_select_downloads_folder_clicked)
+        hbox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12, halign=Gtk.Align.CENTER)
+        custom_path_btn = Gtk.Button(label=_("Set Custom Mod Download Path"), margin_top=12, halign=Gtk.Align.CENTER)
+        custom_path_btn.set_tooltip_text(_("Downloaded mods will be stored in a directory of your choosing"))
+        custom_path_btn.connect("clicked", self.on_select_downloads_folder_clicked)
+
+        nomm_path_btn = Gtk.Button(label=_("Use NOMM data folder"), margin_top=12, halign=Gtk.Align.CENTER)
+        nomm_path_btn.set_tooltip_text(_("Downloaded mods will be stored in the NOMM data directory,\non your system drive"))
+        nomm_path_btn.add_css_class("suggested-action")
+        nomm_path_btn.connect("clicked", self.on_select_default_nomm_download_folder_clicked)
 
         vbox.append(info_box)
-        vbox.append(btn)
+        hbox.append(custom_path_btn)
+        hbox.append(nomm_path_btn)
+        vbox.append(hbox)
         status_page.set_child(vbox)
         self.stack.add_named(status_page, "download-select")
         self.stack.set_visible_child_name("download-select")
         GLib.timeout_add(100, lambda: status_page.add_css_class("visible"))
+
+    def on_select_default_nomm_download_folder_clicked(self, btn):
+        download_path = os.path.join(DATA_DIR, "mods-downloaded")
+        print(f"Creating NOMM download folder at {download_path}")
+        Path(download_path).mkdir(parents=True, exist_ok=True)
+        self.temp_config["download_path"] = download_path
+        self.show_staging_select_screen()
 
     def on_select_downloads_folder_clicked(self, btn):
         dialog = Gtk.FileDialog(title=_("Select Mod Downloads Folder"))
@@ -293,7 +309,8 @@ class Nomm(Adw.Application):
 
     def on_downloads_folder_selected_callback(self, dialog, result):
         selected_folder_path, translated_folder_path = translate_fuse_path(dialog.select_folder_finish(result))
-        self.temp_config = {"download_path": selected_folder_path, "translated_download_path": translated_folder_path, "library_paths": []}
+        self.temp_config["download_path"] = selected_folder_path
+        self.temp_config["translated_download_path"] = translated_folder_path
         self.show_staging_select_screen()
 
     def show_staging_select_screen(self):
@@ -322,7 +339,7 @@ class Nomm(Adw.Application):
         custom_path_btn.connect("clicked", self.on_select_staging_folder_clicked)
 
         nomm_path_btn = Gtk.Button(label=_("Use NOMM data folder"), margin_top=12, halign=Gtk.Align.CENTER)
-        nomm_path_btn.set_tooltip_text(_("Extracted mods will be stored in the NOMM data directory, on your system drive"))
+        nomm_path_btn.set_tooltip_text(_("Extracted mods will be stored in the NOMM data directory,\non your system drive"))
         nomm_path_btn.add_css_class("suggested-action")
         nomm_path_btn.connect("clicked", self.on_select_default_nomm_staging_folder_clicked)
 
@@ -337,8 +354,9 @@ class Nomm(Adw.Application):
         GLib.timeout_add(100, lambda: status_page.add_css_class("visible"))
 
     def on_select_default_nomm_staging_folder_clicked(self, btn):
-        staging_path = os.path.join(DATA_DIR, "/staged-mods/")
-        Path(staging_path).parent.mkdir(parents=True, exist_ok=True)
+        staging_path = os.path.join(DATA_DIR, "mods-staged")
+        print(f"Creating NOMM download folder at {staging_path}")
+        Path(staging_path).mkdir(parents=True, exist_ok=True)
         self.temp_config["staging_path"] = staging_path
         self.show_nexus_api_key_screen()
 
