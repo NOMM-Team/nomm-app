@@ -262,10 +262,8 @@ def apply_deployment_map_changes(staging_dir: str, dest_dir: str, changes: dict,
     return True
 
 
-def deploy_essential_utility(util_config: dict, downloads_path: str, staging_path: str, game_path: str, steam_base: str, steam_id: str):
-    source_url = util_config.get("source")
-    filename = source_url.split("/")[-1]
-    archive_path = os.path.join(downloads_path, "utilities", filename)
+def deploy_essential_utility(util_config: dict, downloads_path: str, staging_path: str, game_path: str, steam_base: str, steam_id: str, file_name: str):
+    archive_path = os.path.join(downloads_path, "utilities", file_name)
     staging_path = Path(staging_path) / "utilities" / util_config["name"]
 
     game_root = Path(game_path)
