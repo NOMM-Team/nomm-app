@@ -37,7 +37,7 @@ class ToolsTab(Gtk.Box):
                 file_name = util.get("source").split("/")[-1]
 
                 creator = util.get("creator", "Unknown")
-                creator_link = util.get("creator-link", "#")
+                creator_link = util.get("creator_link", "#")
 
                 creator_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
                 creator_box.set_valign(Gtk.Align.CENTER)

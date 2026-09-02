@@ -566,7 +566,7 @@ class ConfigurationBuilderWindow(Adw.Window):
         group.add(creator_row)
 
         creator_link_row = Adw.EntryRow(title=_("Creator Link (URL) *"))
-        creator_link_row.set_text(data.get("creator-link", ""))
+        creator_link_row.set_text(data.get("creator_link", ""))
         creator_link_row.set_tooltip_text(_("A link to the creator's page (Github, social media, Patreon, Nexus...) "
                                             "ideally ask the creator which one should be used."))
         group.add(creator_link_row)
@@ -609,7 +609,7 @@ class ConfigurationBuilderWindow(Adw.Window):
             "name": name_row,
             "version": version_row,
             "creator": creator_row,
-            "creator-link": creator_link_row,
+            "creator_link": creator_link_row,
             "source": source_row,
             "utility_path": utility_path_row,
             "enable_command": enable_cmd_row,
@@ -683,7 +683,7 @@ class ConfigurationBuilderWindow(Adw.Window):
                 # Required fields check
                 required_fields = [
                     "name", "version", "creator",
-                    "creator-link", "source", "utility_path"
+                    "creator_link", "source", "utility_path"
                 ]
 
                 group_valid = True
