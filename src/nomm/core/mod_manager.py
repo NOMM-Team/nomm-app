@@ -310,7 +310,7 @@ def deploy_essential_utility(util_config: dict, downloads_path: str, staging_pat
     # Actual deployment to game files if needed
     is_internal = util_config.get("install_in_game_files", True)
     if is_internal:
-        install_subpath = util_config["utility_path"]
+        install_subpath = util_config["utility_path"].strip("/")  # remove any starting slashes
         target_dir = game_root / install_subpath
         target_dir.mkdir(parents=True, exist_ok=True)
         print(f"Deploying utility files to game directory: {target_dir}")
