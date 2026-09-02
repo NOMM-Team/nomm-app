@@ -728,7 +728,6 @@ class ConfigurationBuilderWindow(Adw.Window):
         config_data = {
             "name": name_val,
             "steam_id": self.steam_id_row.get_text().strip(),
-            "steam_folder_name": self.steam_folder_row.get_text().strip(),
             "gog_id": self.gog_id_row.get_text().strip(),
             "nexus_id": self.nexus_id_row.get_text().strip(),
             "accent_colour": hex_color,
@@ -736,6 +735,8 @@ class ConfigurationBuilderWindow(Adw.Window):
             "mods_path": modding_paths,
             "essential_utilities": utilities_data
         }
+        if self.steam_folder_row.get_text().strip():
+            config_data["steam_folder_name"] = self.steam_folder_row.get_text().strip()
         custom_configuration_path = os.path.join(CUSTOM_GAME_CONFIG_PATH, name_val.replace(" ", "_").lower()+".yaml")
         write_yaml(config_data, custom_configuration_path)
         print(f"New custom configuration for game {name_val} saved to {custom_configuration_path}")
