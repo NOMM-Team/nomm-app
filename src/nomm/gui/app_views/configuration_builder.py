@@ -702,8 +702,7 @@ class ConfigurationBuilderWindow(Adw.Window):
 
                     if key == "name":
                         utility_id = "".join("_" if c == " " else c for c in val if c.isalnum() or c == " ").lower().strip("_")
-                    else:
-                        entry_values[key] = val
+                    entry_values[key] = val
 
                 if group_valid:
                     utilities_data[utility_id] = entry_values
