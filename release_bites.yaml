@@ -7,7 +7,7 @@ Description: |-
    * Fix various config buidler related bugs
    * Change variables in utility section to use underscores instead of dashes
    * Fix issue with utility download and installation when using specific URLs
-   * 
+   * Builder: Add ability to deactivate utility deployment to game files
 ---
 Version: "0.13.1"
 Date: 2026-09-01
