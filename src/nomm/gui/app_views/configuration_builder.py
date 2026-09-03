@@ -579,10 +579,21 @@ class ConfigurationBuilderWindow(Adw.Window):
                                       "If no link outside of Nexus exists, you may ask the creator if they can upload it somewhere else such as Github"))
         group.add(source_row)
 
+        deploy_row = Adw.SwitchRow(title=_("Deploy to game files"))
+        deploy_row.set_active(data.get("install_in_game_files", True))
+        deploy_row.set_tooltip_text(_("Whether the utility files should be deployed to the game files or not."))
+        group.add(deploy_row)
+
         utility_path_row = Adw.EntryRow(title=_("Utility Path *"))
         utility_path_row.set_text(data.get("utility_path", ""))
         utility_path_row.set_tooltip_text(_("The path where the utility needs to be deployed to"))
         group.add(utility_path_row)
+
+        deploy_row.bind_property(
+            "active",
+            utility_path_row,
+            "visible"
+        )
 
         enable_cmd_row = Adw.EntryRow(title=_("Enable Command (Optional)"))
         enable_cmd_row.set_text(data.get("enable_command", ""))
@@ -611,6 +622,7 @@ class ConfigurationBuilderWindow(Adw.Window):
             "creator": creator_row,
             "creator_link": creator_link_row,
             "source": source_row,
+            "install_in_game_files": deploy_row,
             "utility_path": utility_path_row,
             "enable_command": enable_cmd_row,
             "launch_options": launch_opts_row,
@@ -681,16 +693,20 @@ class ConfigurationBuilderWindow(Adw.Window):
                 w = util_child.widgets
 
                 # Required fields check
-                required_fields = [
-                    "name", "version", "creator",
-                    "creator_link", "source", "utility_path"
-                ]
+                required_fields = ["name", "version", "creator", "creator_link", "source"]
+
+                if w["install_in_game_files"].get_active():
+                    required_fields.append("utility_path")
 
                 group_valid = True
                 entry_values = {}
 
                 for key, widget in w.items():
-                    val = widget.get_text().strip()
+                    # Remove any leading slashes to avoid starting from root instead of game directory
+                    if isinstance(widget, Adw.SwitchRow):
+                        entry_values[key] = widget.get_active()
+                        continue
+                    val = widget.get_text().strip().strip("/")
 
                     if key in required_fields:
                         if not val:
