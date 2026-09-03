@@ -20,8 +20,9 @@
   </developer>
   <launchable type="desktop-id">moe.nomm.Nomm.desktop</launchable>
   <url type="homepage">https://nomm.moe</url>
-  <url type="bugtracker">https://github.com/allexio/nomm/issues</url>
-  <url type="vcs-browser">https://github.com/allexio/nomm</url>
+  <url type="bugtracker">https://github.com/nomm-team/nomm-app/issues</url>
+  <url type="vcs-browser">https://github.com/nomm-team/nomm-app</url>
+  <url type="translate">https://crowdin.com/project/nomm</url>
   <screenshots>
     <screenshot type="default">
       <image type="source">https://i.imgur.com/hg6wNFQ.jpeg</image>
