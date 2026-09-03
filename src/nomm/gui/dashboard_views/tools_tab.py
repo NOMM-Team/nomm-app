@@ -38,7 +38,7 @@ class ToolsTab(Gtk.Box):
                 if "/" in decoded_url:
                     file_name = decoded_url.split("/")[-1]
                 else:
-                    f"{util_id}.zip"
+                    file_name = f"{util_id}.zip"
 
                 creator = util.get("creator", "Unknown")
                 creator_link = util.get("creator_link", "#")
