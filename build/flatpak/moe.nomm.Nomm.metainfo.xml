@@ -42,6 +42,7 @@
           <li>Fix various config buidler related bugs</li>
           <li>Change variables in utility section to use underscores instead of dashes</li>
           <li>Fix issue with utility download and installation when using specific URLs</li>
+          <li>Builder: Add ability to deactivate utility deployment to game files</li>
         </ul>
       </description>
       <url>https://github.com/nomm-team/nomm-app/releases/0.13.2</url>
