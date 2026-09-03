@@ -35,6 +35,17 @@
     <color type="primary" scheme_preference="dark">#374955</color>
   </branding>
   <releases>
+    <release type="stable" version="0.13.2" date="2026-09-01T00:00:00Z">
+      <description>
+        <p>Release bites</p>
+        <ul>
+          <li>Fix various config buidler related bugs</li>
+          <li>Change variables in utility section to use underscores instead of dashes</li>
+          <li>Fix issue with utility download and installation when using specific URLs</li>
+        </ul>
+      </description>
+      <url>https://github.com/nomm-team/nomm-app/releases/0.13.2</url>
+    </release>
     <release type="stable" version="0.13.1" date="2026-09-01T00:00:00Z">
       <description>
         <p>Release bites</p>
@@ -87,15 +98,6 @@
         </ul>
       </description>
       <url>https://github.com/nomm-team/nomm-app/releases/0.12.4</url>
-    </release>
-    <release type="stable" version="0.12.3" date="2026-08-23T00:00:00Z">
-      <description>
-        <p>Release bites</p>
-        <ul>
-          <li>Additional changes for Flathub support</li>
-        </ul>
-      </description>
-      <url>https://github.com/nomm-team/nomm-app/releases/0.12.3</url>
     </release>
   </releases>
   <content_rating type="oars-1.1">
