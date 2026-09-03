@@ -262,10 +262,8 @@ def apply_deployment_map_changes(staging_dir: str, dest_dir: str, changes: dict,
     return True
 
 
-def deploy_essential_utility(util_config: dict, downloads_path: str, staging_path: str, game_path: str, steam_base: str, steam_id: str):
-    source_url = util_config.get("source")
-    filename = source_url.split("/")[-1]
-    archive_path = os.path.join(downloads_path, "utilities", filename)
+def deploy_essential_utility(util_config: dict, downloads_path: str, staging_path: str, game_path: str, steam_base: str, steam_id: str, file_name: str):
+    archive_path = os.path.join(downloads_path, "utilities", file_name)
     staging_path = Path(staging_path) / "utilities" / util_config["name"]
 
     game_root = Path(game_path)
@@ -312,7 +310,7 @@ def deploy_essential_utility(util_config: dict, downloads_path: str, staging_pat
     # Actual deployment to game files if needed
     is_internal = util_config.get("install_in_game_files", True)
     if is_internal:
-        install_subpath = util_config["utility_path"]
+        install_subpath = util_config["utility_path"].strip("/")  # remove any starting slashes
         target_dir = game_root / install_subpath
         target_dir.mkdir(parents=True, exist_ok=True)
         print(f"Deploying utility files to game directory: {target_dir}")

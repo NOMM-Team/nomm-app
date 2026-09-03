@@ -11,7 +11,13 @@
 </div>
 
 <div align="center"><h1>NOMM (Native Open Mod Manager) </h1></div>
-  
+
+<div align="center">
+  <a href='https://flathub.org/apps/moe.nomm.Nomm'>
+    <img width='180' alt='Get it on Flathub' src='https://flathub.org/api/badge?locale=en'/>
+  </a>
+</div>
+
 ## The project
 
 NOMM is a stupid simple, super clean "native" (as in it runs on Linux without having to use translation tools...) mod manager for Linux.

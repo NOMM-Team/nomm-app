@@ -566,7 +566,7 @@ class ConfigurationBuilderWindow(Adw.Window):
         group.add(creator_row)
 
         creator_link_row = Adw.EntryRow(title=_("Creator Link (URL) *"))
-        creator_link_row.set_text(data.get("creator-link", ""))
+        creator_link_row.set_text(data.get("creator_link", ""))
         creator_link_row.set_tooltip_text(_("A link to the creator's page (Github, social media, Patreon, Nexus...) "
                                             "ideally ask the creator which one should be used."))
         group.add(creator_link_row)
@@ -579,10 +579,21 @@ class ConfigurationBuilderWindow(Adw.Window):
                                       "If no link outside of Nexus exists, you may ask the creator if they can upload it somewhere else such as Github"))
         group.add(source_row)
 
+        deploy_row = Adw.SwitchRow(title=_("Deploy to game files"))
+        deploy_row.set_active(data.get("install_in_game_files", True))
+        deploy_row.set_tooltip_text(_("Whether the utility files should be deployed to the game files or not."))
+        group.add(deploy_row)
+
         utility_path_row = Adw.EntryRow(title=_("Utility Path *"))
         utility_path_row.set_text(data.get("utility_path", ""))
         utility_path_row.set_tooltip_text(_("The path where the utility needs to be deployed to"))
         group.add(utility_path_row)
+
+        deploy_row.bind_property(
+            "active",
+            utility_path_row,
+            "visible"
+        )
 
         enable_cmd_row = Adw.EntryRow(title=_("Enable Command (Optional)"))
         enable_cmd_row.set_text(data.get("enable_command", ""))
@@ -609,8 +620,9 @@ class ConfigurationBuilderWindow(Adw.Window):
             "name": name_row,
             "version": version_row,
             "creator": creator_row,
-            "creator-link": creator_link_row,
+            "creator_link": creator_link_row,
             "source": source_row,
+            "install_in_game_files": deploy_row,
             "utility_path": utility_path_row,
             "enable_command": enable_cmd_row,
             "launch_options": launch_opts_row,
@@ -681,16 +693,20 @@ class ConfigurationBuilderWindow(Adw.Window):
                 w = util_child.widgets
 
                 # Required fields check
-                required_fields = [
-                    "name", "version", "creator",
-                    "creator-link", "source", "utility_path"
-                ]
+                required_fields = ["name", "version", "creator", "creator_link", "source"]
+
+                if w["install_in_game_files"].get_active():
+                    required_fields.append("utility_path")
 
                 group_valid = True
                 entry_values = {}
 
                 for key, widget in w.items():
-                    val = widget.get_text().strip()
+                    # Remove any leading slashes to avoid starting from root instead of game directory
+                    if isinstance(widget, Adw.SwitchRow):
+                        entry_values[key] = widget.get_active()
+                        continue
+                    val = widget.get_text().strip().strip("/")
 
                     if key in required_fields:
                         if not val:
@@ -702,8 +718,7 @@ class ConfigurationBuilderWindow(Adw.Window):
 
                     if key == "name":
                         utility_id = "".join("_" if c == " " else c for c in val if c.isalnum() or c == " ").lower().strip("_")
-                    else:
-                        entry_values[key] = val
+                    entry_values[key] = val
 
                 if group_valid:
                     utilities_data[utility_id] = entry_values
@@ -729,7 +744,6 @@ class ConfigurationBuilderWindow(Adw.Window):
         config_data = {
             "name": name_val,
             "steam_id": self.steam_id_row.get_text().strip(),
-            "steam_folder_name": self.steam_folder_row.get_text().strip(),
             "gog_id": self.gog_id_row.get_text().strip(),
             "nexus_id": self.nexus_id_row.get_text().strip(),
             "accent_colour": hex_color,
@@ -737,6 +751,8 @@ class ConfigurationBuilderWindow(Adw.Window):
             "mods_path": modding_paths,
             "essential_utilities": utilities_data
         }
+        if self.steam_folder_row.get_text().strip():
+            config_data["steam_folder_name"] = self.steam_folder_row.get_text().strip()
         custom_configuration_path = os.path.join(CUSTOM_GAME_CONFIG_PATH, name_val.replace(" ", "_").lower()+".yaml")
         write_yaml(config_data, custom_configuration_path)
         print(f"New custom configuration for game {name_val} saved to {custom_configuration_path}")

@@ -600,11 +600,8 @@ class Nomm(Adw.Application):
         display = Gdk.Display.get_default()
         clipboard = display.get_clipboard()
 
-        # In GTK4, use .set_content() or .set() depending on your version
-        # .set(text) is a convenience method added in later GTK4 updates
         clipboard.set(text)
 
-        # Visual feedback
         btn.set_icon_name("object-select-symbolic")
         GLib.timeout_add(1000, lambda: btn.set_icon_name("edit-copy-symbolic"))
 

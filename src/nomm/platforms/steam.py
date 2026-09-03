@@ -161,7 +161,7 @@ def find_game(yaml_data, game_title, found_libs, steam_base) -> List[Dict[str, A
                     "app_id": yaml_data.get("steam_id"),
                     "platform": "steam",
                     "mod_paths": mod_paths,
-                    "utilities": yaml_data.get("essential-utilities"),
+                    "utilities": yaml_data.get("essential_utilities"),
                     "accent_colour": yaml_data.get("accent_colour"),
                     "load_order_path": yaml_data.get("load_order_path"),
                     "wiki_link": yaml_data.get("wiki_link"),
