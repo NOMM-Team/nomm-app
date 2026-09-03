@@ -1,4 +1,14 @@
 ---
+Version: "0.13.2"
+Date: 2026-09-01
+URL: https://github.com/nomm-team/nomm-app/releases/0.13.2
+Description: |-
+  Release bites
+   * Fix various config buidler related bugs
+   * Change variables in utility section to use underscores instead of dashes
+   * Fix issue with utility download and installation when using specific URLs
+   * 
+---
 Version: "0.13.1"
 Date: 2026-09-01
 URL: https://github.com/nomm-team/nomm-app/releases/0.13.1
