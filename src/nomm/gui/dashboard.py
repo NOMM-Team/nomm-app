@@ -147,6 +147,8 @@ class GameDashboard(Gtk.Box):
 
         # Grouping
         self.dl_tab_btn.set_group(self.mods_tab_btn)
+        if game_info.get("utilities"):
+            self.tools_tab_btn.set_group(self.mods_tab_btn)
         self.mods_tab_btn.set_active(True)
 
         # Banner
