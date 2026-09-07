@@ -493,7 +493,11 @@ class ModsTab(Gtk.Box):
         # Uploader Row
         if "uploader" in mod_info:
             self.uploader_btn.set_label(mod_info["uploader"])
-            uploader_link = f"https://www.nexusmods.com/profile/{mod_info["uploader"]}"
+            if "uploader_url" in mod_info:  # GameBanana
+                uploader_link = mod_info["uploader_url"]
+            else:  # Nexus mods
+                # TODO: Platform-linked logic should be moved out of generic modules. Should add uploader_url when we get metadata for Nexus, not here
+                uploader_link = f"https://www.nexusmods.com/profile/{mod_info["uploader"]}"
             if hasattr(self, "_uploader_link_handler_id"):
                 self.uploader_btn.disconnect(self._uploader_link_handler_id)
             self._uploader_link_handler_id = self.uploader_btn.connect("clicked", lambda b: webbrowser.open(uploader_link))
