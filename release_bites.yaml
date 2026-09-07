@@ -1,6 +1,15 @@
 ---
+Version: "0.13.3"
+Date: 2026-09-07
+URL: https://github.com/nomm-team/nomm-app/releases/0.13.3
+Description: |-
+  Release bites
+   * 1-click download enabled for GameBanana on Mario Kart 8 Deluxe mods!
+   * Fixed incorrect link on submitter button for GameBanana mods
+   * Fixed some UI strings with incorrect spacing
+---
 Version: "0.13.2"
-Date: 2026-09-01
+Date: 2026-09-04
 URL: https://github.com/nomm-team/nomm-app/releases/0.13.2
 Description: |-
   Release bites
