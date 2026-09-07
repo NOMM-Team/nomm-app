@@ -36,6 +36,7 @@ def get_mod_info(headers: dict, mod_id: str, download_dir: Path, current_mod_sta
             contributor_list.append(contributor["_sName"])
     metadata["author"] = ", ".join(contributor_list)
     metadata["uploader"] = remote_data.get("_aSubmitter").get("_sName")
+    metadata["uploader_url"] = remote_data.get("_aSubmitter").get("_sProfileUrl")
     metadata["endorsements"] = remote_data.get("_nLikeCount")
     metadata["new_version"] = remote_data.get("_sVersion")
     thumbnail_info = remote_data.get("_aPreviewContent").get("screenshots")[0]
