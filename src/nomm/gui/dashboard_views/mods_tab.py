@@ -65,8 +65,8 @@ class ModsTab(Gtk.Box):
         )
         update_btn = create_icon_button(
             icon_name="refresh-mods-symbolic",
-            tooltip=_("Refresh Metadata & Check for updates\nThis will replace all current mod metadata \
-                      with fresh data coming straight from the modding platform."),
+            tooltip=_("Refresh Metadata & Check for updates\n"
+                      "This will replace all current mod metadata with fresh data coming straight from the modding platform."),
             on_click=self.check_for_updates
         )
 
@@ -530,8 +530,8 @@ class ModsTab(Gtk.Box):
         else:
             self.mod_id_btn.add_css_class("badge-action-row-accent")
             self.mod_id_btn.set_label(_("No mod ID registered"))
-        self.mod_id_btn.set_tooltip_text(_("Change currently linked mod ID.\nThis will require a refresh \
-                                           of the metadata and will be reset if you reinstall the mod."))
+        self.mod_id_btn.set_tooltip_text(_("Change currently linked mod ID.\n"
+                                           "This will require a refresh of the metadata and will be reset if you reinstall the mod."))
         if hasattr(self, "_mod_id_handler_id") and self._mod_id_handler_id:
             self.mod_id_btn.disconnect(self._mod_id_handler_id)
         # Connect and store new ID
@@ -593,11 +593,11 @@ class ModsTab(Gtk.Box):
         dialog = Adw.MessageDialog(
             transient_for=self.get_root(),
             heading=_("Change Mod ID"),
-            body=_("Select the platform and enter the new ID for this mod. \
-                   The next time you do a metadata update (top right button on the mods tab), \
-                   this will completely replace the existing metadata for this mod.\n\
-                   Keep in mind that if you reinstall this mod from its archive file, \
-                   the metadata will be overwritten and you will have to change this value again."),
+            body=_("Select the platform and enter the new ID for this mod."
+                   "The next time you do a metadata update (top right button on the mods tab), "
+                   "this will completely replace the existing metadata for this mod.\n"
+                   "Keep in mind that if you reinstall this mod from its archive file, "
+                   "the metadata will be overwritten and you will have to change this value again."),
         )
         dialog.set_heading_use_markup(True)
         dialog.add_response("cancel", _("Cancel"))
@@ -717,8 +717,8 @@ class ModsTab(Gtk.Box):
             write_yaml(staging_metadata, self.dashboard.staging_metadata_path)
             self.populate_list()
         else:
-            self.dashboard.show_message(_("Failed to endorse"), _("Could not endorse the selected mod, please make sure \
-                                                                  you have provided your API key and are connected to the internet."))
+            self.dashboard.show_message(_("Failed to endorse"), _("Could not endorse the selected mod, please make sure "
+                                                                  "you have provided your API key and are connected to the internet."))
 
     def populate_list(self):
 
