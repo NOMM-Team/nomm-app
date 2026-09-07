@@ -21,8 +21,8 @@
   <launchable type="desktop-id">moe.nomm.Nomm.desktop</launchable>
   <url type="homepage">https://nomm.moe</url>
   <url type="bugtracker">https://github.com/nomm-team/nomm-app/issues</url>
-  <url type="vcs-browser">https://github.com/nomm-team/nomm-app</url>
   <url type="translate">https://crowdin.com/project/nomm</url>
+  <url type="vcs-browser">https://github.com/nomm-team/nomm-app</url>
   <screenshots>
     <screenshot type="default">
       <image type="source">https://i.imgur.com/hg6wNFQ.jpeg</image>
@@ -36,7 +36,18 @@
     <color type="primary" scheme_preference="dark">#374955</color>
   </branding>
   <releases>
-    <release type="stable" version="0.13.2" date="2026-09-01T00:00:00Z">
+    <release type="stable" version="0.13.3" date="2026-09-07T00:00:00Z">
+      <description>
+        <p>Release bites</p>
+        <ul>
+          <li>1-click download enabled for GameBanana on Mario Kart 8 Deluxe mods!</li>
+          <li>Fixed incorrect link on submitter button for GameBanana mods</li>
+          <li>Fixed some UI strings with incorrect spacing</li>
+        </ul>
+      </description>
+      <url>https://github.com/nomm-team/nomm-app/releases/0.13.3</url>
+    </release>
+    <release type="stable" version="0.13.2" date="2026-09-04T00:00:00Z">
       <description>
         <p>Release bites</p>
         <ul>
@@ -89,17 +100,6 @@
         </ul>
       </description>
       <url>https://github.com/nomm-team/nomm-app/releases/0.12.5</url>
-    </release>
-    <release type="stable" version="0.12.4" date="2026-08-24T00:00:00Z">
-      <description>
-        <p>Release bites</p>
-        <ul>
-          <li>NOMM can now be properly launched even when no Steam installation is present on user system</li>
-          <li>Fixed some minor UI issues in first time setup screens (bundled icons, staging select button
-          width, crossfade)</li>
-        </ul>
-      </description>
-      <url>https://github.com/nomm-team/nomm-app/releases/0.12.4</url>
     </release>
   </releases>
   <content_rating type="oars-1.1">
