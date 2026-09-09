@@ -360,8 +360,8 @@ class ConfigurationBuilderWindow(Adw.Window):
         self.color_button = Gtk.ColorDialogButton(dialog=self.color_dialog)
         self.color_button.set_margin_top(7)
         self.color_button.set_margin_bottom(7)
-        self.color_row.set_tooltip_text(_("A colour that represents the game's art. This is used when the 'Per Game Accent Colour' option is enabled. "
-                                          "The accent colour of NOMM will switch to this colour when the game is being modded."))
+        self.color_row.set_tooltip_text(_("A colour that represents the game's art. This is used when the 'Per Game Accent Colour' option is enabled."
+                                          " The accent colour of NOMM will switch to this colour when the game is being modded."))
 
         initial_color = "#3584e4"
         rgba = Gdk.RGBA()
@@ -533,7 +533,6 @@ class ConfigurationBuilderWindow(Adw.Window):
 
         main_box.append(self.utility_groups_container)
 
-        # Add Utility Button
         add_btn = Gtk.Button(label=_("Add Utility"))
         add_btn.add_css_class("pill")
         add_btn.set_halign(Gtk.Align.CENTER)
@@ -544,50 +543,108 @@ class ConfigurationBuilderWindow(Adw.Window):
         scrolled.set_child(main_box)
         return scrolled
 
-    def _add_utility_group(self, data: dict | None = None) -> None:
+    def _add_utility_group(self) -> None:
         """Creates and appends a single utility group to the container."""
-        data = data or {}
 
-        group = Adw.PreferencesGroup()
+        utility_group = Adw.PreferencesGroup()
 
         name_row = Adw.EntryRow(title=_("Name *"))
-        name_row.set_text(data.get("name", ""))
         name_row.set_tooltip_text(_("The name of the utility"))
-        group.add(name_row)
+        utility_group.add(name_row)
 
         version_row = Adw.EntryRow(title=_("Version *"))
-        version_row.set_text(data.get("version", ""))
         version_row.set_tooltip_text(_("The version of the utility that you will be linking to"))
-        group.add(version_row)
+        utility_group.add(version_row)
 
         creator_row = Adw.EntryRow(title=_("Creator *"))
-        creator_row.set_text(data.get("creator", ""))
         creator_row.set_tooltip_text(_("The name of the creator of the utility"))
-        group.add(creator_row)
+        utility_group.add(creator_row)
 
         creator_link_row = Adw.EntryRow(title=_("Creator Link (URL) *"))
-        creator_link_row.set_text(data.get("creator_link", ""))
         creator_link_row.set_tooltip_text(_("A link to the creator's page (Github, social media, Patreon, Nexus...) "
                                             "ideally ask the creator which one should be used."))
-        group.add(creator_link_row)
+        utility_group.add(creator_link_row)
+        self.source_types = ["direct", "flatpak", "github", "nexus"]
+
+        source_type_list = Gtk.StringList.new([
+            _("Direct Download"),
+            _("Flatpak (Appstream)"),
+            _("GitHub Release"),
+            _("Nexus Mods")
+        ])
+
+        source_type_row = Adw.ComboRow(
+            title=_("Source Type"),
+            model=source_type_list
+        )
+        source_type_row.set_tooltip_text("Select the type of download. In most cases this will be direct download.\n"
+                                         "If you need to get the absolute latest Github release, and the name of the executable keeps changing, "
+                                         "select Github.\nIf the tool is published as a Flatpak, you may opt to set the download as a Flatpak "
+                                         "instead.\nAs an absolute LAST resort, you can select a nexus mods link. This should ONLY be used in "
+                                         "case the mod Author refuses to provide a direct download link to their tool outside of Nexus.")
+
+        initial_type = "direct"
+        if initial_type in self.source_types:
+            source_type_row.set_selected(self.source_types.index(initial_type))
+
+        utility_group.add(source_type_row)
 
         source_row = Adw.EntryRow(title=_("Source (URL) *"))
-        source_row.set_text(data.get("source", ""))
-        source_row.set_tooltip_text(_("The link from where NOMM will download the utility. Keep in mind this NEEDS to be an actual download link. "
-                                      "Not a link to the page where the download link is. "
-                                      "Do NOT use Nexus Mods download links for this as most users will not be able to use it. "
-                                      "If no link outside of Nexus exists, you may ask the creator if they can upload it somewhere else such as Github"))
-        group.add(source_row)
+        source_row.set_margin_start(24)
+        utility_group.add(source_row)
+
+        regex_row = Adw.EntryRow(title=_("Github Filename Regex *"))
+        regex_row.set_tooltip_text(_("A regex pattern matching the release asset filename to download (e.g. .*\\.zip)"))
+        regex_row.set_margin_start(24)
+        utility_group.add(regex_row)
+
+        def update_source_row_format(*_args):
+            selected_index = source_type_row.get_selected()
+            selected_type = self.source_types[selected_index]
+            current_text = source_row.get_text()
+
+            regex_row.set_visible(selected_type == "github")
+
+            if selected_type == "flatpak":
+                source_row.set_title(_("Appstream Package ID *"))
+                source_row.set_tooltip_text(_("Please enter the full package ID of the app e.g. moe.nomm.Nomm or com.valvesoftware.Steam"))
+                if not current_text or not current_text.startswith("appstream://"):
+                    source_row.set_text("appstream://")
+
+            elif selected_type == "github":
+                source_row.set_title(_("GitHub Repo URL *"))
+                source_row.set_tooltip_text(_("Please fill in the full URL of the Github repo that "
+                                              "NOMM should pull the latest version from"))
+                if not current_text or not current_text.startswith("https://github.com/"):
+                    source_row.set_text("https://github.com/")
+
+            elif selected_type == "nexus":
+                source_row.set_title(_("Nexus mod link"))
+                source_row.set_tooltip_text(_("This should ONLY be used if the utility creator has "
+                                              "refused to provide a direct download or Github link"))
+                if not current_text or not current_text.startswith("https://www.nexusmods.com/"):
+                    source_row.set_text("https://www.nexusmods.com/")
+
+            else:  # Direct Download
+                source_row.set_title(_("Source (URL) *"))
+                source_row.set_tooltip_text(_("The link from where NOMM will download the utility. "
+                                              "This NEEDS to be an actual direct download link"))
+                if any(current_text.startswith(prefix) for prefix in ["appstream://", "https://github.com/", "https://www.nexusmods.com/"]):
+                    source_row.set_text("")
+
+        source_type_row.connect("notify::selected", update_source_row_format)
+
+        update_source_row_format()
 
         deploy_row = Adw.SwitchRow(title=_("Deploy to game files"))
-        deploy_row.set_active(data.get("install_in_game_files", True))
+        deploy_row.set_active(True)
         deploy_row.set_tooltip_text(_("Whether the utility files should be deployed to the game files or not."))
-        group.add(deploy_row)
+        utility_group.add(deploy_row)
 
         utility_path_row = Adw.EntryRow(title=_("Utility Path *"))
-        utility_path_row.set_text(data.get("utility_path", ""))
         utility_path_row.set_tooltip_text(_("The path where the utility needs to be deployed to"))
-        group.add(utility_path_row)
+        utility_path_row.set_margin_start(24)
+        utility_group.add(utility_path_row)
 
         deploy_row.bind_property(
             "active",
@@ -595,17 +652,103 @@ class ConfigurationBuilderWindow(Adw.Window):
             "visible"
         )
 
-        enable_cmd_row = Adw.EntryRow(title=_("Enable Command (Optional)"))
-        enable_cmd_row.set_text(data.get("enable_command", ""))
-        enable_cmd_row.set_tooltip_text(_("Some utilities require commands to be run in the shell after installation, add these here. "
-                                          "This is a dangerous option so any configuration that uses this will be reviewed closely."))
-        group.add(enable_cmd_row)
+        self.executable_types = ["non-exec", "linux", "windows", "web"]
+
+        executable_type_list = Gtk.StringList.new([
+            _("Non-Executable"),
+            _("Linux Executable"),
+            _("Windows Executable"),
+            _("Web Protocol")
+        ])
+
+        executable_type_row = Adw.ComboRow(
+            title=_("Executable Type"),
+            model=executable_type_list
+        )
+        executable_type_row.set_tooltip_text("Select the type of executable.\n"
+                                             "If anything other than 'non-executable' is selected, NOMM will add a button to the UI to launch the "
+                                             "utility.\nIf the tool is a windows executable, NOMM will add it as a non-steam game.")
+
+        executable_type_row.set_selected(self.executable_types.index("non-exec"))
+
+        utility_group.add(executable_type_row)
+
+        executable_path_row = Adw.EntryRow(title=_("Utility executable path *"))
+        executable_path_row.set_tooltip_text(_("The path to the executable in the utility contents"))
+        executable_path_row.set_margin_start(24)
+        utility_group.add(executable_path_row)
+
+        def update_executable_path_row_format(*_args):
+            selected_index = executable_type_row.get_selected()
+            selected_type = self.executable_types[selected_index]
+
+            executable_path_row.set_visible(selected_type in ["linux", "windows", "web"])
+
+            if selected_type == "linux":
+                executable_path_row.set_title(_("Linux script path *"))
+                executable_path_row.set_tooltip_text(_("Enter the path to the linux shell script, relative to the root of the utility archive"))
+
+            elif selected_type == "windows":
+                executable_path_row.set_title(_("Windows executable path *"))
+                executable_path_row.set_tooltip_text(_("Enter the path to the windows executable, relative to the root of the utility archive"))
+
+            elif selected_type == "web":
+                executable_path_row.set_title(_("Web protocol link *"))
+                executable_path_row.set_tooltip_text(_("Enter the web protocol url that will be launched when the play button is clicked"))
+
+            else:  # Not an executable
+                executable_path_row.set_visible(False)
+
+        executable_type_row.connect("notify::selected", update_executable_path_row_format)
+
+        update_executable_path_row_format()
 
         launch_opts_row = Adw.EntryRow(title=_("Launch Options (Optional)"))
-        launch_opts_row.set_text(data.get("launch_options", ""))
         launch_opts_row.set_tooltip_text(_("Some utilities require the user to add launch options to the game. "
                                            "This can be handled automatically by NOMM if you add the options here."))
-        group.add(launch_opts_row)
+        utility_group.add(launch_opts_row)
+
+        enable_cmd_row = Adw.EntryRow(title=_("Enable Command (Optional)"))
+        enable_cmd_row.set_tooltip_text(_("Some utilities require commands to be run in the shell after installation, add these here. "
+                                          "This is a dangerous option so any submitted configuration that uses this will be reviewed closely."))
+        utility_group.add(enable_cmd_row)
+
+        filtering_row = Adw.ActionRow(title=_("Content Filtering"))
+        filtering_row.set_tooltip_text(_("Use this option to filter the contents of the utility archive.\n"
+                                         "If set in blacklist mode, NOMM will remove the specified files from the utility.\n"
+                                         "If set in whitelist mode, NOMM will remove all the OTHER files but the ones specified."))
+
+        filter_type = Gtk.DropDown.new_from_strings(
+            [_("No filtering"), _("Whitelist files"), _("Blacklist files")]
+        )
+        filter_type.set_valign(Gtk.Align.CENTER)
+
+        filter_type.set_selected(0)
+
+        filename_filter = Gtk.Entry()
+        filename_filter.set_hexpand(True)
+        filename_filter.set_valign(Gtk.Align.CENTER)
+
+        filename_filter.set_visible(False)
+
+        def on_filter_type_changed(dropdown, _pspec):
+            selected = dropdown.get_selected()
+            is_active = selected != 0
+            filename_filter.set_visible(is_active)
+            if not is_active:
+                filename_filter.set_text("")  # Clear text when disabling filter
+
+        filter_type.connect("notify::selected", on_filter_type_changed)
+
+        filtering_row.add_suffix(filter_type)
+        filtering_row.add_suffix(filename_filter)
+        utility_group.add(filtering_row)
+
+        install_lock_row = Adw.EntryRow(title=_("Installation Lock Group (Optional)"))
+        install_lock_row.set_tooltip_text(_("This is used to designate this utility as being incompatible with other utilities in a group. "
+                                            "Set this field to any value, and if other utilities have the same value, NOMM will "
+                                            "stop the user from installing other utilities alongside this one. Leave empty to disable the feature."))
+        utility_group.add(install_lock_row)
 
         delete_btn = Gtk.Button(
             icon_name="mat-delete-symbolic",
@@ -613,22 +756,28 @@ class ConfigurationBuilderWindow(Adw.Window):
         )
         delete_btn.set_tooltip_text(_("Remove Utility"))
         delete_btn.set_cursor_from_name("pointer")
-        delete_btn.connect("clicked", lambda _: self.utility_groups_container.remove(group))
-        group.set_header_suffix(delete_btn)
+        delete_btn.connect("clicked", lambda _: self.utility_groups_container.remove(utility_group))
+        utility_group.set_header_suffix(delete_btn)
 
-        group.widgets = {
+        utility_group.widgets = {
             "name": name_row,
             "version": version_row,
             "creator": creator_row,
             "creator_link": creator_link_row,
-            "source": source_row,
-            "install_in_game_files": deploy_row,
-            "utility_path": utility_path_row,
-            "enable_command": enable_cmd_row,
+            "source_type": source_type_row,
+            "source_url": source_row,
+            "deploy_to_game_files": deploy_row,
+            "deployment_path": utility_path_row,
+            "executable_type": executable_type_row,
+            "executable_path": executable_path_row,
             "launch_options": launch_opts_row,
+            "enable_command": enable_cmd_row,
+            "filter_type": filter_type,
+            "filename_filter": filename_filter,
+            "installation_lock_group": install_lock_row
         }
 
-        self.utility_groups_container.append(group)
+        self.utility_groups_container.append(utility_group)
 
     def _on_save_clicked(self, button):
         has_error = False
@@ -684,7 +833,7 @@ class ConfigurationBuilderWindow(Adw.Window):
 
             child = child.get_next_sibling()
 
-        utilities_data = {}
+        utility_groups = []
         invalid_utility_tab = False
         util_child = self.utility_groups_container.get_first_child()
 
@@ -695,18 +844,28 @@ class ConfigurationBuilderWindow(Adw.Window):
                 # Required fields check
                 required_fields = ["name", "version", "creator", "creator_link", "source"]
 
-                if w["install_in_game_files"].get_active():
-                    required_fields.append("utility_path")
+                if w["deploy_to_game_files"].get_active():
+                    required_fields.append("deployment_path")
 
                 group_valid = True
                 entry_values = {}
 
                 for key, widget in w.items():
-                    # Remove any leading slashes to avoid starting from root instead of game directory
                     if isinstance(widget, Adw.SwitchRow):
                         entry_values[key] = widget.get_active()
                         continue
-                    val = widget.get_text().strip().strip("/")
+                    elif isinstance(widget, Adw.ComboRow):
+                        selected_idx = widget.get_selected()
+                        if key == "source_type":
+                            entry_values[key] = self.source_types[selected_idx]
+                        elif key == "executable_type":
+                            entry_values[key] = self.executable_types[selected_idx]
+                        continue
+                    elif isinstance(widget, Gtk.DropDown):
+                        continue
+                    elif widget is None:
+                        continue
+                    val = widget.get_text().strip()
 
                     if key in required_fields:
                         if not val:
@@ -716,19 +875,23 @@ class ConfigurationBuilderWindow(Adw.Window):
                         else:
                             widget.remove_css_class("error")
 
-                    if key == "name":
-                        utility_id = "".join("_" if c == " " else c for c in val if c.isalnum() or c == " ").lower().strip("_")
-                    entry_values[key] = val
+                    entry_values[key] = val.strip("/")
+
+                selected_filter = w["filter_type"].get_selected()
+                filter_text = w["filename_filter"].get_text().strip()
+
+                if selected_filter == 1:  # Whitelist
+                    entry_values["whitelist"] = filter_text
+                elif selected_filter == 2:  # Blacklist
+                    entry_values["blacklist"] = filter_text
 
                 if group_valid:
-                    utilities_data[utility_id] = entry_values
+                    utility_groups.append(entry_values)
                 else:
                     has_error = True
-
             util_child = util_child.get_next_sibling()
 
         # If validation fails, stay on or jump to invalid tab
-        # Updated validation navigation:
         if has_error:
             if not name_val:
                 self.stack.set_visible_child_name("game_info")
@@ -749,7 +912,7 @@ class ConfigurationBuilderWindow(Adw.Window):
             "accent_colour": hex_color,
             "wiki_link": self.wiki_link_row.get_text().strip(),
             "mods_path": modding_paths,
-            "essential_utilities": utilities_data
+            "utilities": utility_groups
         }
         if self.steam_folder_row.get_text().strip():
             config_data["steam_folder_name"] = self.steam_folder_row.get_text().strip()
