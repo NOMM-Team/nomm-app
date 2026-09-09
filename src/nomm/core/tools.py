@@ -24,7 +24,7 @@ def write_yaml(data: dict, path: str) -> bool:
     os.makedirs(os.path.dirname(path), exist_ok=True)
     try:
         with open(path, 'w', encoding='utf-8') as f:
-            yaml.safe_dump(data, f, default_flow_style=False)
+            yaml.safe_dump(data, f, default_flow_style=False, sort_keys=False)
             return True
     except Exception as e:
         print(f"Error while writing in {path}: {e}")
