@@ -1,6 +1,6 @@
 import os
 import gettext
-
+from pathlib import Path
 from gi.repository import GLib
 from nomm.core.tools import load_yaml, write_yaml
 from typing import List, Dict, Any
@@ -10,6 +10,7 @@ _ = gettext.gettext
 
 if ".local" in GLib.get_user_data_dir():  # local installation i.e. running python
     DATA_DIR = os.path.join(GLib.get_user_data_dir(), "nomm")
+    Path(DATA_DIR).mkdir(parents=True, exist_ok=True)
 else:  # a flatpak, no need to add "nomm" parent folder
     DATA_DIR = os.path.join(GLib.get_user_data_dir())
 
