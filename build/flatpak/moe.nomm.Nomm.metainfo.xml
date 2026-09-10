@@ -36,14 +36,15 @@
     <color type="primary" scheme_preference="dark">#374955</color>
   </branding>
   <releases>
-    <release type="stable" version="0.13.3" date="2026-09-07T00:00:00Z">
+    <release type="stable" version="0.13.4" date="2026-09-10T00:00:00Z">
       <description>
         <p>Release bites</p>
         <ul>
-          <li>Fix a regression impacting Nexus one-click downloads</li>
+          <li>Fix two regressions impacting Nexus one-click downloads</li>
+          <li>Fix refresh metadata not working when no mods were downloaded previously</li>
         </ul>
       </description>
-      <url>https://github.com/nomm-team/nomm-app/releases/0.13.3</url>
+      <url>https://github.com/nomm-team/nomm-app/releases/0.13.4</url>
     </release>
     <release type="stable" version="0.13.3" date="2026-09-07T00:00:00Z">
       <description>
