@@ -272,9 +272,21 @@ def deploy_essential_utility(util_config: dict, downloads_path: str, staging_pat
     print("Extracting utility contents")
     extract_archive(archive_path, staging_path)
 
+    def interpret_filter_string(input_string):
+        output_list = []
+        if not input_string:
+            return None
+        elif "," in input_string:
+            output_list = input_string.split(",")
+        elif ";" in input_string:
+            output_list = input_string.split(";")
+        else:
+            output_list = [input_string]
+        return output_list
+
     # Whitelist and blacklist management
-    whitelist = util_config.get("whitelist", [])
-    blacklist = util_config.get("blacklist", [])
+    whitelist = interpret_filter_string(util_config.get("whitelist", ""))
+    blacklist = interpret_filter_string(util_config.get("blacklist", ""))
 
     if whitelist or blacklist:
         print("Applying whitelist/blacklist filters to extracted files...")

@@ -716,7 +716,8 @@ class ConfigurationBuilderWindow(Adw.Window):
         filtering_row = Adw.ActionRow(title=_("Content Filtering"))
         filtering_row.set_tooltip_text(_("Use this option to filter the contents of the utility archive.\n"
                                          "If set in blacklist mode, NOMM will remove the specified files from the utility.\n"
-                                         "If set in whitelist mode, NOMM will remove all the OTHER files but the ones specified."))
+                                         "If set in whitelist mode, NOMM will remove all the OTHER files but the ones specified.\n"
+                                         "You can use ',' or ';' to split multiple file names."))
 
         filter_type = Gtk.DropDown.new_from_strings(
             [_("No filtering"), _("Whitelist files"), _("Blacklist files")]
