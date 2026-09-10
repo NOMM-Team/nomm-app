@@ -40,6 +40,15 @@
       <description>
         <p>Release bites</p>
         <ul>
+          <li>Fix a regression impacting Nexus one-click downloads</li>
+        </ul>
+      </description>
+      <url>https://github.com/nomm-team/nomm-app/releases/0.13.3</url>
+    </release>
+    <release type="stable" version="0.13.3" date="2026-09-07T00:00:00Z">
+      <description>
+        <p>Release bites</p>
+        <ul>
           <li>1-click download enabled for GameBanana on Mario Kart 8 Deluxe mods!</li>
           <li>Fixed incorrect link on submitter button for GameBanana mods</li>
           <li>Fixed some UI strings with incorrect spacing</li>
@@ -91,15 +100,6 @@
         </ul>
       </description>
       <url>https://github.com/nomm-team/nomm-app/releases/0.12.6</url>
-    </release>
-    <release type="stable" version="0.12.5" date="2026-08-24T00:00:00Z">
-      <description>
-        <p>Release bites</p>
-        <ul>
-          <li>Fixed regression stopping utilities from being correctly downloaded</li>
-        </ul>
-      </description>
-      <url>https://github.com/nomm-team/nomm-app/releases/0.12.5</url>
     </release>
   </releases>
   <content_rating type="oars-1.1">
