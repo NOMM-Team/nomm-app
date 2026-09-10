@@ -1038,7 +1038,7 @@ class ModsTab(Gtk.Box):
     def check_for_mod_updates_async(self, staging_metadata: dict, download_dir: Path, on_complete_callback: Optional[Callable]) -> None:
         def worker():
             print("Checking for updates in background...")
-            nexus_id = staging_metadata.get("info").get("nexus_id")
+            nexus_id = self.dashboard.game_info["nexus_id"]
             for mod_name, mod_metadata in staging_metadata.get("mods", {}).items():
                 mod_id = mod_metadata.get("mod_id")
                 local_version = str(mod_metadata.get("version", ""))
