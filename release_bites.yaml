@@ -1,10 +1,11 @@
 ---
-Version: "0.13.3"
-Date: 2026-09-07
-URL: https://github.com/nomm-team/nomm-app/releases/0.13.3
+Version: "0.13.4"
+Date: 2026-09-10
+URL: https://github.com/nomm-team/nomm-app/releases/0.13.4
 Description: |-
   Release bites
-   * Fix a regression impacting Nexus one-click downloads
+   * Fix two regressions impacting Nexus one-click downloads
+   * Fix refresh metadata not working when no mods were downloaded previously
 ---
 Version: "0.13.3"
 Date: 2026-09-07
