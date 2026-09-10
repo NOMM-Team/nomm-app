@@ -353,15 +353,6 @@ def _fetch_and_write_mod_metadata(nxm_link: str, headers: dict, final_download_d
             downloader._active_downloads.discard(file_name)
         GLib.idle_add(downloader.emit, 'download-error', error_data)
         return
-    """
-    mod_metadata = {
-        "name": file_info_data.get("name", "Unknown Mod"),
-        "version": file_info_data.get("version", "1.0"),
-        "changelog": file_info_data.get("changelog_html", ""),
-        "mod_id": mod_id,
-        "file_id": file_id,
-        "mod_link": f"https://www.nexusmods.com/{nexus_id}/mods/{mod_id}"
-    }"""
 
     downloads_metadata_path = get_metadata_path(str(final_download_dir), is_staging=False)
     with meta_lock:
