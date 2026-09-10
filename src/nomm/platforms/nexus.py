@@ -6,13 +6,13 @@ from urllib.parse import urlsplit, urlunsplit
 from urllib.error import HTTPError
 
 import requests
-import yaml
 from gi.repository import GLib
 
 from nomm.core.mod_manager import get_metadata_path, meta_lock
 from nomm.core.downloader import Downloader
 from nomm.gui.notifications import download_popup, send_download_notification
 from nomm.core.tools import load_yaml, write_yaml, download_image, process_bbcode
+from nomm.core.user_config import get_game_config
 
 
 def endorse_nexus_mod(headers: dict, game_domain: str, mod_id: str, unendorse: bool):
@@ -131,25 +131,14 @@ def handle_nexus_link(nxm_link: str, downloader: Downloader, headers: dict) -> b
     nexus_id = splitted_nxm.netloc.lower()
     print(f"Nexus Game ID: {nexus_id}")
 
-    game_configs_dir = os.path.join(app_dir, "game_configs")
-    game_folder_name = ""
+    game_config = get_game_config(nexus_id=nexus_id)
 
-    if os.path.exists(game_configs_dir):
-        for filename in os.listdir(game_configs_dir):
-            if filename.lower().endswith((".yaml", ".yml")):
-                try:
-                    with open(os.path.join(game_configs_dir, filename), 'r') as f:
-                        g_data = yaml.safe_load(f)
-                        if g_data and g_data.get("nexus_id") == nexus_id:
-                            game_folder_name = g_data.get("name", nexus_id)
-                            break
-                except FileNotFoundError:
-                    continue
-
-    if not game_folder_name:
+    if not game_config:
         print(f"Game {nexus_id} could not be found in game_configs!")
-        GLib.idle_add(send_download_notification, "failure-game-not-found", file_name=None, game_name=nexus_id, icon_path=None)
+        GLib.idle_add(send_download_notification, "failure-game-not-found", None, nexus_id, None)
         return False
+
+    game_folder_name = game_config.get("name")
 
     final_download_dir = Path(base_download_path) / game_folder_name
     final_download_dir.mkdir(parents=True, exist_ok=True)
