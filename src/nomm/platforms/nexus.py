@@ -337,6 +337,7 @@ def _fetch_and_write_mod_metadata(nxm_link: str, headers: dict, final_download_d
 
     mod_id = nxm_path[2]
     file_id = nxm_path[4]
+
     try:
         info_api_url = f"https://api.nexusmods.com/v1/games/{nexus_id}/mods/{mod_id}/files/{file_id}.json"
         info_response = requests.get(info_api_url, headers=headers)
@@ -352,7 +353,7 @@ def _fetch_and_write_mod_metadata(nxm_link: str, headers: dict, final_download_d
             downloader._active_downloads.discard(file_name)
         GLib.idle_add(downloader.emit, 'download-error', error_data)
         return
-
+    """
     mod_metadata = {
         "name": file_info_data.get("name", "Unknown Mod"),
         "version": file_info_data.get("version", "1.0"),
@@ -360,20 +361,11 @@ def _fetch_and_write_mod_metadata(nxm_link: str, headers: dict, final_download_d
         "mod_id": mod_id,
         "file_id": file_id,
         "mod_link": f"https://www.nexusmods.com/{nexus_id}/mods/{mod_id}"
-    }
+    }"""
 
     downloads_metadata_path = get_metadata_path(str(final_download_dir), is_staging=False)
     with meta_lock:
         downloads_metadata = load_yaml(downloads_metadata_path)
-
-        if "mods" not in downloads_metadata:
-            downloads_metadata["mods"] = {}
-        downloads_metadata["info"] = {}
-        downloads_metadata["info"]["game"] = game_folder_name
-        downloads_metadata["info"]["nexus_id"] = nexus_id
-        downloads_metadata["mods"][file_name] = mod_metadata
-
-        write_yaml(downloads_metadata, downloads_metadata_path)
 
     with downloader._downloads_lock:
         downloader._active_downloads.discard(file_name)
@@ -393,7 +385,8 @@ def _fetch_and_write_mod_metadata(nxm_link: str, headers: dict, final_download_d
     # Handle saving all of this data
     downloads_metadata_path = get_metadata_path(str(final_download_dir), is_staging=False)
     downloads_metadata = load_yaml(downloads_metadata_path)
-
+    if not downloads_metadata:
+        downloads_metadata = {}
     if "mods" not in downloads_metadata:
         downloads_metadata["mods"] = {}
     downloads_metadata["info"] = {}
