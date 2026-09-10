@@ -12,7 +12,7 @@ from nomm.core.mod_manager import get_metadata_path, meta_lock
 from nomm.core.downloader import Downloader
 from nomm.gui.notifications import download_popup, send_download_notification
 from nomm.core.tools import load_yaml, write_yaml, download_image, process_bbcode
-from nomm.core.user_config import get_game_config
+from nomm.core.user_config import get_game_config, load_user_config
 
 
 def endorse_nexus_mod(headers: dict, game_domain: str, mod_id: str, unendorse: bool):
@@ -112,10 +112,7 @@ def get_nexus_changelog(headers: dict, game_id: str, mod_id: str, remote_version
 
 # Interprets nxm links and launchs notification
 def handle_nexus_link(nxm_link: str, downloader: Downloader, headers: dict) -> bool:
-
-    app_dir = os.path.join(GLib.get_user_data_dir(), "nomm")
-    user_config_dir = os.path.join(app_dir, "user_config.yaml")
-    user_config = load_yaml(user_config_dir)
+    user_config = load_user_config()
     api_key = user_config.get("nexus_api_key")
     base_download_path = user_config.get("download_path")
 
@@ -148,11 +145,11 @@ def handle_nexus_link(nxm_link: str, downloader: Downloader, headers: dict) -> b
         return _download_nexus_collection(nxm_link, nexus_headers, final_download_dir, downloader)
     else:
         print("Downloading single mod")
-        return _download_nexus_mod(nxm_link, nexus_headers, final_download_dir, nexus_id, game_folder_name, user_config_dir, downloader)
+        return _download_nexus_mod(nxm_link, nexus_headers, final_download_dir, nexus_id, game_folder_name, downloader)
 
 
 def _download_nexus_mod(nxm_link: str, headers: dict, final_download_dir: Path, nexus_id: str,
-                        game_folder_name: str, user_config_dir, downloader: Downloader) -> bool:
+                        game_folder_name: str, downloader: Downloader) -> bool:
 
     splitted_nxm = urlsplit(nxm_link)
     nxm_path = splitted_nxm.path.split('/')
@@ -193,7 +190,7 @@ def _download_nexus_mod(nxm_link: str, headers: dict, final_download_dir: Path, 
         file_name = file_url.split('/')[-1].split('?')[0] or "download"
 
     print(f"Downloading {file_name} to {game_folder_name}...")
-    user_meta = load_yaml(user_config_dir)
+    user_meta = load_user_config()
     if user_meta.get('disable_download_window'):
         threading.Thread(
             target=downloader.download_mod,
