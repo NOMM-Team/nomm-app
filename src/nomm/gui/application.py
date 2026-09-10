@@ -147,10 +147,7 @@ class Nomm(Adw.Application):
 
     def _process_link(self, uri, handler_fn):
         started = False
-        try:
-            started = handler_fn(uri, self.downloader, self.headers)
-        except Exception as e:
-            print(f"Error handling URI {uri}: {e}")
+        started = handler_fn(uri, self.downloader, self.headers)
 
         callback = (
             self._connect_release_on_finish if started else self.release
