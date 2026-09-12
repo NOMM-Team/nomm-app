@@ -22,63 +22,72 @@ class UtilitiesTab(Gtk.Box):
         self.downloader = downloader
         self.download_maps = {}
 
-        utilities_cfg = self.dashboard.game_info.get("utilities", {})
+        utility_groups = self.dashboard.game_info.get("utilities", [])
+        list_box = Gtk.ListBox(css_classes=["dashboard-list"])
+        list_box.set_selection_mode(Gtk.SelectionMode.NONE)
+        list_box.set_overflow(Gtk.Overflow.HIDDEN)
 
-        if not utilities_cfg or not isinstance(utilities_cfg, dict):
-            self.append(Gtk.Label(label=_("No utilities defined."), css_classes=["dim-label"]))
-        else:
-            list_box = Gtk.ListBox(css_classes=["dashboard-list"])
-            list_box.set_selection_mode(Gtk.SelectionMode.NONE)
-            list_box.set_overflow(Gtk.Overflow.HIDDEN)
+        for utility in utility_groups:
+            row = Adw.ActionRow(title=utility["name"])
 
-            for util_id, util in utilities_cfg.items():
-                row = Adw.ActionRow(title=util.get("name", util_id))
+            REQUIRED_FIELDS = ["name", "creator", "creator_link", "source_type", "source_url",
+                               "executable_type", "deploy_to_game_files"]
+            missing_fields = set(REQUIRED_FIELDS) - utility.keys()
+            if missing_fields:
+                print(f"[!] Missing required utility fields: {missing_fields}")
+                if "name" in utility:
+                    print(f"[!] Skipping utility: {utility["name"]}")
+                else:
+                    print("[!] Skipping utility")
 
-                decoded_url = unquote(util.get("source"))
+            creator = utility["creator"]
+            creator_link = utility["creator_link"]
+
+            creator_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
+            creator_box.set_valign(Gtk.Align.CENTER)
+            creator_box.set_margin_end(12)
+
+            creator_btn = Gtk.Button(label=creator)
+            creator_btn.add_css_class("flat")
+            creator_btn.add_css_class("badge-action-row")
+            creator_btn.set_cursor_from_name("pointer")
+            creator_btn.connect("clicked", lambda b, link=creator_link: webbrowser.open(link))
+
+            creator_box.append(creator_btn)
+            row.add_prefix(creator_box)
+
+            # Version badge
+            version_badge = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
+            version_badge.set_valign(Gtk.Align.CENTER)
+            version_badge.set_margin_end(15)
+
+            v_label = Gtk.Label(label=str(utility["version"]))
+            v_label.add_css_class("badge-action-row")
+
+            version_badge.append(v_label)
+            row.add_suffix(version_badge)
+
+            util_dir = Path(self.dashboard.downloads_path) / "utilities"
+            staging_dir = Path(self.dashboard.staging_path) / "utilities" / utility["name"]
+
+            stack = Gtk.Stack(transition_type=Gtk.StackTransitionType.CROSSFADE)
+
+            # Download & install buttons
+            dl_btn = Gtk.Button(label=_("Download"), css_classes=["suggested-action"], valign=Gtk.Align.CENTER)
+            inst_btn = Gtk.Button(valign=Gtk.Align.CENTER)
+
+            if utility["source_type"] in ["direct", "github"]:
+                decoded_url = unquote(utility["source_url"])
                 if "/" in decoded_url:
                     file_name = decoded_url.split("/")[-1]
                 else:
-                    file_name = f"{util_id}.zip"
+                    file_name = decoded_url
 
-                creator = util.get("creator", "Unknown")
-                creator_link = util.get("creator_link", "#")
-
-                creator_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
-                creator_box.set_valign(Gtk.Align.CENTER)
-                creator_box.set_margin_end(12)
-
-                creator_btn = Gtk.Button(label=creator)
-                creator_btn.add_css_class("flat")
-                creator_btn.add_css_class("badge-action-row")
-                creator_btn.set_cursor_from_name("pointer")
-                creator_btn.connect("clicked", lambda b, link=creator_link: webbrowser.open(link))
-
-                creator_box.append(creator_btn)
-                row.add_prefix(creator_box)
-
-                # Version badge
-                util_version = util.get("version", "—")
-
-                version_badge = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
-                version_badge.set_valign(Gtk.Align.CENTER)
-                version_badge.set_margin_end(15)
-
-                v_label = Gtk.Label(label=str(util_version))
-                v_label.add_css_class("badge-action-row")
-
-                version_badge.append(v_label)
-                row.add_suffix(version_badge)
-
-                util_dir = Path(self.dashboard.downloads_path) / "utilities"
-                staging_dir = Path(self.dashboard.staging_path) / "utilities" / util["name"]
-                local_zip_path = util_dir / file_name
-
-                stack = Gtk.Stack(transition_type=Gtk.StackTransitionType.CROSSFADE)
-
-                # Last progress
                 current_ratio = None
                 if file_name in self.download_maps:
                     current_ratio = self.download_maps[file_name].get_fraction()
+
+                local_zip_path = util_dir / file_name
 
                 dl_pbar = Gtk.ProgressBar()
                 dl_pbar.set_can_target(False)
@@ -87,13 +96,10 @@ class UtilitiesTab(Gtk.Box):
                 dl_pbar.set_halign(Gtk.Align.FILL)
                 dl_pbar.set_valign(Gtk.Align.FILL)
                 dl_pbar.set_size_request(-1, -1)
-
-                dl_btn = Gtk.Button(label=_("Download"), css_classes=["suggested-action"], valign=Gtk.Align.CENTER)
-                dl_btn.connect("clicked", self.on_utility_download_clicked, util, stack, dl_pbar, file_name)
-                dl_btn.set_valign(Gtk.Align.FILL)
                 if current_ratio:
                     dl_pbar.set_fraction(current_ratio)
                 self.download_maps[file_name] = dl_pbar
+                dl_btn.connect("clicked", self.on_utility_download_clicked, utility, stack, dl_pbar, file_name)
 
                 # Overlay to display download progress on top of download button
                 overlay = Gtk.Overlay()
@@ -102,21 +108,36 @@ class UtilitiesTab(Gtk.Box):
                 overlay.set_child(dl_btn)
                 overlay.add_overlay(dl_pbar)
 
-                inst_btn = Gtk.Button(label=_("Reinstall") if staging_dir.exists() else _("Install"), valign=Gtk.Align.CENTER)
-                if not staging_dir.exists():
-                    inst_btn.add_css_class("suggested-action")
-                inst_btn.connect("clicked", self.on_utility_install_clicked, util, file_name)
-
+                inst_btn.connect("clicked", self.on_utility_install_clicked, utility, file_name)
                 stack.add_named(overlay, "download")
-                stack.add_named(inst_btn, "install")
-                stack.set_visible_child_name("install" if local_zip_path.exists() else "download")
 
-                row.add_suffix(stack)
-                list_box.append(row)
+            else:  # Flatpak & Nexus downloads (NOMM does not handle the download process for these)
+                dl_btn.connect("clicked", self.on_utility_download_clicked, utility, stack)
+                stack.add_named(dl_btn, "download")
 
-            scrolled = Gtk.ScrolledWindow(vexpand=True)
-            scrolled.set_child(list_box)
-            self.append(scrolled)
+            dl_btn.set_valign(Gtk.Align.FILL)
+
+            stack.add_named(inst_btn, "install")
+
+            if staging_dir.exists():  # standard install, already installed
+                stack.set_visible_child_name("install")
+                inst_btn.set_label(_("Reinstall"))
+            elif utility["source_type"] not in ["flatpak", "nexus"] and local_zip_path.exists():  # standard install, downloaded but not installed
+                stack.set_visible_child_name("install")
+                inst_btn.set_label(_("Install"))
+                inst_btn.add_css_class("suggested-action")
+            else:  # standard/flatpak install, not downloaded
+                stack.set_visible_child_name("download")
+                if self.get_flatpak_installation_status(utility):  # flatpak install, already installed
+                    dl_btn.set_sensitive(False)
+                    dl_btn.set_label(_("Installed"))
+
+            row.add_suffix(stack)
+            list_box.append(row)
+
+        scrolled = Gtk.ScrolledWindow(vexpand=True)
+        scrolled.set_child(list_box)
+        self.append(scrolled)
 
         # Load Order Button
         load_order_rel = self.dashboard.game_info.get("load_order_path")
@@ -129,9 +150,27 @@ class UtilitiesTab(Gtk.Box):
             btn_container.set_center_widget(load_order_btn)
             self.append(btn_container)
 
-    def on_utility_download_clicked(self, btn, util, stack, pbar, file_name):
-        source_url = util.get("source")
+    def get_flatpak_installation_status(self, util):
+        """Returns True if the flatpak is installed, False if not Flatpak type or not installed"""
+        if util.get("source_type") != "flatpak":
+            return False
+        package_name = util.get("source_url").replace("appstream://", "")
+        package_data_path = os.path.expanduser("~/.var/app/") + package_name
+        if os.path.exists(package_data_path):
+            return True
+        else:
+            return False
+
+    def on_utility_download_clicked(self, btn, util, stack, pbar=None, file_name=None):
+        source_url = util.get("source_url")
+        source_type = util.get("source_type")
         if not source_url:
+            return
+
+        if source_type == "flatpak" or source_type == "nexus":
+            # if it's type flatpak or nexus, NOMM doesn't handle the downloads itself
+            launcher = Gtk.UriLauncher.new(source_url)
+            launcher.launch(None, None, None)
             return
 
         btn.set_sensitive(False)
