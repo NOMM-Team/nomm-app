@@ -11,7 +11,7 @@ from nomm.core.mod_manager import deploy_essential_utility
 _ = gettext.gettext
 
 
-class ToolsTab(Gtk.Box):
+class UtilitiesTab(Gtk.Box):
     def __init__(self, dashboard, downloader):
         super().__init__(orientation=Gtk.Orientation.VERTICAL, spacing=10)
         self.set_margin_start(100)

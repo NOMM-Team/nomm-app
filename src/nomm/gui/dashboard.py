@@ -13,7 +13,7 @@ from nomm.core.mod_manager import (completely_uninstall_mod, get_metadata_path, 
 from nomm.core.colour_manager import set_accent_colour, reset_accent_colour
 from nomm.gui.dashboard_views.downloads_tab import DownloadsTab
 from nomm.gui.dashboard_views.mods_tab import ModsTab
-from nomm.gui.dashboard_views.tools_tab import ToolsTab
+from nomm.gui.dashboard_views.utilities_tab import UtilitiesTab
 
 rarfile.UNRAR_TOOL = "/app/bin/unrar"
 
@@ -205,7 +205,7 @@ class GameDashboard(Gtk.Box):
         if self.view_stack.get_child_by_name("tools"):
             self.view_stack.remove(self.view_stack.get_child_by_name("tools"))
 
-        self.tools_tab = ToolsTab(self, self.downloader)
+        self.tools_tab = UtilitiesTab(self, self.downloader)
         self.view_stack.add_named(self.tools_tab, "tools")
 
     def load_text_file(self, btn, path):
