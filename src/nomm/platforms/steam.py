@@ -1,9 +1,11 @@
+from nomm.core.tools import load_yaml
 import os
 import vdf
+import zlib
 from pathlib import Path
 from typing import List, Dict, Optional, Any
 
-from nomm.core.user_config import parse_mod_paths
+from nomm.core.user_config import parse_mod_paths, load_user_config
 from nomm.core.tools import slugify
 
 import gettext
@@ -152,3 +154,55 @@ def find_game(yaml_data, game_title, found_libs, steam_base) -> List[Dict[str, A
                     "nexus_id": yaml_data.get("nexus_id")
                 }
     return None
+
+
+def add_non_steam_utility(utility: dict, executable_path: str, steam_base: str, staging_metadata_path: str):
+    # name of installed utility should be [NOMM] {}
+    utility_registration_name = f"[NOMM] {utility["name"]}"
+    print(f"[i] registering utility {utility_registration_name} as non-steam game.")
+
+    steam_user_id = load_user_config.get("steam_user_id")
+    vdf_path = (f"{steam_base}/userdata/{steam_user_id}/config/shortcuts.vdf")
+    with open(vdf_path, "rb") as f:
+        vdf_data = vdf.binary_loads(f.read())
+
+    app_id = generate_non_steam_id(executable_path, utility_registration_name)
+    run_url = f"steam://run/{app_id}"
+
+    new_index = str(len(vdf_data.get("shortcuts", {})))
+    vdf_data.setdefault("shortcuts", {})[new_index] = {
+        "AppName": utility_registration_name,
+        "Exe": executable_path,
+        "StartDir": "",
+        "icon": "",
+        "ShortcutPath": "",
+        "LaunchOptions": "",
+        "IsHidden": 0,
+        "AllowDesktopConfig": 1,
+        "AllowOverlay": 1,
+        "OpenVR": 0,
+        "Devkit": 0,
+        "DevkitGameID": "",
+        "DevkitOverrideAppId": 0,
+        "LastPlayTime": 0,
+        "tags": {},
+    }
+
+    with open(vdf_path, "wb") as f:
+        f.write(vdf.binary_dumps(vdf_data))
+
+    staging_metadata = load_yaml(staging_metadata_path)
+    if "utilities" not in staging_metadata:
+        staging_metadata["utilities"] = {}
+    staging_metadata["utilities"][utility["name"]] = app_id
+
+    print(f"Added shortcut! Launch URI: {run_url}")
+    print("Adding utility steam id to utility ")
+
+
+def generate_non_steam_id(exe_path: str, app_name: str) -> int:
+    """Generates the 64-bit AppID for steam://run/<id>"""
+    key = f"{exe_path}{app_name}".encode('utf-8')
+    crc = zlib.crc32(key) & 0xFFFFFFFF
+    top_32 = crc | 0x80000000
+    return (top_32 << 32) | 0x02000000
