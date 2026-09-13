@@ -658,7 +658,7 @@ class ConfigurationBuilderWindow(Adw.Window):
             _("Non-Executable"),
             _("Linux Executable"),
             _("Windows Executable"),
-            _("Web Protocol")
+            _("Browser Protocol")
         ])
 
         executable_type_row = Adw.ComboRow(
@@ -682,7 +682,7 @@ class ConfigurationBuilderWindow(Adw.Window):
             selected_index = executable_type_row.get_selected()
             selected_type = self.executable_types[selected_index]
 
-            executable_path_row.set_visible(selected_type in ["linux", "windows", "web"])
+            executable_path_row.set_visible(selected_type in ["linux", "windows", "browser"])
 
             if selected_type == "linux":
                 executable_path_row.set_title(_("Linux script path *"))
