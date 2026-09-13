@@ -6,7 +6,7 @@ from pathlib import Path
 from urllib.parse import unquote
 from gi.repository import Adw, Gtk
 
-from nomm.core.utility_manager import deploy_essential_utility
+from nomm.core.utility_manager import deploy_essential_utility, launch_utility
 
 _ = gettext.gettext
 
@@ -82,7 +82,9 @@ class UtilitiesTab(Gtk.Box):
             # Launch utility button
             if utility.get("executable_type") != "non-exec":
                 launch_utility_btn = Gtk.Button(icon_name="mat-play-symbolic")
-                launch_utility_btn.set_tooltip_text(_("Launch utility"))
+                launch_utility_btn.set_tooltip_text(_(f"Launch {utility["name"]}"))
+                launch_utility_btn.connect("clicked", launch_utility, utility, self.dashboard.staging_path,
+                                           self.dashboard.staging_metadata_path, self.dashboard.app.steam_base)
                 row.add_suffix(launch_utility_btn)
 
             # Download & install buttons

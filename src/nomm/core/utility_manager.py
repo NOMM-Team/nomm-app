@@ -1,11 +1,11 @@
+from nomm.core.tools import load_yaml
 import os
 import shutil
-import threading
 import subprocess
+import webbrowser
 from pathlib import Path
 from nomm.core.archive_manager import extract_archive
-
-meta_lock = threading.Lock()
+from nomm.platforms.steam import add_non_steam_utility
 
 
 def deploy_essential_utility(util_config: dict, downloads_path: str, staging_path: str, game_path: str, file_name: str):
@@ -90,3 +90,27 @@ def deploy_essential_utility(util_config: dict, downloads_path: str, staging_pat
     if command:
         print(f"Running utility enable command: {command}")
         subprocess.run(command, shell=True, cwd=game_root)
+
+
+def launch_utility(btn, util_config: dict, staging_path: str, staging_metadata_path: str, steam_base):
+
+    if util_config["executable_type"] == "browser":
+        webbrowser.open(util_config["executable_path"])
+        return
+
+    utility_root_path = Path(staging_path) / "utilities" / util_config["name"]
+    executable_path = utility_root_path + util_config["executable_path"]
+
+    if util_config["executable_type"] == "windows":
+        staging_metadata = load_yaml(staging_metadata_path)
+        if not staging_metadata.get("utilities") or not staging_metadata.get("utilities").get(util_config["name"]):
+            add_non_steam_utility(
+                util_config,
+                executable_path,
+                steam_base,
+                staging_metadata_path
+            )
+        webbrowser.open(f"steam://run/{staging_metadata.get("utilities").get(util_config["name"])}")
+
+    else:  # linux executable
+        subprocess.run(executable_path, shell=True, cwd=os.path.dirname(executable_path))
