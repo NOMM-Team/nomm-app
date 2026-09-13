@@ -41,6 +41,13 @@ class UtilitiesTab(Gtk.Box):
                 else:
                     print("[!] Skipping utility")
 
+            if utility.get("creator_donation_link"):
+                row.add_prefix(create_icon_button(
+                    icon_name="mat-donate-symbolic",
+                    tooltip="Donate to creator",
+                    on_click=lambda b, link=utility["creator_donation_link"]: webbrowser.open(link)
+                ))
+
             row.add_prefix(create_icon_button(
                 icon_name="mat-attribution-symbolic",
                 tooltip="Open creator profile",

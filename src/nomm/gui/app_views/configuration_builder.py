@@ -564,6 +564,11 @@ class ConfigurationBuilderWindow(Adw.Window):
         creator_link_row.set_tooltip_text(_("A link to the creator's page (Github, social media, Patreon, Nexus...) "
                                             "ideally ask the creator which one should be used."))
         utility_group.add(creator_link_row)
+
+        creator_donation_link_row = Adw.EntryRow(title=_("Creator Donation Link (URL)"))
+        creator_donation_link_row.set_tooltip_text(_("A link to the creator's donation page"))
+        utility_group.add(creator_donation_link_row)
+
         self.source_types = ["direct", "flatpak", "github", "nexus"]
 
         source_type_list = Gtk.StringList.new([
@@ -765,6 +770,7 @@ class ConfigurationBuilderWindow(Adw.Window):
             "version": version_row,
             "creator": creator_row,
             "creator_link": creator_link_row,
+            "creator_donation_link": creator_donation_link_row,
             "source_type": source_type_row,
             "source_url": source_row,
             "deploy_to_game_files": deploy_row,
