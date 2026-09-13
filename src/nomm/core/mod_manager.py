@@ -9,7 +9,6 @@ from typing import List
 from gi.repository import GLib
 from nomm.core.tools import load_yaml, write_yaml
 from nomm.core.archive_manager import extract_archive
-from nomm.platforms.steam import add_launch_options
 
 meta_lock = threading.Lock()
 
@@ -345,11 +344,6 @@ def deploy_essential_utility(util_config: dict, downloads_path: str, staging_pat
     if command:
         print(f"Running utility enable command: {command}")
         subprocess.run(command, shell=True, cwd=game_root)
-
-    # Some utilities require specific launch options to run properly
-    launch_options = util_config.get("launch_options")
-    if launch_options:
-        add_launch_options(steam_base, launch_options, steam_id)
 
 
 def toggle_mod_state(mod_name: str, mod_files: list, state: bool, staging_dir: str, deployment_map: list) -> dict:

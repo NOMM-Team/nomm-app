@@ -3,8 +3,8 @@ import vdf
 from pathlib import Path
 from typing import List, Dict, Optional, Any
 
-from nomm.core.user_config import load_user_config, parse_mod_paths
-from nomm.core.tools import launch_option_merger, slugify
+from nomm.core.user_config import parse_mod_paths
+from nomm.core.tools import slugify
 
 import gettext
 _ = gettext.gettext
@@ -85,22 +85,6 @@ def get_library_paths(steam_base) -> List[str]:
     except Exception as e:
         print(f"Error parsing VDF at {vdf_path}: {e}")
     return libraries
-
-
-def add_launch_options(steam_base: str, launch_options, steam_id: str):
-    print(f"Adding Steam launch options: {launch_options}")
-    localconfig_path = steam_base + "userdata/" + load_user_config()["steam_user_id"] + "/config/localconfig.vdf"
-    print(f"...to localconfig file located at: {localconfig_path}")
-    with open(localconfig_path, 'r') as vdf_file:
-        localconfig = vdf.load(vdf_file)
-    game_data = localconfig["UserLocalConfigStore"]["Software"]["Valve"]["Steam"]["apps"][str(steam_id)]
-    if "LaunchOptions" not in game_data:
-        localconfig["UserLocalConfigStore"]["Software"]["Valve"]["Steam"]["apps"][str(steam_id)]["LaunchOptions"] = launch_options
-    else:
-        localconfig["UserLocalConfigStore"]["Software"]["Valve"]["Steam"]["apps"][str(steam_id)]["LaunchOptions"] = \
-            launch_option_merger(game_data["LaunchOptions"], launch_options)
-    with open(localconfig_path, 'w') as vdf_file:
-        vdf.dump(localconfig, vdf_file)
 
 
 def get_username_from_steam_id(steam_id: str, steam_base_path) -> str:

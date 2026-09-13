@@ -72,6 +72,19 @@ class UtilitiesTab(Gtk.Box):
 
             stack = Gtk.Stack(transition_type=Gtk.StackTransitionType.CROSSFADE)
 
+            # Game Launch options button
+            if utility.get("launch_options"):
+                launch_options_btn = Gtk.Button(icon_name="mat-launch-symbolic")
+                launch_options_btn.set_tooltip_text(_("Launch options"))
+                launch_options_btn.connect("clicked", self.on_utility_launch_options_clicked, utility.get("launch_options"))
+                row.add_suffix(launch_options_btn)
+
+            # Launch utility button
+            if utility.get("executable_type") != "non-exec":
+                launch_utility_btn = Gtk.Button(icon_name="mat-play-symbolic")
+                launch_utility_btn.set_tooltip_text(_("Launch utility"))
+                row.add_suffix(launch_utility_btn)
+
             # Download & install buttons
             dl_btn = Gtk.Button(label=_("Download"), css_classes=["suggested-action"], valign=Gtk.Align.CENTER)
             inst_btn = Gtk.Button(valign=Gtk.Align.CENTER)
@@ -161,6 +174,70 @@ class UtilitiesTab(Gtk.Box):
         else:
             return False
 
+    def on_utility_launch_options_clicked(self, btn, launch_options):
+        dialog = Adw.MessageDialog(
+            transient_for=self.dashboard.app.win,
+            heading=_("Game Launch Options")
+        )
+
+        status_page = Adw.StatusPage(
+            icon_name="mat-launch-symbolic"
+        )
+
+        content_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)
+
+        instruction_text = _(f"This utility requires {self.dashboard.game_name} to have extra launch options to work correctly.")
+        if self.dashboard.platform == "steam":
+            copy_text = _("Open Steam properties")
+        else:
+            copy_text = _("Copy options")
+        instruction_label = Gtk.Label(label=instruction_text, wrap=True, xalign=0)
+        instruction_label.set_use_markup(True)
+        content_box.append(instruction_label)
+
+        # The code box with copy button
+        code_bin = Adw.Bin()
+        code_bin.add_css_class("card")
+
+        code_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
+        code_box.set_margin_start(12)
+        code_box.set_margin_end(6)
+        code_box.set_margin_top(6)
+        code_box.set_margin_bottom(6)
+
+        options_label = Gtk.Label(label=launch_options, selectable=True, xalign=0)
+        options_label.add_css_class("monospace")
+
+        copy_btn = Gtk.Button(icon_name="edit-copy-symbolic")
+        copy_btn.set_tooltip_text(_("Copy to Clipboard"))
+        copy_btn.add_css_class("flat")
+        copy_btn.connect("clicked", self.dashboard.app.copy_to_clipboard, launch_options)
+
+        code_box.append(options_label)
+        code_box.set_hexpand(True)
+        options_label.set_hexpand(True)
+        code_box.append(copy_btn)
+
+        code_bin.set_child(code_box)
+        content_box.append(code_bin)
+        status_page.set_child(content_box)
+        dialog.set_extra_child(status_page)
+
+        dialog.add_response("close", _("Close"))
+        dialog.add_response("copy", copy_text)
+        dialog.set_response_appearance("copy", Adw.ResponseAppearance.SUGGESTED)
+
+        def on_response(d, response_id):
+            if response_id == "copy":
+                self.dashboard.app.copy_to_clipboard(copy_btn, launch_options)
+                if self.dashboard.platform == "steam":
+                    launcher = Gtk.UriLauncher.new(f"steam://gameproperties/{self.dashboard.app_id}")
+                    launcher.launch(None, None, None)
+            else:
+                d.close()
+        dialog.connect("response", on_response)
+        dialog.present()
+
     def on_utility_download_clicked(self, btn, util, stack, pbar=None, file_name=None):
         source_url = util.get("source_url")
         source_type = util.get("source_type")
@@ -201,65 +278,19 @@ class UtilitiesTab(Gtk.Box):
         threading.Thread(target=self.downloader.download_mod, args=(source_url, util_dir), daemon=True).start()
 
     def on_utility_install_clicked(self, btn, util: dict, file_name):
-        # Base warning message
-        msg = _("This process may replace existing game files. Please ensure you have backed up your game directory before proceeding.")
 
         dialog = Adw.MessageDialog(
             transient_for=self.dashboard.app.win,
             heading=_("Confirm Installation")
         )
 
-        dialog.set_default_size(500, -1)
-
-        # Container for the body content
+        dialog.set_default_size(400, -1)
         content_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)
 
-        # Primary warning label
+        msg = _("This process may replace existing game files. Please ensure you have backed up your game directory before proceeding.")
         warning_label = Gtk.Label(label=msg, wrap=True, xalign=0)
         content_box.append(warning_label)
 
-        # Check if launch_options exist in the util dict
-        launch_options = util.get("launch_options")
-        if launch_options:
-            separator = Gtk.Separator(orientation=Gtk.Orientation.HORIZONTAL)
-            separator.set_margin_top(8)
-            separator.set_margin_bottom(8)
-            content_box.append(separator)
-
-            # Additional instruction text
-            instruction_text = _("This utility requires the game to have extra launch options.\n"
-                                 "NOMM is able to add these for you but <b>Steam needs to be turned off</b>.")
-            instruction_label = Gtk.Label(label=instruction_text, wrap=True, xalign=0)
-            instruction_label.set_use_markup(True)
-            content_box.append(instruction_label)
-
-            # The code box with copy button
-            code_bin = Adw.Bin()
-            code_bin.add_css_class("card")  # Gives it the boxed look
-
-            code_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
-            code_box.set_margin_start(12)
-            code_box.set_margin_end(6)
-            code_box.set_margin_top(6)
-            code_box.set_margin_bottom(6)
-
-            options_label = Gtk.Label(label=launch_options, selectable=True, xalign=0)
-            options_label.add_css_class("monospace")
-
-            copy_btn = Gtk.Button(icon_name="edit-copy-symbolic")
-            copy_btn.set_tooltip_text(_("Copy to Clipboard"))
-            copy_btn.add_css_class("flat")
-            copy_btn.connect("clicked", self.dashboard.app.copy_to_clipboard, launch_options)
-
-            code_box.append(options_label)
-            code_box.set_hexpand(True)
-            options_label.set_hexpand(True)
-            code_box.append(copy_btn)
-
-            code_bin.set_child(code_box)
-            content_box.append(code_bin)
-
-        # Set the custom box as the extra child of the dialog
         dialog.set_extra_child(content_box)
 
         dialog.add_response("cancel", _("Cancel"))
@@ -268,6 +299,9 @@ class UtilitiesTab(Gtk.Box):
 
         def on_response(d, response_id):
             if response_id == "install":
+                if self.dashboard.platform == "steam":
+                    launcher = Gtk.UriLauncher.new(f"steam://gameproperties/{self.dashboard.app_id}")
+                    launcher.launch(None, None, None)
                 self.execute_utility_install(util, file_name)
             d.close()
 

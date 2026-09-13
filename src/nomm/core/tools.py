@@ -229,12 +229,6 @@ def list_archives(archives_directory: str):
     return archive_list
 
 
-def launch_option_merger(current_launch_options: str, new_option: str) -> str:
-    # TODO: add some proprer logic here - notably to check if the new option being added doesn't already exist.
-    merged_launch_option = current_launch_options + " " + new_option
-    return merged_launch_option
-
-
 def slugify(text: str) -> str:
     return re.sub(r'[^a-z0-9]', '', text.lower())
 
