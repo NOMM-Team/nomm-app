@@ -6,7 +6,7 @@ from pathlib import Path
 from urllib.parse import unquote
 from gi.repository import Adw, Gtk
 
-from nomm.core.mod_manager import deploy_essential_utility
+from nomm.core.utility_manager import deploy_essential_utility
 
 _ = gettext.gettext
 
@@ -299,9 +299,6 @@ class UtilitiesTab(Gtk.Box):
 
         def on_response(d, response_id):
             if response_id == "install":
-                if self.dashboard.platform == "steam":
-                    launcher = Gtk.UriLauncher.new(f"steam://gameproperties/{self.dashboard.app_id}")
-                    launcher.launch(None, None, None)
                 self.execute_utility_install(util, file_name)
             d.close()
 
@@ -311,7 +308,7 @@ class UtilitiesTab(Gtk.Box):
     def execute_utility_install(self, util, file_name):
 
         deploy_essential_utility(util, self.dashboard.downloads_path, self.dashboard.staging_path,
-                                 self.dashboard.game_path, self.dashboard.app.steam_base, self.dashboard.app_id, file_name)
+                                 self.dashboard.game_path, file_name)
 
         self.dashboard.show_message(
             _("Success"),
