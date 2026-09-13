@@ -44,5 +44,6 @@
     <file>mat-launch-symbolic.svg</file>
     <file>mat-play-symbolic.svg</file>
     <file>mat-attribution-symbolic.svg</file>
+    <file>mat-donate-symbolic.svg</file>
   </gresource>
 </gresources>
