@@ -1,3 +1,4 @@
+from nomm.core.tools import create_icon_button
 import gettext
 import os
 import threading
@@ -28,7 +29,7 @@ class UtilitiesTab(Gtk.Box):
         list_box.set_overflow(Gtk.Overflow.HIDDEN)
 
         for utility in utility_groups:
-            row = Adw.ActionRow(title=utility["name"])
+            row = Adw.ActionRow(title=utility["name"], subtitle=utility["creator"])
 
             REQUIRED_FIELDS = ["name", "creator", "creator_link", "source_type", "source_url",
                                "executable_type", "deploy_to_game_files"]
@@ -40,21 +41,11 @@ class UtilitiesTab(Gtk.Box):
                 else:
                     print("[!] Skipping utility")
 
-            creator = utility["creator"]
-            creator_link = utility["creator_link"]
-
-            creator_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
-            creator_box.set_valign(Gtk.Align.CENTER)
-            creator_box.set_margin_end(12)
-
-            creator_btn = Gtk.Button(label=creator)
-            creator_btn.add_css_class("flat")
-            creator_btn.add_css_class("badge-action-row")
-            creator_btn.set_cursor_from_name("pointer")
-            creator_btn.connect("clicked", lambda b, link=creator_link: webbrowser.open(link))
-
-            creator_box.append(creator_btn)
-            row.add_prefix(creator_box)
+            row.add_prefix(create_icon_button(
+                icon_name="mat-attribution-symbolic",
+                tooltip="Open creator profile",
+                on_click=lambda b, link=utility["creator_link"]: webbrowser.open(link)
+            ))
 
             # Version badge
             version_badge = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
@@ -74,18 +65,20 @@ class UtilitiesTab(Gtk.Box):
 
             # Game Launch options button
             if utility.get("launch_options"):
-                launch_options_btn = Gtk.Button(icon_name="mat-launch-symbolic")
-                launch_options_btn.set_tooltip_text(_("Launch options"))
-                launch_options_btn.connect("clicked", self.on_utility_launch_options_clicked, utility.get("launch_options"))
-                row.add_suffix(launch_options_btn)
+                row.add_suffix(create_icon_button(
+                    icon_name="mat-launch-symbolic",
+                    tooltip=_("Required launch options"),
+                    on_click=lambda btn: self.on_utility_launch_options_clicked(utility.get("launch_options"))
+                ))
 
             # Launch utility button
             if utility.get("executable_type") != "non-exec":
-                launch_utility_btn = Gtk.Button(icon_name="mat-play-symbolic")
-                launch_utility_btn.set_tooltip_text(_(f"Launch {utility["name"]}"))
-                launch_utility_btn.connect("clicked", launch_utility, utility, self.dashboard.staging_path,
-                                           self.dashboard.staging_metadata_path, self.dashboard.app.steam_base)
-                row.add_suffix(launch_utility_btn)
+                row.add_suffix(create_icon_button(
+                    icon_name="mat-play-symbolic",
+                    tooltip=_(f"Launch {utility["name"]}"),
+                    on_click=lambda btn: launch_utility(utility, self.dashboard.staging_path,
+                                                        self.dashboard.staging_metadata_path, self.dashboard.app.steam_base)
+                ))
 
             # Download & install buttons
             dl_btn = Gtk.Button(label=_("Download"), css_classes=["suggested-action"], valign=Gtk.Align.CENTER)
@@ -176,7 +169,7 @@ class UtilitiesTab(Gtk.Box):
         else:
             return False
 
-    def on_utility_launch_options_clicked(self, btn, launch_options):
+    def on_utility_launch_options_clicked(self, launch_options):
         dialog = Adw.MessageDialog(
             transient_for=self.dashboard.app.win,
             heading=_("Game Launch Options")
