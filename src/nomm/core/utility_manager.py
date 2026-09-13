@@ -92,7 +92,7 @@ def deploy_essential_utility(util_config: dict, downloads_path: str, staging_pat
         subprocess.run(command, shell=True, cwd=game_root)
 
 
-def launch_utility(btn, util_config: dict, staging_path: str, staging_metadata_path: str, steam_base):
+def launch_utility(util_config: dict, staging_path: str, staging_metadata_path: str, steam_base):
 
     if util_config["executable_type"] == "browser":
         webbrowser.open(util_config["executable_path"])

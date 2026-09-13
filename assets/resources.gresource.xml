@@ -43,5 +43,6 @@
     <file>mat-game-controller-symbolic.svg</file>
     <file>mat-launch-symbolic.svg</file>
     <file>mat-play-symbolic.svg</file>
+    <file>mat-attribution-symbolic.svg</file>
   </gresource>
 </gresources>
