@@ -652,7 +652,7 @@ class ConfigurationBuilderWindow(Adw.Window):
             "visible"
         )
 
-        self.executable_types = ["non-exec", "linux", "windows", "web"]
+        self.executable_types = ["non-exec", "linux", "windows", "browser"]
 
         executable_type_list = Gtk.StringList.new([
             _("Non-Executable"),
@@ -692,7 +692,7 @@ class ConfigurationBuilderWindow(Adw.Window):
                 executable_path_row.set_title(_("Windows executable path *"))
                 executable_path_row.set_tooltip_text(_("Enter the path to the windows executable, relative to the root of the utility archive"))
 
-            elif selected_type == "web":
+            elif selected_type == "browser":
                 executable_path_row.set_title(_("Web protocol link *"))
                 executable_path_row.set_tooltip_text(_("Enter the web protocol url that will be launched when the play button is clicked"))
 
