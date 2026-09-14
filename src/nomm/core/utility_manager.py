@@ -1,3 +1,4 @@
+from urllib.parse import unquote
 from nomm.core.tools import load_yaml
 import os
 import shutil
@@ -114,3 +115,51 @@ def launch_utility(util_config: dict, staging_path: str, staging_metadata_path: 
 
     else:  # linux executable
         subprocess.run(executable_path, shell=True, cwd=os.path.dirname(executable_path))
+
+
+def get_utility_status(utility_config: dict, download_path: str, staging_path: str, all_utility_configs: list):
+    file_name = get_downloaded_utility_file_name(utility_config, download_path)
+    if utility_config["source_type"] == "flatpak":
+        package_name = utility_config["source_url"].replace("appstream://", "")
+        flatpak_path = os.path.expanduser(f"~/.var/{package_name}")
+        if os.path.exists(flatpak_path):
+            return "installed"
+        else:
+            return "to_download"
+    if utility_config["source_type"] in ["nexus", "github", "direct"]:
+        if os.path.exists(download_path) and file_name in os.listdir(download_path):
+            print(os.listdir(staging_path))
+            if os.path.exists(staging_path):
+                return "installed"
+            else:
+                if utility_config.get("installation_lock_group"):
+                    for other_utility in all_utility_configs:
+                        if utility_config["installation_lock_group"] == other_utility["installation_lock_group"]:
+                            if get_utility_status(other_utility, download_path, staging_path, all_utility_configs) == "installed":
+                                return "blocked"
+                else:
+                    return "to_install"
+        else:
+            return "to_download"
+
+
+def get_downloaded_utility_file_name(utility_config: dict, download_path: str):
+    if utility_config["source_type"] in ["direct", "github"]:
+        decoded_url = unquote(utility_config["source_url"])
+        if "/" in decoded_url:
+            file_name = decoded_url.split("/")[-1]
+        else:
+            file_name = decoded_url
+    elif utility_config["source_type"] == "flatpak":
+        return None
+    elif utility_config["source_type"] == "nexus":
+        file_name_start = utility_config["nexus_file_name_start"]
+        if not os.path.exists(download_path):
+            return None
+        for file_name in os.listdir(download_path):
+            if file_name_start in file_name:
+                break
+    else:
+        print(f"Error: unrecognised source type for utility: {utility_config["name"]}")
+
+    return file_name

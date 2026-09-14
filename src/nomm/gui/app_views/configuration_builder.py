@@ -585,8 +585,8 @@ class ConfigurationBuilderWindow(Adw.Window):
         source_type_row.set_tooltip_text("Select the type of download. In most cases this will be direct download.\n"
                                          "If you need to get the absolute latest Github release, and the name of the executable keeps changing, "
                                          "select Github.\nIf the tool is published as a Flatpak, you may opt to set the download as a Flatpak "
-                                         "instead.\nAs an absolute LAST resort, you can select a nexus mods link. This should ONLY be used in "
-                                         "case the mod Author refuses to provide a direct download link to their tool outside of Nexus.")
+                                         "instead.\nNexus mods links should ONLY be used in case the mod Author "
+                                         "refuses to provide a direct download link to their tool outside of Nexus.")
 
         initial_type = "direct"
         if initial_type in self.source_types:
@@ -603,12 +603,19 @@ class ConfigurationBuilderWindow(Adw.Window):
         regex_row.set_margin_start(24)
         utility_group.add(regex_row)
 
+        nexus_file_start_row = Adw.EntryRow(title=_("Start of file name*"))
+        nexus_file_start_row.set_tooltip_text(_("The start of the name of the file downloaded from Nexus.\n"
+                                              "Do not include the random string that comes after the name."))
+        nexus_file_start_row.set_margin_start(24)
+        utility_group.add(nexus_file_start_row)
+
         def update_source_row_format(*_args):
             selected_index = source_type_row.get_selected()
             selected_type = self.source_types[selected_index]
             current_text = source_row.get_text()
 
             regex_row.set_visible(selected_type == "github")
+            nexus_file_start_row.set_visible(selected_type == "nexus")
 
             if selected_type == "flatpak":
                 source_row.set_title(_("Appstream Package ID *"))
@@ -625,8 +632,7 @@ class ConfigurationBuilderWindow(Adw.Window):
 
             elif selected_type == "nexus":
                 source_row.set_title(_("Nexus mod link"))
-                source_row.set_tooltip_text(_("This should ONLY be used if the utility creator has "
-                                              "refused to provide a direct download or Github link"))
+                source_row.set_tooltip_text(_("The link to the mod page of the utility. Do NOT provide a Nexus download link."))
                 if not current_text or not current_text.startswith("https://www.nexusmods.com/"):
                     source_row.set_text("https://www.nexusmods.com/")
 
@@ -773,6 +779,7 @@ class ConfigurationBuilderWindow(Adw.Window):
             "creator_donation_link": creator_donation_link_row,
             "source_type": source_type_row,
             "source_url": source_row,
+            "nexus_file_name_start": nexus_file_start_row,
             "deploy_to_game_files": deploy_row,
             "deployment_path": utility_path_row,
             "executable_type": executable_type_row,

@@ -1,13 +1,13 @@
+from nomm.core.utility_manager import get_downloaded_utility_file_name
 from nomm.core.tools import create_icon_button
 import gettext
 import os
 import threading
 import webbrowser
 from pathlib import Path
-from urllib.parse import unquote
 from gi.repository import Adw, Gtk
 
-from nomm.core.utility_manager import deploy_essential_utility, launch_utility
+from nomm.core.utility_manager import deploy_essential_utility, launch_utility, get_utility_status
 
 _ = gettext.gettext
 
@@ -65,7 +65,7 @@ class UtilitiesTab(Gtk.Box):
             version_badge.append(v_label)
             row.add_suffix(version_badge)
 
-            util_dir = Path(self.dashboard.downloads_path) / "utilities"
+            download_dir = Path(self.dashboard.downloads_path) / "utilities"
             staging_dir = Path(self.dashboard.staging_path) / "utilities" / utility["name"]
 
             stack = Gtk.Stack(transition_type=Gtk.StackTransitionType.CROSSFADE)
@@ -91,18 +91,14 @@ class UtilitiesTab(Gtk.Box):
             dl_btn = Gtk.Button(label=_("Download"), css_classes=["suggested-action"], valign=Gtk.Align.CENTER)
             inst_btn = Gtk.Button(valign=Gtk.Align.CENTER)
 
+            file_name = get_downloaded_utility_file_name(utility, download_dir)
+            inst_btn.connect("clicked", self.on_utility_install_clicked, utility, file_name)
+
             if utility["source_type"] in ["direct", "github"]:
-                decoded_url = unquote(utility["source_url"])
-                if "/" in decoded_url:
-                    file_name = decoded_url.split("/")[-1]
-                else:
-                    file_name = decoded_url
 
                 current_ratio = None
                 if file_name in self.download_maps:
                     current_ratio = self.download_maps[file_name].get_fraction()
-
-                local_zip_path = util_dir / file_name
 
                 dl_pbar = Gtk.ProgressBar()
                 dl_pbar.set_can_target(False)
@@ -123,10 +119,9 @@ class UtilitiesTab(Gtk.Box):
                 overlay.set_child(dl_btn)
                 overlay.add_overlay(dl_pbar)
 
-                inst_btn.connect("clicked", self.on_utility_install_clicked, utility, file_name)
                 stack.add_named(overlay, "download")
 
-            else:  # Flatpak & Nexus downloads (NOMM does not handle the download process for these)
+            else:  # Flatpak & Nexus downloads (NOMM does not handle the download process directly for these)
                 dl_btn.connect("clicked", self.on_utility_download_clicked, utility, stack)
                 stack.add_named(dl_btn, "download")
 
@@ -134,18 +129,20 @@ class UtilitiesTab(Gtk.Box):
 
             stack.add_named(inst_btn, "install")
 
-            if staging_dir.exists():  # standard install, already installed
+            current_utility_status = get_utility_status(utility, download_dir, staging_dir, utility_groups)
+            if current_utility_status == "installed":
                 stack.set_visible_child_name("install")
                 inst_btn.set_label(_("Reinstall"))
-            elif utility["source_type"] not in ["flatpak", "nexus"] and local_zip_path.exists():  # standard install, downloaded but not installed
+            elif current_utility_status == "to_install":
                 stack.set_visible_child_name("install")
                 inst_btn.set_label(_("Install"))
                 inst_btn.add_css_class("suggested-action")
-            else:  # standard/flatpak install, not downloaded
+            elif current_utility_status == "to_download":
                 stack.set_visible_child_name("download")
-                if self.get_flatpak_installation_status(utility):  # flatpak install, already installed
-                    dl_btn.set_sensitive(False)
-                    dl_btn.set_label(_("Installed"))
+            elif current_utility_status == "blocked":
+                stack.set_visible_child_name("download")
+                dl_btn.set_sensitive(False)
+                dl_btn.set_label(_("Blocked"))
 
             row.add_suffix(stack)
             list_box.append(row)
@@ -164,17 +161,6 @@ class UtilitiesTab(Gtk.Box):
             load_order_btn.connect("clicked", self.dashboard.load_text_file, Path(self.dashboard.game_path) / load_order_rel)
             btn_container.set_center_widget(load_order_btn)
             self.append(btn_container)
-
-    def get_flatpak_installation_status(self, util):
-        """Returns True if the flatpak is installed, False if not Flatpak type or not installed"""
-        if util.get("source_type") != "flatpak":
-            return False
-        package_name = util.get("source_url").replace("appstream://", "")
-        package_data_path = os.path.expanduser("~/.var/app/") + package_name
-        if os.path.exists(package_data_path):
-            return True
-        else:
-            return False
 
     def on_utility_launch_options_clicked(self, launch_options):
         dialog = Adw.MessageDialog(
@@ -255,7 +241,7 @@ class UtilitiesTab(Gtk.Box):
         btn.set_sensitive(False)
         btn.add_css_class('btn-download-before')
 
-        util_dir = os.path.join(self.dashboard.downloads_path, "utilities")
+        download_dir = os.path.join(self.dashboard.downloads_path, "utilities")
 
         def on_download_progress(downloader_inst, download_data):
             updated_file_name = download_data['file_name']
@@ -277,7 +263,7 @@ class UtilitiesTab(Gtk.Box):
         self.downloader.connect('download-complete', on_download_finished)
         self.downloader.connect('download-error', on_download_error)
 
-        threading.Thread(target=self.downloader.download_mod, args=(source_url, util_dir), daemon=True).start()
+        threading.Thread(target=self.downloader.download_mod, args=(source_url, download_dir), daemon=True).start()
 
     def on_utility_install_clicked(self, btn, util: dict, file_name):
 
