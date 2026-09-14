@@ -141,8 +141,6 @@ class UtilitiesTab(Gtk.Box):
                 dl_btn.connect("clicked", self.on_utility_download_clicked, utility, stack)
                 stack.add_named(dl_btn, "download")
 
-            dl_btn.set_valign(Gtk.Align.FILL)
-
             stack.add_named(inst_btn, "install")
 
             current_utility_status = get_utility_status(utility, self.download_dir, staging_dir, utility_groups)
