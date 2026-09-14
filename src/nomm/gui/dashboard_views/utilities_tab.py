@@ -5,7 +5,7 @@ import os
 import threading
 import webbrowser
 from pathlib import Path
-from gi.repository import Adw, Gtk
+from gi.repository import Adw, Gtk, Gio, GLib
 
 from nomm.core.utility_manager import deploy_essential_utility, remove_utility, get_utility_status, launch_utility
 
@@ -22,6 +22,23 @@ class UtilitiesTab(Gtk.Box):
         self.dashboard = dashboard
         self.downloader = downloader
         self.download_maps = {}
+        self.download_dir = Path(self.dashboard.downloads_path) / "utilities"
+        self.setup_folder_monitor()
+        self.populate_list()
+
+    def setup_folder_monitor(self):
+        f = Gio.File.new_for_path(str(self.download_dir))
+        self.monitor = f.monitor_directory(Gio.FileMonitorFlags.NONE, None)
+        self.monitor.connect("changed", self.on_utilities_downloads_folder_changed)
+
+    def on_utilities_downloads_folder_changed(self, monitor, file, other_file, event_type):
+        if event_type == Gio.FileMonitorEvent.CREATED:
+            GLib.idle_add(self.populate_list)
+
+    def populate_list(self):
+
+        while child := self.get_first_child():
+            self.remove(child)
 
         utility_groups = self.dashboard.game_info.get("utilities", [])
         list_box = Gtk.ListBox(css_classes=["dashboard-list"])
@@ -65,7 +82,6 @@ class UtilitiesTab(Gtk.Box):
             version_badge.append(v_label)
             row.add_suffix(version_badge)
 
-            download_dir = Path(self.dashboard.downloads_path) / "utilities"
             staging_dir = Path(self.dashboard.staging_path) / "utilities" / utility["name"]
 
             stack = Gtk.Stack(transition_type=Gtk.StackTransitionType.CROSSFADE)
@@ -91,7 +107,7 @@ class UtilitiesTab(Gtk.Box):
             dl_btn = Gtk.Button(label=_("Download"), css_classes=["suggested-action"], valign=Gtk.Align.CENTER)
             inst_btn = Gtk.Button(valign=Gtk.Align.CENTER)
 
-            file_name = get_downloaded_utility_file_name(utility, download_dir)
+            file_name = get_downloaded_utility_file_name(utility, self.download_dir)
             inst_btn.connect("clicked", self.on_utility_install_clicked, utility, file_name)
 
             if utility["source_type"] in ["direct", "github"]:
@@ -129,7 +145,7 @@ class UtilitiesTab(Gtk.Box):
 
             stack.add_named(inst_btn, "install")
 
-            current_utility_status = get_utility_status(utility, download_dir, staging_dir, utility_groups)
+            current_utility_status = get_utility_status(utility, self.download_dir, staging_dir, utility_groups)
             if current_utility_status == "installed":
                 stack.set_visible_child_name("install")
                 inst_btn.set_label(_("Reinstall"))
@@ -145,7 +161,7 @@ class UtilitiesTab(Gtk.Box):
                 dl_btn.set_label(_("Blocked"))
 
             row.add_suffix(stack)
-            if current_utility_status in ["installed", "to_install"]:
+            if current_utility_status in ["installed", "to_install"] and utility["source_type"] != "flatpak":
                 row.add_suffix(create_icon_button(
                     icon_name="mat-delete-forever-symbolic",
                     css_classes=["destructive-action"],
@@ -153,9 +169,16 @@ class UtilitiesTab(Gtk.Box):
                               "- The downloaded archive file,\n"
                               "- Any staged files,\n"
                               "- Any files copied to the game directory"),
-                    on_click=lambda btn: remove_utility(utility, download_dir, staging_dir,
-                                                        self.dashboard.game_path, file_name)
+                    on_click=lambda btn: self.on_utility_remove_clicked(utility, self.download_dir, staging_dir, file_name)
                 ))
+            else:
+                row.add_suffix(create_icon_button(
+                    icon_name="mat-delete-symbolic",
+                    tooltip=_("Nothing to delete"),
+                    hover_mouse_pointer=False,
+                    disabled=True
+                ))
+
             list_box.append(row)
 
         scrolled = Gtk.ScrolledWindow(vexpand=True)
@@ -172,6 +195,10 @@ class UtilitiesTab(Gtk.Box):
             load_order_btn.connect("clicked", self.dashboard.load_text_file, Path(self.dashboard.game_path) / load_order_rel)
             btn_container.set_center_widget(load_order_btn)
             self.append(btn_container)
+
+    def on_utility_remove_clicked(self, utility, download_dir, staging_dir, file_name):
+        remove_utility(utility, self.download_dir, staging_dir, self.dashboard.game_path, file_name)
+        self.populate_list()
 
     def on_utility_launch_options_clicked(self, launch_options):
         dialog = Adw.MessageDialog(
@@ -252,7 +279,7 @@ class UtilitiesTab(Gtk.Box):
         btn.set_sensitive(False)
         btn.add_css_class('btn-download-before')
 
-        download_dir = os.path.join(self.dashboard.downloads_path, "utilities")
+        self.download_dir = os.path.join(self.dashboard.downloads_path, "utilities")
 
         def on_download_progress(downloader_inst, download_data):
             updated_file_name = download_data['file_name']
@@ -274,7 +301,7 @@ class UtilitiesTab(Gtk.Box):
         self.downloader.connect('download-complete', on_download_finished)
         self.downloader.connect('download-error', on_download_error)
 
-        threading.Thread(target=self.downloader.download_mod, args=(source_url, download_dir), daemon=True).start()
+        threading.Thread(target=self.downloader.download_mod, args=(source_url, self.download_dir), daemon=True).start()
 
     def on_utility_install_clicked(self, btn, util: dict, file_name):
 
@@ -314,3 +341,4 @@ class UtilitiesTab(Gtk.Box):
             _("Success"),
             _("{} has been installed.").format(util.get('name'))
         )
+        self.populate_list()
