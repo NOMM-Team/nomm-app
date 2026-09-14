@@ -277,6 +277,8 @@ def create_icon_button(
     halign: Gtk.Align = Gtk.Align.END,
     css_classes: Optional[list[str]] = None,
     on_click: Optional[Callable] = None,
+    hover_mouse_pointer: bool = True,
+    disabled: bool = False
 ) -> Gtk.Button:
 
     button = Gtk.Button(valign=valign, halign=halign)
@@ -293,7 +295,11 @@ def create_icon_button(
     button.set_child(img)
 
     button.set_tooltip_text(tooltip)
-    button.set_cursor_from_name("pointer")
+    if hover_mouse_pointer:
+        button.set_cursor_from_name("pointer")
+
+    if disabled:
+        button.set_sensitive(False)
 
     classes_to_add = css_classes if css_classes is not None else ["flat"]
     for css_class in classes_to_add:
