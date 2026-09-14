@@ -366,9 +366,6 @@ def _fetch_and_write_mod_metadata(nxm_link: str, headers: dict, final_download_d
         with meta_lock:
             downloads_metadata = load_yaml(downloads_metadata_path)
 
-        with downloader._downloads_lock:
-            downloader._active_downloads.discard(file_name)
-
         # obtain additional metadata on the mod
         mod_metadata = get_mod_info(headers, nexus_id, mod_id, final_download_dir)
         if "display_name" in mod_metadata:
@@ -394,6 +391,9 @@ def _fetch_and_write_mod_metadata(nxm_link: str, headers: dict, final_download_d
         downloads_metadata["mods"][file_name] = mod_metadata
 
         write_yaml(downloads_metadata, downloads_metadata_path)
+
+    with downloader._downloads_lock:
+        downloader._active_downloads.discard(file_name)
 
     send_download_notification("success", file_name=file_name, game_name=game_folder_name, icon_path=None)
 
