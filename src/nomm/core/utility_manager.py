@@ -7,6 +7,9 @@ import webbrowser
 from pathlib import Path
 from nomm.core.archive_manager import extract_archive
 from nomm.platforms.steam import add_non_steam_utility
+from nomm.core.tools import interpret_filter_string
+
+NOMM_BACKUP_SUFFIX = ".nomm-backup"
 
 
 def deploy_essential_utility(util_config: dict, downloads_path: str, staging_path: str, game_path: str, file_name: str):
@@ -18,18 +21,6 @@ def deploy_essential_utility(util_config: dict, downloads_path: str, staging_pat
     # Archive extraction to staging
     print("Extracting utility contents")
     extract_archive(archive_path, staging_path)
-
-    def interpret_filter_string(input_string):
-        output_list = []
-        if not input_string:
-            return None
-        elif "," in input_string:
-            output_list = input_string.split(",")
-        elif ";" in input_string:
-            output_list = input_string.split(";")
-        else:
-            output_list = [input_string]
-        return output_list
 
     # Whitelist and blacklist management
     whitelist = interpret_filter_string(util_config.get("whitelist", ""))
@@ -79,10 +70,13 @@ def deploy_essential_utility(util_config: dict, downloads_path: str, staging_pat
                 relative_path = os.path.relpath(source_file, str(staging_path))
                 destination_file = target_dir / relative_path
                 destination_file.parent.mkdir(parents=True, exist_ok=True)
-
+                if os.path.exists(destination_file):
+                    backup_file = f"{destination_file}{NOMM_BACKUP_SUFFIX}"
+                    os.rename(destination_file, backup_file)
+                    print(f"[i] Backed up existing file: {destination_file}")
                 try:
                     shutil.copy2(source_file, destination_file)
-                    print(f"[+] Deployed & overwrote: {relative_path}")
+                    print(f"[+] Deployed: {relative_path}")
                 except Exception as e:
                     print(f"[!] Failed to copy {relative_path} to game directory: {e}")
 
@@ -128,7 +122,6 @@ def get_utility_status(utility_config: dict, download_path: str, staging_path: s
             return "to_download"
     if utility_config["source_type"] in ["nexus", "github", "direct"]:
         if os.path.exists(download_path) and file_name in os.listdir(download_path):
-            print(os.listdir(staging_path))
             if os.path.exists(staging_path):
                 return "installed"
             else:
@@ -147,9 +140,9 @@ def get_downloaded_utility_file_name(utility_config: dict, download_path: str):
     if utility_config["source_type"] in ["direct", "github"]:
         decoded_url = unquote(utility_config["source_url"])
         if "/" in decoded_url:
-            file_name = decoded_url.split("/")[-1]
+            return decoded_url.split("/")[-1]
         else:
-            file_name = decoded_url
+            return decoded_url
     elif utility_config["source_type"] == "flatpak":
         return None
     elif utility_config["source_type"] == "nexus":
@@ -158,8 +151,61 @@ def get_downloaded_utility_file_name(utility_config: dict, download_path: str):
             return None
         for file_name in os.listdir(download_path):
             if file_name_start in file_name:
-                break
+                return file_name
     else:
         print(f"Error: unrecognised source type for utility: {utility_config["name"]}")
 
-    return file_name
+    return None
+
+
+def remove_utility(util_config: dict, downloads_path: Path, staging_path: Path, game_path: str, archive_name: str):
+    """Deletes staged utility files and removes any utility files that were copied to the game's directory"""
+    game_root = Path(game_path)
+    archive_path = downloads_path / archive_name
+
+    if util_config.get("deploy_to_game_files", True) and staging_path.exists():
+        install_subpath = util_config["deployment_path"].strip("/")
+        target_dir = game_root / install_subpath
+
+        print(f"Removing utility files from game directory: {target_dir}")
+
+        for root, dirs, files in os.walk(str(staging_path)):
+            for file_name in files:
+                source_file = os.path.join(root, file_name)
+                relative_path = os.path.relpath(source_file, str(staging_path))
+                destination_file = target_dir / relative_path
+
+                if destination_file.exists():
+                    try:
+                        destination_file.unlink()
+                        print(f"[-] Removed deployed file: {relative_path}")
+                    except Exception as e:
+                        print(f"[!] Failed to remove {destination_file}: {e}")
+
+                backup_file = Path(f"{destination_file}{NOMM_BACKUP_SUFFIX}")
+                if backup_file.exists():
+                    try:
+                        if destination_file.exists():
+                            destination_file.unlink()
+                        backup_file.rename(destination_file)
+                        print(f"[i] Restored backup: {destination_file}")
+                    except Exception as e:
+                        print(f"[!] Failed to restore backup {backup_file}: {e}")
+
+        for root, dirs, files in os.walk(str(target_dir), topdown=False):
+            for dir_name in dirs:
+                dir_full_path = Path(root) / dir_name
+                try:
+                    dir_full_path.rmdir()
+                except OSError:
+                    pass  # Directory is not empty
+
+    if staging_path.exists():
+        try:
+            shutil.rmtree(staging_path)
+            print(f"[-] Cleaned up staging directory: {staging_path}")
+        except Exception as e:
+            print(f"[!] Failed to delete staging path {staging_path}: {e}")
+
+    if archive_path.exists():
+        archive_path.unlink()
