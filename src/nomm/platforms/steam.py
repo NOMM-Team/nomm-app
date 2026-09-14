@@ -1,3 +1,4 @@
+from nomm.core.tools import write_yaml
 from nomm.core.tools import load_yaml
 import os
 import vdf
@@ -161,7 +162,7 @@ def add_non_steam_utility(utility: dict, executable_path: str, steam_base: str, 
     utility_registration_name = f"[NOMM] {utility["name"]}"
     print(f"[i] registering utility {utility_registration_name} as non-steam game.")
 
-    steam_user_id = load_user_config.get("steam_user_id")
+    steam_user_id = load_user_config().get("steam_user_id")
     vdf_path = (f"{steam_base}/userdata/{steam_user_id}/config/shortcuts.vdf")
     with open(vdf_path, "rb") as f:
         vdf_data = vdf.binary_loads(f.read())
@@ -172,7 +173,7 @@ def add_non_steam_utility(utility: dict, executable_path: str, steam_base: str, 
     new_index = str(len(vdf_data.get("shortcuts", {})))
     vdf_data.setdefault("shortcuts", {})[new_index] = {
         "AppName": utility_registration_name,
-        "Exe": executable_path,
+        "Exe": str(executable_path),
         "StartDir": "",
         "icon": "",
         "ShortcutPath": "",
@@ -192,12 +193,16 @@ def add_non_steam_utility(utility: dict, executable_path: str, steam_base: str, 
         f.write(vdf.binary_dumps(vdf_data))
 
     staging_metadata = load_yaml(staging_metadata_path)
+    if not staging_metadata:
+        staging_metadata = {}
     if "utilities" not in staging_metadata:
         staging_metadata["utilities"] = {}
     staging_metadata["utilities"][utility["name"]] = app_id
+    write_yaml(staging_metadata, staging_metadata_path)
 
     print(f"Added shortcut! Launch URI: {run_url}")
     print("Adding utility steam id to utility ")
+    return app_id
 
 
 def generate_non_steam_id(exe_path: str, app_name: str) -> int:

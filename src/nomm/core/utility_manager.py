@@ -6,7 +6,6 @@ import subprocess
 import webbrowser
 from pathlib import Path
 from nomm.core.archive_manager import extract_archive
-from nomm.platforms.steam import add_non_steam_utility
 from nomm.core.tools import interpret_filter_string
 
 NOMM_BACKUP_SUFFIX = ".nomm-backup"
@@ -87,25 +86,18 @@ def deploy_essential_utility(util_config: dict, downloads_path: str, staging_pat
         subprocess.run(command, shell=True, cwd=game_root)
 
 
-def launch_utility(util_config: dict, staging_path: str, staging_metadata_path: str, steam_base):
+def launch_utility(util_config: dict, staging_dir: Path, staging_metadata_path: str):
 
     if util_config["executable_type"] == "browser":
         webbrowser.open(util_config["executable_path"])
         return
 
-    utility_root_path = Path(staging_path) / "utilities" / util_config["name"]
-    executable_path = utility_root_path + util_config["executable_path"]
+    executable_path = staging_dir / util_config["executable_path"]
 
     if util_config["executable_type"] == "windows":
         staging_metadata = load_yaml(staging_metadata_path)
-        if not staging_metadata.get("utilities") or not staging_metadata.get("utilities").get(util_config["name"]):
-            add_non_steam_utility(
-                util_config,
-                executable_path,
-                steam_base,
-                staging_metadata_path
-            )
-        webbrowser.open(f"steam://run/{staging_metadata.get("utilities").get(util_config["name"])}")
+        non_steam_app_id = staging_metadata.get("utilities").get(util_config["name"])
+        webbrowser.open(f"steam://run/{non_steam_app_id}")
 
     else:  # linux executable
         subprocess.run(executable_path, shell=True, cwd=os.path.dirname(executable_path))
