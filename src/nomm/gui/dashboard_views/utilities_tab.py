@@ -7,7 +7,7 @@ import webbrowser
 from pathlib import Path
 from gi.repository import Adw, Gtk
 
-from nomm.core.utility_manager import deploy_essential_utility, launch_utility, get_utility_status
+from nomm.core.utility_manager import deploy_essential_utility, remove_utility, get_utility_status, launch_utility
 
 _ = gettext.gettext
 
@@ -145,6 +145,17 @@ class UtilitiesTab(Gtk.Box):
                 dl_btn.set_label(_("Blocked"))
 
             row.add_suffix(stack)
+            if current_utility_status in ["installed", "to_install"]:
+                row.add_suffix(create_icon_button(
+                    icon_name="mat-delete-forever-symbolic",
+                    css_classes=["destructive-action"],
+                    tooltip=_("Fully remove utility, this affects:\n"
+                              "- The downloaded archive file,\n"
+                              "- Any staged files,\n"
+                              "- Any files copied to the game directory"),
+                    on_click=lambda btn: remove_utility(utility, download_dir, staging_dir,
+                                                        self.dashboard.game_path, file_name)
+                ))
             list_box.append(row)
 
         scrolled = Gtk.ScrolledWindow(vexpand=True)
@@ -275,7 +286,8 @@ class UtilitiesTab(Gtk.Box):
         dialog.set_default_size(400, -1)
         content_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)
 
-        msg = _("This process may replace existing game files. Please ensure you have backed up your game directory before proceeding.")
+        msg = _("This process may replace existing game files. These will be backed up by NOMM to avoid being overwritten. "
+                "You will be able to restore them automatically later by removing the utility with the delete button.")
         warning_label = Gtk.Label(label=msg, wrap=True, xalign=0)
         content_box.append(warning_label)
 
@@ -283,7 +295,7 @@ class UtilitiesTab(Gtk.Box):
 
         dialog.add_response("cancel", _("Cancel"))
         dialog.add_response("install", _("Continue"))
-        dialog.set_response_appearance("install", Adw.ResponseAppearance.DESTRUCTIVE)
+        dialog.set_response_appearance("install", Adw.ResponseAppearance.SUGGESTED)
 
         def on_response(d, response_id):
             if response_id == "install":

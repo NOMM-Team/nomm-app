@@ -330,3 +330,16 @@ def get_bundled_data_dir() -> str:
 
     # Default fallback to current working directory
     return os.getcwd()
+
+
+def interpret_filter_string(input_string):
+    output_list = []
+    if not input_string:
+        return None
+    elif "," in input_string:
+        output_list = input_string.split(",")
+    elif ";" in input_string:
+        output_list = input_string.split(";")
+    else:
+        output_list = [input_string]
+    return output_list
