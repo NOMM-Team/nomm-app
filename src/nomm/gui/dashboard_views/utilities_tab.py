@@ -167,7 +167,7 @@ class UtilitiesTab(Gtk.Box):
                               "- The downloaded archive file,\n"
                               "- Any staged files,\n"
                               "- Any files copied to the game directory"),
-                    on_click=lambda btn: self.on_utility_remove_clicked(utility, self.download_dir, staging_dir, file_name)
+                    on_click=lambda btn: self.on_utility_remove_clicked(utility, staging_dir, file_name)
                 ))
             else:
                 row.add_suffix(create_icon_button(
