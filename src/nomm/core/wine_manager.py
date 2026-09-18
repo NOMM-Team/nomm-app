@@ -15,7 +15,7 @@ WINE_BINARY_PATH = WINE_INSTALL_DIR / "bin" / "wine"
 WINE_REPO_URL = "https://github.com/Kron4ek/Wine-Builds"
 
 
-def ensure_dotnet7_installed(wineprefix_name: str = "default") -> None:
+def ensure_dotnet7_installed(headers: dict, wineprefix_name: str = "default") -> None:
     """Checks if .NET Desktop Runtime 7.0 is installed in the prefix.
 
     If missing, downloads and installs it silently.
@@ -46,12 +46,7 @@ def ensure_dotnet7_installed(wineprefix_name: str = "default") -> None:
 
     # Download with a custom User-Agent to bypass Microsoft CDN 400 blocks
     if not installer_path.exists():
-        req = urllib.request.Request(
-            installer_url,
-            headers={
-                "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-            },
-        )
+        req = urllib.request.Request(installer_url, headers=headers)
         with (
             urllib.request.urlopen(req) as response,
             open(installer_path, "wb") as out_file,

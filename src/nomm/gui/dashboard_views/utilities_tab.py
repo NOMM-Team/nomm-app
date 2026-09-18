@@ -217,7 +217,7 @@ class UtilitiesTab(Gtk.Box):
         if utility["executable_type"] == "windows" and not os.path.exists(WINE_BINARY_PATH):
             self.show_wine_setup_screen(utility, staging_dir)
             return
-        launch_utility(utility, staging_dir, self.dashboard.staging_metadata_path)
+        launch_utility(utility, staging_dir, self.dashboard.staging_metadata_path, self.dashboard.headers)
 
     def show_wine_setup_screen(self, utility: dict, staging_dir: Path):
         dialog = Adw.MessageDialog(
@@ -246,7 +246,7 @@ class UtilitiesTab(Gtk.Box):
         def on_response(d, response_id):
             if response_id == "continue":
                 get_wine()
-                launch_utility(utility, staging_dir, self.dashboard.staging_metadata_path)
+                launch_utility(utility, staging_dir, self.dashboard.staging_metadata_path, self.dashboard.headers)
         dialog.connect("response", on_response)
         dialog.present()
 
