@@ -42,7 +42,7 @@ class UtilitiesTab(Gtk.Box):
         while child := self.get_first_child():
             self.remove(child)
 
-        utility_groups = self.dashboard.game_info.get("utilities", [])
+        utility_groups: list[dict] = self.dashboard.game_info.get("utilities", [])
         list_box = Gtk.ListBox(css_classes=["dashboard-list"])
         list_box.set_selection_mode(Gtk.SelectionMode.NONE)
         list_box.set_overflow(Gtk.Overflow.HIDDEN)
@@ -98,11 +98,13 @@ class UtilitiesTab(Gtk.Box):
 
             # Launch utility button
             if utility.get("executable_type") != "non-exec":
-                row.add_suffix(create_icon_button(
+                launch_utility_button = create_icon_button(
                     icon_name="mat-play-symbolic",
-                    tooltip=_(f"Launch {utility["name"]}"),
-                    on_click=lambda btn: self.on_launch_button_clicked(utility, staging_dir)
-                ))
+                    tooltip=_("This is an executable utility, but it is not installed yet"),
+                    on_click=lambda btn: self.on_launch_button_clicked(utility, staging_dir),
+                    disabled=True
+                )
+                row.add_suffix(launch_utility_button)
 
             # Download & install buttons
             dl_btn = Gtk.Button(label=_("Download"), css_classes=["suggested-action"], valign=Gtk.Align.CENTER)
@@ -151,6 +153,8 @@ class UtilitiesTab(Gtk.Box):
             if current_utility_status == "installed":
                 stack.set_visible_child_name("install")
                 inst_btn.set_label(_("Reinstall"))
+                launch_utility_button.set_sensitive(True)
+                launch_utility_button.set_tooltip_text(f"Launch {utility["name"]}")
             elif current_utility_status == "to_install":
                 stack.set_visible_child_name("install")
                 inst_btn.set_label(_("Install"))
