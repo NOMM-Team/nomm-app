@@ -1,4 +1,18 @@
 ---
+Version: "0.14.0"
+Date: 2026-09-20
+URL: https://github.com/nomm-team/nomm-app/releases/0.14.0
+Description: |-
+  Release bites
+   * Major overhaul of utility management
+   * New: Nexus, Github and Flathub can be added as sources to download utilities
+   * New: Set utilities as being incompatible with other utilities
+   * New: Launch Linux utilities
+   * New: Launch Windows utilities (with Wine, downloaded at runtime)
+   * Change: Overhaul utility tab UI with new icons, buttons, interactions
+   * Change: Completely overhauled the configuration builder to reflect these changes
+   * Change: Adding launch options is now super easy and won't require relaunching Steam
+---
 Version: "0.13.4"
 Date: 2026-09-10
 URL: https://github.com/nomm-team/nomm-app/releases/0.13.4
