@@ -762,6 +762,12 @@ class ConfigurationBuilderWindow(Adw.Window):
                                             "stop the user from installing other utilities alongside this one. Leave empty to disable the feature."))
         utility_group.add(install_lock_row)
 
+        final_instructions_row = Adw.EntryRow(title=_("Final instructions"))
+        final_instructions_row.set_tooltip_text(_("This message will be shown to the user when they have installed the utility.\n"
+                                                  "You may for example use this to add some special instructions for the user to follow.\n"
+                                                  "You may use markup (such as <b></b> or <i></i>) in this field"))
+        utility_group.add(final_instructions_row)
+
         delete_btn = Gtk.Button(
             icon_name="mat-delete-symbolic",
             css_classes=["flat", "destructive-action"],
@@ -789,7 +795,8 @@ class ConfigurationBuilderWindow(Adw.Window):
             "enable_command": enable_cmd_row,
             "filter_type": filter_type,
             "filename_filter": filename_filter,
-            "installation_lock_group": install_lock_row
+            "installation_lock_group": install_lock_row,
+            "final_instructions": final_instructions_row
         }
 
         self.utility_groups_container.append(utility_group)

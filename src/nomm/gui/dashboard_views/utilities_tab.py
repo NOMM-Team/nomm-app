@@ -252,6 +252,7 @@ class UtilitiesTab(Gtk.Box):
     def on_utility_launch_options_clicked(self, launch_options):
         dialog = Adw.MessageDialog(
             transient_for=self.dashboard.app.win,
+            default_width=400,
             heading=_("Game Launch Options")
         )
 
@@ -388,9 +389,50 @@ class UtilitiesTab(Gtk.Box):
 
         deploy_essential_utility(util, self.dashboard.downloads_path, self.dashboard.staging_path,
                                  self.dashboard.game_path, file_name)
-
-        self.dashboard.show_message(
-            _("Success"),
-            _("{} has been installed.").format(util.get('name'))
-        )
+        self.show_utility_installation_success_screen(util)
         self.populate_list()
+
+    def show_utility_installation_success_screen(self, util):
+        status_page = Adw.StatusPage(
+            title=_("Installation Successful"),
+            description=f"{util['name']} was successfully installed!",
+            icon_name="mat-folder-check-symbolic"
+        )
+
+        vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12, halign=Gtk.Align.CENTER)
+
+        if util.get("final_instructions"):
+            warning_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0, halign=Gtk.Align.CENTER)
+            warning_box.add_css_class("warning-card")
+            warning_label = Gtk.Label(
+                wrap=True, max_width_chars=50, justify=Gtk.Justification.CENTER
+            )
+            warning_label.set_use_markup(True)
+            warning_label.set_markup(util["final_instructions"])
+            warning_box.append(warning_label)
+            vbox.append(warning_box)
+
+        action_btn = Gtk.Button(margin_top=12, halign=Gtk.Align.CENTER)
+        if util.get("launch_options"):
+            action_btn.set_label(_("Continue"))
+            action_btn.connect("clicked", lambda btn: self.on_utility_launch_options_clicked(util["launch_options"]))
+        else:
+            action_btn.set_label(_("Close"))
+        action_btn.add_css_class("suggested-action")
+
+        vbox.append(action_btn)
+        status_page.set_child(vbox)
+
+        # Create a parent dialog window to display the status page
+        dialog = Adw.Window(
+            transient_for=self.dashboard.app.win,
+            modal=True,
+            default_width=400,
+            title=_("Installation Complete")
+        )
+
+        # Close the dialog when Continue is clicked
+        action_btn.connect("clicked", lambda btn: dialog.close())
+
+        dialog.set_content(status_page)
+        dialog.present()
