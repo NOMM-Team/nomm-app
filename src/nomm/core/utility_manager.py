@@ -248,7 +248,7 @@ def launch_utility(util_config: dict, staging_dir: Path, staging_metadata_path: 
         subprocess.run(executable_path, shell=True, cwd=os.path.dirname(executable_path))
 
 
-def get_utility_status(utility_config: dict, download_path: str, staging_path: str, all_utility_configs: list):
+def get_utility_status(utility_config: dict, download_path: str, staging_path: str, all_utility_configs: list) -> str:
     file_name = get_downloaded_utility_file_name(utility_config, download_path)
     if utility_config["source_type"] == "flatpak":
         package_name = utility_config["source_url"].replace("appstream://", "")
@@ -262,10 +262,14 @@ def get_utility_status(utility_config: dict, download_path: str, staging_path: s
             if os.path.exists(staging_path):
                 return "installed"
             else:
-                if utility_config.get("installation_lock_group"):
+                lock_group = utility_config.get("installation_lock_group")
+                if lock_group:
                     for other_utility in all_utility_configs:
-                        if utility_config["installation_lock_group"] == other_utility["installation_lock_group"]:
-                            if get_utility_status(other_utility, download_path, staging_path, all_utility_configs) == "installed":
+                        if other_utility is utility_config:
+                            continue
+                        if other_utility.get("installation_lock_group") == lock_group:
+                            other_staging_path = staging_path.parent / other_utility["name"]
+                            if os.path.exists(other_staging_path):
                                 return "blocked"
                 else:
                     return "to_install"
