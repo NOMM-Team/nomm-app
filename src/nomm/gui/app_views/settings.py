@@ -9,6 +9,7 @@ from nomm.core.user_config import update_user_config, LibrarySort, DATA_DIR, loa
 from nomm.core.tools import translate_fuse_path, get_nomm_tags, create_icon_button
 from nomm.platforms.switch import list_emulators
 from nomm.gui.application import APP_VERSION
+from nomm.core.wine_manager import get_wine, remove_wine, get_latest_wine_version
 
 _ = gettext.gettext
 
@@ -216,6 +217,31 @@ class SettingsWindow(Adw.Window):
         fullscreen_row.set_active(user_config.get('enable_fullscreen', False))
         fullscreen_row.connect("notify::active", lambda row, pspec: self.toggle_setting('enable_fullscreen', row.get_active()))
         general_group.add(fullscreen_row)
+
+        # Wine
+        wine_version = user_config.get("wine_version")
+        if wine_version:
+            wine_row = Adw.ActionRow(
+                title=_("Wine Management"),
+                subtitle=_("Installed version: {}").format(wine_version)
+            )
+
+            # Update Button
+            if wine_version != get_latest_wine_version(self.app.headers):
+                wine_row.add_suffix(create_icon_button(
+                    icon_name="upgrade-symbolic",
+                    css_classes=["flat", "suggested-action"],
+                    tooltip=_("Update Wine instance"),
+                    on_click=lambda btn: get_wine()
+                ))
+
+            # Delete Button
+            wine_row.add_suffix(create_icon_button(
+                icon_name="mat-delete-symbolic",
+                tooltip=_("Delete Wine instance"),
+                on_click=lambda btn: remove_wine()
+            ))
+            general_group.add(wine_row)
 
         # --- COMMUNITY SECTION ---
         community_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=20, halign=Gtk.Align.CENTER)
