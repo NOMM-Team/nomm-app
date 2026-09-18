@@ -349,6 +349,11 @@ class UtilitiesTab(Gtk.Box):
 
     def on_utility_install_clicked(self, btn, util: dict, file_name):
 
+        if not util["deploy_to_game_files"]:
+            # No need to show warning when game files are not modified
+            self.execute_utility_install(util, file_name)
+            return
+
         dialog = Adw.MessageDialog(
             transient_for=self.dashboard.app.win,
             heading=_("Confirm Installation")
