@@ -8,7 +8,7 @@ import webbrowser
 import tarfile
 from pathlib import Path
 from nomm.core.archive_manager import extract_archive
-from nomm.core.tools import interpret_filter_string
+from nomm.core.tools import interpret_filter_string, get_latest_github_release_asset_url
 from nomm.core.user_config import DATA_DIR
 
 NOMM_BACKUP_SUFFIX = ".nomm-backup"
@@ -152,9 +152,7 @@ def get_wine() -> Boolean:
 
     print("Downloading standalone Wine...")
 
-    # TODO: we shouldn't take a hard coded version of wine but download the latest release from the Kron4ek releases
-
-    wine_url = "https://github.com/Kron4ek/Wine-Builds/releases/download/11.17/wine-11.17-amd64-wow64.tar.xz"
+    wine_url = get_latest_github_release_asset_url("https://github.com/Kron4ek/Wine-Builds", r"wine-\d+\.\d+(?:-\d+)?-amd64-wow64\.tar\.xz")
     archive_path = WINE_INSTALL_DIR.parent / "wine-11.17-amd64-wow64.tar.xz"
     archive_path.parent.mkdir(parents=True, exist_ok=True)
 
