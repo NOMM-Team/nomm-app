@@ -91,7 +91,6 @@ class UtilitiesTab(Gtk.Box):
 
             stack = Gtk.Stack(transition_type=Gtk.StackTransitionType.CROSSFADE)
 
-
             # Game Launch options button
             if utility.get("launch_options"):
                 row.add_suffix(create_icon_button(
