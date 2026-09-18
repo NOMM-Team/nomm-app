@@ -324,8 +324,6 @@ class UtilitiesTab(Gtk.Box):
         btn.set_sensitive(False)
         btn.add_css_class('btn-download-before')
 
-        self.download_dir = os.path.join(self.dashboard.downloads_path, "utilities")
-
         def on_download_progress(downloader_inst, download_data):
             updated_file_name = download_data['filename']
             if updated_file_name == file_name:
