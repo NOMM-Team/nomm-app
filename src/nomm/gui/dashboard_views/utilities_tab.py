@@ -91,6 +91,7 @@ class UtilitiesTab(Gtk.Box):
 
             stack = Gtk.Stack(transition_type=Gtk.StackTransitionType.CROSSFADE)
 
+
             # Game Launch options button
             if utility.get("launch_options"):
                 row.add_suffix(create_icon_button(
@@ -111,7 +112,9 @@ class UtilitiesTab(Gtk.Box):
 
             # Download & install buttons
             dl_btn = Gtk.Button(label=_("Download"), css_classes=["suggested-action"], halign=Gtk.Align.FILL, valign=Gtk.Align.CENTER)
+            dl_btn.set_cursor_from_name("pointer")
             inst_btn = Gtk.Button(halign=Gtk.Align.FILL, valign=Gtk.Align.CENTER)
+            inst_btn.set_cursor_from_name("pointer")
 
             if utility["source_type"] == "github":
                 utility["source_url"] = get_latest_github_release_asset_url(utility["source_url"], utility["github_asset_regex"])
@@ -165,6 +168,7 @@ class UtilitiesTab(Gtk.Box):
             elif current_utility_status == "blocked":
                 dl_btn.set_sensitive(False)
                 dl_btn.set_label(_("Blocked"))
+                dl_btn.set_tooltip_text(_("This utility can not be installed because it is incompatible with another installed utility."))
 
             action_btn_sizegroup.add_widget(stack)
             row.add_suffix(stack)
