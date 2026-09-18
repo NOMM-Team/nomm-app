@@ -271,8 +271,7 @@ def get_utility_status(utility_config: dict, download_path: str, staging_path: s
                             other_staging_path = staging_path.parent / other_utility["name"]
                             if os.path.exists(other_staging_path):
                                 return "blocked"
-                else:
-                    return "to_install"
+                return "to_install"
         else:
             return "to_download"
 
