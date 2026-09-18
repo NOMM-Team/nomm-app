@@ -41,6 +41,7 @@ class UtilitiesTab(Gtk.Box):
 
         while child := self.get_first_child():
             self.remove(child)
+        self.download_maps.clear()
 
         utility_groups: list[dict] = self.dashboard.game_info.get("utilities", [])
         list_box = Gtk.ListBox(css_classes=["dashboard-list"])
