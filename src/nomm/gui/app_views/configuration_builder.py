@@ -451,18 +451,17 @@ class ConfigurationBuilderWindow(Adw.Window):
 
         # Combined Path Row (Dropdown prefix + Entry path)
         path_row = Adw.ActionRow(title=_("Path *"))
-        path_row.set_tooltip_text(_("The deployment path has to start either at the root of the installed game files (most often it's this one), "
-                                    "or in the user data (ex. Steam compatdata folder). Pick one of the two and then set the rest of the path."))
+        path_row.set_tooltip_text(_("The deployment path has to start at the root of:\n"
+                                    "- The installed game files (most often it's this one),\n"
+                                    "- The user data (ex. Steam compatdata folder),\n"
+                                    "- The utility installation path (for utilities that don't get deployed to game files)\n"
+                                    "Pick one of these options and then set the rest of the path."))
 
         base_combo = Gtk.DropDown.new_from_strings(
-            [_("Game Installation Path"), _("User Data Path")]
+            [_("Game Installation Path"), _("User Data Path"), _("Utility Staging Path")]
         )
         base_combo.set_valign(Gtk.Align.CENTER)
-
-        if data.get("base") == "{user_data}":
-            base_combo.set_selected(1)
-        else:
-            base_combo.set_selected(0)
+        base_combo.set_selected(0)
 
         path_entry = Gtk.Entry(placeholder_text="/")
         path_entry.set_hexpand(True)
@@ -837,11 +836,12 @@ class ConfigurationBuilderWindow(Adw.Window):
                 else:
                     w["path_entry"].remove_css_class("error")
 
-                base_prefix = (
-                    "{user_data}"
-                    if w["base_combo"].get_selected() == 1
-                    else "{game_path}"
-                )
+                if w["base_combo"].get_selected() == 0:
+                    base_prefix = "{game_path}"
+                elif w["base_combo"].get_selected() == 1:
+                    base_prefix = "{user_data_path}"
+                else:
+                    base_prefix = "{utility_path}"
 
                 # Format slashes cleanly
                 if not path_segment.startswith("/"):
