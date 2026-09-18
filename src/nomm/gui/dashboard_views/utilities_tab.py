@@ -1,5 +1,4 @@
-from nomm.platforms.steam import add_non_steam_utility
-from nomm.core.tools import load_yaml
+from nomm.core.utility_manager import get_wine
 from nomm.core.utility_manager import get_downloaded_utility_file_name
 from nomm.core.tools import create_icon_button
 import gettext
@@ -9,7 +8,7 @@ import webbrowser
 from pathlib import Path
 from gi.repository import Adw, Gtk, Gio, GLib
 
-from nomm.core.utility_manager import deploy_essential_utility, remove_utility, get_utility_status, launch_utility
+from nomm.core.utility_manager import deploy_essential_utility, remove_utility, get_utility_status, launch_utility, WINE_BINARY_PATH
 
 _ = gettext.gettext
 
@@ -199,60 +198,41 @@ class UtilitiesTab(Gtk.Box):
         self.populate_list()
 
     def on_launch_button_clicked(self, utility: dict, staging_dir: Path):
-        staging_metadata = load_yaml(self.dashboard.staging_metadata_path)
-        if utility["executable_type"] == "windows":
-            if not staging_metadata or not staging_metadata.get("utilities") or not staging_metadata.get("utilities").get(utility["name"]):
-                self.show_non_steam_game_setup_screen(utility, staging_dir)
-        else:
-            launch_utility(utility, staging_dir, self.dashboard.staging_metadata_path)
+        # staging_metadata = load_yaml(self.dashboard.staging_metadata_path)
 
-    def show_non_steam_game_setup_screen(self, utility: dict, staging_dir: Path):
+        if utility["executable_type"] == "windows" and not os.path.exists(WINE_BINARY_PATH):
+            self.show_wine_setup_screen(utility, staging_dir)
+            return
+        launch_utility(utility, staging_dir, self.dashboard.staging_metadata_path)
+
+    def show_wine_setup_screen(self, utility: dict, staging_dir: Path):
         dialog = Adw.MessageDialog(
             transient_for=self.dashboard.app.win,
-            heading=_("Adding a utility as non-Steam Game")
+            heading=_("Wine Setup")
         )
 
         status_page = Adw.StatusPage(
-            icon_name="steam-logo"
+            icon_name="wine-logo"
         )
 
         content_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)
 
-        instruction_text = _(f"{utility["name"]} is a Windows executable that requires to be launched via Steam as a non-Steam game.\n"
-                             "This is one time action, and NOMM will handle this for you automatically, but <b>Steam must be shut down</b> "
-                             "during this process. It will be restarted automatically once the operation is finished.")
+        instruction_text = _(f"{utility["name"]} is a Windows executable that requires a conversion layer such as Wine.\n"
+                             "NOMM will download Wine for you (~100MB). The utility will be launched as soon as the setup is done.")
         instruction_label = Gtk.Label(label=instruction_text, wrap=True, xalign=0)
-        instruction_label.set_use_markup(True)
+
         content_box.append(instruction_label)
-
-        shutdown_btn = Gtk.Button(label=_("Turn Off Steam Now"), halign=Gtk.Align.FILL)
-        shutdown_btn.add_css_class("destructive-action")
-
-        def on_shutdown_clicked(btn):
-            launcher = Gtk.UriLauncher.new("steam://exit")
-            launcher.launch(None, None, None)
-            btn.set_sensitive(False)
-            btn.set_label(_("Steam Shutdown Requested"))
-            # Promote the dialog's Continue response button visually
-            dialog.set_response_appearance("continue", Adw.ResponseAppearance.SUGGESTED)
-
-        shutdown_btn.connect("clicked", on_shutdown_clicked)
-        content_box.append(shutdown_btn)
 
         status_page.set_child(content_box)
         dialog.set_extra_child(status_page)
+        dialog.add_response("cancel", _("Cancel"))
         dialog.add_response("continue", _("Continue"))
+        dialog.set_response_appearance("continue", Adw.ResponseAppearance.SUGGESTED)
 
         def on_response(d, response_id):
-            executable_path = staging_dir / utility["executable_path"]
-            add_non_steam_utility(
-                utility,
-                executable_path,
-                self.dashboard.app.steam_base,
-                self.dashboard.staging_metadata_path
-            )
-            launch_utility(utility, staging_dir, self.dashboard.staging_metadata_path)
-            d.close()
+            if response_id == "continue":
+                get_wine()
+                launch_utility(utility, staging_dir, self.dashboard.staging_metadata_path)
         dialog.connect("response", on_response)
         dialog.present()
 
@@ -338,7 +318,7 @@ class UtilitiesTab(Gtk.Box):
         self.download_dir = os.path.join(self.dashboard.downloads_path, "utilities")
 
         def on_download_progress(downloader_inst, download_data):
-            updated_file_name = download_data['file_name']
+            updated_file_name = download_data['filename']
             if updated_file_name == file_name:
                 self.download_maps[file_name].set_visible(True)
                 self.download_maps[updated_file_name].set_fraction(download_data['progress'])
