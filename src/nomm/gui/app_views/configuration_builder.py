@@ -598,7 +598,7 @@ class ConfigurationBuilderWindow(Adw.Window):
         source_row.set_margin_start(24)
         utility_group.add(source_row)
 
-        regex_row = Adw.EntryRow(title=_("Github Filename Regex *"))
+        regex_row = Adw.EntryRow(title=_("Github Asset Name Regex *"))
         regex_row.set_tooltip_text(_("A regex pattern matching the release asset filename to download (e.g. .*\\.zip)"))
         regex_row.set_margin_start(24)
         utility_group.add(regex_row)
@@ -780,6 +780,7 @@ class ConfigurationBuilderWindow(Adw.Window):
             "source_type": source_type_row,
             "source_url": source_row,
             "nexus_file_name_start": nexus_file_start_row,
+            "github_asset_regex": regex_row,
             "deploy_to_game_files": deploy_row,
             "deployment_path": utility_path_row,
             "executable_type": executable_type_row,

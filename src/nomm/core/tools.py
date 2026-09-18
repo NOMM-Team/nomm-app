@@ -1,9 +1,10 @@
+import json
 import os
 import yaml
 import requests
 import re
 import html
-
+import urllib
 from pathlib import Path
 from typing import Callable, Optional
 from gi.repository import GLib, Gio, Gtk
@@ -349,3 +350,57 @@ def interpret_filter_string(input_string):
     else:
         output_list = [input_string]
     return output_list
+
+
+def get_latest_github_release_asset_url(
+    repo_url: str, filename_pattern: str
+) -> str:
+    """Queries GitHub's API for the latest release of a repository and returns
+
+    the direct download URL for an asset matching the regex pattern.
+
+    :param repo_url: Full URL to the GitHub repository (e.g.,
+    'https://github.com/Kron4ek/Wine-Builds')
+    :param filename_pattern: Regex pattern string to match against asset filenames
+    :return: Direct download URL string for the matching asset
+    """
+    # Parse 'owner' and 'repo' from the GitHub URL
+    parsed_path = urllib.parse.urlparse(repo_url).path.strip("/")
+    parts = parsed_path.split("/")
+
+    if len(parts) < 2:
+        raise ValueError(f"Invalid GitHub repository URL: {repo_url}")
+
+    owner, repo = parts[0], parts[1].replace(".git", "")
+
+    # Query GitHub's API for the latest release metadata
+    api_url = f"https://api.github.com/repos/{owner}/{repo}/releases/latest"
+    headers = {
+        "User-Agent": "Mozilla/5.0",
+        "Accept": "application/vnd.github.v3+json",
+    }
+
+    req = urllib.request.Request(api_url, headers=headers)
+    try:
+        with urllib.request.urlopen(req) as response:
+            release_data = json.loads(response.read().decode("utf-8"))
+    except urllib.error.HTTPError as e:
+        raise RuntimeError(
+            f"Failed to fetch release metadata from GitHub API (HTTP {e.code}): {e.reason}"
+        )
+
+    # Compile the regex pattern (case-insensitive for convenience)
+    pattern = re.compile(filename_pattern, re.IGNORECASE)
+
+    # Find asset matching the regex pattern
+    assets = release_data.get("assets", [])
+    for asset in assets:
+        asset_name = asset.get("name", "")
+        if pattern.search(asset_name):
+            return asset["browser_download_url"]
+
+    available_assets = [a.get("name") for a in assets]
+    raise FileNotFoundError(
+        f"No asset matching regex '{filename_pattern}' found in latest release ({release_data.get('tag_name')}). "
+        f"Available assets: {available_assets}"
+    )

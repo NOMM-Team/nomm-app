@@ -9,6 +9,7 @@ from pathlib import Path
 from gi.repository import Adw, Gtk, Gio, GLib
 
 from nomm.core.utility_manager import deploy_essential_utility, remove_utility, get_utility_status, launch_utility, WINE_BINARY_PATH
+from nomm.core.tools import get_latest_github_release_asset_url
 
 _ = gettext.gettext
 
@@ -106,6 +107,9 @@ class UtilitiesTab(Gtk.Box):
             # Download & install buttons
             dl_btn = Gtk.Button(label=_("Download"), css_classes=["suggested-action"], valign=Gtk.Align.CENTER)
             inst_btn = Gtk.Button(valign=Gtk.Align.CENTER)
+
+            if utility["source_type"] == "github":
+                utility["source_url"] = get_latest_github_release_asset_url(utility["source_url"], utility["github_asset_regex"])
 
             file_name = get_downloaded_utility_file_name(utility, self.download_dir)
             inst_btn.connect("clicked", self.on_utility_install_clicked, utility, file_name)
@@ -301,8 +305,8 @@ class UtilitiesTab(Gtk.Box):
         dialog.present()
 
     def on_utility_download_clicked(self, btn, util, stack, pbar=None, file_name=None):
-        source_url = util.get("source_url")
-        source_type = util.get("source_type")
+        source_type = util["source_type"]
+        source_url = util["source_url"]
         if not source_url:
             return
 
