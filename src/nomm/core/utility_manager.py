@@ -153,7 +153,7 @@ def get_wine() -> Boolean:
     print("Downloading standalone Wine...")
 
     wine_url = get_latest_github_release_asset_url("https://github.com/Kron4ek/Wine-Builds", r"wine-\d+\.\d+(?:-\d+)?-amd64-wow64\.tar\.xz")
-    archive_path = WINE_INSTALL_DIR.parent / "wine-11.17-amd64-wow64.tar.xz"
+    archive_path = WINE_INSTALL_DIR.parent / "wine-amd64-wow64.tar.xz"
     archive_path.parent.mkdir(parents=True, exist_ok=True)
 
     req = urllib.request.Request(
