@@ -86,7 +86,7 @@ def deploy_essential_utility(util_config: dict, downloads_path: str, staging_pat
         subprocess.run(command, shell=True, cwd=game_root)
 
 
-def launch_utility(util_config: dict, staging_dir: Path, staging_metadata_path: str):
+def launch_utility(util_config: dict, staging_dir: Path, staging_metadata_path: str, headers: dict):
 
     if util_config["executable_type"] == "browser":
         webbrowser.open(util_config["executable_path"])
@@ -96,7 +96,7 @@ def launch_utility(util_config: dict, staging_dir: Path, staging_metadata_path: 
 
     if util_config["executable_type"] == "windows":
 
-        ensure_dotnet7_installed()
+        ensure_dotnet7_installed(headers)
         run_windows_exe(executable_path)
 
     else:  # linux executable
