@@ -47,6 +47,8 @@ class UtilitiesTab(Gtk.Box):
         list_box.set_selection_mode(Gtk.SelectionMode.NONE)
         list_box.set_overflow(Gtk.Overflow.HIDDEN)
 
+        action_btn_sizegroup = Gtk.SizeGroup(mode=Gtk.SizeGroupMode.HORIZONTAL)
+
         for utility in utility_groups:
             row = Adw.ActionRow(title=utility["name"], subtitle=utility["creator"])
 
@@ -107,8 +109,8 @@ class UtilitiesTab(Gtk.Box):
                 row.add_suffix(launch_utility_button)
 
             # Download & install buttons
-            dl_btn = Gtk.Button(label=_("Download"), css_classes=["suggested-action"], valign=Gtk.Align.CENTER)
-            inst_btn = Gtk.Button(valign=Gtk.Align.CENTER)
+            dl_btn = Gtk.Button(label=_("Download"), css_classes=["suggested-action"], halign=Gtk.Align.FILL, valign=Gtk.Align.CENTER)
+            inst_btn = Gtk.Button(halign=Gtk.Align.FILL, valign=Gtk.Align.CENTER)
 
             if utility["source_type"] == "github":
                 utility["source_url"] = get_latest_github_release_asset_url(utility["source_url"], utility["github_asset_regex"])
@@ -136,8 +138,6 @@ class UtilitiesTab(Gtk.Box):
 
                 # Overlay to display download progress on top of download button
                 overlay = Gtk.Overlay()
-                overlay.set_halign(Gtk.Align.CENTER)
-                overlay.set_valign(Gtk.Align.CENTER)
                 overlay.set_child(dl_btn)
                 overlay.add_overlay(dl_pbar)
 
@@ -165,6 +165,7 @@ class UtilitiesTab(Gtk.Box):
                 dl_btn.set_sensitive(False)
                 dl_btn.set_label(_("Blocked"))
 
+            action_btn_sizegroup.add_widget(stack)
             row.add_suffix(stack)
             if current_utility_status in ["installed", "to_install"] and utility["source_type"] != "flatpak":
                 row.add_suffix(create_icon_button(
