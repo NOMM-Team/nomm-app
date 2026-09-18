@@ -62,6 +62,9 @@ def parse_mod_paths(deployment_dicts: list | str, game_path: str, user_data_path
     if not isinstance(deployment_dicts, list):
         deployment_dicts = [{"name": "default", "path": deployment_dicts}]
 
+    staging_path = load_user_config()["staging_path"]
+    utility_path = os.path.join(staging_path, "utilities")
+
     # Parse the paths
     for deployment_dict in deployment_dicts:
         deployment_path = deployment_dict["path"]
@@ -70,6 +73,7 @@ def parse_mod_paths(deployment_dicts: list | str, game_path: str, user_data_path
         else:  # NOMM 0.6+ Format
             deployment_path = deployment_path.replace("{game_path}", game_path)
             deployment_path = deployment_path.replace("{user_data_path}", user_data_path)
+            deployment_path = deployment_path.replace("{utility_path}", utility_path)
         deployment_dict["path"] = deployment_path
 
     return deployment_dicts
