@@ -45,7 +45,7 @@ def find_epic_game(yaml_data, game_title, installed_epic):
             # mod path parsing
             # TODO: add support for heroic/EPIC user data path
             user_data_path = ""
-            mod_paths = parse_mod_paths(yaml_data["mods_path"], game_path, user_data_path)
+            mod_paths = parse_mod_paths(yaml_data["mods_path"], game_path, user_data_path, game_title)
 
             return {
                 "name": game_title,
@@ -74,7 +74,7 @@ def find_gog_game(yaml_data, game_title, installed_gog):
             # mod path parsing
             # TODO: add support for heroic/GOG user data path
             user_data_path = ""
-            mod_paths = parse_mod_paths(yaml_data["mods_path"], game_path, user_data_path)
+            mod_paths = parse_mod_paths(yaml_data["mods_path"], game_path, user_data_path, game_title)
 
             return {
                 "name": game_title,
