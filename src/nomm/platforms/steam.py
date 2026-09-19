@@ -135,7 +135,7 @@ def find_game(yaml_data, game_title, found_libs, steam_base) -> List[Dict[str, A
 
                 # mod path parsing
                 user_data_path = os.path.dirname(os.path.dirname(game_path)) + "/compatdata/" + str(yaml_data["steam_id"]) + "/pfx"
-                mod_paths: list[dict[str, str]] = parse_mod_paths(yaml_data["mods_path"], game_path, user_data_path)
+                mod_paths: list[dict[str, str]] = parse_mod_paths(yaml_data["mods_path"], game_path, user_data_path, game_title)
 
                 return {
                     "name": game_title,

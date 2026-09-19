@@ -56,14 +56,14 @@ def write_user_config(data: dict) -> dict:
     return write_yaml(data, USER_CONFIG_PATH)
 
 
-def parse_mod_paths(deployment_dicts: list | str, game_path: str, user_data_path: str) -> List[Dict[str, str]]:
+def parse_mod_paths(deployment_dicts: list | str, game_path: str, user_data_path: str, game_title: str) -> List[Dict[str, str]]:
 
     # Handle case where there is only one path provided, and it's not a list of dicts
     if not isinstance(deployment_dicts, list):
         deployment_dicts = [{"name": "default", "path": deployment_dicts}]
 
     staging_path = load_user_config()["staging_path"]
-    utility_path = os.path.join(staging_path, "utilities")
+    utility_path = os.path.join(staging_path, game_title, "utilities")
 
     # Parse the paths
     for deployment_dict in deployment_dicts:
