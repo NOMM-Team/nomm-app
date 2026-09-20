@@ -416,8 +416,9 @@ def get_mod_id_from_url(nexus_url: str):
 
 def check_if_mod_is_utility(game_config, mod_id):
     """Checks if a Nexus mod being downloaded is in fact a registered utility"""
-    for utility in game_config["utilities"]:
-        if utility["source_type"] == "nexus":
-            if get_mod_id_from_url(utility["source_url"]) == mod_id:
-                return True
+    if "utilities" in game_config:
+        for utility in game_config["utilities"]:
+            if utility["source_type"] == "nexus":
+                if get_mod_id_from_url(utility["source_url"]) == mod_id:
+                    return True
     return False
