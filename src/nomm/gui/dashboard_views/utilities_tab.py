@@ -1,4 +1,7 @@
 
+from nomm.core.wine_manager import check_wineprefix_setup
+from nomm.core.wine_manager import generate_winetrick_command
+from nomm.core.tools import create_code_box
 import gettext
 import os
 import threading
@@ -214,27 +217,25 @@ class UtilitiesTab(Gtk.Box):
     def on_launch_button_clicked(self, utility: dict, staging_dir: Path):
         # staging_metadata = load_yaml(self.dashboard.staging_metadata_path)
 
-        if utility["executable_type"] == "windows" and not os.path.exists(WINE_BINARY_PATH):
-            self.show_wine_setup_screen(utility, staging_dir)
-            return
+        if utility["executable_type"] == "windows":
+            if not os.path.exists(WINE_BINARY_PATH):
+                self.show_wine_setup_screen(utility, staging_dir)
+                return
+            elif utility.get("wine_verbs") and not check_wineprefix_setup(utility["name"]):
+                self.show_winetricks_setup_screen(utility)
+                return
         launch_utility(utility, staging_dir, self.dashboard.staging_metadata_path, self.dashboard.headers)
 
     def show_wine_setup_screen(self, utility: dict, staging_dir: Path):
-        dialog = Adw.MessageDialog(
-            transient_for=self.dashboard.app.win,
-            heading=_("Wine Setup")
-        )
+        dialog = Adw.MessageDialog(transient_for=self.dashboard.app.win, heading=_("Wine Setup"))
 
-        status_page = Adw.StatusPage(
-            icon_name="wine-logo"
-        )
+        status_page = Adw.StatusPage(icon_name="wine-logo")
 
         content_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)
 
         instruction_text = _(f"{utility["name"]} is a Windows executable that requires a conversion layer such as Wine.\n"
                              "NOMM will download Wine for you (~100MB). The utility will be launched as soon as the setup is done.")
         instruction_label = Gtk.Label(label=instruction_text, wrap=True, xalign=0)
-
         content_box.append(instruction_label)
 
         status_page.set_child(content_box)
@@ -246,8 +247,29 @@ class UtilitiesTab(Gtk.Box):
         def on_response(d, response_id):
             if response_id == "continue":
                 get_wine()
+            if utility.get("wine_verbs") and not check_wineprefix_setup(utility["name"]):
+                self.show_winetricks_setup_screen(utility)
+            else:
                 launch_utility(utility, staging_dir, self.dashboard.staging_metadata_path, self.dashboard.headers)
         dialog.connect("response", on_response)
+        dialog.present()
+
+    def show_winetricks_setup_screen(self, utility: dict):
+        dialog = Adw.MessageDialog(transient_for=self.dashboard.app.win, heading=_("Wineprefix Setup"))
+
+        status_page = Adw.StatusPage(icon_name="wine-logo")
+
+        content_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)
+
+        winetrick_instructions_text = _(f"{utility["name"]} also requires specific dependencies (verbs) to be installed in its Wine prefix,\n"
+                                        "please run the following command in your terminal:")
+        content_box.append(Gtk.Label(label=winetrick_instructions_text))
+        content_box.append(create_code_box(generate_winetrick_command(utility["name"], utility["wine_verbs"]), True))
+
+        status_page.set_child(content_box)
+        dialog.set_extra_child(status_page)
+        dialog.add_response("close", _("Close"))
+        dialog.set_response_appearance("close", Adw.ResponseAppearance.SUGGESTED)
         dialog.present()
 
     def on_utility_launch_options_clicked(self, launch_options):
@@ -257,9 +279,7 @@ class UtilitiesTab(Gtk.Box):
             heading=_("Game Launch Options")
         )
 
-        status_page = Adw.StatusPage(
-            icon_name="mat-launch-symbolic"
-        )
+        status_page = Adw.StatusPage(icon_name="mat-launch-symbolic")
 
         content_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)
 

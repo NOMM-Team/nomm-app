@@ -6,61 +6,59 @@ import json
 import shutil
 import subprocess
 import tarfile
+import time
 from pathlib import Path
-from nomm.core.tools import get_latest_github_release_asset_url
+from nomm.core.tools import get_latest_github_release_asset_url, load_yaml, write_yaml
 from nomm.core.user_config import DATA_DIR, update_user_config
+
 
 WINE_INSTALL_DIR = Path(os.path.join(DATA_DIR, "wine"))
 WINE_BINARY_PATH = WINE_INSTALL_DIR / "bin" / "wine"
+WINE_PREFIX_DIR = Path(os.path.join(DATA_DIR, "wineprefixes"))
+WINE_PREFIX_META_PATH = WINE_PREFIX_DIR / ".wineprefix_metadata.yaml"
 WINE_REPO_URL = "https://github.com/Kron4ek/Wine-Builds"
+COMMON_VERBS = {
+    # Visual C++ Runtimes
+    "vcrun2015": "Visual C++ 2015-2022 Runtimes",
+    "vcrun2013": "Visual C++ 2013 Runtime",
+    "vcrun2012": "Visual C++ 2012 Runtime",
+    "vcrun2010": "Visual C++ 2010 Runtime",
+    "vcrun2008": "Visual C++ 2008 Runtime",
+    "vcrun2005": "Visual C++ 2005 Runtime",
+    "vcrun6": "Visual C++ 6.0 Runtime",
+    "vbrun6": "Visual Basic 6 Runtime",
+    "vbrun5": "Visual Basic 5 Runtime",
 
+    # .NET Frameworks & Runtimes
+    "dotnet48": ".NET Framework 4.8",
+    "dotnet472": ".NET Framework 4.7.2",
+    "dotnet462": ".NET Framework 4.6.2",
+    "dotnet45": ".NET Framework 4.5",
+    "dotnet40": ".NET Framework 4.0",
+    "dotnet35": ".NET Framework 3.5 (includes 2.0/3.0)",
+    "dotnetdesktop8": ".NET 8 Desktop Runtime",
+    "dotnetdesktop7": ".NET 7 Desktop Runtime",
+    "dotnetdesktop6": ".NET 6 Desktop Runtime",
 
-def ensure_dotnet7_installed(headers: dict, wineprefix_name: str = "default") -> None:
-    """Checks if .NET Desktop Runtime 7.0 is installed in the prefix.
+    # Fonts & Typography
+    "corefonts": "Microsoft Core TrueType Fonts",
+    "tahoma": "Microsoft Tahoma Font",
+    "lucida": "Lucida TrueType Fonts",
+    "consolas": "Microsoft Consolas Monospace Font",
+    "allfonts": "All Standard Microsoft Fonts",
 
-    If missing, downloads and installs it silently.
-    """
-    data_home = os.environ.get(
-        "XDG_DATA_HOME", os.path.expanduser("~/.local/share")
-    )
-    prefix_dir = Path(data_home) / "wineprefixes" / wineprefix_name
-
-    dotnet_path = (
-        prefix_dir
-        / "drive_c"
-        / "Program Files"
-        / "dotnet"
-        / "shared"
-        / "Microsoft.WindowsDesktop.App"
-    )
-
-    if dotnet_path.exists() and any(dotnet_path.iterdir()):
-        return
-
-    print("Installing .NET Desktop Runtime 7.0 into Wine prefix...")
-
-    installer_url = "https://builds.dotnet.microsoft.com/dotnet/WindowsDesktop/7.0.20/windowsdesktop-runtime-7.0.20-win-x64.exe"
-    cache_dir = Path(data_home) / "installer_cache"
-    cache_dir.mkdir(parents=True, exist_ok=True)
-    installer_path = cache_dir / "dotnetdesktop7-x64.exe"
-
-    # Download with a custom User-Agent to bypass Microsoft CDN 400 blocks
-    if not installer_path.exists():
-        req = urllib.request.Request(installer_url, headers=headers)
-        with (
-            urllib.request.urlopen(req) as response,
-            open(installer_path, "wb") as out_file,
-        ):
-            shutil.copyfileobj(response, out_file)
-
-    # Execute installer in Wine silently
-    proc = run_windows_exe(
-        exe_path=str(installer_path),
-        args=["/install", "/quiet", "/norestart"],
-        wineprefix_name=wineprefix_name,
-    )
-    proc.wait()
-    print(".NET Desktop Runtime 7.0 installation completed.")
+    # Windows System, Runtimes & Installers
+    "msxml6": "MSXML 6.0 Parser",
+    "msxml4": "MSXML 4.0 Parser",
+    "msxml3": "MSXML 3.0 Parser",
+    "wininet": "Microsoft WinINet API",
+    "winhttp": "Microsoft WinHTTP Services",
+    "richtx32": "Rich Text Control",
+    "comctl32": "Common Controls 5.82/6.0",
+    "mdac28": "Microsoft Data Access Components 2.8 (OLE DB/ODBC)",
+    "jet40": "Microsoft Jet 4.0 Database Engine",
+    "msi2": "Windows Installer 2.0",
+}
 
 
 def get_wine() -> bool:
@@ -114,9 +112,7 @@ def get_wine() -> bool:
     return True
 
 
-def run_windows_exe(
-    exe_path: str, args: list[str] = None, wineprefix_name: str = "default"
-) -> subprocess.Popen:
+def run_windows_exe(exe_path: str, args: list[str] = None, wineprefix_name: str = "default") -> subprocess.Popen:
     wine_cmd = WINE_BINARY_PATH if os.path.exists(WINE_BINARY_PATH) else shutil.which("wine")
     if not wine_cmd:
         raise FileNotFoundError("Wine executable not found.")
@@ -125,10 +121,9 @@ def run_windows_exe(
     if not target_exe.exists():
         raise FileNotFoundError(f"Target executable does not exist: {target_exe}")
 
-    data_home = os.environ.get(
-        "XDG_DATA_HOME", os.path.expanduser("~/.local/share")
-    )
-    prefix_dir = Path(data_home) / "wineprefixes" / wineprefix_name
+    record_prefix_use(wineprefix_name)
+
+    prefix_dir = WINE_PREFIX_DIR / wineprefix_name
     prefix_dir.mkdir(parents=True, exist_ok=True)
 
     env = os.environ.copy()
@@ -175,3 +170,47 @@ def get_latest_wine_version(headers) -> str | None:
     except Exception as e:
         print(f"[!] Error fetching latest Wine version: {e}")
         return None
+
+
+def generate_winetrick_command(utility_name: str, verbs: list):
+    # WINEPREFIX="$HOME/.local/share/wineprefixes/<utility_name>" winetricks -q d3dx9 vcrun2015 dotnet48
+    record_prefix_use(utility_name)
+    prefix_path = str(WINE_PREFIX_DIR / utility_name)
+    verb_string = " ".join(verbs)
+    winetrick_command = f"WINEPREFIX={prefix_path} winetricks -q {verb_string}"
+    return winetrick_command
+
+
+def check_wineprefix_setup(utility_name: str):
+    prefix_path = str(WINE_PREFIX_DIR / utility_name)
+    if os.path.exists(prefix_path):
+        return True
+    else:
+        return False
+
+
+def record_prefix_use(utility_name: str):
+    if WINE_PREFIX_META_PATH.exists():
+        prefix_metadata = load_yaml(WINE_PREFIX_META_PATH)
+    else:
+        prefix_metadata = {}
+    prefix_metadata[utility_name] = time.time()
+    write_yaml(prefix_metadata, WINE_PREFIX_META_PATH)
+
+
+def get_unused_wine_prefixes():
+    unused_wine_prefixes = []
+    if not WINE_PREFIX_META_PATH.exists():
+        return []
+    for prefix, last_used in load_yaml(WINE_PREFIX_META_PATH).items():
+        if last_used < time.time() - 2592000:
+            unused_wine_prefixes.append(prefix)
+    return unused_wine_prefixes
+
+
+def clean_wine_prefixes(unused_wine_prefixes: list):
+    prefix_metadata = load_yaml(WINE_PREFIX_META_PATH)
+    for unused_prefix in unused_wine_prefixes:
+        shutil.rmtree(WINE_PREFIX_DIR / unused_prefix)
+        prefix_metadata.pop(unused_prefix)
+    write_yaml(prefix_metadata, WINE_PREFIX_DIR)
