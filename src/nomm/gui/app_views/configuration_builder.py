@@ -4,6 +4,7 @@ import os
 from nomm.platforms.steam import get_installed_steam_games, get_art
 from nomm.core.user_config import CUSTOM_GAME_CONFIG_PATH
 from nomm.core.tools import write_yaml
+from nomm.core.wine_manager import COMMON_VERBS
 
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
@@ -688,11 +689,17 @@ class ConfigurationBuilderWindow(Adw.Window):
         executable_path_row.set_margin_start(24)
         utility_group.add(executable_path_row)
 
+        wine_verbs_row = WineVerbsSelector()
+        wine_verbs_row.set_tooltip_text(_("Select the required depencies (wine verbs) for the utility to launch."))
+        wine_verbs_row.set_margin_start(24)
+        utility_group.add(wine_verbs_row)
+
         def update_executable_path_row_format(*_args):
             selected_index = executable_type_row.get_selected()
             selected_type = self.executable_types[selected_index]
 
             executable_path_row.set_visible(selected_type in ["linux", "windows", "browser"])
+            wine_verbs_row.set_visible(selected_type == "windows")
 
             if selected_type == "linux":
                 executable_path_row.set_title(_("Linux script path *"))
@@ -790,6 +797,7 @@ class ConfigurationBuilderWindow(Adw.Window):
             "deployment_path": utility_path_row,
             "executable_type": executable_type_row,
             "executable_path": executable_path_row,
+            "wine_verbs": wine_verbs_row,
             "launch_options": launch_opts_row,
             "enable_command": enable_cmd_row,
             "filter_type": filter_type,
@@ -885,6 +893,9 @@ class ConfigurationBuilderWindow(Adw.Window):
                         continue
                     elif isinstance(widget, Gtk.DropDown):
                         continue
+                    elif isinstance(widget, WineVerbsSelector):
+                        entry_values["wine_verbs"] = widget.get_selected_verbs()
+                        continue
                     elif widget is None:
                         continue
                     val = widget.get_text().strip()
@@ -978,3 +989,41 @@ class ConfigurationBuilderWindow(Adw.Window):
 
         dialog.connect("response", _on_response)
         dialog.present(self)
+
+
+class WineVerbsSelector(Adw.ExpanderRow):
+    def __init__(self):
+        super().__init__()
+        self.set_title(_("Wine Verbs (Dependencies)"))
+        self.set_subtitle(_("Select required dependencies for the utility"))
+
+        self.switches = {}
+
+        for verb, description in COMMON_VERBS.items():
+            row = Adw.ActionRow(title=description, subtitle=verb)
+            switch = Gtk.Switch(valign=Gtk.Align.CENTER)
+
+            # Connect callback to update subtitle preview
+            switch.connect("notify::active", self._on_switch_toggled)
+
+            row.add_suffix(switch)
+            row.set_activatable_widget(switch)
+
+            self.add_row(row)
+            self.switches[verb] = switch
+
+    def _on_switch_toggled(self, switch, gparam):
+        selected = self.get_selected_verbs()
+        if selected:
+            self.set_subtitle(" ".join(selected))
+        else:
+            self.set_subtitle(_("None selected"))
+
+    def get_selected_verbs(self) -> list[str]:
+        """Returns a list of checked verb strings (e.g. ['vcrun2015', 'd3dx9'])"""
+        return [verb for verb, switch in self.switches.items() if switch.get_active()]
+
+    def set_selected_verbs(self, verbs: list[str]):
+        """Helper to load saved verbs"""
+        for verb, switch in self.switches.items():
+            switch.set_active(verb in verbs)

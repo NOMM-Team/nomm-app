@@ -404,3 +404,82 @@ def get_latest_github_release_asset_url(
         f"No asset matching regex '{filename_pattern}' found in latest release ({release_data.get('tag_name')}). "
         f"Available assets: {available_assets}"
     )
+
+
+def create_code_box(code: str, add_copy_button: bool = False) -> Gtk.Widget:
+
+    text_view = Gtk.TextView()
+    text_view.set_editable(False)
+    text_view.set_cursor_visible(False)
+    text_view.set_wrap_mode(Gtk.WrapMode.WORD_CHAR)
+    text_view.set_monospace(True)
+    text_view.add_css_class("card")
+
+    buffer = text_view.get_buffer()
+    buffer.set_text(code)
+
+    text_view.set_size_request(450, 100)
+    text_view.set_left_margin(10)
+    text_view.set_right_margin(10)
+    text_view.set_top_margin(10)
+    text_view.set_bottom_margin(10)
+
+    if not add_copy_button:
+        return text_view
+
+    overlay = Gtk.Overlay()
+    overlay.set_child(text_view)
+
+    copy_btn = Gtk.Button(
+        icon_name="edit-copy-symbolic",
+        halign=Gtk.Align.END,
+        valign=Gtk.Align.START,
+    )
+    copy_btn.set_tooltip_text("Copy code")
+    copy_btn.add_css_class("flat")
+
+    copy_btn.set_margin_top(6)
+    copy_btn.set_margin_end(6)
+
+    def on_copy_clicked(_button):
+        start, end = buffer.get_bounds()
+        text_to_copy = buffer.get_text(start, end, True)
+        clipboard = text_view.get_clipboard()
+        clipboard.set(text_to_copy)
+
+        copy_btn.set_icon_name("object-select-symbolic")
+        GLib.timeout_add(
+            1500, lambda: copy_btn.set_icon_name("edit-copy-symbolic")
+        )
+
+    copy_btn.connect("clicked", on_copy_clicked)
+
+    overlay.add_overlay(copy_btn)
+
+    return overlay
+
+
+def get_dir_size_bytes(folder_path: Path | str) -> int:
+    """Fast recursive directory size calculation using os.walk."""
+    total_size = 0
+    for root, _, files in os.walk(folder_path):
+        for f in files:
+            fp = os.path.join(root, f)
+            try:
+                # Use lexists to safely skip broken symlinks
+                if os.path.exists(fp) and not os.path.islink(fp):
+                    total_size += os.path.getsize(fp)
+            except OSError:
+                # Ignore permission errors or unreadable files
+                continue
+    return total_size
+
+
+def format_gb_size(size_bytes: int) -> str:
+    """Formats bytes directly into GB (or MB if under 1 GB)."""
+    gb_size = size_bytes / (1024**3)
+    if gb_size >= 1.0:
+        return f"{gb_size:.2f} GB"
+
+    mb_size = size_bytes / (1024**2)
+    return f"{mb_size:.1f} MB"

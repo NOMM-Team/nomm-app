@@ -6,7 +6,7 @@ import webbrowser
 from pathlib import Path
 from nomm.core.archive_manager import extract_archive
 from nomm.core.tools import interpret_filter_string
-from nomm.core.wine_manager import run_windows_exe, ensure_dotnet7_installed
+from nomm.core.wine_manager import run_windows_exe
 
 NOMM_BACKUP_SUFFIX = ".nomm-backup"
 
@@ -96,8 +96,8 @@ def launch_utility(util_config: dict, staging_dir: Path, staging_metadata_path: 
 
     if util_config["executable_type"] == "windows":
 
-        ensure_dotnet7_installed(headers)
-        run_windows_exe(executable_path)
+        # ensure_dotnet7_installed(headers)
+        run_windows_exe(executable_path, wineprefix_name=util_config["name"])
 
     else:  # linux executable
         subprocess.run(executable_path, shell=True, cwd=os.path.dirname(executable_path))
