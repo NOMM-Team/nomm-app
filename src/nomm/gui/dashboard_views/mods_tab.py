@@ -15,7 +15,8 @@ from nomm.core.mod_manager import (apply_deployment_map_changes, build_deploymen
 from nomm.platforms.nexus import get_nexus_changelog, endorse_nexus_mod
 from nomm.platforms.nexus import get_mod_info as get_nexus_mod_info
 from nomm.platforms.gamebanana import get_mod_info as get_gamebanana_mod_info
-from nomm.core.tools import timestamp_converter, write_yaml, create_icon_button
+from nomm.core.tools import timestamp_converter, write_yaml
+from nomm.gui.ui_builders import create_icon_button
 from nomm.gui.text_window import TextWindow
 from typing import Optional, Callable
 

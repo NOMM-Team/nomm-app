@@ -12,7 +12,8 @@ from nomm.core.archive_manager import (delete_downloaded_archive, get_all_relati
 from nomm.core.fomod_manager import apply_fomod_selection
 from nomm.core.mod_manager import (finalise_mod_metadata, is_mod_installed,
                                    load_staging_metadata, remove_mod_from_metadata)
-from nomm.core.tools import timestamp_converter, list_archives, create_icon_button, load_yaml
+from nomm.core.tools import timestamp_converter, list_archives, load_yaml
+from nomm.gui.ui_builders import create_icon_button
 from nomm.gui.dashboard_views.fomod_dialog import FomodSelectionDialog
 
 _ = gettext.gettext
