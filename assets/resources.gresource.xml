@@ -48,5 +48,7 @@
     <file>mat-attribution-symbolic.svg</file>
     <file>mat-donate-symbolic.svg</file>
     <file>mat-clean-symbolic.svg</file>
+    <file>mat-info-symbolic.svg</file>
+    <file>mat-warning-symbolic.svg</file>
   </gresource>
 </gresources>
