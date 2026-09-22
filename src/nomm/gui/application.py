@@ -1,4 +1,3 @@
-from nomm.gui.ui_builders import create_text_box
 import gettext
 import os
 import threading
@@ -17,6 +16,7 @@ from nomm.core.user_config import (load_user_config, update_user_config,
 from nomm.platforms.switch import list_emulators, get_emulator_logo
 from nomm.gui.app_views.library_view import LibraryView
 from nomm.gui.dashboard import GameDashboard
+from nomm.gui.ui_builders import create_text_box, create_code_box
 from nomm.platforms.nexus import handle_nexus_link
 from nomm.platforms.gamebanana import handle_gamebanana_link
 from nomm.platforms.steam import get_username_from_steam_id, get_steam_base_dir
@@ -581,16 +581,6 @@ class Nomm(Adw.Application):
         else:
             GLib.idle_add(self.show_library_ui)
 
-    def copy_to_clipboard(self, btn, text):
-        # Get the default display directly from Gdk
-        display = Gdk.Display.get_default()
-        clipboard = display.get_clipboard()
-
-        clipboard.set(text)
-
-        btn.set_icon_name("object-select-symbolic")
-        GLib.timeout_add(1000, lambda: btn.set_icon_name("edit-copy-symbolic"))
-
     def show_permission_request(self):
         status_page = Adw.StatusPage(
             icon_name="system-lock-screen-symbolic",
@@ -608,37 +598,7 @@ class Nomm(Adw.Application):
         action_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=15)
         action_box.set_halign(Gtk.Align.CENTER)
 
-        # We use a horizontal box to keep the TextView and Copy button together
-        cmd_container = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
-
-        # TextView setup
-        text_view = Gtk.TextView()
-        text_view.set_editable(False)
-        text_view.set_cursor_visible(False)
-        text_view.set_wrap_mode(Gtk.WrapMode.WORD_CHAR)  # Essential for wrapping long paths
-        text_view.set_monospace(True)
-        text_view.add_css_class("card")  # Adds a nice background/border in Libadwaita
-
-        # Insert the command into the TextView buffer
-        buffer = text_view.get_buffer()
-        buffer.set_text(full_command)
-
-        # Set a minimum size so it looks like a "block"
-        text_view.set_size_request(450, 100)
-        # Add some internal padding
-        text_view.set_left_margin(10)
-        text_view.set_right_margin(10)
-        text_view.set_top_margin(10)
-        text_view.set_bottom_margin(10)
-
-        copy_btn = Gtk.Button(icon_name="edit-copy-symbolic", tooltip_text=_("Copy to Clipboard"))
-        copy_btn.set_valign(Gtk.Align.START)  # Keep button at the top of the multi-line block
-        copy_btn.add_css_class("suggested-action")
-        copy_btn.connect("clicked", self.copy_to_clipboard, full_command)
-
-        cmd_container.append(text_view)
-        cmd_container.append(copy_btn)
-        action_box.append(cmd_container)
+        action_box.append(create_code_box(full_command, True))
 
         # Footer
         restart_hint = Gtk.Label(label=_("Restart NOMM after running the command."))

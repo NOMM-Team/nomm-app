@@ -56,7 +56,7 @@ def create_code_box(code: str, add_copy_button: bool = False) -> Gtk.Widget:
     copy_btn = Gtk.Button(
         icon_name="edit-copy-symbolic",
         halign=Gtk.Align.END,
-        valign=Gtk.Align.START,
+        valign=Gtk.Align.END,
     )
     copy_btn.set_tooltip_text("Copy Contents")
     copy_btn.set_cursor_from_name("pointer")

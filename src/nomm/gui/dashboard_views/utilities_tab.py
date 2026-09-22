@@ -4,7 +4,7 @@ import os
 import threading
 import webbrowser
 from pathlib import Path
-from gi.repository import Adw, Gtk, Gio, GLib
+from gi.repository import Adw, Gtk, Gio, GLib, Gdk
 
 from nomm.gui.ui_builders import create_text_box, create_code_box, create_icon_button
 from nomm.core.utility_manager import deploy_essential_utility, remove_utility, get_utility_status, \
@@ -292,31 +292,7 @@ class UtilitiesTab(Gtk.Box):
         instruction_label.set_use_markup(True)
         content_box.append(instruction_label)
 
-        # The code box with copy button
-        code_bin = Adw.Bin()
-        code_bin.add_css_class("card")
-
-        code_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
-        code_box.set_margin_start(12)
-        code_box.set_margin_end(6)
-        code_box.set_margin_top(6)
-        code_box.set_margin_bottom(6)
-
-        options_label = Gtk.Label(label=launch_options, selectable=True, xalign=0)
-        options_label.add_css_class("monospace")
-
-        copy_btn = Gtk.Button(icon_name="edit-copy-symbolic")
-        copy_btn.set_tooltip_text(_("Copy to Clipboard"))
-        copy_btn.add_css_class("flat")
-        copy_btn.connect("clicked", self.dashboard.app.copy_to_clipboard, launch_options)
-
-        code_box.append(options_label)
-        code_box.set_hexpand(True)
-        options_label.set_hexpand(True)
-        code_box.append(copy_btn)
-
-        code_bin.set_child(code_box)
-        content_box.append(code_bin)
+        content_box.append(create_code_box(launch_options, True))
         status_page.set_child(content_box)
         dialog.set_extra_child(status_page)
 
@@ -326,7 +302,7 @@ class UtilitiesTab(Gtk.Box):
 
         def on_response(d, response_id):
             if response_id == "copy":
-                self.dashboard.app.copy_to_clipboard(copy_btn, launch_options)
+                Gdk.Display.get_default().get_clipboard().set(launch_options)
                 if self.dashboard.platform == "steam":
                     launcher = Gtk.UriLauncher.new(f"steam://gameproperties/{self.dashboard.app_id}")
                     launcher.launch(None, None, None)
