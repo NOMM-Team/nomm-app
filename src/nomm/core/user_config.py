@@ -43,6 +43,7 @@ class LibrarySort(Enum):
 def update_user_config(key: str, value: Any) -> None:
     config = load_user_config()
     config[key] = value
+    print(f"Updated user configuration for {key} to {str(value)}")
     write_user_config(config)
 
 
