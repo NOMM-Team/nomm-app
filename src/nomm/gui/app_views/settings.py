@@ -256,6 +256,7 @@ class SettingsWindow(Adw.Window):
             ))
             wine_group.add(self.wine_row)
 
+            # Wine prefixes row
             prefix_count = sum(1 for item in WINE_PREFIX_DIR.iterdir() if item.is_dir())
             prefix_size = format_gb_size(get_dir_size_bytes(WINE_PREFIX_DIR))
             subtitle = ngettext(
@@ -267,7 +268,6 @@ class SettingsWindow(Adw.Window):
                 title=_("Wine Prefixes"),
                 subtitle=subtitle
             )
-
             # Open prefix folder button
             wine_prefix_row.add_suffix(create_icon_button(
                 icon_name="mat-folder-symbolic",
@@ -285,6 +285,15 @@ class SettingsWindow(Adw.Window):
                     on_click=lambda btn: self.show_prefix_clean_confirmation_window(unused_wine_prefixes)
                 ))
             wine_group.add(wine_prefix_row)
+
+            # Wine prefix autocleaner row
+            wine_prefix_auto_cleaner = Adw.SwitchRow(
+                title=_("Wine Prefix Auto-Clean"),
+                subtitle=_("Automatically cleans unused prefixes after one month of inactivity")
+            )
+            wine_prefix_auto_cleaner.set_active(user_config.get('autoclean_prefixes', False))
+            wine_prefix_auto_cleaner.connect("notify::active", lambda row, pspec: self.toggle_wineprefix_autocleaner(unused_wine_prefixes, row.get_active()))
+            wine_group.add(wine_prefix_auto_cleaner)
 
         # --- COMMUNITY SECTION ---
         community_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=20, halign=Gtk.Align.CENTER)
@@ -396,7 +405,7 @@ class SettingsWindow(Adw.Window):
         self.destroy()
         self.app.show_loading_and_scan()
 
-    def show_prefix_clean_confirmation_window(self, unused_prefixes):
+    def show_prefix_clean_confirmation_window(self, unused_prefixes: list, auto_clean=True):
         dialog = Adw.MessageDialog(transient_for=self, heading=_("Wineprefix Cleaner"))
 
         status_page = Adw.StatusPage(icon_name="wine-logo")
@@ -414,18 +423,26 @@ class SettingsWindow(Adw.Window):
         warning_box.append(warning_label)
         content_box.append(warning_box)
 
-        wineprefix_clean_explanation = _("All prefixes older than 1 month will be deleted.\nThese are the impacted prefixes:")
+        if auto_clean:
+            wineprefix_clean_explanation = _("All prefixes older than 1 month will be deleted right now,\n"
+                                             "and automatically every time you launch NOMM.\n")
+        else:
+            wineprefix_clean_explanation = _("All prefixes older than 1 month will be deleted.\nThese are the impacted prefixes:")
         content_box.append(Gtk.Label(label=wineprefix_clean_explanation))
-        content_box.append(create_code_box(", ".join(unused_prefixes)))
+
+        if not auto_clean:
+            content_box.append(create_code_box(", ".join(unused_prefixes)))
 
         status_page.set_child(content_box)
         dialog.set_extra_child(status_page)
-        dialog.add_response("close", _("Close"))
+        dialog.add_response("cancel", _("Cancel"))
         dialog.add_response("confirm", _("Confirm"))
         dialog.set_response_appearance("confirm", Adw.ResponseAppearance.DESTRUCTIVE)
 
         def on_response(d, response_id):
-            if response_id == "continue":
+            if response_id == "confirm":
+                if auto_clean:
+                    update_user_config("autoclean_prefixes", True)
                 clean_wine_prefixes(unused_prefixes)
         dialog.connect("response", on_response)
         dialog.present()
@@ -433,3 +450,9 @@ class SettingsWindow(Adw.Window):
     def on_update_wine_clicked(self):
         get_wine()
         self.wine_row.set_subtitle("Wine updated, you can close this window")
+
+    def toggle_wineprefix_autocleaner(self, unused_prefixes, state: bool):
+        if state:
+            self.show_prefix_clean_confirmation_window(unused_prefixes, True)
+        else:
+            update_user_config("autoclean_prefixes", False)

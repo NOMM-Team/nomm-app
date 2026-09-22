@@ -20,6 +20,7 @@ from nomm.gui.ui_builders import create_text_box, create_code_box
 from nomm.platforms.nexus import handle_nexus_link
 from nomm.platforms.gamebanana import handle_gamebanana_link
 from nomm.platforms.steam import get_username_from_steam_id, get_steam_base_dir
+from nomm.core.wine_manager import clean_wine_prefixes, get_unused_wine_prefixes
 
 gi.require_version('Gtk', '4.0')
 gi.require_version('Adw', '1')
@@ -56,7 +57,8 @@ class Nomm(Adw.Application):
         user_data_dir: str = GLib.get_user_data_dir()
         print(f"NOMM data path is: {user_data_dir}")
         self.update_game_configurations()
-
+        if load_user_config().get("autoclean_prefixes"):
+            clean_wine_prefixes(get_unused_wine_prefixes())
         base_path: str = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
         base_path = get_bundled_data_dir()

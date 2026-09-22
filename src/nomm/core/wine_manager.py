@@ -209,8 +209,11 @@ def get_unused_wine_prefixes():
 
 
 def clean_wine_prefixes(unused_wine_prefixes: list):
+    print(f"Cleaning unused Wine prefixes: {unused_wine_prefixes}")
     prefix_metadata = load_yaml(WINE_PREFIX_META_PATH)
+    if not prefix_metadata:
+        return
     for unused_prefix in unused_wine_prefixes:
         shutil.rmtree(WINE_PREFIX_DIR / unused_prefix)
         prefix_metadata.pop(unused_prefix)
-    write_yaml(prefix_metadata, WINE_PREFIX_DIR)
+    write_yaml(prefix_metadata, WINE_PREFIX_META_PATH)
