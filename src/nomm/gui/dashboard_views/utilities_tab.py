@@ -1,8 +1,4 @@
 
-from nomm.gui.ui_builders import create_text_box
-from nomm.core.wine_manager import check_wineprefix_setup
-from nomm.core.wine_manager import generate_winetrick_command
-from nomm.core.tools import create_code_box
 import gettext
 import os
 import threading
@@ -10,10 +6,11 @@ import webbrowser
 from pathlib import Path
 from gi.repository import Adw, Gtk, Gio, GLib
 
+from nomm.gui.ui_builders import create_text_box, create_code_box
 from nomm.core.utility_manager import deploy_essential_utility, remove_utility, get_utility_status, \
                                       launch_utility, get_downloaded_utility_file_name
 from nomm.core.tools import get_latest_github_release_asset_url
-from nomm.core.wine_manager import get_wine, WINE_BINARY_PATH
+from nomm.core.wine_manager import get_wine, WINE_BINARY_PATH, check_wineprefix_setup, generate_winetrick_command
 from nomm.core.tools import create_icon_button
 
 _ = gettext.gettext

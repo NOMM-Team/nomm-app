@@ -1,7 +1,4 @@
-from nomm.core.tools import create_code_box
 from gettext import ngettext
-from nomm.core.tools import format_gb_size
-from nomm.core.tools import get_dir_size_bytes
 import gettext
 import threading
 import webbrowser
@@ -10,7 +7,8 @@ import requests
 from gi.repository import Adw, Gio, GLib, Gtk
 
 from nomm.core.user_config import update_user_config, LibrarySort, DATA_DIR, load_user_config
-from nomm.core.tools import translate_fuse_path, get_nomm_tags, create_icon_button
+from nomm.core.tools import translate_fuse_path, get_nomm_tags, create_icon_button, format_gb_size, get_dir_size_bytes
+from nomm.gui.ui_builders import create_code_box
 from nomm.platforms.switch import list_emulators
 from nomm.gui.application import APP_VERSION
 from nomm.core.wine_manager import get_wine, remove_wine, get_latest_wine_version, WINE_PREFIX_DIR, \
