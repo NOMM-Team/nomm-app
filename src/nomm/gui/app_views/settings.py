@@ -292,7 +292,8 @@ class SettingsWindow(Adw.Window):
                 subtitle=_("Automatically cleans unused prefixes after one month of inactivity")
             )
             wine_prefix_auto_cleaner.set_active(user_config.get('autoclean_prefixes', False))
-            wine_prefix_auto_cleaner.connect("notify::active", lambda row, pspec: self.toggle_wineprefix_autocleaner(unused_wine_prefixes, row.get_active()))
+            wine_prefix_auto_cleaner.connect("notify::active", lambda row, pspec: self.toggle_wineprefix_autocleaner(unused_wine_prefixes,
+                                                                                                                     row.get_active()))
             wine_group.add(wine_prefix_auto_cleaner)
 
         # --- COMMUNITY SECTION ---
