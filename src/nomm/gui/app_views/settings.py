@@ -226,13 +226,13 @@ class SettingsWindow(Adw.Window):
 
         wine_version = user_config.get("wine_version")
         if wine_version:
-            wine_row = Adw.ActionRow(
+            self.wine_row = Adw.ActionRow(
                 title=_("Wine"),
                 subtitle=_("Installed version: {}").format(wine_version)
             )
 
             # Open Wine Folder Button
-            wine_row.add_suffix(create_icon_button(
+            self.wine_row.add_suffix(create_icon_button(
                 icon_name="mat-folder-symbolic",
                 tooltip=_("Open Wine folder"),
                 on_click=lambda b: webbrowser.open(f"file://{WINE_INSTALL_DIR}")
@@ -240,21 +240,21 @@ class SettingsWindow(Adw.Window):
 
             # Update Button
             if wine_version != get_latest_wine_version(self.app.headers):
-                wine_row.add_suffix(create_icon_button(
+                self.wine_row.add_suffix(create_icon_button(
                     icon_name="upgrade-symbolic",
                     css_classes=["flat", "suggested-action"],
                     tooltip=_("Update Wine instance"),
-                    on_click=lambda btn: get_wine()
+                    on_click=lambda btn: self.on_update_wine_clicked()
                 ))
 
             # Delete Button
-            wine_row.add_suffix(create_icon_button(
+            self.wine_row.add_suffix(create_icon_button(
                 icon_name="mat-delete-symbolic",
                 tooltip=_("Delete Wine instance"),
                 css_classes=["flat", "destructive-action"],
                 on_click=lambda btn: remove_wine()
             ))
-            wine_group.add(wine_row)
+            wine_group.add(self.wine_row)
 
             prefix_count = sum(1 for item in WINE_PREFIX_DIR.iterdir() if item.is_dir())
             prefix_size = format_gb_size(get_dir_size_bytes(WINE_PREFIX_DIR))
@@ -429,3 +429,7 @@ class SettingsWindow(Adw.Window):
                 clean_wine_prefixes(unused_prefixes)
         dialog.connect("response", on_response)
         dialog.present()
+
+    def on_update_wine_clicked(self):
+        get_wine()
+        self.wine_row.set_subtitle("Wine updated, you can close this window")
