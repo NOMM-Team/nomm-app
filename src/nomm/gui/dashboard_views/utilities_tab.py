@@ -362,13 +362,13 @@ class UtilitiesTab(Gtk.Box):
 
         content_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)
 
-        info_text = _("If the Nexus mod page supports auto-download, then this whole process will be transparent, "
+        info_text = _("If the Nexus mod page supports auto-download, then "
                       "you just need to click on download with vortex / mod manager")
         content_box.append(create_text_box(info_text, "info"))
 
         instruction_text = _(f"{util["name"]} is sourced from the Nexus Mods website.\n"
                              "You will have to place the downloaded file in the right location for NOMM to "
-                             "then proceed with the installation.")
+                             "proceed with the installation.")
         content_box.append(Gtk.Label(label=instruction_text, wrap=True, xalign=0))
 
         nexus_btn = Gtk.Button(label=_("Open Nexus Mods page"), css_classes=["suggested-action"])
