@@ -311,16 +311,19 @@ class UtilitiesTab(Gtk.Box):
         dialog.connect("response", on_response)
         dialog.present()
 
-    def on_utility_download_clicked(self, btn, util, stack, pbar=None, file_name=None):
+    def on_utility_download_clicked(self, btn, util: dict, stack, pbar=None, file_name=None):
         source_type = util["source_type"]
         source_url = util["source_url"]
         if not source_url:
             return
 
-        if source_type == "flatpak" or source_type == "nexus":
+        if source_type == "flatpak":
             # if it's type flatpak or nexus, NOMM doesn't handle the downloads itself
             launcher = Gtk.UriLauncher.new(source_url)
             launcher.launch(None, None, None)
+            return
+        elif source_type == "nexus":
+            self.show_nexus_download_instructions(util)
             return
 
         btn.set_sensitive(False)
@@ -347,6 +350,48 @@ class UtilitiesTab(Gtk.Box):
         self.downloader.connect('download-error', on_download_error)
 
         threading.Thread(target=self.downloader.download_mod, args=(source_url, self.download_dir), daemon=True).start()
+
+    def show_nexus_download_instructions(self, util: dict):
+        dialog = Adw.MessageDialog(
+            transient_for=self.dashboard.app.win,
+            default_width=400,
+            heading=_("Nexus Source Instructions")
+        )
+
+        status_page = Adw.StatusPage(icon_name="nexus-logo")
+
+        content_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)
+
+        info_text = _("If the Nexus mod page supports auto-download, then this whole process will be transparent, "
+                      "you just need to click on download with vortex / mod manager")
+        content_box.append(create_text_box(info_text, "info"))
+
+        instruction_text = _(f"{util["name"]} is sourced from the Nexus Mods website.\n"
+                             "You will have to place the downloaded file in the right location for NOMM to "
+                             "then proceed with the installation.")
+        content_box.append(Gtk.Label(label=instruction_text, wrap=True, xalign=0))
+
+        nexus_btn = Gtk.Button(label=_("Open Nexus Mods page"), css_classes=["suggested-action"])
+        nexus_btn.set_tooltip_text(_(f"Open the Nexus Mods page for {util["name"]}"))
+        nexus_btn.connect("clicked", lambda *_: on_nexus_button_clicked())
+        dl_folder_btn = Gtk.Button(label=_("Open NOMM downloads directory"))
+        dl_folder_btn.set_tooltip_text(_("This is where you need to place the downloaded file for NOMM to recognise it"))
+        dl_folder_btn.connect("clicked", lambda *_: webbrowser.open(self.download_dir.as_uri()))
+        content_box.append(nexus_btn)
+        content_box.append(dl_folder_btn)
+
+        status_page.set_child(content_box)
+        dialog.set_extra_child(status_page)
+
+        dialog.add_response("close", _("Close"))
+
+        def on_nexus_button_clicked():
+            launcher = Gtk.UriLauncher.new(util["source_url"])
+            launcher.launch(None, None, None)
+            nexus_btn.remove_css_class("suggested-action")
+            dialog.set_response_appearance("close", Adw.ResponseAppearance.SUGGESTED)
+
+        dialog.present()
 
     def on_utility_install_clicked(self, btn, util: dict, file_name):
 
