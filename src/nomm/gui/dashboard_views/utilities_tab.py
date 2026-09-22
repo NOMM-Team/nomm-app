@@ -1,4 +1,5 @@
 
+from nomm.gui.ui_builders import create_text_box
 from nomm.core.wine_manager import check_wineprefix_setup
 from nomm.core.wine_manager import generate_winetrick_command
 from nomm.core.tools import create_code_box
@@ -261,7 +262,10 @@ class UtilitiesTab(Gtk.Box):
 
         content_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)
 
-        winetrick_instructions_text = _(f"{utility["name"]} also requires specific dependencies (verbs) to be installed in its Wine prefix,\n"
+        info_text = "This step requires <b>Winetricks</b> installed, click here to find out how to install it for your system."
+        content_box.append(create_text_box(info_text, "info", "https://github.com/winetricks/winetricks#installing"))
+
+        winetrick_instructions_text = _(f"{utility["name"]} requires specific dependencies (verbs) to be installed in its Wine prefix,\n"
                                         "please run the following command in your terminal:")
         content_box.append(Gtk.Label(label=winetrick_instructions_text))
         content_box.append(create_code_box(generate_winetrick_command(utility["name"], utility["wine_verbs"]), True))
