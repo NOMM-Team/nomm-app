@@ -1,3 +1,4 @@
+from nomm.gui.ui_builders import create_text_box
 import gettext
 import os
 import threading
@@ -267,12 +268,7 @@ class Nomm(Adw.Application):
         status_page.add_css_class("setup-page")
         vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12, halign=Gtk.Align.CENTER)
 
-        info_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0, halign=Gtk.Align.CENTER)
-        info_box.add_css_class("info-card")
-
-        info_label = Gtk.Label(wrap=True, max_width_chars=50, justify=Gtk.Justification.CENTER)
-        info_label.set_text(_("We recommend that you create a nomm directory at the end of your target path"))
-        info_box.append(info_label)
+        info_label = _("We recommend that you create a nomm directory at the end of your target path")
 
         hbox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12, halign=Gtk.Align.CENTER)
         custom_path_btn = Gtk.Button(label=_("Set Custom Mod Download Path"), margin_top=12, halign=Gtk.Align.CENTER)
@@ -284,7 +280,7 @@ class Nomm(Adw.Application):
         nomm_path_btn.add_css_class("suggested-action")
         nomm_path_btn.connect("clicked", self.on_select_default_nomm_download_folder_clicked)
 
-        vbox.append(info_box)
+        vbox.append(create_text_box(info_label, "info"))
         hbox.append(custom_path_btn)
         hbox.append(nomm_path_btn)
         vbox.append(hbox)
@@ -320,15 +316,8 @@ class Nomm(Adw.Application):
         status_page.add_css_class("setup-page")
         vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12, halign=Gtk.Align.CENTER)
 
-        warning_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0, halign=Gtk.Align.CENTER)
-        warning_box.add_css_class("warning-card")
-
-        warning_label = Gtk.Label(
-            wrap=True, max_width_chars=50, justify=Gtk.Justification.CENTER
-        )
-        warning_label.set_text(_("If using Flatpaks for your platforms (Steam, Heroic, etc.), ensure they have\n"
-                                 "permission to access this folder (you can do this via command line or Flatseal)."))
-        warning_box.append(warning_label)
+        warning_label = _("If using Flatpaks for your platforms (Steam, Heroic, etc.), ensure they have\n"
+                          "permission to access this folder (you can do this via command line or Flatseal).")
 
         hbox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12, halign=Gtk.Align.CENTER)
         custom_path_btn = Gtk.Button(label=_("Set Custom Mod Staging Path"), margin_top=12, halign=Gtk.Align.CENTER)
@@ -340,7 +329,7 @@ class Nomm(Adw.Application):
         nomm_path_btn.add_css_class("suggested-action")
         nomm_path_btn.connect("clicked", self.on_select_default_nomm_staging_folder_clicked)
 
-        vbox.append(warning_box)
+        vbox.append(create_text_box(warning_label, "warning"))
         hbox.append(custom_path_btn)
         hbox.append(nomm_path_btn)
         vbox.append(hbox)
