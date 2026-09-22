@@ -1,4 +1,5 @@
 from gi.repository import Gtk, Gio, GLib
+from typing import Optional, Callable
 
 
 def create_text_box(text: str, type="", url="") -> Gtk.Widget:
@@ -80,3 +81,47 @@ def create_code_box(code: str, add_copy_button: bool = False) -> Gtk.Widget:
     overlay.add_overlay(copy_btn)
 
     return overlay
+
+
+def create_icon_button(
+    *,
+    icon_name: str,
+    tooltip: str,
+    icon_size: int = 24,
+    icon_margin: int = 2,
+    valign: Gtk.Align = Gtk.Align.CENTER,
+    halign: Gtk.Align = Gtk.Align.END,
+    css_classes: Optional[list[str]] = None,
+    on_click: Optional[Callable] = None,
+    hover_mouse_pointer: bool = True,
+    disabled: bool = False
+) -> Gtk.Button:
+
+    button = Gtk.Button(valign=valign, halign=halign)
+    button.add_css_class("image-button")
+
+    img = Gtk.Image.new_from_icon_name(icon_name)
+    img.set_pixel_size(icon_size)
+    img.set_valign(Gtk.Align.CENTER)
+    img.set_halign(Gtk.Align.CENTER)
+    img.set_margin_start(icon_margin)
+    img.set_margin_end(icon_margin)
+    img.set_margin_top(icon_margin)
+    img.set_margin_bottom(icon_margin)
+    button.set_child(img)
+
+    button.set_tooltip_text(tooltip)
+    if hover_mouse_pointer:
+        button.set_cursor_from_name("pointer")
+
+    if disabled:
+        button.set_sensitive(False)
+
+    classes_to_add = css_classes if css_classes is not None else ["flat"]
+    for css_class in classes_to_add:
+        button.add_css_class(css_class)
+
+    if on_click:
+        button.connect("clicked", on_click)
+
+    return button
