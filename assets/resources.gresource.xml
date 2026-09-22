@@ -50,5 +50,6 @@
     <file>mat-clean-symbolic.svg</file>
     <file>mat-info-symbolic.svg</file>
     <file>mat-warning-symbolic.svg</file>
+    <file>mat-copy-symbolic.svg</file>
   </gresource>
 </gresources>

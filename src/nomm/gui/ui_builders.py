@@ -53,11 +53,26 @@ def create_code_box(code: str, add_copy_button: bool = False) -> Gtk.Widget:
     overlay = Gtk.Overlay()
     overlay.set_child(text_view)
 
+    copy_icon = Gtk.Image.new_from_icon_name("edit-copy-symbolic")
+    copy_icon.set_pixel_size(24)
+
+    check_icon = Gtk.Image.new_from_icon_name("object-select-symbolic")
+    check_icon.set_pixel_size(24)
+
+    icon_stack = Gtk.Stack()
+    icon_stack.set_transition_type(Gtk.StackTransitionType.CROSSFADE)
+    icon_stack.set_transition_duration(150)
+
+    icon_stack.add_named(copy_icon, "copy")
+    icon_stack.add_named(check_icon, "check")
+    icon_stack.set_visible_child_name("copy")
+
     copy_btn = Gtk.Button(
-        icon_name="edit-copy-symbolic",
+        child=icon_stack,
         halign=Gtk.Align.END,
-        valign=Gtk.Align.END,
+        valign=Gtk.Align.CENTER,
     )
+
     copy_btn.set_tooltip_text("Copy Contents")
     copy_btn.set_cursor_from_name("pointer")
     copy_btn.add_css_class("flat")
@@ -71,10 +86,14 @@ def create_code_box(code: str, add_copy_button: bool = False) -> Gtk.Widget:
         clipboard = text_view.get_clipboard()
         clipboard.set(text_to_copy)
 
-        copy_btn.set_icon_name("object-select-symbolic")
-        GLib.timeout_add(
-            1500, lambda: copy_btn.set_icon_name("edit-copy-symbolic")
-        )
+        icon_stack.set_visible_child_name("check")
+
+        def reset_icon():
+            # Trigger crossfade back to copy icon
+            icon_stack.set_visible_child_name("copy")
+            return GLib.SOURCE_REMOVE
+
+        GLib.timeout_add(2000, reset_icon)
 
     copy_btn.connect("clicked", on_copy_clicked)
 
