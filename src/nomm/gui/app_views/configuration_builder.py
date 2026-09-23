@@ -226,6 +226,9 @@ class PlatformChoiceDialog(Adw.MessageDialog):
         )
         dropdown = Gtk.DropDown.new(filter_model, expression)
         dropdown.set_enable_search(True)
+        dropdown.set_expression(expression)
+        dropdown.set_search_match_mode(Gtk.StringFilterMatchMode.SUBSTRING)
+
         content_box.append(dropdown)
 
         cont_btn = Gtk.Button(
@@ -258,20 +261,21 @@ class PlatformChoiceDialog(Adw.MessageDialog):
             on_game_selection_changed(dropdown, None)
 
         def on_continue_clicked(btn):
-            selected_idx = dropdown.get_selected()
-            if (
-                selected_idx != Gtk.INVALID_LIST_POSITION
-                and selected_idx < len(installed_games)
-            ):
-                selected_game = installed_games[selected_idx]
-                prefilled_data = {
-                    "name": selected_game.get("name", ""),
-                    "steam_id": str(selected_game.get("appid", "")),
-                    "steam_folder_name": selected_game.get("installdir", "")
-                }
-                self.close()
-                if self.callback:
-                    self.callback(prefilled_data)
+            selected_item = dropdown.get_selected_item()
+            if selected_item:
+                selected_name = selected_item.get_string()
+                selected_game = next(
+                    (g for g in installed_games if g["name"] == selected_name), None
+                )
+                if selected_game:
+                    prefilled_data = {
+                        "name": selected_game.get("name", ""),
+                        "steam_id": str(selected_game.get("appid", "")),
+                        "steam_folder_name": selected_game.get("installdir", "")
+                    }
+                    self.close()
+                    if self.callback:
+                        self.callback(prefilled_data)
 
         cont_btn.connect("clicked", on_continue_clicked)
         content_box.append(cont_btn)
