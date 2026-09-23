@@ -2,9 +2,8 @@ import os
 import vdf
 from pathlib import Path
 from typing import List, Dict, Optional, Any
-
-from nomm.core.user_config import load_user_config, parse_mod_paths
-from nomm.core.tools import launch_option_merger, slugify
+from nomm.core.user_config import parse_mod_paths
+from nomm.core.tools import slugify
 
 import gettext
 _ = gettext.gettext
@@ -87,22 +86,6 @@ def get_library_paths(steam_base) -> List[str]:
     return libraries
 
 
-def add_launch_options(steam_base: str, launch_options, steam_id: str):
-    print(f"Adding Steam launch options: {launch_options}")
-    localconfig_path = steam_base + "userdata/" + load_user_config()["steam_user_id"] + "/config/localconfig.vdf"
-    print(f"...to localconfig file located at: {localconfig_path}")
-    with open(localconfig_path, 'r') as vdf_file:
-        localconfig = vdf.load(vdf_file)
-    game_data = localconfig["UserLocalConfigStore"]["Software"]["Valve"]["Steam"]["apps"][str(steam_id)]
-    if "LaunchOptions" not in game_data:
-        localconfig["UserLocalConfigStore"]["Software"]["Valve"]["Steam"]["apps"][str(steam_id)]["LaunchOptions"] = launch_options
-    else:
-        localconfig["UserLocalConfigStore"]["Software"]["Valve"]["Steam"]["apps"][str(steam_id)]["LaunchOptions"] = \
-            launch_option_merger(game_data["LaunchOptions"], launch_options)
-    with open(localconfig_path, 'w') as vdf_file:
-        vdf.dump(localconfig, vdf_file)
-
-
 def get_username_from_steam_id(steam_id: str, steam_base_path) -> str:
     localconfig_path = steam_base_path + "userdata/" + steam_id + "/config/localconfig.vdf"
     if not os.path.exists(localconfig_path):
@@ -152,7 +135,7 @@ def find_game(yaml_data, game_title, found_libs, steam_base) -> List[Dict[str, A
 
                 # mod path parsing
                 user_data_path = os.path.dirname(os.path.dirname(game_path)) + "/compatdata/" + str(yaml_data["steam_id"]) + "/pfx"
-                mod_paths: list[dict[str, str]] = parse_mod_paths(yaml_data["mods_path"], game_path, user_data_path)
+                mod_paths: list[dict[str, str]] = parse_mod_paths(yaml_data["mods_path"], game_path, user_data_path, game_title)
 
                 return {
                     "name": game_title,
@@ -161,7 +144,7 @@ def find_game(yaml_data, game_title, found_libs, steam_base) -> List[Dict[str, A
                     "app_id": yaml_data.get("steam_id"),
                     "platform": "steam",
                     "mod_paths": mod_paths,
-                    "utilities": yaml_data.get("essential_utilities"),
+                    "utilities": yaml_data.get("utilities"),
                     "accent_colour": yaml_data.get("accent_colour"),
                     "load_order_path": yaml_data.get("load_order_path"),
                     "wiki_link": yaml_data.get("wiki_link"),

@@ -1,3 +1,4 @@
+from gettext import ngettext
 import gettext
 import threading
 import webbrowser
@@ -6,9 +7,12 @@ import requests
 from gi.repository import Adw, Gio, GLib, Gtk
 
 from nomm.core.user_config import update_user_config, LibrarySort, DATA_DIR, load_user_config
-from nomm.core.tools import translate_fuse_path, get_nomm_tags, create_icon_button
+from nomm.core.tools import translate_fuse_path, get_nomm_tags, format_gb_size, get_dir_size_bytes
+from nomm.gui.ui_builders import create_code_box, create_icon_button
 from nomm.platforms.switch import list_emulators
 from nomm.gui.application import APP_VERSION
+from nomm.core.wine_manager import get_wine, remove_wine, get_latest_wine_version, WINE_PREFIX_DIR, \
+                                   get_unused_wine_prefixes, clean_wine_prefixes, WINE_INSTALL_DIR
 
 _ = gettext.gettext
 
@@ -217,6 +221,81 @@ class SettingsWindow(Adw.Window):
         fullscreen_row.connect("notify::active", lambda row, pspec: self.toggle_setting('enable_fullscreen', row.get_active()))
         general_group.add(fullscreen_row)
 
+        wine_group = Adw.PreferencesGroup(title=_("Wine Settings"))
+        settings_scrollbox.append(wine_group)
+
+        wine_version = user_config.get("wine_version")
+        if wine_version:
+            self.wine_row = Adw.ActionRow(
+                title=_("Wine"),
+                subtitle=_("Installed version: {}").format(wine_version)
+            )
+
+            # Open Wine Folder Button
+            self.wine_row.add_suffix(create_icon_button(
+                icon_name="mat-folder-symbolic",
+                tooltip=_("Open Wine folder"),
+                on_click=lambda b: webbrowser.open(f"file://{WINE_INSTALL_DIR}")
+            ))
+
+            # Update Button
+            if wine_version != get_latest_wine_version(self.app.headers):
+                self.wine_row.add_suffix(create_icon_button(
+                    icon_name="upgrade-symbolic",
+                    css_classes=["flat", "suggested-action"],
+                    tooltip=_("Update Wine instance"),
+                    on_click=lambda btn: self.on_update_wine_clicked()
+                ))
+
+            # Delete Button
+            self.wine_row.add_suffix(create_icon_button(
+                icon_name="mat-delete-symbolic",
+                tooltip=_("Delete Wine instance"),
+                css_classes=["flat", "destructive-action"],
+                on_click=lambda btn: remove_wine()
+            ))
+            wine_group.add(self.wine_row)
+
+            # Wine prefixes row
+            prefix_count = sum(1 for item in WINE_PREFIX_DIR.iterdir() if item.is_dir())
+            prefix_size = format_gb_size(get_dir_size_bytes(WINE_PREFIX_DIR))
+            subtitle = ngettext(
+                "%(count)d installed prefix, taking up %(size)s",
+                "%(count)d installed prefixes, taking up %(size)s",
+                prefix_count,
+            ) % {"count": prefix_count, "size": prefix_size}
+            wine_prefix_row = Adw.ActionRow(
+                title=_("Wine Prefixes"),
+                subtitle=subtitle
+            )
+            # Open prefix folder button
+            wine_prefix_row.add_suffix(create_icon_button(
+                icon_name="mat-folder-symbolic",
+                css_classes=["flat", "suggested-action"],
+                tooltip=_("Open Wineprefix folder"),
+                on_click=lambda b: webbrowser.open(f"file://{WINE_PREFIX_DIR}")
+            ))
+            unused_wine_prefixes = get_unused_wine_prefixes()
+            if unused_wine_prefixes:
+                # Clean Prefixes Button
+                wine_prefix_row.add_suffix(create_icon_button(
+                    icon_name="mat-clean-symbolic",
+                    tooltip=_("Clean unused prefixes"),
+                    css_classes=["flat", "destructive-action"],
+                    on_click=lambda btn: self.show_prefix_clean_confirmation_window(unused_wine_prefixes)
+                ))
+            wine_group.add(wine_prefix_row)
+
+            # Wine prefix autocleaner row
+            wine_prefix_auto_cleaner = Adw.SwitchRow(
+                title=_("Wine Prefix Auto-Clean"),
+                subtitle=_("Automatically cleans unused prefixes after one month of inactivity")
+            )
+            wine_prefix_auto_cleaner.set_active(user_config.get('autoclean_prefixes', False))
+            wine_prefix_auto_cleaner.connect("notify::active", lambda row, pspec: self.toggle_wineprefix_autocleaner(unused_wine_prefixes,
+                                                                                                                     row.get_active()))
+            wine_group.add(wine_prefix_auto_cleaner)
+
         # --- COMMUNITY SECTION ---
         community_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=20, halign=Gtk.Align.CENTER)
         community_box.set_margin_top(10)
@@ -326,3 +405,55 @@ class SettingsWindow(Adw.Window):
         update_user_config('nexus_api_key', self.api_entry.get_text())
         self.destroy()
         self.app.show_loading_and_scan()
+
+    def show_prefix_clean_confirmation_window(self, unused_prefixes: list, auto_clean=True):
+        dialog = Adw.MessageDialog(transient_for=self, heading=_("Wineprefix Cleaner"))
+
+        status_page = Adw.StatusPage(icon_name="wine-logo")
+
+        content_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)
+
+        warning_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0, halign=Gtk.Align.CENTER)
+        warning_box.add_css_class("warning-card")
+
+        warning_label = Gtk.Label(
+            wrap=True, max_width_chars=50, justify=Gtk.Justification.CENTER
+        )
+        warning_label.set_text(_("This is a destructive operation that may delete essential configuration / data that "
+                                 "impacted tools had saved."))
+        warning_box.append(warning_label)
+        content_box.append(warning_box)
+
+        if auto_clean:
+            wineprefix_clean_explanation = _("All prefixes older than 1 month will be deleted right now,\n"
+                                             "and automatically every time you launch NOMM.\n")
+        else:
+            wineprefix_clean_explanation = _("All prefixes older than 1 month will be deleted.\nThese are the impacted prefixes:")
+        content_box.append(Gtk.Label(label=wineprefix_clean_explanation))
+
+        if not auto_clean:
+            content_box.append(create_code_box(", ".join(unused_prefixes)))
+
+        status_page.set_child(content_box)
+        dialog.set_extra_child(status_page)
+        dialog.add_response("cancel", _("Cancel"))
+        dialog.add_response("confirm", _("Confirm"))
+        dialog.set_response_appearance("confirm", Adw.ResponseAppearance.DESTRUCTIVE)
+
+        def on_response(d, response_id):
+            if response_id == "confirm":
+                if auto_clean:
+                    update_user_config("autoclean_prefixes", True)
+                clean_wine_prefixes(unused_prefixes)
+        dialog.connect("response", on_response)
+        dialog.present()
+
+    def on_update_wine_clicked(self):
+        get_wine()
+        self.wine_row.set_subtitle("Wine updated, you can close this window")
+
+    def toggle_wineprefix_autocleaner(self, unused_prefixes, state: bool):
+        if state:
+            self.show_prefix_clean_confirmation_window(unused_prefixes, True)
+        else:
+            update_user_config("autoclean_prefixes", False)

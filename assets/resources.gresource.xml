@@ -19,6 +19,7 @@
     <file>github-logo-symbolic.svg</file>
     <file>youtube-logo-symbolic.svg</file>
     <file>matrix-logo-symbolic.svg</file>
+    <file>wine-logo.svg</file>
     <!-- generic UI icons -->
     <file>breaking-news-symbolic.svg</file>
     <file>downloaded-symbolic.svg</file>
@@ -28,6 +29,7 @@
     <file>arrow-circle-right-symbolic.svg</file>
     <file>mat-folder-symbolic.svg</file>
     <file>mat-folder-managed-symbolic.svg</file>
+    <file>mat-folder-check-symbolic.svg</file>
     <file>refresh-mods-symbolic.svg</file>
     <file>mat-experiment-symbolic.svg</file>
     <file>radar-symbolic.svg</file>
@@ -41,5 +43,13 @@
     <file>mat-edit-symbolic.svg</file>
     <file>mat-wrench-symbolic.svg</file>
     <file>mat-game-controller-symbolic.svg</file>
+    <file>mat-launch-symbolic.svg</file>
+    <file>mat-play-symbolic.svg</file>
+    <file>mat-attribution-symbolic.svg</file>
+    <file>mat-donate-symbolic.svg</file>
+    <file>mat-clean-symbolic.svg</file>
+    <file>mat-info-symbolic.svg</file>
+    <file>mat-warning-symbolic.svg</file>
+    <file>mat-copy-symbolic.svg</file>
   </gresource>
 </gresources>

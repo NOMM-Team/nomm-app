@@ -88,39 +88,3 @@ def test_get_library_paths_missing_path_key(tmp_path):
 
     result = steam.get_library_paths(str(tmp_path))
     assert result == []
-
-
-def test_add_launch_options_new(tmp_path, monkeypatch):
-    monkeypatch.setattr("nomm.platforms.steam.load_user_config", lambda: {"steam_user_id": "12345678"})
-
-    user_config_dir = tmp_path / "userdata" / "12345678" / "config"
-    user_config_dir.mkdir(parents=True)
-    vdf_file = user_config_dir / "localconfig.vdf"
-
-    # Create VDF file with no LaunchOptions
-    steam_id = "440"
-    initial_data = {
-        "UserLocalConfigStore": {
-            "Software": {
-                "Valve": {
-                    "Steam": {
-                        "apps": {
-                            steam_id: {}
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    with open(vdf_file, "w", encoding="utf-8") as f:
-        vdf.dump(initial_data, f)
-
-    steam_base = str(tmp_path) + "/"
-    steam.add_launch_options(steam_base, "-novid", steam_id)
-
-    with open(vdf_file, "r", encoding="utf-8") as f:
-        updated_data = vdf.load(f)
-
-    app_config = updated_data["UserLocalConfigStore"]["Software"]["Valve"]["Steam"]["apps"][steam_id]
-    assert app_config.get("LaunchOptions") == "-novid"

@@ -16,9 +16,11 @@ from nomm.core.user_config import (load_user_config, update_user_config,
 from nomm.platforms.switch import list_emulators, get_emulator_logo
 from nomm.gui.app_views.library_view import LibraryView
 from nomm.gui.dashboard import GameDashboard
+from nomm.gui.ui_builders import create_text_box, create_code_box
 from nomm.platforms.nexus import handle_nexus_link
 from nomm.platforms.gamebanana import handle_gamebanana_link
 from nomm.platforms.steam import get_username_from_steam_id, get_steam_base_dir
+from nomm.core.wine_manager import clean_wine_prefixes, get_unused_wine_prefixes
 
 gi.require_version('Gtk', '4.0')
 gi.require_version('Adw', '1')
@@ -55,7 +57,8 @@ class Nomm(Adw.Application):
         user_data_dir: str = GLib.get_user_data_dir()
         print(f"NOMM data path is: {user_data_dir}")
         self.update_game_configurations()
-
+        if load_user_config().get("autoclean_prefixes"):
+            clean_wine_prefixes(get_unused_wine_prefixes())
         base_path: str = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
         base_path = get_bundled_data_dir()
@@ -267,12 +270,7 @@ class Nomm(Adw.Application):
         status_page.add_css_class("setup-page")
         vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12, halign=Gtk.Align.CENTER)
 
-        info_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0, halign=Gtk.Align.CENTER)
-        info_box.add_css_class("info-card")
-
-        info_label = Gtk.Label(wrap=True, max_width_chars=50, justify=Gtk.Justification.CENTER)
-        info_label.set_text(_("We recommend that you create a nomm directory at the end of your target path"))
-        info_box.append(info_label)
+        info_label = _("We recommend that you create a nomm directory at the end of your target path")
 
         hbox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12, halign=Gtk.Align.CENTER)
         custom_path_btn = Gtk.Button(label=_("Set Custom Mod Download Path"), margin_top=12, halign=Gtk.Align.CENTER)
@@ -284,7 +282,7 @@ class Nomm(Adw.Application):
         nomm_path_btn.add_css_class("suggested-action")
         nomm_path_btn.connect("clicked", self.on_select_default_nomm_download_folder_clicked)
 
-        vbox.append(info_box)
+        vbox.append(create_text_box(info_label, "info"))
         hbox.append(custom_path_btn)
         hbox.append(nomm_path_btn)
         vbox.append(hbox)
@@ -320,15 +318,8 @@ class Nomm(Adw.Application):
         status_page.add_css_class("setup-page")
         vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12, halign=Gtk.Align.CENTER)
 
-        warning_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0, halign=Gtk.Align.CENTER)
-        warning_box.add_css_class("warning-card")
-
-        warning_label = Gtk.Label(
-            wrap=True, max_width_chars=50, justify=Gtk.Justification.CENTER
-        )
-        warning_label.set_text(_("If using Flatpaks for your platforms (Steam, Heroic, etc.), ensure they have\n"
-                                 "permission to access this folder (you can do this via command line or Flatseal)."))
-        warning_box.append(warning_label)
+        warning_label = _("If using Flatpaks for your platforms (Steam, Heroic, etc.), ensure they have\n"
+                          "permission to access this folder (you can do this via command line or Flatseal).")
 
         hbox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12, halign=Gtk.Align.CENTER)
         custom_path_btn = Gtk.Button(label=_("Set Custom Mod Staging Path"), margin_top=12, halign=Gtk.Align.CENTER)
@@ -340,7 +331,7 @@ class Nomm(Adw.Application):
         nomm_path_btn.add_css_class("suggested-action")
         nomm_path_btn.connect("clicked", self.on_select_default_nomm_staging_folder_clicked)
 
-        vbox.append(warning_box)
+        vbox.append(create_text_box(warning_label, "warning"))
         hbox.append(custom_path_btn)
         hbox.append(nomm_path_btn)
         vbox.append(hbox)
@@ -592,16 +583,6 @@ class Nomm(Adw.Application):
         else:
             GLib.idle_add(self.show_library_ui)
 
-    def copy_to_clipboard(self, btn, text):
-        # Get the default display directly from Gdk
-        display = Gdk.Display.get_default()
-        clipboard = display.get_clipboard()
-
-        clipboard.set(text)
-
-        btn.set_icon_name("object-select-symbolic")
-        GLib.timeout_add(1000, lambda: btn.set_icon_name("edit-copy-symbolic"))
-
     def show_permission_request(self):
         status_page = Adw.StatusPage(
             icon_name="system-lock-screen-symbolic",
@@ -619,37 +600,7 @@ class Nomm(Adw.Application):
         action_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=15)
         action_box.set_halign(Gtk.Align.CENTER)
 
-        # We use a horizontal box to keep the TextView and Copy button together
-        cmd_container = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
-
-        # TextView setup
-        text_view = Gtk.TextView()
-        text_view.set_editable(False)
-        text_view.set_cursor_visible(False)
-        text_view.set_wrap_mode(Gtk.WrapMode.WORD_CHAR)  # Essential for wrapping long paths
-        text_view.set_monospace(True)
-        text_view.add_css_class("card")  # Adds a nice background/border in Libadwaita
-
-        # Insert the command into the TextView buffer
-        buffer = text_view.get_buffer()
-        buffer.set_text(full_command)
-
-        # Set a minimum size so it looks like a "block"
-        text_view.set_size_request(450, 100)
-        # Add some internal padding
-        text_view.set_left_margin(10)
-        text_view.set_right_margin(10)
-        text_view.set_top_margin(10)
-        text_view.set_bottom_margin(10)
-
-        copy_btn = Gtk.Button(icon_name="edit-copy-symbolic", tooltip_text=_("Copy to Clipboard"))
-        copy_btn.set_valign(Gtk.Align.START)  # Keep button at the top of the multi-line block
-        copy_btn.add_css_class("suggested-action")
-        copy_btn.connect("clicked", self.copy_to_clipboard, full_command)
-
-        cmd_container.append(text_view)
-        cmd_container.append(copy_btn)
-        action_box.append(cmd_container)
+        action_box.append(create_code_box(full_command, True))
 
         # Footer
         restart_hint = Gtk.Label(label=_("Restart NOMM after running the command."))

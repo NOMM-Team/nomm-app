@@ -1,3 +1,4 @@
+from urllib.parse import urlparse
 import os
 import threading
 from concurrent.futures import ThreadPoolExecutor
@@ -145,11 +146,11 @@ def handle_nexus_link(nxm_link: str, downloader: Downloader, headers: dict) -> b
         return _download_nexus_collection(nxm_link, nexus_headers, final_download_dir, downloader)
     else:
         print("Downloading single mod")
-        return _download_nexus_mod(nxm_link, nexus_headers, final_download_dir, nexus_id, game_folder_name, downloader)
+        return _download_nexus_mod(nxm_link, nexus_headers, final_download_dir, nexus_id, game_folder_name, game_config, downloader)
 
 
 def _download_nexus_mod(nxm_link: str, headers: dict, final_download_dir: Path, nexus_id: str,
-                        game_folder_name: str, downloader: Downloader) -> bool:
+                        game_folder_name: str, game_config: dict, downloader: Downloader) -> bool:
 
     splitted_nxm = urlsplit(nxm_link)
     nxm_path = splitted_nxm.path.split('/')
@@ -157,6 +158,11 @@ def _download_nexus_mod(nxm_link: str, headers: dict, final_download_dir: Path, 
 
     mod_id = nxm_path[2]
     file_id = nxm_path[4]
+
+    mod_is_utility = check_if_mod_is_utility(game_config, mod_id)
+    if mod_is_utility:
+        print("This mod is registered as a utility! Proceeding to alternate download flow.")
+        final_download_dir = final_download_dir / "utilities"
 
     params = {
         'key': nxm_query.get("key"),
@@ -208,7 +214,7 @@ def _download_nexus_mod(nxm_link: str, headers: dict, final_download_dir: Path, 
         with download_inst._downloads_lock:
             download_inst._active_downloads.add(file_name)
         threading.Thread(target=_fetch_and_write_mod_metadata, args=(nxm_link, headers, final_download_dir, nexus_id,
-                                                                     game_folder_name, file_name, downloader), daemon=True).start()
+                                                                     game_folder_name, file_name, mod_is_utility, downloader), daemon=True).start()
 
     def on_download_error(download_inst, error_data):
         if error_data.get('filename') != file_name:
@@ -331,64 +337,88 @@ def _get_files_from_collection(game_domain: str, collection_id: str, revision_id
 
 
 def _fetch_and_write_mod_metadata(nxm_link: str, headers: dict, final_download_dir: Path, nexus_id: str,
-                                  game_folder_name: str, file_name: str, downloader: Downloader):
-    splitted_nxm = urlsplit(nxm_link)
-    nxm_path = splitted_nxm.path.split('/')
+                                  game_folder_name: str, file_name: str, mod_is_utility: bool, downloader: Downloader):
 
-    mod_id = nxm_path[2]
-    file_id = nxm_path[4]
+    if not mod_is_utility:
+        splitted_nxm = urlsplit(nxm_link)
+        nxm_path = splitted_nxm.path.split('/')
 
-    try:
-        info_api_url = f"https://api.nexusmods.com/v1/games/{nexus_id}/mods/{mod_id}/files/{file_id}.json"
-        info_response = requests.get(info_api_url, headers=headers)
-        info_response.raise_for_status()
-        file_info_data = info_response.json()
-    except Exception as e:
-        print(f"Warning: Could not retrieve mod metadata: {e}")
-        error_data = {
-            'filename': file_name,
-            'error': e
-        }
-        with downloader._downloads_lock:
-            downloader._active_downloads.discard(file_name)
-        GLib.idle_add(downloader.emit, 'download-error', error_data)
-        return
+        mod_id = nxm_path[2]
+        file_id = nxm_path[4]
 
-    downloads_metadata_path = get_metadata_path(str(final_download_dir), is_staging=False)
-    with meta_lock:
+        try:
+            info_api_url = f"https://api.nexusmods.com/v1/games/{nexus_id}/mods/{mod_id}/files/{file_id}.json"
+            info_response = requests.get(info_api_url, headers=headers)
+            info_response.raise_for_status()
+            file_info_data = info_response.json()
+        except Exception as e:
+            print(f"Warning: Could not retrieve mod metadata: {e}")
+            error_data = {
+                'filename': file_name,
+                'error': e
+            }
+            with downloader._downloads_lock:
+                downloader._active_downloads.discard(file_name)
+            GLib.idle_add(downloader.emit, 'download-error', error_data)
+            return
+
+        downloads_metadata_path = get_metadata_path(str(final_download_dir), is_staging=False)
+        with meta_lock:
+            downloads_metadata = load_yaml(downloads_metadata_path)
+
+        # obtain additional metadata on the mod
+        mod_metadata = get_mod_info(headers, nexus_id, mod_id, final_download_dir)
+        if "display_name" in mod_metadata:
+            mod_metadata["folder_name"] = mod_metadata["display_name"]
+        else:
+            mod_metadata["folder_name"] = file_info_data.get("name")
+        mod_metadata["changelog"] = file_info_data.get("changelog_html", "")
+        mod_metadata["mod_id"] = mod_id
+        mod_metadata["file_id"] = file_id
+        mod_metadata["mod_link"] = f"https://www.nexusmods.com/{nexus_id}/mods/{mod_id}"
+        mod_metadata["version"] = file_info_data.get("version", "")
+
+        # Handle saving all of this data
+        downloads_metadata_path = get_metadata_path(str(final_download_dir), is_staging=False)
         downloads_metadata = load_yaml(downloads_metadata_path)
+        if not downloads_metadata:
+            downloads_metadata = {}
+        if "mods" not in downloads_metadata:
+            downloads_metadata["mods"] = {}
+        downloads_metadata["info"] = {}
+        downloads_metadata["info"]["game"] = game_folder_name
+        downloads_metadata["info"]["nexus_id"] = nexus_id
+        downloads_metadata["mods"][file_name] = mod_metadata
+
+        write_yaml(downloads_metadata, downloads_metadata_path)
 
     with downloader._downloads_lock:
         downloader._active_downloads.discard(file_name)
-
-    # obtain additional metadata on the mod
-    mod_metadata = get_mod_info(headers, nexus_id, mod_id, final_download_dir)
-    if "display_name" in mod_metadata:
-        mod_metadata["folder_name"] = mod_metadata["display_name"]
-    else:
-        mod_metadata["folder_name"] = file_info_data.get("name")
-    mod_metadata["changelog"] = file_info_data.get("changelog_html", "")
-    mod_metadata["mod_id"] = mod_id
-    mod_metadata["file_id"] = file_id
-    mod_metadata["mod_link"] = f"https://www.nexusmods.com/{nexus_id}/mods/{mod_id}"
-    mod_metadata["version"] = file_info_data.get("version", "")
-
-    # Handle saving all of this data
-    downloads_metadata_path = get_metadata_path(str(final_download_dir), is_staging=False)
-    downloads_metadata = load_yaml(downloads_metadata_path)
-    if not downloads_metadata:
-        downloads_metadata = {}
-    if "mods" not in downloads_metadata:
-        downloads_metadata["mods"] = {}
-    downloads_metadata["info"] = {}
-    downloads_metadata["info"]["game"] = game_folder_name
-    downloads_metadata["info"]["nexus_id"] = nexus_id
-    downloads_metadata["mods"][file_name] = mod_metadata
-
-    write_yaml(downloads_metadata, downloads_metadata_path)
 
     send_download_notification("success", file_name=file_name, game_name=game_folder_name, icon_path=None)
 
     GLib.idle_add(downloader.emit, 'download-metadata-ready', file_name)
 
     return True
+
+
+def get_mod_id_from_url(nexus_url: str):
+    """Get the mod ID from a nexus URL"""
+    path = urlparse(nexus_url).path
+    parts = path.strip("/").split("/")
+    if "mods" in parts:
+        mod_index = parts.index("mods") + 1
+        if mod_index < len(parts) and parts[mod_index].isdigit():
+            return parts[mod_index]
+
+    return None
+
+
+def check_if_mod_is_utility(game_config, mod_id):
+    """Checks if a Nexus mod being downloaded is in fact a registered utility"""
+    if "utilities" in game_config:
+        for utility in game_config["utilities"]:
+            if utility["source_type"] == "nexus":
+                if get_mod_id_from_url(utility["source_url"]) == mod_id:
+                    return True
+    return False

@@ -5,40 +5,47 @@ import hashlib
 from os import path
 import os
 from pathlib import Path
-
-from nomm.core.user_config import load_user_config, load_yaml, update_user_config, DATA_DIR
-from nomm.core.tools import write_yaml
+import pytest
+from nomm.core import user_config
+from nomm.core.user_config import (load_user_config, update_user_config)
+from nomm.core.tools import write_yaml, load_yaml
 from nomm.core.downloader import Downloader
 
 gi.require_version('Gtk', '4.0')
 
 
-def test_load_yaml():
-    user_config_path = os.path.join(DATA_DIR, 'user_config.yaml')
-    config = {
-        "api_key": "",
-        "download_paths": []
-    }
+@pytest.fixture
+def mock_data_dir(tmp_path, monkeypatch):
+    temp_data_dir = tmp_path / "data"
+    temp_data_dir.mkdir()
+
+    mock_config_file = temp_data_dir / "user_config.yaml"
+
+    # Patch the module's DATA_DIR AND the constructed config path variable
+    monkeypatch.setattr(user_config, "DATA_DIR", temp_data_dir)
+    monkeypatch.setattr(user_config, "USER_CONFIG_PATH", mock_config_file)
+
+    return temp_data_dir
+
+
+def test_load_yaml(mock_data_dir):
+    user_config_path = mock_data_dir / "user_config.yaml"
+    config = {"api_key": "", "download_paths": []}
+
     write_yaml(config, user_config_path)
 
     output = load_user_config()
-
     assert output == config
 
 
-def test_update_user_config():
-    user_config_path = os.path.join(DATA_DIR, 'user_config.yaml')
-    config = {
-        "api_key": "",
-        "download_paths": []
-    }
+def test_update_user_config(mock_data_dir):
+    user_config_path = mock_data_dir / "user_config.yaml"
+    config = {"api_key": "", "download_paths": []}
+
     write_yaml(config, user_config_path)
 
     new_value = "nomm_is_so_cool"
-    edited_config = {
-        "api_key": new_value,
-        "download_paths": []
-    }
+    edited_config = {"api_key": new_value, "download_paths": []}
 
     update_user_config("api_key", new_value)
 
@@ -49,7 +56,7 @@ def test_download_file(tmpdir):
     url = "https://github.com/nomm-team/nomm-app/releases/download/0.5.0/nomm.flatpak"
     downloader = Downloader()
     dir = tmpdir.mkdir("downloads")
-    thing = downloader.download_mod(url, dir)
+    downloader.download_mod(url, dir)
     file_path = dir.join('nomm.flatpak')
     h = hashlib.sha256()
     with open(file_path, 'rb') as fh:
@@ -104,7 +111,6 @@ def test_get_relative_files(tmpdir):
     downloader = Downloader()
     downloader.download_mod(url, dir)
     filepath = os.path.abspath(dir.join("nomm-app-0.5.0.zip"))
-    target_dir = os.path.abspath(dest.join("nomm-app-0.5.0"))
 
     extract_archive(filepath, dest)
     file_list = get_all_relative_files(dest)

@@ -1,12 +1,12 @@
+import json
 import os
 import yaml
 import requests
 import re
 import html
-
+import urllib
 from pathlib import Path
-from typing import Callable, Optional
-from gi.repository import GLib, Gio, Gtk
+from gi.repository import GLib, Gio
 
 
 def load_yaml(path: str) -> dict:
@@ -24,7 +24,7 @@ def write_yaml(data: dict, path: str) -> bool:
     os.makedirs(os.path.dirname(path), exist_ok=True)
     try:
         with open(path, 'w', encoding='utf-8') as f:
-            yaml.safe_dump(data, f, default_flow_style=False)
+            yaml.safe_dump(data, f, default_flow_style=False, sort_keys=False)
             return True
     except Exception as e:
         print(f"Error while writing in {path}: {e}")
@@ -229,12 +229,6 @@ def list_archives(archives_directory: str):
     return archive_list
 
 
-def launch_option_merger(current_launch_options: str, new_option: str) -> str:
-    # TODO: add some proprer logic here - notably to check if the new option being added doesn't already exist.
-    merged_launch_option = current_launch_options + " " + new_option
-    return merged_launch_option
-
-
 def slugify(text: str) -> str:
     return re.sub(r'[^a-z0-9]', '', text.lower())
 
@@ -273,44 +267,6 @@ def get_nomm_tags(headers: dict):
         return None
 
 
-def create_icon_button(
-    *,
-    icon_name: str,
-    tooltip: str,
-    icon_size: int = 24,
-    icon_margin: int = 2,
-    valign: Gtk.Align = Gtk.Align.CENTER,
-    halign: Gtk.Align = Gtk.Align.END,
-    css_classes: Optional[list[str]] = None,
-    on_click: Optional[Callable] = None,
-) -> Gtk.Button:
-
-    button = Gtk.Button(valign=valign, halign=halign)
-    button.add_css_class("image-button")
-
-    img = Gtk.Image.new_from_icon_name(icon_name)
-    img.set_pixel_size(icon_size)
-    img.set_valign(Gtk.Align.CENTER)
-    img.set_halign(Gtk.Align.CENTER)
-    img.set_margin_start(icon_margin)
-    img.set_margin_end(icon_margin)
-    img.set_margin_top(icon_margin)
-    img.set_margin_bottom(icon_margin)
-    button.set_child(img)
-
-    button.set_tooltip_text(tooltip)
-    button.set_cursor_from_name("pointer")
-
-    classes_to_add = css_classes if css_classes is not None else ["flat"]
-    for css_class in classes_to_add:
-        button.add_css_class(css_class)
-
-    if on_click:
-        button.connect("clicked", on_click)
-
-    return button
-
-
 def load_nomm_version() -> str:
     base_dir = os.path.dirname(os.path.abspath(__file__))
     release_bites_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(base_dir))), "release_bites.yaml")
@@ -336,3 +292,96 @@ def get_bundled_data_dir() -> str:
 
     # Default fallback to current working directory
     return os.getcwd()
+
+
+def interpret_filter_string(input_string):
+    output_list = []
+    if not input_string:
+        return None
+    elif "," in input_string:
+        output_list = input_string.split(",")
+    elif ";" in input_string:
+        output_list = input_string.split(";")
+    else:
+        output_list = [input_string]
+    return output_list
+
+
+def get_latest_github_release_asset_url(
+    repo_url: str, filename_pattern: str
+) -> str:
+    """Queries GitHub's API for the latest release of a repository and returns
+
+    the direct download URL for an asset matching the regex pattern.
+
+    :param repo_url: Full URL to the GitHub repository (e.g.,
+    'https://github.com/Kron4ek/Wine-Builds')
+    :param filename_pattern: Regex pattern string to match against asset filenames
+    :return: Direct download URL string for the matching asset
+    """
+    # Parse 'owner' and 'repo' from the GitHub URL
+    parsed_path = urllib.parse.urlparse(repo_url).path.strip("/")
+    parts = parsed_path.split("/")
+
+    if len(parts) < 2:
+        raise ValueError(f"Invalid GitHub repository URL: {repo_url}")
+
+    owner, repo = parts[0], parts[1].replace(".git", "")
+
+    # Query GitHub's API for the latest release metadata
+    api_url = f"https://api.github.com/repos/{owner}/{repo}/releases/latest"
+    headers = {
+        "User-Agent": "Mozilla/5.0",
+        "Accept": "application/vnd.github.v3+json",
+    }
+
+    req = urllib.request.Request(api_url, headers=headers)
+    try:
+        with urllib.request.urlopen(req) as response:
+            release_data = json.loads(response.read().decode("utf-8"))
+    except urllib.error.HTTPError as e:
+        raise RuntimeError(
+            f"Failed to fetch release metadata from GitHub API (HTTP {e.code}): {e.reason}"
+        )
+
+    # Compile the regex pattern (case-insensitive for convenience)
+    pattern = re.compile(filename_pattern, re.IGNORECASE)
+
+    # Find asset matching the regex pattern
+    assets = release_data.get("assets", [])
+    for asset in assets:
+        asset_name = asset.get("name", "")
+        if pattern.search(asset_name):
+            return asset["browser_download_url"]
+
+    available_assets = [a.get("name") for a in assets]
+    raise FileNotFoundError(
+        f"No asset matching regex '{filename_pattern}' found in latest release ({release_data.get('tag_name')}). "
+        f"Available assets: {available_assets}"
+    )
+
+
+def get_dir_size_bytes(folder_path: Path | str) -> int:
+    """Fast recursive directory size calculation using os.walk."""
+    total_size = 0
+    for root, _, files in os.walk(folder_path):
+        for f in files:
+            fp = os.path.join(root, f)
+            try:
+                # Use lexists to safely skip broken symlinks
+                if os.path.exists(fp) and not os.path.islink(fp):
+                    total_size += os.path.getsize(fp)
+            except OSError:
+                # Ignore permission errors or unreadable files
+                continue
+    return total_size
+
+
+def format_gb_size(size_bytes: int) -> str:
+    """Formats bytes directly into GB (or MB if under 1 GB)."""
+    gb_size = size_bytes / (1024**3)
+    if gb_size >= 1.0:
+        return f"{gb_size:.2f} GB"
+
+    mb_size = size_bytes / (1024**2)
+    return f"{mb_size:.1f} MB"

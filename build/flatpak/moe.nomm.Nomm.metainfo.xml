@@ -36,6 +36,22 @@
     <color type="primary" scheme_preference="dark">#374955</color>
   </branding>
   <releases>
+    <release type="stable" version="0.14.0" date="2026-09-20T00:00:00Z">
+      <description>
+        <p>Release bites</p>
+        <ul>
+          <li>Major overhaul of utility management</li>
+          <li>New: Nexus, Github and Flathub can be added as sources to download utilities</li>
+          <li>New: Set utilities as being incompatible with other utilities</li>
+          <li>New: Launch Linux utilities</li>
+          <li>New: Launch Windows utilities (with Wine, downloaded at runtime)</li>
+          <li>Change: Overhaul utility tab UI with new icons, buttons, interactions</li>
+          <li>Change: Completely overhauled the configuration builder to reflect these changes</li>
+          <li>Change: Adding launch options is now super easy and won't require relaunching Steam</li>
+        </ul>
+      </description>
+      <url>https://github.com/nomm-team/nomm-app/releases/0.14.0</url>
+    </release>
     <release type="stable" version="0.13.4" date="2026-09-10T00:00:00Z">
       <description>
         <p>Release bites</p>
@@ -92,15 +108,6 @@
         </ul>
       </description>
       <url>https://github.com/nomm-team/nomm-app/releases/0.13.0</url>
-    </release>
-    <release type="stable" version="0.12.6" date="2026-08-26T00:00:00Z">
-      <description>
-        <p>Release bites</p>
-        <ul>
-          <li>Use portal path instead of real path for staging and downloads</li>
-        </ul>
-      </description>
-      <url>https://github.com/nomm-team/nomm-app/releases/0.12.6</url>
     </release>
   </releases>
   <content_rating type="oars-1.1">

@@ -45,7 +45,7 @@ def find_epic_game(yaml_data, game_title, installed_epic):
             # mod path parsing
             # TODO: add support for heroic/EPIC user data path
             user_data_path = ""
-            mod_paths = parse_mod_paths(yaml_data["mods_path"], game_path, user_data_path)
+            mod_paths = parse_mod_paths(yaml_data["mods_path"], game_path, user_data_path, game_title)
 
             return {
                 "name": game_title,
@@ -54,7 +54,7 @@ def find_epic_game(yaml_data, game_title, installed_epic):
                 "app_id": app_id,
                 "platform": "heroic-epic",
                 "mod_paths": mod_paths,
-                "utilities": yaml_data.get("essential_utilities"),
+                "utilities": yaml_data.get("utilities"),
                 "accent_colour": yaml_data.get("accent_colour"),
                 "load_order_path": yaml_data.get("load_order_path"),
                 "wiki_link": yaml_data.get("wiki_link"),
@@ -74,7 +74,7 @@ def find_gog_game(yaml_data, game_title, installed_gog):
             # mod path parsing
             # TODO: add support for heroic/GOG user data path
             user_data_path = ""
-            mod_paths = parse_mod_paths(yaml_data["mods_path"], game_path, user_data_path)
+            mod_paths = parse_mod_paths(yaml_data["mods_path"], game_path, user_data_path, game_title)
 
             return {
                 "name": game_title,
@@ -83,7 +83,7 @@ def find_gog_game(yaml_data, game_title, installed_gog):
                 "app_id": yaml_data["gog_id"],
                 "platform": "heroic-gog",
                 "mod_paths": mod_paths,
-                "utilities": yaml_data.get("essential_utilities"),
+                "utilities": yaml_data.get("utilities"),
                 "accent_colour": yaml_data.get("accent_colour"),
                 "load_order_path": yaml_data.get("load_order_path"),
                 "wiki_link": yaml_data.get("wiki_link"),
