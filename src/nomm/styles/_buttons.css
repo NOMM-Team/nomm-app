@@ -60,3 +60,7 @@ button.large-icon-btn image {
     min-width: 24px;
     min-height: 24px;
 }
+
+.shadow-button {
+  filter: drop-shadow(2px 2px 4px rgba(0, 0, 0, 0.6));
+}
