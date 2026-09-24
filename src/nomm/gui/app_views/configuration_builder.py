@@ -175,9 +175,14 @@ class PlatformChoiceDialog(Adw.MessageDialog):
 
     def starter_game_picker(self, platform: dict):
         self.remove_stack_child("starter_game_picker")
+
+        existing_game_names = []
+        for match in self.app.matches:
+            existing_game_names.append(match["name"])
+
         if platform["name"] == "Steam":
             installed_games = get_installed_steam_games(self.app.game_libraries)
-            game_names: list[str] = [game['name'] for game in installed_games]
+
         status_page = Adw.StatusPage(
             title=_("Select your game"),
             description=_("Please select the game you want to build a configuration for"),
@@ -199,14 +204,31 @@ class PlatformChoiceDialog(Adw.MessageDialog):
         bg_picture.set_halign(Gtk.Align.FILL)
         bg_picture.set_valign(Gtk.Align.CENTER)
 
+        game_names = [game['name'] for game in installed_games]
         string_list = Gtk.StringList.new(game_names)
+
+        hide_configured_check = Gtk.CheckButton(
+            label=_("Hide already configured games"),
+            active=True
+        )
+        hide_configured_check.set_cursor_from_name("pointer")
+        content_box.append(hide_configured_check)
+
+        def filter_func(item):
+            if not hide_configured_check.get_active():
+                return True
+            return item.get_string() not in existing_game_names
+        custom_filter = Gtk.CustomFilter.new(filter_func)
+        filter_model = Gtk.FilterListModel.new(string_list, custom_filter)
 
         expression = Gtk.PropertyExpression.new(
             Gtk.StringObject, None, "string"
         )
-
-        dropdown = Gtk.DropDown.new(string_list, expression)
+        dropdown = Gtk.DropDown.new(filter_model, expression)
         dropdown.set_enable_search(True)
+        dropdown.set_expression(expression)
+        dropdown.set_search_match_mode(Gtk.StringFilterMatchMode.SUBSTRING)
+
         content_box.append(dropdown)
 
         cont_btn = Gtk.Button(
@@ -214,18 +236,24 @@ class PlatformChoiceDialog(Adw.MessageDialog):
         )
         cont_btn.add_css_class("suggested-action")
 
+        def on_hide_toggled(check_btn):
+            custom_filter.changed(Gtk.FilterChange.DIFFERENT)
+
+        hide_configured_check.connect("toggled", on_hide_toggled)
+
         def on_game_selection_changed(dropdown, param):
-            selected_idx = dropdown.get_selected()
-            if (
-                selected_idx != Gtk.INVALID_LIST_POSITION
-                and selected_idx < len(installed_games)
-            ):
-                selected_game = installed_games[selected_idx]
-                app_id = selected_game.get("appid")
-                art = get_art(self.app.steam_base, app_id)
-                if art and "poster" in art:
-                    bg_picture.set_filename(art["poster"])
-                    return
+            selected_item = dropdown.get_selected_item()
+            if selected_item:
+                selected_name = selected_item.get_string()
+                selected_game = next(
+                    (g for g in installed_games if g["name"] == selected_name), None
+                )
+                if selected_game:
+                    app_id = selected_game.get("appid")
+                    art = get_art(self.app.steam_base, app_id)
+                    if art and "poster" in art:
+                        bg_picture.set_filename(art["poster"])
+                        return
             bg_picture.set_filename(None)
 
         dropdown.connect("notify::selected", on_game_selection_changed)
@@ -233,20 +261,21 @@ class PlatformChoiceDialog(Adw.MessageDialog):
             on_game_selection_changed(dropdown, None)
 
         def on_continue_clicked(btn):
-            selected_idx = dropdown.get_selected()
-            if (
-                selected_idx != Gtk.INVALID_LIST_POSITION
-                and selected_idx < len(installed_games)
-            ):
-                selected_game = installed_games[selected_idx]
-                prefilled_data = {
-                    "name": selected_game.get("name", ""),
-                    "steam_id": str(selected_game.get("appid", "")),
-                    "steam_folder_name": selected_game.get("installdir", "")
-                }
-                self.close()
-                if self.callback:
-                    self.callback(prefilled_data)
+            selected_item = dropdown.get_selected_item()
+            if selected_item:
+                selected_name = selected_item.get_string()
+                selected_game = next(
+                    (g for g in installed_games if g["name"] == selected_name), None
+                )
+                if selected_game:
+                    prefilled_data = {
+                        "name": selected_game.get("name", ""),
+                        "steam_id": str(selected_game.get("appid", "")),
+                        "steam_folder_name": selected_game.get("installdir", "")
+                    }
+                    self.close()
+                    if self.callback:
+                        self.callback(prefilled_data)
 
         cont_btn.connect("clicked", on_continue_clicked)
         content_box.append(cont_btn)
