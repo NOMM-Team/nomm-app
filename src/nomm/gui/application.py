@@ -579,11 +579,14 @@ class Nomm(Adw.Application):
         # If there are some missing paths, should display permission request window
         if self.locked_libraries or self.locked_essential_paths:
             print(f"Missing read/write access to some paths: {str(self.locked_libraries + self.locked_essential_paths)}")
-            GLib.idle_add(self.show_permission_request)
+            number_of_times_locked = user_config.get("number_of_times_locked", 0) + 1
+            update_user_config("number_of_times_locked", number_of_times_locked)
+            GLib.idle_add(self.show_permission_request, number_of_times_locked)
         else:
+            update_user_config("number_of_times_locked", 0)
             GLib.idle_add(self.show_library_ui)
 
-    def show_permission_request(self):
+    def show_permission_request(self, number_of_times_locked: int):
         status_page = Adw.StatusPage(
             icon_name="system-lock-screen-symbolic",
             title=_("Permissions Missing"),
@@ -600,9 +603,14 @@ class Nomm(Adw.Application):
         action_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=15)
         action_box.set_halign(Gtk.Align.CENTER)
 
+        info_text = _("If you see this message, it means that you've restarted NOMM and you're still seeing the missing "
+                      "permissions window. If you have launched the command and there is no output from the console, it probably "
+                      "means that your Steam library no longer exists. Click here for more information.")
+        repeat_lock_info_box = create_text_box(info_text, "info")
+        repeat_lock_info_box.set_visible(False)
+        action_box.append(repeat_lock_info_box)
         action_box.append(create_code_box(full_command, True))
 
-        # Footer
         restart_hint = Gtk.Label(label=_("Restart NOMM after running the command."))
         restart_hint.add_css_class("dim-label")
         action_box.append(restart_hint)
@@ -615,25 +623,35 @@ class Nomm(Adw.Application):
         button_row.set_margin_top(24)
 
         # Button: Quit (Accented/Blue)
-        quit_btn = Gtk.Button(label=_("Quit"))
+        quit_btn = Gtk.Button(label=_("Quit"), css_classes=["suggested-action"])
         quit_btn.add_css_class("pill")
-        quit_btn.add_css_class("suggested-action")  # This provides the accent color
         quit_btn.connect("clicked", lambda x: self.quit())
         button_row.append(quit_btn)
 
-        # Continue buttons will NOT be displayed if missing an essential path
-        if not self.locked_essential_paths:
-            # Button: Continue anyway
-            continue_btn = Gtk.Button(label=_("Continue"))
-            continue_btn.add_css_class("pill")
-            continue_btn.connect("clicked", lambda x: self.show_library_ui())
-            button_row.append(continue_btn)
+        # Button: Continue anyway
+        continue_btn = Gtk.Button(label=_("Continue"))
+        continue_btn.add_css_class("pill")
+        continue_btn.connect("clicked", lambda x: self.show_library_ui())
+        button_row.append(continue_btn)
 
-            # Button: Continue and ignore
-            continue_ignore_btn = Gtk.Button(label=_("Continue & Ignore"))
-            continue_ignore_btn.add_css_class("pill")
-            continue_ignore_btn.connect("clicked", lambda x: self.ignore_libraries())
-            button_row.append(continue_ignore_btn)
+        # Button: Continue and ignore
+        continue_ignore_btn = Gtk.Button(label=_("Continue & Ignore"))
+        continue_ignore_btn.add_css_class("pill")
+        continue_ignore_btn.connect("clicked", lambda x: self.ignore_libraries())
+        button_row.append(continue_ignore_btn)
+
+        if self.locked_essential_paths:
+            continue_btn.set_sensitive(False)
+            continue_ignore_btn.set_sensitive(False)
+            continue_tooltip = _(f"Can not continue when missing access to essential path(s): {self.locked_essential_paths}")
+            continue_btn.set_tooltip_text(continue_tooltip)
+            continue_ignore_btn.set_tooltip_text(continue_tooltip)
+        else:
+            if number_of_times_locked > 1:
+                continue_ignore_btn.add_css_class("suggested-action")
+                quit_btn.remove_css_class("suggested-action")
+                repeat_lock_info_box.set_visible(True)
+                restart_hint.set_visible(False)
 
         action_box.append(button_row)
 
