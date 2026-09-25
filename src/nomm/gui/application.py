@@ -606,7 +606,7 @@ class Nomm(Adw.Application):
         info_text = _("If you see this message, it means that you've restarted NOMM and you're still seeing the missing "
                       "permissions window. If you have launched the command and there is no output from the console, it probably "
                       "means that your Steam library no longer exists. Click here for more information.")
-        repeat_lock_info_box = create_text_box(info_text, "info")
+        repeat_lock_info_box = create_text_box(info_text, "info", "https://nomm.moe/docs/nomm-guides/permissions-request-help/")
         repeat_lock_info_box.set_visible(False)
         action_box.append(repeat_lock_info_box)
         action_box.append(create_code_box(full_command, True))
