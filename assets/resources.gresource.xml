@@ -51,5 +51,8 @@
     <file>mat-info-symbolic.svg</file>
     <file>mat-warning-symbolic.svg</file>
     <file>mat-copy-symbolic.svg</file>
+    <file>mat-check-symbolic.svg</file>
+    <file>mat-lock-symbolic.svg</file>
+    <file>back-arrow-symbolic.svg</file>
   </gresource>
 </gresources>

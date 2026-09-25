@@ -1,3 +1,4 @@
+from nomm.gui.ui_builders import create_icon_button
 import os
 import webbrowser
 import gettext
@@ -86,10 +87,14 @@ class GameDashboard(Gtk.Box):
         self.mods_tab_btn.set_cursor_from_name("pointer")
 
         # Add the back button (change game)
-        back_btn = Gtk.Button(icon_name="go-previous-symbolic", css_classes=["flat"])
+        back_btn = create_icon_button(
+            icon_name="back-arrow-symbolic",
+            tooltip=_("Go back to game library"),
+            icon_size=40,
+            on_click=self.on_back_clicked,
+            css_classes=["flat", "shadow-button"]
+        )
         back_btn.set_halign(Gtk.Align.START)
-        back_btn.set_cursor_from_name("pointer")
-        back_btn.connect("clicked", self.on_back_clicked)
 
         # Mod count box
         mods_badge_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=4)

@@ -53,10 +53,10 @@ def create_code_box(code: str, add_copy_button: bool = False) -> Gtk.Widget:
     overlay = Gtk.Overlay()
     overlay.set_child(text_view)
 
-    copy_icon = Gtk.Image.new_from_icon_name("edit-copy-symbolic")
+    copy_icon = Gtk.Image.new_from_icon_name("mat-copy-symbolic")
     copy_icon.set_pixel_size(24)
 
-    check_icon = Gtk.Image.new_from_icon_name("object-select-symbolic")
+    check_icon = Gtk.Image.new_from_icon_name("mat-check-symbolic")
     check_icon.set_pixel_size(24)
 
     icon_stack = Gtk.Stack()
