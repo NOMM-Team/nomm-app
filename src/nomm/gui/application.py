@@ -588,7 +588,7 @@ class Nomm(Adw.Application):
 
     def show_permission_request(self, number_of_times_locked: int):
         status_page = Adw.StatusPage(
-            icon_name="system-lock-screen-symbolic",
+            icon_name="mat-lock-symbolic",
             title=_("Permissions Missing"),
             description=_("NOMM needs some extra permissions to read/write to specific folders.\n"
                           "This is used so that NOMM can find your games and install &amp; deploy mods properly.\n"
