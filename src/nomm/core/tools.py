@@ -5,6 +5,7 @@ import requests
 import re
 import html
 import urllib
+import configparser
 from pathlib import Path
 from gi.repository import GLib, Gio
 
@@ -385,3 +386,34 @@ def format_gb_size(size_bytes: int) -> str:
 
     mb_size = size_bytes / (1024**2)
     return f"{mb_size:.1f} MB"
+
+
+def get_flatpak_context():
+    info_path = "/.flatpak-info"
+    if not os.path.exists(info_path):
+        return None  # Not running inside a Flatpak
+
+    config = configparser.ConfigParser()
+    config.read(info_path)
+
+    permissions = {}
+    if "Context" in config:
+        for key, value in config["Context"].items():
+            permissions[key] = value.strip(";").split(";")
+    return permissions
+
+
+def get_missing_rights(inaccessible_library_paths, inaccessible_essential_paths):
+    inacessible_paths = inaccessible_library_paths + inaccessible_essential_paths
+    permissions = get_flatpak_context()
+    if not permissions:
+        return inacessible_paths
+    fs_permissions = [p.split(":")[0] for p in permissions.get("filesystems", [])]
+
+    actually_missing_paths = []
+    for path in inacessible_paths:
+        if path in fs_permissions:
+            print(f"Detected a no longer accessible library that NOMM still has rights to: {path}")
+        else:
+            actually_missing_paths.append(path)
+    return actually_missing_paths

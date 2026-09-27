@@ -10,7 +10,7 @@ from urllib.parse import urlparse
 from dulwich import porcelain
 
 from nomm.core.game_scanner import scan_all_games
-from nomm.core.tools import translate_fuse_path, load_nomm_version, get_bundled_data_dir
+from nomm.core.tools import translate_fuse_path, load_nomm_version, get_bundled_data_dir, get_missing_rights
 from nomm.core.user_config import (load_user_config, update_user_config,
                                    write_user_config, PRESET_GAME_CONFIG_PATH, DATA_DIR)
 from nomm.platforms.switch import list_emulators, get_emulator_logo
@@ -576,9 +576,9 @@ class Nomm(Adw.Application):
             print(f"Libraries ignored and not checked: {ignored_libraries}")
             self.locked_libraries = [path for path in self.locked_libraries if path not in ignored_libraries]
 
-        # If there are some missing paths, should display permission request window
-        if self.locked_libraries or self.locked_essential_paths:
-            print(f"Missing read/write access to some paths: {str(self.locked_libraries + self.locked_essential_paths)}")
+        missing_rights = get_missing_rights(self.locked_libraries, self.locked_essential_paths)
+        if missing_rights:
+            print(f"Missing read/write access to some paths: {str(missing_rights)}")
             number_of_times_locked = user_config.get("number_of_times_locked", 0) + 1
             update_user_config("number_of_times_locked", number_of_times_locked)
             GLib.idle_add(self.show_permission_request, number_of_times_locked)
@@ -604,9 +604,8 @@ class Nomm(Adw.Application):
         action_box.set_halign(Gtk.Align.CENTER)
 
         info_text = _("If you see this message, it means that you've restarted NOMM and you're still seeing the missing "
-                      "permissions window. If you have launched the command and there is no output from the console, it probably "
-                      "means that your Steam library no longer exists. Click here for more information.")
-        repeat_lock_info_box = create_text_box(info_text, "info", "https://nomm.moe/docs/nomm-guides/permissions-request-help/")
+                      "permissions window. If you don't want NOMM to access a specific library, you can click on \"Continue &amp; Ignore\"")
+        repeat_lock_info_box = create_text_box(info_text, "info")
         repeat_lock_info_box.set_visible(False)
         action_box.append(repeat_lock_info_box)
         action_box.append(create_code_box(full_command, True))
