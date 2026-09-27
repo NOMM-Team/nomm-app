@@ -157,8 +157,9 @@ class UtilitiesTab(Gtk.Box):
             if current_utility_status == "installed":
                 stack.set_visible_child_name("install")
                 inst_btn.set_label(_("Reinstall"))
-                launch_utility_button.set_sensitive(True)
-                launch_utility_button.set_tooltip_text(f"Launch {utility["name"]}")
+                if utility.get("executable_type") != "non-exec":
+                    launch_utility_button.set_sensitive(True)
+                    launch_utility_button.set_tooltip_text(f"Launch {utility["name"]}")
             elif current_utility_status == "to_install":
                 stack.set_visible_child_name("install")
                 inst_btn.set_label(_("Install"))
