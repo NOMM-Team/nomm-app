@@ -48,6 +48,7 @@
           <li>Change: Overhaul utility tab UI with new icons, buttons, interactions</li>
           <li>Change: Completely overhauled the configuration builder to reflect these changes</li>
           <li>Change: Adding launch options is now super easy and won't require relaunching Steam</li>
+          <li>Change: Better detection of removed Steam libraries (better permissions request flow)</li>
         </ul>
       </description>
       <url>https://github.com/nomm-team/nomm-app/releases/0.14.0</url>
