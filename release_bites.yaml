@@ -12,6 +12,7 @@ Description: |-
    * Change: Overhaul utility tab UI with new icons, buttons, interactions
    * Change: Completely overhauled the configuration builder to reflect these changes
    * Change: Adding launch options is now super easy and won't require relaunching Steam
+   * Change: Better detection of removed Steam libraries (better permissions request flow)
 ---
 Version: "0.13.4"
 Date: 2026-09-10
