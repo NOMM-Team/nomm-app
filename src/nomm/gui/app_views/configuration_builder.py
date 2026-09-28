@@ -742,7 +742,6 @@ class ConfigurationBuilderWindow(Adw.Window):
         def update_source_row_format(*_args):
             selected_index = source_type_row.get_selected()
             selected_type = self.source_types[selected_index]
-            current_text = source_row.get_text()
 
             regex_row.set_visible(selected_type == "github")
             nexus_file_start_row.set_visible(selected_type == "nexus")
@@ -764,28 +763,20 @@ class ConfigurationBuilderWindow(Adw.Window):
             if selected_type == "flatpak":
                 source_row.set_title(_("Appstream Package ID *"))
                 source_row.set_tooltip_text(_("Please enter the full package ID of the app e.g. moe.nomm.Nomm or com.valvesoftware.Steam"))
-                if not current_text or not current_text.startswith("appstream://"):
-                    source_row.set_text("appstream://")
 
             elif selected_type == "github":
                 source_row.set_title(_("GitHub Repo URL *"))
                 source_row.set_tooltip_text(_("Please fill in the full URL of the Github repo that "
                                               "NOMM should pull the latest version from"))
-                if not current_text or not current_text.startswith("https://github.com/"):
-                    source_row.set_text("https://github.com/")
 
             elif selected_type == "nexus":
                 source_row.set_title(_("Nexus mod link"))
                 source_row.set_tooltip_text(_("The link to the mod page of the utility. Do NOT provide a Nexus download link."))
-                if not current_text or not current_text.startswith("https://www.nexusmods.com/"):
-                    source_row.set_text("https://www.nexusmods.com/")
 
             else:  # Direct Download
                 source_row.set_title(_("Source (URL) *"))
                 source_row.set_tooltip_text(_("The link from where NOMM will download the utility. "
                                               "This NEEDS to be an actual direct download link"))
-                if any(current_text.startswith(prefix) for prefix in ["appstream://", "https://github.com/", "https://www.nexusmods.com/"]):
-                    source_row.set_text("")
 
             update_executable_type_options()
 
@@ -914,57 +905,103 @@ class ConfigurationBuilderWindow(Adw.Window):
 
         while util_child:
             if hasattr(util_child, "widgets"):
-                w = util_child.widgets
+                form_entries = util_child.widgets
 
-                # Required fields check
-                required_fields = ["name", "version", "creator", "creator_link", "source"]
+                form_entries = util_child.widgets
 
-                if w["deploy_to_game_files"].get_active():
-                    required_fields.append("deployment_path")
+                executable_types = getattr(
+                    util_child,
+                    "executable_types",
+                    ["non-exec", "linux", "windows", "browser"],
+                )
+
+                source_type_idx = form_entries["source_type"].get_selected()
+                source_type = self.source_types[source_type_idx]
+
+                # Validation
+                required_widgets = [
+                    form_entries["name"],
+                    form_entries["version"],
+                    form_entries["creator"],
+                    form_entries["creator_link"],
+                    form_entries["source_url"],
+                ]
+
+                utility_group = {
+                    "name": form_entries["name"].get_text().strip(),
+                    "version": form_entries["version"].get_text().strip(),
+                    "creator": form_entries["creator"].get_text().strip(),
+                    "creator_link": form_entries["creator_link"].get_text().strip(),
+                    "creator_donation_link": form_entries["creator_donation_link"].get_text().strip(),
+                    "source_type": source_type,
+                    "source_url": form_entries["source_url"].get_text().strip(),
+                }
+
+                # Source-type-specific fields
+                if source_type == "github":
+                    utility_group["github_asset_regex"] = form_entries["github_asset_regex"].get_text().strip()
+                    required_widgets.append(form_entries["github_asset_regex"])
+                elif source_type == "nexus":
+                    utility_group["nexus_file_name_start"] = form_entries["nexus_file_name_start"].get_text().strip()
+                    required_widgets.append(form_entries["nexus_file_name_start"])
+                elif source_type == "flatpak":
+                    utility_group["source_url"] = f"appstream://{form_entries["source_url"].get_text().strip()}"
+
+                # Deployment settings
+                deploy_active = form_entries["deploy_to_game_files"].get_active()
+                utility_group["deploy_to_game_files"] = deploy_active
+                if deploy_active:
+                    utility_group["deployment_path"] = form_entries["deployment_path"].get_text().strip()
+                    required_widgets.append(form_entries["deployment_path"])
+
+                # Executable settings
+                exec_type_idx = form_entries["executable_type"].get_selected()
+                if exec_type_idx < len(executable_types):
+                    exec_type = executable_types[exec_type_idx]
+                else:
+                    exec_type = executable_types[0]
+
+                utility_group["executable_type"] = exec_type
+
+                if exec_type in ["linux", "windows", "browser"]:
+                    utility_group["executable_path"] = form_entries["executable_path"].get_text().strip()
+                    required_widgets.append(form_entries["executable_path"])
+
+                if exec_type == "windows":
+                    utility_group["wine_verbs"] = form_entries["wine_verbs"].get_selected_verbs()
+
+                # Additional configurations
+                utility_group["launch_options"] = form_entries["launch_options"].get_text().strip()
+
+                if source_type != "flatpak":
+                    utility_group["enable_command"] = form_entries["enable_command"].get_text().strip()
+                    utility_group["installation_lock_group"] = form_entries["installation_lock_group"].get_text().strip()
+                    utility_group["final_instructions"] = form_entries["final_instructions"].get_text().strip()
+
+                    selected_filter = form_entries["filter_type"].get_selected()
+                    filter_text = form_entries["filename_filter"].get_text().strip()
+                    if selected_filter == 1:
+                        utility_group["whitelist"] = filter_text
+                    elif selected_filter == 2:
+                        utility_group["blacklist"] = filter_text
 
                 group_valid = True
-                entry_values = {}
-
-                for key, widget in w.items():
-                    if isinstance(widget, Adw.SwitchRow):
-                        entry_values[key] = widget.get_active()
-                        continue
-                    elif isinstance(widget, Adw.ComboRow):
-                        selected_idx = widget.get_selected()
-                        if key == "source_type":
-                            entry_values[key] = self.source_types[selected_idx]
-                        elif key == "executable_type":
-                            entry_values[key] = self.executable_types[selected_idx]
-                        continue
-                    elif isinstance(widget, Gtk.DropDown):
-                        continue
-                    elif isinstance(widget, WineVerbsSelector):
-                        entry_values["wine_verbs"] = widget.get_selected_verbs()
-                        continue
-                    elif widget is None:
-                        continue
-                    val = widget.get_text().strip()
-
-                    if key in required_fields:
-                        if not val:
-                            widget.add_css_class("error")
-                            group_valid = False
-                            invalid_utility_tab = True
-                        else:
-                            widget.remove_css_class("error")
-
-                    entry_values[key] = val.strip("/")
-
-                selected_filter = w["filter_type"].get_selected()
-                filter_text = w["filename_filter"].get_text().strip()
-
-                if selected_filter == 1:  # Whitelist
-                    entry_values["whitelist"] = filter_text
-                elif selected_filter == 2:  # Blacklist
-                    entry_values["blacklist"] = filter_text
+                for widget in required_widgets:
+                    if not widget.get_text().strip():
+                        widget.add_css_class("error")
+                        group_valid = False
+                        invalid_utility_tab = True
+                    else:
+                        widget.remove_css_class("error")
 
                 if group_valid:
-                    utility_groups.append(entry_values)
+                    # Remove empty fields so they don't clutter the yaml
+                    utility_group = {
+                        key: value
+                        for key, value in utility_group.items()
+                        if key == "deployment_path" or value != ""
+                    }
+                    utility_groups.append(utility_group)
                 else:
                     has_error = True
             util_child = util_child.get_next_sibling()
@@ -985,6 +1022,7 @@ class ConfigurationBuilderWindow(Adw.Window):
         config_data = {
             "name": name_val,
             "steam_id": self.steam_id_row.get_text().strip(),
+            "steam_folder_name": self.steam_folder_row.get_text().strip(),
             "gog_id": self.gog_id_row.get_text().strip(),
             "nexus_id": self.nexus_id_row.get_text().strip(),
             "accent_colour": hex_color,
@@ -992,8 +1030,6 @@ class ConfigurationBuilderWindow(Adw.Window):
             "mod_paths": modding_paths,
             "utilities": utility_groups
         }
-        if self.steam_folder_row.get_text().strip():
-            config_data["steam_folder_name"] = self.steam_folder_row.get_text().strip()
         custom_configuration_path = os.path.join(CUSTOM_GAME_CONFIG_PATH, name_val.replace(" ", "_").lower()+".yaml")
         write_yaml(config_data, custom_configuration_path)
         print(f"New custom configuration for game {name_val} saved to {custom_configuration_path}")
