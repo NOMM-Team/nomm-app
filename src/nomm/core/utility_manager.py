@@ -5,7 +5,7 @@ import subprocess
 import webbrowser
 from pathlib import Path
 from nomm.core.archive_manager import extract_archive
-from nomm.core.tools import interpret_filter_string
+from nomm.core.tools import interpret_filter_string, launch_flatpak
 from nomm.core.wine_manager import run_windows_exe
 
 NOMM_BACKUP_SUFFIX = ".nomm-backup"
@@ -86,19 +86,21 @@ def deploy_essential_utility(util_config: dict, downloads_path: str, staging_pat
         subprocess.run(command, shell=True, cwd=game_root)
 
 
-def launch_utility(util_config: dict, staging_dir: Path, staging_metadata_path: str, headers: dict):
+def launch_utility(util_config: dict, staging_dir: Path):
 
     if util_config["executable_type"] == "browser":
         webbrowser.open(util_config["executable_path"])
         return
 
-    executable_path = staging_dir / util_config["executable_path"]
+    executable_path = staging_dir / util_config.get("executable_path", "")
 
     if util_config["executable_type"] == "windows":
 
         # ensure_dotnet7_installed(headers)
         run_windows_exe(executable_path, wineprefix_name=util_config["name"])
 
+    elif util_config["executable_type"] == "flatpak":
+        launch_flatpak(util_config["source_url"])
     else:  # linux executable
         subprocess.run(executable_path, shell=True, cwd=os.path.dirname(executable_path))
 
@@ -106,7 +108,7 @@ def launch_utility(util_config: dict, staging_dir: Path, staging_metadata_path: 
 def get_utility_status(utility_config: dict, download_path: str, staging_path: str, all_utility_configs: list) -> str:
     file_name = get_downloaded_utility_file_name(utility_config, download_path)
     if utility_config["source_type"] == "flatpak":
-        package_name = utility_config["source_url"].replace("appstream://", "")
+        package_name = utility_config["source_url"]
         flatpak_path = os.path.expanduser(f"~/.var/{package_name}")
         if os.path.exists(flatpak_path):
             return "installed"
