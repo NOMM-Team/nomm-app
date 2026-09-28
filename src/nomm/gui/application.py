@@ -10,7 +10,7 @@ from urllib.parse import urlparse
 from dulwich import porcelain
 
 from nomm.core.game_scanner import scan_all_games
-from nomm.core.tools import translate_fuse_path, load_nomm_version, get_bundled_data_dir, get_missing_rights
+from nomm.core.tools import translate_fuse_path, load_nomm_version, get_bundled_data_dir, get_missing_rights, get_flatpak_context
 from nomm.core.user_config import (load_user_config, update_user_config,
                                    write_user_config, PRESET_GAME_CONFIG_PATH, DATA_DIR)
 from nomm.platforms.switch import list_emulators, get_emulator_logo
@@ -63,6 +63,7 @@ class Nomm(Adw.Application):
 
         base_path = get_bundled_data_dir()
         self.initialize_custom_icons(os.path.join(base_path, "assets"))
+        self.flatpak_permissions = get_flatpak_context()
         self.apply_styles()
         self.win = None
 
@@ -576,7 +577,7 @@ class Nomm(Adw.Application):
             print(f"Libraries ignored and not checked: {ignored_libraries}")
             self.locked_libraries = [path for path in self.locked_libraries if path not in ignored_libraries]
 
-        missing_rights = get_missing_rights(self.locked_libraries, self.locked_essential_paths)
+        missing_rights = get_missing_rights(self.locked_libraries, self.locked_essential_paths, self.flatpak_permissions)
         if missing_rights:
             print(f"Missing read/write access to some paths: {str(missing_rights)}")
             number_of_times_locked = user_config.get("number_of_times_locked", 0) + 1
