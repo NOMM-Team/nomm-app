@@ -72,10 +72,16 @@ class ModsTab(Gtk.Box):
         )
 
         if "wiki_link" in dashboard.game_info:
+            if dashboard.game_info["wiki_link"]:
+                icon = "globe-book-symbolic"
+                url = f"https://nomm.moe/docs/game-guides/{dashboard.game_info["wiki_link"]}"
+            else:
+                icon = "mat-globe-cancel-symbolic"
+                url = "https://nomm.moe/docs/no-wiki-page"
             wiki_btn = create_icon_button(
-                icon_name="globe-book-symbolic",
+                icon_name=icon,
                 tooltip=_("Open wiki page"),
-                on_click=lambda x: webbrowser.open(f"https://nomm.moe/docs/game-guides/{dashboard.game_info["wiki_link"]}")
+                on_click=lambda x: webbrowser.open(url)
             )
             wiki_btn.set_hexpand(True)
             action_bar.append(wiki_btn)
