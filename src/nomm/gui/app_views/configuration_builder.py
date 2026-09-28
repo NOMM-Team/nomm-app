@@ -944,8 +944,6 @@ class ConfigurationBuilderWindow(Adw.Window):
                 elif source_type == "nexus":
                     utility_group["nexus_file_name_start"] = form_entries["nexus_file_name_start"].get_text().strip()
                     required_widgets.append(form_entries["nexus_file_name_start"])
-                elif source_type == "flatpak":
-                    utility_group["source_url"] = f"appstream://{form_entries["source_url"].get_text().strip()}"
 
                 # Deployment settings
                 if source_type != "flatpak":
