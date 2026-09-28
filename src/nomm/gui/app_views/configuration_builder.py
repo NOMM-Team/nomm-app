@@ -638,44 +638,6 @@ class ConfigurationBuilderWindow(Adw.Window):
         nexus_file_start_row.set_margin_start(24)
         utility_group.add(nexus_file_start_row)
 
-        def update_source_row_format(*_args):
-            selected_index = source_type_row.get_selected()
-            selected_type = self.source_types[selected_index]
-            current_text = source_row.get_text()
-
-            regex_row.set_visible(selected_type == "github")
-            nexus_file_start_row.set_visible(selected_type == "nexus")
-
-            if selected_type == "flatpak":
-                source_row.set_title(_("Appstream Package ID *"))
-                source_row.set_tooltip_text(_("Please enter the full package ID of the app e.g. moe.nomm.Nomm or com.valvesoftware.Steam"))
-                if not current_text or not current_text.startswith("appstream://"):
-                    source_row.set_text("appstream://")
-
-            elif selected_type == "github":
-                source_row.set_title(_("GitHub Repo URL *"))
-                source_row.set_tooltip_text(_("Please fill in the full URL of the Github repo that "
-                                              "NOMM should pull the latest version from"))
-                if not current_text or not current_text.startswith("https://github.com/"):
-                    source_row.set_text("https://github.com/")
-
-            elif selected_type == "nexus":
-                source_row.set_title(_("Nexus mod link"))
-                source_row.set_tooltip_text(_("The link to the mod page of the utility. Do NOT provide a Nexus download link."))
-                if not current_text or not current_text.startswith("https://www.nexusmods.com/"):
-                    source_row.set_text("https://www.nexusmods.com/")
-
-            else:  # Direct Download
-                source_row.set_title(_("Source (URL) *"))
-                source_row.set_tooltip_text(_("The link from where NOMM will download the utility. "
-                                              "This NEEDS to be an actual direct download link"))
-                if any(current_text.startswith(prefix) for prefix in ["appstream://", "https://github.com/", "https://www.nexusmods.com/"]):
-                    source_row.set_text("")
-
-        source_type_row.connect("notify::selected", update_source_row_format)
-
-        update_source_row_format()
-
         deploy_row = Adw.SwitchRow(title=_("Deploy to game files"))
         deploy_row.set_active(True)
         deploy_row.set_tooltip_text(_("Whether the utility files should be deployed to the game files or not."))
@@ -692,25 +654,7 @@ class ConfigurationBuilderWindow(Adw.Window):
             "visible"
         )
 
-        self.executable_types = ["non-exec", "linux", "windows", "browser"]
-
-        executable_type_list = Gtk.StringList.new([
-            _("Non-Executable"),
-            _("Linux Executable"),
-            _("Windows Executable"),
-            _("Browser Protocol")
-        ])
-
-        executable_type_row = Adw.ComboRow(
-            title=_("Executable Type"),
-            model=executable_type_list
-        )
-        executable_type_row.set_tooltip_text("Select the type of executable.\n"
-                                             "If anything other than 'non-executable' is selected, NOMM will add a button to the UI to launch the "
-                                             "utility.\nIf the tool is a windows executable, NOMM will add it as a non-steam game.")
-
-        executable_type_row.set_selected(self.executable_types.index("non-exec"))
-
+        executable_type_row = Adw.ComboRow(title=_("Executable Type"))
         utility_group.add(executable_type_row)
 
         executable_path_row = Adw.EntryRow(title=_("Utility executable path *"))
@@ -722,32 +666,6 @@ class ConfigurationBuilderWindow(Adw.Window):
         wine_verbs_row.set_tooltip_text(_("Select the required depencies (wine verbs) for the utility to launch."))
         wine_verbs_row.set_margin_start(24)
         utility_group.add(wine_verbs_row)
-
-        def update_executable_path_row_format(*_args):
-            selected_index = executable_type_row.get_selected()
-            selected_type = self.executable_types[selected_index]
-
-            executable_path_row.set_visible(selected_type in ["linux", "windows", "browser"])
-            wine_verbs_row.set_visible(selected_type == "windows")
-
-            if selected_type == "linux":
-                executable_path_row.set_title(_("Linux script path *"))
-                executable_path_row.set_tooltip_text(_("Enter the path to the linux shell script, relative to the root of the utility archive"))
-
-            elif selected_type == "windows":
-                executable_path_row.set_title(_("Windows executable path *"))
-                executable_path_row.set_tooltip_text(_("Enter the path to the windows executable, relative to the root of the utility archive"))
-
-            elif selected_type == "browser":
-                executable_path_row.set_title(_("Web protocol link *"))
-                executable_path_row.set_tooltip_text(_("Enter the web protocol url that will be launched when the play button is clicked"))
-
-            else:  # Not an executable
-                executable_path_row.set_visible(False)
-
-        executable_type_row.connect("notify::selected", update_executable_path_row_format)
-
-        update_executable_path_row_format()
 
         launch_opts_row = Adw.EntryRow(title=_("Launch Options (Optional)"))
         launch_opts_row.set_tooltip_text(_("Some utilities require the user to add launch options to the game. "
@@ -802,6 +720,104 @@ class ConfigurationBuilderWindow(Adw.Window):
                                                   "You may for example use this to add some special instructions for the user to follow.\n"
                                                   "You may use markup (such as <b></b> or <i></i>) in this field"))
         utility_group.add(final_instructions_row)
+
+        def update_executable_type_options():
+            selected_source = self.source_types[source_type_row.get_selected()]
+
+            if selected_source == "flatpak":
+                utility_group.executable_types = ["flatpak", "browser"]
+                model_strings = [_("Flatpak"), _("Browser Protocol")]
+            else:
+                utility_group.executable_types = ["non-exec", "linux", "windows", "browser"]
+                model_strings = [
+                    _("Non-Executable"),
+                    _("Linux Executable"),
+                    _("Windows Executable"),
+                    _("Browser Protocol")
+                ]
+
+            executable_type_row.set_model(Gtk.StringList.new(model_strings))
+            executable_type_row.set_selected(0)
+
+        def update_source_row_format(*_args):
+            selected_index = source_type_row.get_selected()
+            selected_type = self.source_types[selected_index]
+            current_text = source_row.get_text()
+
+            regex_row.set_visible(selected_type == "github")
+            nexus_file_start_row.set_visible(selected_type == "nexus")
+
+            is_flatpak = selected_type == "flatpak"
+            filtering_row.set_visible(not is_flatpak)
+            enable_cmd_row.set_visible(not is_flatpak)
+            install_lock_row.set_visible(not is_flatpak)
+            deploy_row.set_visible(not is_flatpak)
+            utility_path_row.set_visible(not is_flatpak)
+            final_instructions_row.set_visible(not is_flatpak)
+
+            if is_flatpak:
+                filter_type.set_selected(0)
+                filename_filter.set_text("")
+                enable_cmd_row.set_text("")
+                install_lock_row.set_text("")
+
+            if selected_type == "flatpak":
+                source_row.set_title(_("Appstream Package ID *"))
+                source_row.set_tooltip_text(_("Please enter the full package ID of the app e.g. moe.nomm.Nomm or com.valvesoftware.Steam"))
+                if not current_text or not current_text.startswith("appstream://"):
+                    source_row.set_text("appstream://")
+
+            elif selected_type == "github":
+                source_row.set_title(_("GitHub Repo URL *"))
+                source_row.set_tooltip_text(_("Please fill in the full URL of the Github repo that "
+                                              "NOMM should pull the latest version from"))
+                if not current_text or not current_text.startswith("https://github.com/"):
+                    source_row.set_text("https://github.com/")
+
+            elif selected_type == "nexus":
+                source_row.set_title(_("Nexus mod link"))
+                source_row.set_tooltip_text(_("The link to the mod page of the utility. Do NOT provide a Nexus download link."))
+                if not current_text or not current_text.startswith("https://www.nexusmods.com/"):
+                    source_row.set_text("https://www.nexusmods.com/")
+
+            else:  # Direct Download
+                source_row.set_title(_("Source (URL) *"))
+                source_row.set_tooltip_text(_("The link from where NOMM will download the utility. "
+                                              "This NEEDS to be an actual direct download link"))
+                if any(current_text.startswith(prefix) for prefix in ["appstream://", "https://github.com/", "https://www.nexusmods.com/"]):
+                    source_row.set_text("")
+
+            update_executable_type_options()
+
+        def update_executable_path_row_format(*_args):
+            selected_index = executable_type_row.get_selected()
+            if selected_index >= len(utility_group.executable_types):
+                return
+            selected_type = utility_group.executable_types[selected_index]
+
+            executable_path_row.set_visible(selected_type in ["linux", "windows", "browser"])
+            wine_verbs_row.set_visible(selected_type == "windows")
+
+            if selected_type == "linux":
+                executable_path_row.set_title(_("Linux script path *"))
+                executable_path_row.set_tooltip_text(_("Enter the path to the linux shell script, relative to the root of the utility archive"))
+
+            elif selected_type == "windows":
+                executable_path_row.set_title(_("Windows executable path *"))
+                executable_path_row.set_tooltip_text(_("Enter the path to the windows executable, relative to the root of the utility archive"))
+
+            elif selected_type == "browser":
+                executable_path_row.set_title(_("Web protocol link *"))
+                executable_path_row.set_tooltip_text(_("Enter the web protocol url that will be launched when the play button is clicked"))
+
+            else:  # Not an executable or Flatpak
+                executable_path_row.set_visible(False)
+
+        source_type_row.connect("notify::selected", update_source_row_format)
+        executable_type_row.connect("notify::selected", update_executable_path_row_format)
+
+        update_source_row_format()
+        update_executable_path_row_format()
 
         delete_btn = Gtk.Button(
             icon_name="mat-delete-symbolic",
