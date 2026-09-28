@@ -948,11 +948,12 @@ class ConfigurationBuilderWindow(Adw.Window):
                     utility_group["source_url"] = f"appstream://{form_entries["source_url"].get_text().strip()}"
 
                 # Deployment settings
-                deploy_active = form_entries["deploy_to_game_files"].get_active()
-                utility_group["deploy_to_game_files"] = deploy_active
-                if deploy_active:
-                    utility_group["deployment_path"] = form_entries["deployment_path"].get_text().strip()
-                    required_widgets.append(form_entries["deployment_path"])
+                if source_type != "flatpak":
+                    deploy_active = form_entries["deploy_to_game_files"].get_active()
+                    utility_group["deploy_to_game_files"] = deploy_active
+                    if deploy_active:
+                        utility_group["deployment_path"] = form_entries["deployment_path"].get_text().strip()
+                        required_widgets.append(form_entries["deployment_path"])
 
                 # Executable settings
                 exec_type_idx = form_entries["executable_type"].get_selected()
