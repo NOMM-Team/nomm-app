@@ -46,13 +46,13 @@ def find_matches() -> list:
 
     if preferred_emulator == EmulatorName.CITRON:
         game_path = CITRON_GAME_PATH
-        mods_path = CITRON_MOD_PATH
+        mod_paths = CITRON_MOD_PATH
     elif preferred_emulator == EmulatorName.EDEN:
         game_path = EDEN_GAME_PATH
-        mods_path = EDEN_MOD_PATH
+        mod_paths = EDEN_MOD_PATH
     elif preferred_emulator == EmulatorName.RYUBING:
         game_path = RYUBING_GAME_PATH
-        mods_path = RYUBING_MOD_PATH
+        mod_paths = RYUBING_MOD_PATH
 
     installed_games = os.listdir(game_path)
     matches = []
@@ -75,7 +75,7 @@ def find_matches() -> list:
                     "poster": grid_path,
                     "hero": hero_path
                 }
-            mod_paths = [{"name": "default", "path": f"{mods_path}/{game_id}/"}]
+            mod_paths = [{"name": "default", "path": f"{mod_paths}/{game_id}/"}]
             matches.append(
                 {
                     "name": game["full_name"],
