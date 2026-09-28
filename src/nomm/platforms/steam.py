@@ -122,7 +122,7 @@ def get_art(steam_base: str, app_id: str):
 
 def find_game(yaml_data, game_title, found_libs, steam_base) -> List[Dict[str, Any]]:
     """Scans for a specific game in previously detected Steam libraries"""
-    yaml_game_name = yaml_data.get("steam_folder_name", game_title)
+    yaml_game_name = yaml_data.get("steam_folder_name") or game_title
     slug_yaml_name = slugify(yaml_game_name)
 
     for lib in found_libs:
