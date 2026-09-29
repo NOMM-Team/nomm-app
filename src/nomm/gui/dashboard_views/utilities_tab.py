@@ -9,7 +9,7 @@ from gi.repository import Adw, Gtk, Gio, GLib, Gdk
 from nomm.gui.ui_builders import create_text_box, create_code_box, create_icon_button
 from nomm.core.utility_manager import deploy_essential_utility, remove_utility, get_utility_status, \
                                       launch_utility, get_downloaded_utility_file_name
-from nomm.core.tools import get_latest_github_release_asset_url
+from nomm.core.tools import get_latest_github_release_asset_url, flatpak_launch_permitted
 from nomm.core.wine_manager import get_wine, WINE_BINARY_PATH, check_wineprefix_setup, generate_winetrick_command
 
 _ = gettext.gettext
@@ -55,7 +55,7 @@ class UtilitiesTab(Gtk.Box):
             row = Adw.ActionRow(title=utility["name"], subtitle=utility["creator"])
 
             REQUIRED_FIELDS = ["name", "creator", "creator_link", "source_type", "source_url",
-                               "executable_type", "deploy_to_game_files"]
+                               "executable_type"]
             missing_fields = set(REQUIRED_FIELDS) - utility.keys()
             if missing_fields:
                 print(f"[!] Missing required utility fields: {missing_fields}")
@@ -63,6 +63,7 @@ class UtilitiesTab(Gtk.Box):
                     print(f"[!] Skipping utility: {utility["name"]}")
                 else:
                     print("[!] Skipping utility")
+                continue
 
             if utility.get("creator_donation_link"):
                 row.add_prefix(create_icon_button(
@@ -171,6 +172,10 @@ class UtilitiesTab(Gtk.Box):
                 dl_btn.set_label(_("Blocked"))
                 dl_btn.set_tooltip_text(_("This utility can not be installed because it is incompatible with another installed utility."))
 
+            if utility["source_type"] == "flatpak":
+                launch_utility_button.set_sensitive(True)
+                launch_utility_button.set_tooltip_text(f"Attempt to launch Flatpak: {utility["source_url"]}")
+
             action_btn_sizegroup.add_widget(stack)
             row.add_suffix(stack)
             if current_utility_status in ["installed", "to_install"] and utility["source_type"] != "flatpak":
@@ -222,7 +227,11 @@ class UtilitiesTab(Gtk.Box):
             elif utility.get("wine_verbs") and not check_wineprefix_setup(utility["name"]):
                 self.show_winetricks_setup_screen(utility)
                 return
-        launch_utility(utility, staging_dir, self.dashboard.staging_metadata_path, self.dashboard.headers)
+        elif utility["executable_type"] == "flatpak":
+            if not flatpak_launch_permitted(self.dashboard.app.flatpak_permissions):
+                self.show_flatpak_launch_permission_request()
+                return
+        launch_utility(utility, staging_dir)
 
     def show_wine_setup_screen(self, utility: dict, staging_dir: Path):
         dialog = Adw.MessageDialog(transient_for=self.dashboard.app.win, heading=_("Wine Setup"))
@@ -320,7 +329,7 @@ class UtilitiesTab(Gtk.Box):
 
         if source_type == "flatpak":
             # if it's type flatpak or nexus, NOMM doesn't handle the downloads itself
-            launcher = Gtk.UriLauncher.new(source_url)
+            launcher = Gtk.UriLauncher.new(f"appstream://{source_url}")
             launcher.launch(None, None, None)
             return
         elif source_type == "nexus":
@@ -478,4 +487,44 @@ class UtilitiesTab(Gtk.Box):
         action_btn.connect("clicked", lambda btn: dialog.close())
 
         dialog.set_content(status_page)
+        dialog.present()
+
+    def show_flatpak_launch_permission_request(self):
+        dialog = Adw.MessageDialog(
+            transient_for=self.dashboard.app.win,
+            modal=True
+        )
+
+        vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)
+
+        status_page = Adw.StatusPage(
+            title=_("Launching Flatpaks From NOMM"),
+            description=_("You are trying to launch a Flatpak application or utility, but NOMM does not have the "
+                          "rights to do so from within its sandbox. Copy the following command into your terminal "
+                          "and execute it (ideally after reading the contents of the orange box)."),
+            icon_name="flatpak-logo-symbolic"
+        )
+        vbox.append(status_page)
+
+        warning_description = _("Unlike other Flatpak permission grants, this one gives <b>significant</b> rights to NOMM. "
+                                "We want you to trust our app but we would rather be transparent with you: granting "
+                                "this permission is close to removing the sandboxing from the app altogether. This is a "
+                                "tradeoff between security and ease-of-use and we want you, the user, to make this decision.")
+        vbox.append(create_text_box(warning_description, "warning"))
+        vbox.append(create_text_box(_("You will need to restart NOMM after running the command"), "info"))
+        vbox.append(create_code_box("flatpak override --user --talk-name=org.freedesktop.Flatpak moe.nomm.Nomm", True))
+
+        dialog.set_extra_child(vbox)
+
+        dialog.add_response("quit", _("Quit NOMM"))
+        dialog.add_response("close", _("Close"))
+
+        dialog.set_default_response("close")
+        dialog.set_response_appearance("quit", Adw.ResponseAppearance.DESTRUCTIVE)
+
+        def on_response(d, response_id):
+            if response_id == "quit":
+                self.dashboard.app.quit()
+
+        dialog.connect("response", on_response)
         dialog.present()

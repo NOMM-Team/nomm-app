@@ -6,6 +6,7 @@ import re
 import html
 import urllib
 import configparser
+import subprocess
 from pathlib import Path
 from gi.repository import GLib, Gio
 
@@ -396,16 +397,24 @@ def get_flatpak_context():
     config = configparser.ConfigParser()
     config.read(info_path)
 
-    permissions = {}
+    permissions = {
+        "talk-name": []
+    }
+
     if "Context" in config:
         for key, value in config["Context"].items():
             permissions[key] = value.strip(";").split(";")
+
+    if "Session Bus Policy" in config:
+        for dbus_name, policy in config["Session Bus Policy"].items():
+            if policy == "talk":
+                permissions["talk-name"].append(dbus_name)
+
     return permissions
 
 
-def get_missing_rights(inaccessible_library_paths, inaccessible_essential_paths):
+def get_missing_rights(inaccessible_library_paths, inaccessible_essential_paths, permissions):
     inacessible_paths = inaccessible_library_paths + inaccessible_essential_paths
-    permissions = get_flatpak_context()
     if not permissions:
         return inacessible_paths
     fs_permissions = [p.split(":")[0] for p in permissions.get("filesystems", [])]
@@ -417,3 +426,39 @@ def get_missing_rights(inaccessible_library_paths, inaccessible_essential_paths)
         else:
             actually_missing_paths.append(path)
     return actually_missing_paths
+
+
+def flatpak_launch_permitted(flatpak_permissions: dict) -> bool:
+    """Checks if the Flatpak sandbox context permits spawning/launching other Flatpaks."""
+    # If not running inside a Flatpak sandbox, there are no sandbox restrictions
+    if flatpak_permissions is None:
+        return True
+    print(f"permissions:{flatpak_permissions}")
+    if "org.freedesktop.flatpak" in flatpak_permissions.get("talk-name", []):  # Permission to talk to Flatpak service over D-Bus
+        return True
+    if "session-bus" in flatpak_permissions.get("sockets", []):  # Full access to session D-Bus allows communicating with the Flatpak service
+        return True
+    return False
+
+
+def launch_flatpak(flatpak_id: str) -> bool:
+    """Launches a Flatpak app asynchronously using its application ID."""
+    if not flatpak_id:
+        return False
+
+    is_sandboxed = os.path.exists("/.flatpak-info")
+
+    if is_sandboxed:
+        # Use flatpak-spawn to run the command on the host system
+        cmd = ["flatpak-spawn", "--host", "flatpak", "run", flatpak_id]
+    else:
+        # Running directly on host
+        cmd = ["flatpak", "run", flatpak_id]
+
+    try:
+        # Popen runs the process in the background without blocking execution
+        subprocess.Popen(cmd)
+        return True
+    except (OSError, subprocess.SubprocessError) as e:
+        print(f"Failed to launch Flatpak '{flatpak_id}': {e}")
+        return False

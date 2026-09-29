@@ -122,7 +122,7 @@ def get_art(steam_base: str, app_id: str):
 
 def find_game(yaml_data, game_title, found_libs, steam_base) -> List[Dict[str, Any]]:
     """Scans for a specific game in previously detected Steam libraries"""
-    yaml_game_name = yaml_data.get("steam_folder_name", game_title)
+    yaml_game_name = yaml_data.get("steam_folder_name") or game_title
     slug_yaml_name = slugify(yaml_game_name)
 
     for lib in found_libs:
@@ -135,7 +135,7 @@ def find_game(yaml_data, game_title, found_libs, steam_base) -> List[Dict[str, A
 
                 # mod path parsing
                 user_data_path = os.path.dirname(os.path.dirname(game_path)) + "/compatdata/" + str(yaml_data["steam_id"]) + "/pfx"
-                mod_paths: list[dict[str, str]] = parse_mod_paths(yaml_data["mods_path"], game_path, user_data_path, game_title)
+                mod_paths: list[dict[str, str]] = parse_mod_paths(yaml_data["mod_paths"], game_path, user_data_path, game_title)
 
                 return {
                     "name": game_title,

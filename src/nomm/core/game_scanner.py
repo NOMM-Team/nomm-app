@@ -24,7 +24,7 @@ def get_game_configs():
             if not config_data:
                 continue
 
-            if "name" not in config_data or "mods_path" not in config_data:
+            if "name" not in config_data or "mod_paths" not in config_data:
                 print("[!] Missing required information in YAML file, skipping...")
                 continue
 
