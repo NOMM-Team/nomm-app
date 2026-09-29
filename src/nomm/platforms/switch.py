@@ -85,6 +85,7 @@ def find_matches() -> list:
                     "platform": PLATFORM,
                     "mod_paths": mod_paths,
                     "utilities": None,
+                    "wiki_link": "switch-games",
                     "accent_colour": None
                 }
             )
