@@ -223,8 +223,8 @@ def list_archives(archives_directory: str):
             if mime_type in ARCHIVE_MIME_TYPES:
                 archive_list.append(file)
             else:
-                if "yaml" not in mime_type:
-                    print(f"[!] Could not identify mime type in download folder: {mime_type}")
+                if "yaml" not in mime_type and "zerosize" not in mime_type:
+                    print(f"[i] Could not identify mime type in download folder: {mime_type}")
         except Exception as e:
             print(f"Error reading file metadata for {file}: {e}")
 
