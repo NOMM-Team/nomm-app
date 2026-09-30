@@ -57,7 +57,8 @@ class Nomm(Adw.Application):
         user_data_dir: str = GLib.get_user_data_dir()
         print(f"NOMM data path is: {user_data_dir}")
         self.update_game_configurations()
-        if load_user_config().get("autoclean_prefixes"):
+        user_config = load_user_config()
+        if user_config and user_config.get("autoclean_prefixes"):
             clean_wine_prefixes(get_unused_wine_prefixes())
         base_path: str = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -563,7 +564,8 @@ class Nomm(Adw.Application):
 
         # Check if there are essential paths that are locked (staging & downloads folders)
         user_config = load_user_config()
-        essential_paths = [user_config["download_path"], user_config["staging_path"]]
+        essential_paths = [user_config.get("translated_download_path", user_config.get("download_path")),
+                           user_config.get("translated_staging_path", user_config.get("staging_path"))]
         print(f"Checking for access rights to essential paths: {essential_paths}")
         self.locked_essential_paths = [path for path in essential_paths if not os.access(path, os.W_OK)]
 
