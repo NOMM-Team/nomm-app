@@ -563,7 +563,13 @@ class Nomm(Adw.Application):
 
         # Check if there are essential paths that are locked (staging & downloads folders)
         user_config = load_user_config()
-        essential_paths = [user_config["download_path"], user_config["staging_path"]]
+        download_path = user_config.get("translated_download_path")
+        if not download_path:
+            download_path = user_config.get("download_path")
+        staging_path = user_config.get("translated_staging_path")
+        if not staging_path:
+            staging_path = user_config.get("staging_path")
+        essential_paths = [download_path, staging_path]
         print(f"Checking for access rights to essential paths: {essential_paths}")
         self.locked_essential_paths = [path for path in essential_paths if not os.access(path, os.W_OK)]
 
