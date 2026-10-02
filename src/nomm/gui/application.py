@@ -57,7 +57,8 @@ class Nomm(Adw.Application):
         user_data_dir: str = GLib.get_user_data_dir()
         print(f"NOMM data path is: {user_data_dir}")
         self.update_game_configurations()
-        if load_user_config().get("autoclean_prefixes"):
+        user_config = load_user_config()
+        if user_config and user_config.get("autoclean_prefixes"):
             clean_wine_prefixes(get_unused_wine_prefixes())
         base_path: str = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
