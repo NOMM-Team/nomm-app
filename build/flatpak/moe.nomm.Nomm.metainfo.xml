@@ -36,6 +36,15 @@
     <color type="primary" scheme_preference="dark">#374955</color>
   </branding>
   <releases>
+    <release type="stable" version="0.14.2" date="2026-10-03T00:00:00Z">
+      <description>
+        <p>Release bites</p>
+        <ul>
+          <li>Feature: Add support for unofficial Eden Flatpak</li>
+        </ul>
+      </description>
+      <url>https://github.com/nomm-team/nomm-app/releases/0.14.2</url>
+    </release>
     <release type="stable" version="0.14.1" date="2026-10-02T00:00:00Z">
       <description>
         <p>Release bites</p>
@@ -98,15 +107,6 @@
         </ul>
       </description>
       <url>https://github.com/nomm-team/nomm-app/releases/0.13.2</url>
-    </release>
-    <release type="stable" version="0.13.1" date="2026-09-01T00:00:00Z">
-      <description>
-        <p>Release bites</p>
-        <ul>
-          <li>Fix Gamebanana one-click install support</li>
-        </ul>
-      </description>
-      <url>https://github.com/nomm-team/nomm-app/releases/0.13.1</url>
     </release>
   </releases>
   <content_rating type="oars-1.1">
