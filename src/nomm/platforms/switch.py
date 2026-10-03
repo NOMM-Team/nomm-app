@@ -11,6 +11,9 @@ RYUBING_MOD_PATH = os.path.expanduser("~/.var/app/io.github.ryubing.Ryujinx/conf
 # Eden paths
 EDEN_GAME_PATH = os.path.expanduser("~/.local/share/eden/load")
 EDEN_MOD_PATH = os.path.expanduser("~/.local/share/eden/load")
+# Eden (Flatpak) paths
+EDEN_FP_GAME_PATH = os.path.expanduser("~/.var/app/dev.eden_emu.eden/data/eden/load")
+EDEN_FP_MOD_PATH = os.path.expanduser("~/.var/app/dev.eden_emu.eden/data/eden/load")
 # Citron paths
 CITRON_GAME_PATH = os.path.expanduser("~/.local/share/citron/load")
 CITRON_MOD_PATH = os.path.expanduser("~/.local/share/citron/load")
@@ -20,6 +23,7 @@ CITRON_MOD_PATH = os.path.expanduser("~/.local/share/citron/load")
 class EmulatorName(Enum):
     RYUBING = "Ryubing"
     EDEN = "Eden"
+    EDEN_FP = "Eden Flatpak"
     CITRON = "Citron"
 
 
@@ -50,6 +54,9 @@ def find_matches() -> list:
     elif preferred_emulator == EmulatorName.EDEN:
         game_path = EDEN_GAME_PATH
         mod_paths = EDEN_MOD_PATH
+    elif preferred_emulator == EmulatorName.EDEN_FP:
+        game_path = EDEN_FP_GAME_PATH
+        mod_paths = EDEN_FP_MOD_PATH
     elif preferred_emulator == EmulatorName.RYUBING:
         game_path = RYUBING_GAME_PATH
         mod_paths = RYUBING_MOD_PATH
@@ -61,7 +68,7 @@ def find_matches() -> list:
         # Ryujinx has game IDs in lowercase, and Eden has them in uppercase :')
         if preferred_emulator == EmulatorName.RYUBING:
             game_id = game["switch_id"].lower()
-        elif preferred_emulator in [EmulatorName.CITRON, EmulatorName.EDEN]:
+        elif preferred_emulator in [EmulatorName.CITRON, EmulatorName.EDEN, EmulatorName.EDEN_FP]:
             game_id = game["switch_id"].upper()
         if game_id in installed_games:
             art = load_cached_assets(game["full_name"], PLATFORM)
@@ -100,6 +107,8 @@ def list_emulators():
         installed_emulator_list.append(EmulatorName.CITRON.value)
     if os.path.exists(EDEN_GAME_PATH):
         installed_emulator_list.append(EmulatorName.EDEN.value)
+    if os.path.exists(EDEN_FP_GAME_PATH):
+        installed_emulator_list.append(EmulatorName.EDEN_FP.value)
     if os.path.exists(RYUBING_GAME_PATH):
         installed_emulator_list.append(EmulatorName.RYUBING.value)
 
@@ -113,7 +122,7 @@ def get_emulator_logo(emulator):
         print(f"[!] Preferred emulator value is not supported: {e}")
     if emulator == EmulatorName.CITRON:
         return "citron-logo"
-    elif emulator == EmulatorName.EDEN:
+    elif emulator == EmulatorName.EDEN or emulator == EmulatorName.EDEN_FP:
         return "eden-logo"
     elif emulator == EmulatorName.RYUBING:
         return "ryubing-logo"
