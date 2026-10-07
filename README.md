@@ -87,7 +87,7 @@ Phase 3 Development:
 
 </details>
 
-To see the current topics in our backlog check out [our Github project](https://github.com/users/Allexio/projects/1).
+To see the current topics in our backlog check out [our Github project](https://github.com/orgs/NOMM-Team/projects/1).
 
 ## Installing/Running
 
