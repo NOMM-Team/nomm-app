@@ -41,6 +41,7 @@
         <p>Release bites</p>
         <ul>
           <li>Feature: Add support for unofficial Eden Flatpak</li>
+          <li>Flatpak: Upgrade Gnome environment to version 51 </li>
         </ul>
       </description>
       <url>https://github.com/nomm-team/nomm-app/releases/0.14.2</url>
