@@ -19,6 +19,7 @@ finish-args:
   # Switch support
   - --filesystem=~/.var/app/io.github.ryubing.Ryujinx/config/Ryujinx:rw # Ryubing flatpak
   - --filesystem=~/.local/share/eden/load:rw # Eden AppImage
+  - --filesystem=~/.var/app/dev.eden_emu.eden/data/eden/load:rw # Eden Flatpak
   - --filesystem=~/.local/share/citron/load:rw # Citron AppImage
   # Wine management
   - --filesystem=~/.local/share/wineprefixes:rw
