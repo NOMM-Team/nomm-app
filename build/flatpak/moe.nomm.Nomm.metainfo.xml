@@ -36,12 +36,18 @@
     <color type="primary" scheme_preference="dark">#374955</color>
   </branding>
   <releases>
-    <release type="stable" version="0.14.2" date="2026-10-03T00:00:00Z">
+    <release type="stable" version="0.14.2" date="2026-10-19T00:00:00Z">
       <description>
         <p>Release bites</p>
         <ul>
           <li>Feature: Add support for unofficial Eden Flatpak</li>
-          <li>Flatpak: Upgrade Gnome environment to version 51 </li>
+          <li>Flatpak: Upgrade Gnome environment to version 51 (latest)</li>
+          <li>Fix: Correctly remove selected utility when multiple utilities are listed and clicking
+          on trash button</li>
+          <li>Fix: Better downloaded utility archive recognition</li>
+          <li>Fix: Unauthenticated Github API calls will be made more sparingly</li>
+          <li>Change: Add Steam installation validation to avoid NOMM selecting a broken Steam installation
+          instead of a functioning one</li>
         </ul>
       </description>
       <url>https://github.com/nomm-team/nomm-app/releases/0.14.2</url>
