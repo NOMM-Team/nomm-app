@@ -117,9 +117,6 @@ class UtilitiesTab(Gtk.Box):
             inst_btn = Gtk.Button(halign=Gtk.Align.FILL, valign=Gtk.Align.CENTER)
             inst_btn.set_cursor_from_name("pointer")
 
-            if utility["source_type"] == "github":
-                utility["source_url"] = get_latest_github_release_asset_url(utility["source_url"], utility["github_asset_regex"])
-
             file_name = get_downloaded_utility_file_name(utility, self.download_dir)
             inst_btn.connect("clicked", self.on_utility_install_clicked, utility, file_name)
 
@@ -324,6 +321,15 @@ class UtilitiesTab(Gtk.Box):
     def on_utility_download_clicked(self, btn, util: dict, stack, pbar=None, file_name=None):
         source_type = util["source_type"]
         source_url = util["source_url"]
+
+        if source_type == "github":
+            # Resolve latest release URL just-in-time to avoid API rate limits on dashboard open
+            source_url = get_latest_github_release_asset_url(source_url, util.get("github_asset_regex"))
+            if not source_url:
+                self.dashboard.show_message(_("Download Failed"), _("Could not fetch the latest GitHub release asset URL."))
+                btn.set_sensitive(True)
+                return
+
         if not source_url:
             return
 
