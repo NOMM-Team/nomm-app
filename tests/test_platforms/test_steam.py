@@ -1,18 +1,48 @@
 import nomm.platforms.steam as steam
 import os
 import vdf
+from pathlib import Path
+import pathlib
 
 
-def test_get_steam_base_dir_finds_first_existing_path(monkeypatch):
-    target_path = os.path.expanduser("~/.local/share/Steam/")
+def test_get_steam_base_dir_no_path(monkeypatch):
+    target_path: str = os.path.expanduser("~/.local/share/Steam/")
 
     def mock_exists(path):
         return path == target_path
 
     monkeypatch.setattr(os.path, "exists", mock_exists)
 
+    result: str | None = steam.get_steam_base_dir()
+    assert result is None
+
+
+def test_get_steam_base_dir_empty_steam_dir(monkeypatch):
+    target_path: str = os.path.expanduser("~/.local/share/Steam/")
+
+    def mock_exists(path):
+        return path == target_path
+
+    monkeypatch.setattr(os.path, "exists", mock_exists)
+
+    result: str | None = steam.get_steam_base_dir()
+    assert result is None
+
+
+def test_get_steam_base_dir_success(monkeypatch):
+    # Choose one of the paths from your search list
+    target_path = Path.home() / ".local" / "share" / "Steam"
+    config_file = target_path / "config" / "libraryfolders.vdf"
+    userdata_dir = target_path / "userdata"
+
+    def mock_exists(self: Path) -> bool:
+        # Return True for the base path and its required critical sub-paths
+        return self in (target_path, config_file, userdata_dir)
+
+    monkeypatch.setattr(pathlib.Path, "exists", mock_exists)
+
     result = steam.get_steam_base_dir()
-    assert result == target_path
+    assert result == str(target_path)
 
 
 def test_get_steam_base_dir_returns_none_when_missing(monkeypatch):

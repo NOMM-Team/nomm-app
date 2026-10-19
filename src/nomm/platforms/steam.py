@@ -15,15 +15,24 @@ TOOL_APP_IDS: list[int] = [1887720, 432054, 432053, 376798, 376797, 352053, 3520
 
 
 def get_steam_base_dir() -> Optional[str]:
-    paths = [
-        os.path.expanduser("~/.steam/debian-installation/"),
-        os.path.expanduser("~/.var/app/com.valvesoftware.Steam/.local/share/Steam/"),
-        os.path.expanduser("~/.local/share/Steam/"),
-        os.path.expanduser("~/snap/steam/common/.local/share/Steam/")
+    steam_root_path_list = [
+        Path.home() / ".steam" / "debian-installation",
+        Path.home() / ".var" / "app" / "com.valvesoftware.Steam" / ".local" / "share" / "Steam",
+        Path.home() / ".local" / "share" / "Steam",
+        Path.home() / "snap" / "steam" / "common" / ".local" / "share" / "Steam"
     ]
-    for p in paths:
-        if os.path.exists(p):
-            return p
+
+    for steam_root_path in steam_root_path_list:
+        if not steam_root_path.exists():
+            continue
+        print(f"[i]: Steam path detected: {steam_root_path}, checking for expected files...")
+
+        has_config = (steam_root_path / "config" / "libraryfolders.vdf").exists()
+        has_userdata = (steam_root_path / "userdata").exists()
+        if has_config and has_userdata:
+            return str(steam_root_path)
+
+        print("[!]: Steam installation path missing critical files... Aborting and moving to next possible Steam location.")
     return None
 
 
