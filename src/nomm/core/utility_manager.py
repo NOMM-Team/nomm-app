@@ -134,15 +134,30 @@ def get_utility_status(utility_config: dict, download_path: str, staging_path: s
 
 
 def get_downloaded_utility_file_name(utility_config: dict, download_path: str):
-    if utility_config["source_type"] in ["direct", "github"]:
+    source_type = utility_config.get("source_type")
+
+    if source_type in ["direct", "github"]:
         decoded_url = unquote(utility_config["source_url"])
-        if "/" in decoded_url:
-            return decoded_url.split("/")[-1]
-        else:
-            return decoded_url
-    elif utility_config["source_type"] == "flatpak":
+        expected_filename = decoded_url.split("/")[-1].split("?")[0] if "/" in decoded_url else decoded_url
+
+        if not os.path.exists(download_path):
+            return expected_filename
+
+        download_folder = os.listdir(download_path)
+        # Exact match
+        if expected_filename in download_folder:
+            return expected_filename
+
+        # Fallback: check if any file starts with a common prefix or matches regex/patterns
+        utility_name_lower = utility_config["name"].lower().replace(" ", "")
+        for downloaded_file in download_folder:
+            if utility_name_lower in downloaded_file.lower():
+                return downloaded_file
+        return expected_filename  # Fallback to expected if nothing found yet
+
+    elif source_type == "flatpak":
         return None
-    elif utility_config["source_type"] == "nexus":
+    elif source_type == "nexus":
         file_name_start = utility_config["nexus_file_name_start"]
         if not os.path.exists(download_path):
             return None
@@ -150,7 +165,7 @@ def get_downloaded_utility_file_name(utility_config: dict, download_path: str):
             if file_name_start in file_name:
                 return file_name
     else:
-        print(f"Error: unrecognised source type for utility: {utility_config["name"]}")
+        print(f"Error: unrecognised source type for utility: {utility_config['name']}")
 
     return None
 
