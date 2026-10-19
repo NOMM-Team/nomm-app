@@ -4,6 +4,7 @@ import vdf
 from pathlib import Path
 import pathlib
 
+
 def test_get_steam_base_dir_no_path(monkeypatch):
     target_path: str = os.path.expanduser("~/.local/share/Steam/")
 
