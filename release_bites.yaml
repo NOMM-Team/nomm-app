@@ -1,4 +1,11 @@
 ---
+Version: "0.14.3"
+Date: 2026-10-24
+URL: https://github.com/nomm-team/nomm-app/releases/0.14.3
+Description: |-
+  Release bites
+   * Feature: Can now install non-archive utilities
+---
 Version: "0.14.2"
 Date: 2026-10-19
 URL: https://github.com/nomm-team/nomm-app/releases/0.14.2
