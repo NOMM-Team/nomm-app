@@ -36,6 +36,15 @@
     <color type="primary" scheme_preference="dark">#374955</color>
   </branding>
   <releases>
+    <release type="stable" version="0.14.3" date="2026-10-24T00:00:00Z">
+      <description>
+        <p>Release bites</p>
+        <ul>
+          <li>Feature: Can now install non-archive utilities</li>
+        </ul>
+      </description>
+      <url>https://github.com/nomm-team/nomm-app/releases/0.14.3</url>
+    </release>
     <release type="stable" version="0.14.2" date="2026-10-19T00:00:00Z">
       <description>
         <p>Release bites</p>
@@ -102,18 +111,6 @@
         </ul>
       </description>
       <url>https://github.com/nomm-team/nomm-app/releases/0.13.3</url>
-    </release>
-    <release type="stable" version="0.13.2" date="2026-09-04T00:00:00Z">
-      <description>
-        <p>Release bites</p>
-        <ul>
-          <li>Fix various config buidler related bugs</li>
-          <li>Change variables in utility section to use underscores instead of dashes</li>
-          <li>Fix issue with utility download and installation when using specific URLs</li>
-          <li>Builder: Add ability to deactivate utility deployment to game files</li>
-        </ul>
-      </description>
-      <url>https://github.com/nomm-team/nomm-app/releases/0.13.2</url>
     </release>
   </releases>
   <content_rating type="oars-1.1">
