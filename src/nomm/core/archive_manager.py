@@ -17,11 +17,13 @@ rarfile.UNRAR_TOOL = "/app/bin/unrar"
 
 def get_archive_type(file_path: str) -> str:
     lower_path = file_path.lower()
-    if lower_path.endswith('.zip'):
+    if lower_path.endswith(".zip"):
         return 'zip'
-    elif lower_path.endswith('.rar'):
+    elif lower_path.endswith(".rar"):
         return 'rar'
-    return 'other'
+    elif lower_path.endswith((".7z", ".7zip", ".tar", ".gz", ".tar.gz", ".tgz")):
+        return '7z'
+    return 'non-archive'
 
 
 # Cleaning method after extracting the archive
@@ -36,19 +38,21 @@ def extract_archive(archive_path: str, destination_path: str) -> bool:
     os.makedirs(destination_path, exist_ok=True)
 
     try:
-        if arc_type == 'zip':
+        if arc_type == "zip":
             with zipfile.ZipFile(archive_path, 'r') as zf:
                 zf.extractall(destination_path)
-        elif arc_type == 'rar':
+        elif arc_type == "rar":
             with rarfile.RarFile(archive_path, 'r') as rf:
                 rf.extractall(destination_path)
-        else:
+        elif arc_type == "7z":
             subprocess.run(
                 ["7z", "x", archive_path, f"-o{destination_path}", "-y"],
                 capture_output=True,
                 text=True,
                 check=True
             )
+        else:  # if it's not an archive, we can just copy contents over
+            shutil.copy2(archive_path, destination_path)
     except Exception as e:
         raise Exception(f"Error while extracting {arc_type} : {e}")
         return False
