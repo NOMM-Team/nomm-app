@@ -7,6 +7,7 @@ Description: |-
    * Feature: Can now install non-archive utilities
    * Feature: Can now ignore mod updates so that they stop showing in the UI
    * Fix: Fix additional cases of NOMM not detecting a downloaded utility
+   * Fix: Regression from 0.14.2 causing an error during onboarding after the Nexus API key input
 ---
 Version: "0.14.2"
 Date: 2026-10-19
