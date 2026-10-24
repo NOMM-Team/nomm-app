@@ -266,6 +266,13 @@ class ModsTab(Gtk.Box):
         self.version_btn.set_child(button_content)
         self.version_btn.add_css_class("badge-action-row")
         self.version_row.append(self.version_btn)
+        # Hide button
+        self.version_hide_btn = create_icon_button(
+            icon_name="mat-hide-symbolic",
+            tooltip=_("Ignore this version"),
+            icon_size=18
+        )
+        self.version_row.append(self.version_hide_btn)
         self.details_box.append(self.version_row)
 
         # Deployment Row
@@ -452,6 +459,7 @@ class ModsTab(Gtk.Box):
         if "version" in mod_info:
             self.version_btn_label.set_label(mod_info["version"])
             self.version_row.set_visible(True)
+            self.version_hide_btn.set_visible(False)
             if hasattr(self, "_version_link_handler_id"):
                 self.version_btn.disconnect(self._version_link_handler_id)
             self._version_link_handler_id = self.version_btn.connect("clicked", lambda b: webbrowser.open(mod_info["mod_link"] + "?tab=files"))
@@ -463,12 +471,19 @@ class ModsTab(Gtk.Box):
                 self.version_btn_changelog_icon.set_visible(False)
                 self.version_btn.set_tooltip_text("")
             # Update management
-            if "new_version" in mod_info and mod_info["version"] != mod_info["new_version"]:
+            if "new_version" in mod_info and mod_info["version"] != mod_info["new_version"]\
+                    and mod_info.get("ignored_version") != mod_info["new_version"]:
                 self.version_btn.add_css_class("badge-action-row-accent")
                 self.version_btn_label.set_label(mod_info["version"])
                 self.version_btn_label_new.set_label(mod_info["new_version"])
                 self.version_btn_label_new.set_visible(True)
                 self.version_btn_upgrade_icon.set_visible(True)
+                if hasattr(self, "_version_hide_button_handler"):
+                    self.version_hide_btn.disconnect(self._version_hide_button_handler)
+                self._version_hide_button_handler = self.version_hide_btn.connect(
+                    "clicked",
+                    lambda x: self.ignore_new_version(mod_info["new_version"], mod_index, listbox, row))
+                self.version_hide_btn.set_visible(True)
             else:
                 self.version_btn.remove_css_class("badge-action-row-accent")
                 self.version_btn_label_new.set_visible(False)
@@ -550,6 +565,23 @@ class ModsTab(Gtk.Box):
 
         # Display the pane!
         self.revealer.set_reveal_child(True)
+
+    def ignore_new_version(self, new_version, mod_index, listbox, row):
+        staging_metadata = load_staging_metadata(self.dashboard.staging_metadata_path)
+        staging_metadata["mods"][mod_index]["ignored_version"] = new_version
+        write_yaml(staging_metadata, self.dashboard.staging_metadata_path)
+
+        # Update the in-memory mod data on the row
+        row.mod_data["ignored_version"] = new_version
+
+        # Instantly update the preview pane UI to reflect the ignored version
+        self.version_btn.remove_css_class("badge-action-row-accent")
+        self.version_btn_label_new.set_visible(False)
+        self.version_btn_upgrade_icon.set_visible(False)
+        self.version_hide_btn.set_visible(False)
+
+        # Refresh the main mods list UI
+        self.populate_list()
 
     def pick_new_alias(self, mod_info, mod_index):
         dialog = Adw.MessageDialog(
@@ -872,7 +904,7 @@ class ModsTab(Gtk.Box):
                 # Update available badge
                 version_current = mod_metadata.get("version", "")
                 version_new = mod_metadata.get("new_version", "")
-                if version_current and version_new and (version_new != version_current):
+                if version_current and version_new and (version_new != version_current) and version_new != mod_metadata.get("ignored_version"):
                     update_badge = Gtk.Button(margin_top=10, margin_bottom=10)
                     update_badge_icon = Gtk.Image.new_from_icon_name("upgrade-symbolic")
                     update_badge_icon.set_pixel_size(22)
