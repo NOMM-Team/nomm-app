@@ -148,9 +148,13 @@ def get_downloaded_utility_file_name(utility_config: dict, download_path: str):
         if expected_filename in download_folder:
             return expected_filename
 
+
         # Fallback: check if any file starts with a common prefix or matches regex/patterns
         utility_name_lower = utility_config["name"].lower().replace(" ", "")
         for downloaded_file in download_folder:
+            if source_type == "github":  # if it's a github DL we can use the github asset regex to match
+                if utility_config["github_asset_regex"].lower() in downloaded_file.lower():
+                    return downloaded_file
             if utility_name_lower in downloaded_file.lower():
                 return downloaded_file
         return expected_filename  # Fallback to expected if nothing found yet

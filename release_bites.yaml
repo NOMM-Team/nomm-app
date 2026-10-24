@@ -6,6 +6,7 @@ Description: |-
   Release bites
    * Feature: Can now install non-archive utilities
    * Feature: Can now ignore mod updates so that they stop showing in the UI
+   * Fix: Fix additional cases of NOMM not detecting a downloaded utility
 ---
 Version: "0.14.2"
 Date: 2026-10-19
