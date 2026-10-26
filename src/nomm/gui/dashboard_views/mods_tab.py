@@ -59,12 +59,13 @@ class ModsTab(Gtk.Box):
 
         action_bar.append(filter_group)
 
-        folder_btn = create_icon_button(
+        self.folder_btn = create_icon_button(
             icon_name="mat-folder-symbolic",
             tooltip=_("Open staging folder"),
             on_click=lambda x: webbrowser.open(f"file://{self.dashboard.staging_path}")
         )
-        update_btn = create_icon_button(
+
+        self.update_btn = create_icon_button(
             icon_name="refresh-mods-symbolic",
             tooltip=_("Refresh Metadata & Check for updates\n"
                       "This will replace all current mod metadata with fresh data coming straight from the modding platform."),
@@ -87,11 +88,11 @@ class ModsTab(Gtk.Box):
             action_bar.append(wiki_btn)
         else:
             # This is so that the buttons all show up on the right side, even if there is no wiki button
-            folder_btn.set_hexpand(True)
+            self.folder_btn.set_hexpand(True)
 
         # Add all the buttons
-        action_bar.append(folder_btn)
-        action_bar.append(update_btn)
+        action_bar.append(self.folder_btn)
+        action_bar.append(self.update_btn)
 
         if dashboard.platform in ["steam", "heroic-gog", "heroic-epic"]:
             launch_btn = create_icon_button(
@@ -837,6 +838,8 @@ class ModsTab(Gtk.Box):
 
             if not staging_metadata or not staging_metadata.get("mods"):
                 box = build_welcome_box()
+                self.folder_btn.set_sensitive(False)
+                self.update_btn.set_sensitive(False)
                 self.list_scroll.set_child(box)
                 return
 
