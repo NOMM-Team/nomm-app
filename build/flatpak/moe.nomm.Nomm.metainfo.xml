@@ -36,6 +36,15 @@
     <color type="primary" scheme_preference="dark">#374955</color>
   </branding>
   <releases>
+    <release type="stable" version="0.14.4" date="2026-10-26T00:00:00Z">
+      <description>
+        <p>Release bites</p>
+        <ul>
+          <li>Feature: Overhaul UX when no mods installed</li>
+        </ul>
+      </description>
+      <url>https://github.com/nomm-team/nomm-app/releases/0.14.4</url>
+    </release>
     <release type="stable" version="0.14.3" date="2026-10-24T00:00:00Z">
       <description>
         <p>Release bites</p>
@@ -104,17 +113,6 @@
         </ul>
       </description>
       <url>https://github.com/nomm-team/nomm-app/releases/0.13.4</url>
-    </release>
-    <release type="stable" version="0.13.3" date="2026-09-07T00:00:00Z">
-      <description>
-        <p>Release bites</p>
-        <ul>
-          <li>1-click download enabled for GameBanana on Mario Kart 8 Deluxe mods!</li>
-          <li>Fixed incorrect link on submitter button for GameBanana mods</li>
-          <li>Fixed some UI strings with incorrect spacing</li>
-        </ul>
-      </description>
-      <url>https://github.com/nomm-team/nomm-app/releases/0.13.3</url>
     </release>
   </releases>
   <content_rating type="oars-1.1">
