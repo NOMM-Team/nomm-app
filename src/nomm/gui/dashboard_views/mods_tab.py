@@ -16,7 +16,7 @@ from nomm.platforms.nexus import get_nexus_changelog, endorse_nexus_mod
 from nomm.platforms.nexus import get_mod_info as get_nexus_mod_info
 from nomm.platforms.gamebanana import get_mod_info as get_gamebanana_mod_info
 from nomm.core.tools import timestamp_converter, write_yaml
-from nomm.gui.ui_builders import create_icon_button
+from nomm.gui.ui_builders import create_icon_button, create_icon_row
 from nomm.gui.text_window import TextWindow
 from typing import Optional, Callable
 
@@ -781,6 +781,51 @@ class ModsTab(Gtk.Box):
 
             GLib.idle_add(on_data_prepared, staging_path, staging_metadata, indexed_mods, conflicts, missing_files_per_mod)
 
+        def build_welcome_box():
+            game_info = self.dashboard.game_info
+            vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12, halign=Gtk.Align.CENTER)
+            intro_paragraph = _(f"Hi and welcome to your very own NOMM dashboard for {game_info["name"]}.\n"
+                                "It feels a bit empty right now, but you'll fill this up soon enough!\n"
+                                "Before you start though, here's a few things that should help you along the way:")
+            status_page = Adw.StatusPage(
+                title=_("No mods installed... yet."),
+                description=intro_paragraph,
+                icon_name="nomm-logo-empty"
+            )
+            vbox.append(status_page)
+
+            if game_info.get("utilities"):
+                label = _("This game comes with preconfigured utilities that can help you in your modding journey."
+                          " We recommend you go check them out.")
+                vbox.append(create_icon_row(
+                    icon_name="emblem-system-symbolic",
+                    tooltip="Open utilities tab",
+                    label=label,
+                    css_classes=["suggested-action"],
+                    on_click=lambda x: self.dashboard.tools_tab_btn.set_active(True)
+                ))
+
+            if game_info.get("wiki_link"):
+                label = _("This configuration has a dedicated wiki page on our website, don't hesitate to click here"
+                          " and give our website some love <3")
+                vbox.append(create_icon_row(
+                    icon_name="globe-book-symbolic",
+                    tooltip="Open wiki page",
+                    label=label,
+                    on_click=lambda x: webbrowser.open(f"https://nomm.moe/docs/game-guides/{game_info["wiki_link"]}")
+                ))
+
+            label = _("Go and find out all the cool ways you can add mods on the Downloads tab (okay there's not that"
+                      " many but you should still go there)")
+            vbox.append(create_icon_row(
+                icon_name="downloaded-symbolic",
+                tooltip="Open the downloads tab",
+                label=label,
+                on_click=lambda x: self.dashboard.dl_tab_btn.set_active(True)
+            ))
+
+            return vbox
+
         def on_data_prepared(staging_path, staging_metadata, indexed_mods, conflicts, missing_files_per_mod):
             valignment = self.sc.get_valign()
             srow = None
@@ -791,7 +836,8 @@ class ModsTab(Gtk.Box):
                 self.mods_list_box.remove(child)
 
             if not staging_metadata or not staging_metadata.get("mods"):
-                self.append(Gtk.Label(label=_("The staging metadata file could not be found, did you install any mods?"), css_classes=["dim-label"]))
+                box = build_welcome_box()
+                self.list_scroll.set_child(box)
                 return
 
             load_index_sizegroup = Gtk.SizeGroup(mode=Gtk.SizeGroupMode.HORIZONTAL)
