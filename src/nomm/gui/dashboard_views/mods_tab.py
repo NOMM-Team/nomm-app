@@ -47,17 +47,17 @@ class ModsTab(Gtk.Box):
         action_bar.append(self.mod_search_entry)
 
         # Filters
-        filter_group = Gtk.Box(css_classes=["linked"])
+        self.filter_group = Gtk.Box(css_classes=["linked"])
         self.current_filter = "all"
-        self.all_filter_btn = Gtk.ToggleButton(label=_("All"), active=True)
-        self.all_filter_btn.connect("toggled", self.on_filter_toggled, "all")
-        filter_group.append(self.all_filter_btn)
+        all_filter_btn = Gtk.ToggleButton(label=_("All"), active=True)
+        all_filter_btn.connect("toggled", self.on_filter_toggled, "all")
+        self.filter_group.append(all_filter_btn)
         for filter_type, label in [("enabled", _("Enabled")), ("disabled", _("Disabled"))]:
-            btn = Gtk.ToggleButton(label=label, group=self.all_filter_btn)
+            btn = Gtk.ToggleButton(label=label, group=all_filter_btn)
             btn.connect("toggled", self.on_filter_toggled, filter_type)
-            filter_group.append(btn)
+            self.filter_group.append(btn)
 
-        action_bar.append(filter_group)
+        action_bar.append(self.filter_group)
 
         self.folder_btn = create_icon_button(
             icon_name="mat-folder-symbolic",
@@ -840,6 +840,8 @@ class ModsTab(Gtk.Box):
                 box = build_welcome_box()
                 self.folder_btn.set_sensitive(False)
                 self.update_btn.set_sensitive(False)
+                self.filter_group.set_visible(False)
+                self.mod_search_entry.set_visible(False)
                 self.list_scroll.set_child(box)
                 return
 

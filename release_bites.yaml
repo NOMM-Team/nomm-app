@@ -6,6 +6,7 @@ Description: |-
   Release bites
    * Feature: Overhaul UX when no mods installed
    * Change: Deactivate metadata refresh and folder buttons when no mods installed
+   * Change: Hide search and filter when no mods installed
 ---
 Version: "0.14.3"
 Date: 2026-10-24
