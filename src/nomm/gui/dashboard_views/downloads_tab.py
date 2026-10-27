@@ -116,7 +116,7 @@ class DownloadsTab(Gtk.Box):
             )
             vbox.append(status_page)
 
-            label = _(f"Copy your existing mod archives in your NOMM downloads folder for {game_info["name"]}")
+            label = _(f"Copy your existing mod archives to your NOMM downloads folder for {game_info["name"]}")
             vbox.append(create_icon_row(
                 icon_name="mat-folder-symbolic",
                 tooltip="Open downloads folder",
@@ -126,7 +126,7 @@ class DownloadsTab(Gtk.Box):
             vbox.append(create_text_box(_("Don't forget that you can drag and drop mod archives into the "
                                           "download tab directly to add them to NOMM."), "info"))
             if game_info.get("nexus_id"):  # Remember to add support for other stores here as well when we add them
-                label = Gtk.Label(label=_("You can also download new mods from the following sources:"))
+                label = Gtk.Label(label=_("You can also download new mods from the following source(s):"))
                 vbox.append(label)
                 hbox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12, halign=Gtk.Align.CENTER)
                 if game_info.get("nexus_id"):
