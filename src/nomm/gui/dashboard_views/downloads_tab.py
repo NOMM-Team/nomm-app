@@ -13,7 +13,7 @@ from nomm.core.fomod_manager import apply_fomod_selection
 from nomm.core.mod_manager import (finalise_mod_metadata, is_mod_installed,
                                    load_staging_metadata, remove_mod_from_metadata)
 from nomm.core.tools import timestamp_converter, list_archives, load_yaml
-from nomm.gui.ui_builders import create_icon_button
+from nomm.gui.ui_builders import create_icon_button, create_icon_row, create_text_box
 from nomm.gui.dashboard_views.fomod_dialog import FomodSelectionDialog
 
 _ = gettext.gettext
@@ -39,20 +39,20 @@ class DownloadsTab(Gtk.Box):
         self.currently_downloading = set()
 
         # Action Bar
-        action_bar = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
+        self.action_bar = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
         filter_group = Gtk.Box(css_classes=["linked"])
 
         # Filters
         self.current_filter = "all"
-        self.all_filter_btn = Gtk.ToggleButton(label=_("All"), active=True)
-        self.all_filter_btn.connect("toggled", self.on_filter_toggled, "all")
-        filter_group.append(self.all_filter_btn)
+        all_filter_btn = Gtk.ToggleButton(label=_("All"), active=True)
+        all_filter_btn.connect("toggled", self.on_filter_toggled, "all")
+        filter_group.append(all_filter_btn)
         for n, l in [("uninstalled", _("Uninstalled")), ("installed", _("Installed"))]:
-            b = Gtk.ToggleButton(label=l, group=self.all_filter_btn)
+            b = Gtk.ToggleButton(label=l, group=all_filter_btn)
             b.connect("toggled", self.on_filter_toggled, n)
             filter_group.append(b)
 
-        action_bar.append(filter_group)
+        self.action_bar.append(filter_group)
 
         # Folder button
         folder_btn = create_icon_button(
@@ -61,9 +61,9 @@ class DownloadsTab(Gtk.Box):
             on_click=lambda x: webbrowser.open(f"file://{self.dashboard.downloads_path}")
         )
         folder_btn.set_hexpand(True)
-        action_bar.append(folder_btn)
+        self.action_bar.append(folder_btn)
 
-        self.append(action_bar)
+        self.append(self.action_bar)
 
         # Downloads
         self.list_box = Gtk.ListBox(css_classes=["dashboard-list"])
@@ -95,16 +95,59 @@ class DownloadsTab(Gtk.Box):
         def prepare_data():
 
             files = list_archives(self.dashboard.downloads_path)
-            files.sort(key=lambda f: os.path.getmtime(os.path.join(self.dashboard.downloads_path, f)), reverse=True)
-            staging_metadata = load_staging_metadata(self.dashboard.staging_metadata_path)
 
+            files.sort(key=lambda f: os.path.getmtime(os.path.join(self.dashboard.downloads_path, f)), reverse=True)
+
+            staging_metadata = load_staging_metadata(self.dashboard.staging_metadata_path)
             meta_path = self.dashboard.downloads_metadata_path
             metadata = {}
             if os.path.exists(meta_path):
                 metadata = load_yaml(meta_path)
             GLib.idle_add(on_data_prepared, files, staging_metadata, meta_path, metadata)
 
+        def build_welcome_box():
+            game_info = self.dashboard.game_info
+            vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12, halign=Gtk.Align.CENTER)
+            intro_paragraph = _(f"You haven't added any mods to {game_info["name"]} right now, here's how that can change:")
+            status_page = Adw.StatusPage(
+                title=_("No mods downloaded... yet."),
+                description=intro_paragraph,
+                icon_name="nomm-logo-empty"
+            )
+            vbox.append(status_page)
+
+            label = _(f"Copy your existing mod archives to your NOMM downloads folder for {game_info["name"]}")
+            vbox.append(create_icon_row(
+                icon_name="mat-folder-symbolic",
+                tooltip="Open downloads folder",
+                label=label,
+                on_click=lambda x: webbrowser.open(f"file://{self.dashboard.downloads_path}")
+            ))
+            vbox.append(create_text_box(_("Don't forget that you can drag and drop mod archives into the "
+                                          "download tab directly to add them to NOMM."), "info"))
+            if game_info.get("nexus_id"):  # Remember to add support for other stores here as well when we add them
+                label = Gtk.Label(label=_("You can also download new mods from the following source(s):"))
+                vbox.append(label)
+                hbox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12, halign=Gtk.Align.CENTER)
+                if game_info.get("nexus_id"):
+                    hbox.append(create_icon_button(
+                        icon_name="nexus-logo",
+                        tooltip=f"Open Nexus page for {game_info["name"]}",
+                        icon_size=96,
+                        on_click=lambda x: webbrowser.open(f"https://www.nexusmods.com/games/{game_info["nexus_id"]}")
+                    ))
+                # Add other stores here as well
+                vbox.append(hbox)
+
+            return vbox
+
         def on_data_prepared(files, staging_metadata, meta_path, metadata):
+
+            if not files:
+                box = build_welcome_box()
+                self.action_bar.set_visible(False)
+                self.scrolled.set_child(box)
+                return
 
             valign = self.scrolled.get_valign()
 

@@ -3,6 +3,7 @@
   <gresource prefix="/com/nomm/Nomm/icons/scalable/apps">
     <!-- nomm logo -->
     <file>nomm-logo.svg</file>
+    <file>nomm-logo-empty.svg</file>
     <!-- modding platform icons -->
     <file>nexus-logo.svg</file>
     <file>gamebanana-logo.svg</file>

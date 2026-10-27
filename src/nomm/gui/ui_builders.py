@@ -152,3 +152,35 @@ def create_icon_button(
         button.connect("clicked", on_click)
 
     return button
+
+
+def create_icon_row(
+    *,
+    icon_name: str,
+    tooltip: str,
+    label: str,
+    icon_size: int = 24,
+    icon_margin: int = 2,
+    css_classes: Optional[list[str]] = None,
+    on_click: Optional[Callable] = None
+) -> Gtk.Box | Gtk.Button:
+
+    row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12, halign=Gtk.Align.START)
+
+    row.append(create_icon_button(
+        icon_name=icon_name,
+        tooltip=tooltip,
+        icon_size=icon_size,
+        icon_margin=icon_margin,
+        css_classes=css_classes,
+    ))
+    row.append(Gtk.Label(label=label))
+
+    if on_click:
+        row_button = Gtk.Button(css_classes=css_classes)
+        row_button.connect("clicked", on_click)
+        row_button.set_cursor_from_name("pointer")
+        row_button.set_child(row)
+        return row_button
+    else:
+        return row

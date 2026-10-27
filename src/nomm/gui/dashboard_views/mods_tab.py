@@ -16,7 +16,7 @@ from nomm.platforms.nexus import get_nexus_changelog, endorse_nexus_mod
 from nomm.platforms.nexus import get_mod_info as get_nexus_mod_info
 from nomm.platforms.gamebanana import get_mod_info as get_gamebanana_mod_info
 from nomm.core.tools import timestamp_converter, write_yaml
-from nomm.gui.ui_builders import create_icon_button
+from nomm.gui.ui_builders import create_icon_button, create_icon_row
 from nomm.gui.text_window import TextWindow
 from typing import Optional, Callable
 
@@ -40,31 +40,32 @@ class ModsTab(Gtk.Box):
         self.deployment_map = build_deployment_map(staging_metadata)
 
         # Action bar top right
-        action_bar = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
+        self.action_bar = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
         self.mod_search_entry = Gtk.SearchEntry(placeholder_text=_("Search mods..."))
         self.mod_search_entry.set_size_request(300, -1)
         self.mod_search_entry.connect("search-changed", self.on_search_changed)
-        action_bar.append(self.mod_search_entry)
+        self.action_bar.append(self.mod_search_entry)
 
         # Filters
-        filter_group = Gtk.Box(css_classes=["linked"])
+        self.filter_group = Gtk.Box(css_classes=["linked"])
         self.current_filter = "all"
-        self.all_filter_btn = Gtk.ToggleButton(label=_("All"), active=True)
-        self.all_filter_btn.connect("toggled", self.on_filter_toggled, "all")
-        filter_group.append(self.all_filter_btn)
+        all_filter_btn = Gtk.ToggleButton(label=_("All"), active=True)
+        all_filter_btn.connect("toggled", self.on_filter_toggled, "all")
+        self.filter_group.append(all_filter_btn)
         for filter_type, label in [("enabled", _("Enabled")), ("disabled", _("Disabled"))]:
-            btn = Gtk.ToggleButton(label=label, group=self.all_filter_btn)
+            btn = Gtk.ToggleButton(label=label, group=all_filter_btn)
             btn.connect("toggled", self.on_filter_toggled, filter_type)
-            filter_group.append(btn)
+            self.filter_group.append(btn)
 
-        action_bar.append(filter_group)
+        self.action_bar.append(self.filter_group)
 
-        folder_btn = create_icon_button(
+        self.folder_btn = create_icon_button(
             icon_name="mat-folder-symbolic",
             tooltip=_("Open staging folder"),
             on_click=lambda x: webbrowser.open(f"file://{self.dashboard.staging_path}")
         )
-        update_btn = create_icon_button(
+
+        self.update_btn = create_icon_button(
             icon_name="refresh-mods-symbolic",
             tooltip=_("Refresh Metadata & Check for updates\n"
                       "This will replace all current mod metadata with fresh data coming straight from the modding platform."),
@@ -84,14 +85,14 @@ class ModsTab(Gtk.Box):
                 on_click=lambda x: webbrowser.open(url)
             )
             wiki_btn.set_hexpand(True)
-            action_bar.append(wiki_btn)
+            self.action_bar.append(wiki_btn)
         else:
             # This is so that the buttons all show up on the right side, even if there is no wiki button
-            folder_btn.set_hexpand(True)
+            self.folder_btn.set_hexpand(True)
 
         # Add all the buttons
-        action_bar.append(folder_btn)
-        action_bar.append(update_btn)
+        self.action_bar.append(self.folder_btn)
+        self.action_bar.append(self.update_btn)
 
         if dashboard.platform in ["steam", "heroic-gog", "heroic-epic"]:
             launch_btn = create_icon_button(
@@ -99,9 +100,9 @@ class ModsTab(Gtk.Box):
                 tooltip=_(f"Launch {dashboard.game_name}"),
                 on_click=self.dashboard.on_launch_clicked
             )
-            action_bar.append(launch_btn)
+            self.action_bar.append(launch_btn)
 
-        self.append(action_bar)
+        self.append(self.action_bar)
 
         # Container for List + Preview
         self.main_content = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=0)
@@ -781,6 +782,51 @@ class ModsTab(Gtk.Box):
 
             GLib.idle_add(on_data_prepared, staging_path, staging_metadata, indexed_mods, conflicts, missing_files_per_mod)
 
+        def build_welcome_box():
+            game_info = self.dashboard.game_info
+            vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12, halign=Gtk.Align.CENTER)
+            intro_paragraph = _(f"Hi and welcome to your very own NOMM dashboard for {game_info["name"]}.\n"
+                                "It feels a bit empty right now, but you'll fill this up soon enough!\n"
+                                "Before you start though, here's a few things that should help you along the way:")
+            status_page = Adw.StatusPage(
+                title=_("No mods installed... yet."),
+                description=intro_paragraph,
+                icon_name="nomm-logo-empty"
+            )
+            vbox.append(status_page)
+
+            if game_info.get("utilities"):
+                label = _("This game comes with preconfigured utilities that can help you in your modding journey."
+                          " We recommend you go check them out.")
+                vbox.append(create_icon_row(
+                    icon_name="emblem-system-symbolic",
+                    tooltip="Open utilities tab",
+                    label=label,
+                    css_classes=["suggested-action"],
+                    on_click=lambda x: self.dashboard.tools_tab_btn.set_active(True)
+                ))
+
+            if game_info.get("wiki_link"):
+                label = _("This configuration has a dedicated wiki page on our website, don't hesitate to click here"
+                          " and give our website some love <3")
+                vbox.append(create_icon_row(
+                    icon_name="globe-book-symbolic",
+                    tooltip="Open wiki page",
+                    label=label,
+                    on_click=lambda x: webbrowser.open(f"https://nomm.moe/docs/game-guides/{game_info["wiki_link"]}")
+                ))
+
+            label = _("Go and find out all the cool ways you can add mods on the Downloads tab (okay there's not that"
+                      " many but you should still go there)")
+            vbox.append(create_icon_row(
+                icon_name="downloaded-symbolic",
+                tooltip="Open the downloads tab",
+                label=label,
+                on_click=lambda x: self.dashboard.dl_tab_btn.set_active(True)
+            ))
+
+            return vbox
+
         def on_data_prepared(staging_path, staging_metadata, indexed_mods, conflicts, missing_files_per_mod):
             valignment = self.sc.get_valign()
             srow = None
@@ -791,7 +837,9 @@ class ModsTab(Gtk.Box):
                 self.mods_list_box.remove(child)
 
             if not staging_metadata or not staging_metadata.get("mods"):
-                self.append(Gtk.Label(label=_("The staging metadata file could not be found, did you install any mods?"), css_classes=["dim-label"]))
+                box = build_welcome_box()
+                self.action_bar.set_visible(False)
+                self.list_scroll.set_child(box)
                 return
 
             load_index_sizegroup = Gtk.SizeGroup(mode=Gtk.SizeGroupMode.HORIZONTAL)
