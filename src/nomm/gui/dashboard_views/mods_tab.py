@@ -40,11 +40,11 @@ class ModsTab(Gtk.Box):
         self.deployment_map = build_deployment_map(staging_metadata)
 
         # Action bar top right
-        action_bar = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
+        self.action_bar = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
         self.mod_search_entry = Gtk.SearchEntry(placeholder_text=_("Search mods..."))
         self.mod_search_entry.set_size_request(300, -1)
         self.mod_search_entry.connect("search-changed", self.on_search_changed)
-        action_bar.append(self.mod_search_entry)
+        self.action_bar.append(self.mod_search_entry)
 
         # Filters
         self.filter_group = Gtk.Box(css_classes=["linked"])
@@ -57,7 +57,7 @@ class ModsTab(Gtk.Box):
             btn.connect("toggled", self.on_filter_toggled, filter_type)
             self.filter_group.append(btn)
 
-        action_bar.append(self.filter_group)
+        self.action_bar.append(self.filter_group)
 
         self.folder_btn = create_icon_button(
             icon_name="mat-folder-symbolic",
@@ -85,14 +85,14 @@ class ModsTab(Gtk.Box):
                 on_click=lambda x: webbrowser.open(url)
             )
             wiki_btn.set_hexpand(True)
-            action_bar.append(wiki_btn)
+            self.action_bar.append(wiki_btn)
         else:
             # This is so that the buttons all show up on the right side, even if there is no wiki button
             self.folder_btn.set_hexpand(True)
 
         # Add all the buttons
-        action_bar.append(self.folder_btn)
-        action_bar.append(self.update_btn)
+        self.action_bar.append(self.folder_btn)
+        self.action_bar.append(self.update_btn)
 
         if dashboard.platform in ["steam", "heroic-gog", "heroic-epic"]:
             launch_btn = create_icon_button(
@@ -100,9 +100,9 @@ class ModsTab(Gtk.Box):
                 tooltip=_(f"Launch {dashboard.game_name}"),
                 on_click=self.dashboard.on_launch_clicked
             )
-            action_bar.append(launch_btn)
+            self.action_bar.append(launch_btn)
 
-        self.append(action_bar)
+        self.append(self.action_bar)
 
         # Container for List + Preview
         self.main_content = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=0)
@@ -838,10 +838,7 @@ class ModsTab(Gtk.Box):
 
             if not staging_metadata or not staging_metadata.get("mods"):
                 box = build_welcome_box()
-                self.folder_btn.set_sensitive(False)
-                self.update_btn.set_sensitive(False)
-                self.filter_group.set_visible(False)
-                self.mod_search_entry.set_visible(False)
+                self.action_bar.set_visible(False)
                 self.list_scroll.set_child(box)
                 return
 
