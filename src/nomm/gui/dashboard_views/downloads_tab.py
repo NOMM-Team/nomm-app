@@ -108,7 +108,7 @@ class DownloadsTab(Gtk.Box):
         def build_welcome_box():
             game_info = self.dashboard.game_info
             vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12, halign=Gtk.Align.CENTER)
-            intro_paragraph = _(f"You haven't added many mods to {game_info["name"]} right now, here's how that can change:")
+            intro_paragraph = _(f"You haven't added any mods to {game_info["name"]} right now, here's how that can change:")
             status_page = Adw.StatusPage(
                 title=_("No mods downloaded... yet."),
                 description=intro_paragraph,
@@ -116,7 +116,7 @@ class DownloadsTab(Gtk.Box):
             )
             vbox.append(status_page)
 
-            label = _(f"Copy your existing mod files in your NOMM downloads folder for {game_info["name"]}")
+            label = _(f"Copy your existing mod archives in your NOMM downloads folder for {game_info["name"]}")
             vbox.append(create_icon_row(
                 icon_name="mat-folder-symbolic",
                 tooltip="Open downloads folder",
@@ -132,7 +132,7 @@ class DownloadsTab(Gtk.Box):
                 if game_info.get("nexus_id"):
                     hbox.append(create_icon_button(
                         icon_name="nexus-logo",
-                        tooltip="Open Nexus page for this game",
+                        tooltip=f"Open Nexus page for {game_info["name"]}",
                         icon_size=96,
                         on_click=lambda x: webbrowser.open(f"https://www.nexusmods.com/games/{game_info["nexus_id"]}")
                     ))
