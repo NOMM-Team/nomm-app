@@ -4,8 +4,9 @@ Date: 2026-10-26
 URL: https://github.com/nomm-team/nomm-app/releases/0.14.4
 Description: |-
   Release bites
-   * Feature: Overhaul UX when no mods installed
-   * Change: Hide action bars when no mods installed
+   * Feature: Overhaul UX of mods and downloads tabs when no mods installed
+   * Feature: Add buttons to open utility staging and download folders on utility tab
+   * Change: Hide action bars on mods and downloads tabs when no mods installed
 ---
 Version: "0.14.3"
 Date: 2026-10-24
