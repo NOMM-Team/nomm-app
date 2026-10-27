@@ -64,6 +64,7 @@ class SettingsWindow(Adw.Window):
             version_badge.set_tooltip_text(_("This version is meant for testing/development only and is not publicly available"))
             version_badge.add_css_class("badge-warning")
             version_badge.set_valign(Gtk.Align.CENTER)
+            version_btn.set_sensitive(False)
             title_box.append(version_badge)
         elif APP_VERSION == tags[0]:
             version_badge = Gtk.Label(label=_("latest"))
