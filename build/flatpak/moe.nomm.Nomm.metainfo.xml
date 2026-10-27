@@ -41,8 +41,7 @@
         <p>Release bites</p>
         <ul>
           <li>Feature: Overhaul UX when no mods installed</li>
-          <li>Change: Deactivate metadata refresh and folder buttons when no mods installed</li>
-          <li>Change: Hide search and filter when no mods installed</li>
+          <li>Change: Hide action bars when no mods installed</li>
         </ul>
       </description>
       <url>https://github.com/nomm-team/nomm-app/releases/0.14.4</url>
