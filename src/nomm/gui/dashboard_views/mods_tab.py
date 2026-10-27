@@ -59,40 +59,36 @@ class ModsTab(Gtk.Box):
 
         self.action_bar.append(self.filter_group)
 
-        self.folder_btn = create_icon_button(
+        folder_btn = create_icon_button(
             icon_name="mat-folder-symbolic",
             tooltip=_("Open staging folder"),
             on_click=lambda x: webbrowser.open(f"file://{self.dashboard.staging_path}")
         )
 
-        self.update_btn = create_icon_button(
+        update_btn = create_icon_button(
             icon_name="refresh-mods-symbolic",
             tooltip=_("Refresh Metadata & Check for updates\n"
                       "This will replace all current mod metadata with fresh data coming straight from the modding platform."),
             on_click=self.check_for_updates
         )
 
-        if "wiki_link" in dashboard.game_info:
-            if dashboard.game_info["wiki_link"]:
-                icon = "globe-book-symbolic"
-                url = f"https://nomm.moe/docs/game-guides/{dashboard.game_info["wiki_link"]}"
-            else:
-                icon = "mat-globe-cancel-symbolic"
-                url = "https://nomm.moe/docs/no-wiki-page"
-            wiki_btn = create_icon_button(
-                icon_name=icon,
-                tooltip=_("Open wiki page"),
-                on_click=lambda x: webbrowser.open(url)
-            )
-            wiki_btn.set_hexpand(True)
-            self.action_bar.append(wiki_btn)
+        if dashboard.game_info["wiki_link"]:
+            icon = "globe-book-symbolic"
+            url = f"https://nomm.moe/docs/game-guides/{dashboard.game_info["wiki_link"]}"
         else:
-            # This is so that the buttons all show up on the right side, even if there is no wiki button
-            self.folder_btn.set_hexpand(True)
+            icon = "mat-globe-cancel-symbolic"
+            url = "https://nomm.moe/docs/no-wiki-page"
+        wiki_btn = create_icon_button(
+            icon_name=icon,
+            tooltip=_("Open wiki page"),
+            on_click=lambda x: webbrowser.open(url)
+        )
+        wiki_btn.set_hexpand(True)
+        self.action_bar.append(wiki_btn)
 
         # Add all the buttons
-        self.action_bar.append(self.folder_btn)
-        self.action_bar.append(self.update_btn)
+        self.action_bar.append(folder_btn)
+        self.action_bar.append(update_btn)
 
         if dashboard.platform in ["steam", "heroic-gog", "heroic-epic"]:
             launch_btn = create_icon_button(
