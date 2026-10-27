@@ -65,6 +65,7 @@ class SettingsWindow(Adw.Window):
             version_badge.add_css_class("badge-warning")
             version_badge.set_valign(Gtk.Align.CENTER)
             version_btn.set_sensitive(False)
+            version_btn.set_tooltip_text(_("This version isn't available yet and therefore does not have an accessible changelog"))
             title_box.append(version_badge)
         elif APP_VERSION == tags[0]:
             version_badge = Gtk.Label(label=_("latest"))
