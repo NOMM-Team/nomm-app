@@ -40,8 +40,9 @@
       <description>
         <p>Release bites</p>
         <ul>
-          <li>Feature: Overhaul UX when no mods installed</li>
-          <li>Change: Hide action bars when no mods installed</li>
+          <li>Feature: Overhaul UX of mods and downloads tabs when no mods installed</li>
+          <li>Feature: Add buttons to open utility staging and download folders on utility tab</li>
+          <li>Change: Hide action bars on mods and downloads tabs when no mods installed</li>
         </ul>
       </description>
       <url>https://github.com/nomm-team/nomm-app/releases/0.14.4</url>

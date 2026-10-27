@@ -26,6 +26,7 @@ class UtilitiesTab(Gtk.Box):
         self.downloader = downloader
         self.download_maps = {}
         self.download_dir = Path(self.dashboard.downloads_path) / "utilities"
+        self.staging_dir = Path(self.dashboard.staging_path) / "utilities"
         self.setup_folder_monitor()
         self.populate_list()
 
@@ -43,6 +44,23 @@ class UtilitiesTab(Gtk.Box):
         while child := self.get_first_child():
             self.remove(child)
         self.download_maps.clear()
+
+        action_bar = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
+        staging_folder_button = create_icon_button(
+            icon_name="mat-folder-symbolic",
+            tooltip=_("Open utilities staging folder "),
+            on_click=lambda x: webbrowser.open(f"file://{self.staging_dir}"),
+            disabled=not self.staging_dir.exists()
+        )
+        staging_folder_button.set_hexpand(True)
+        action_bar.append(staging_folder_button)
+        action_bar.append(create_icon_button(
+            icon_name="mat-folder-symbolic",
+            tooltip=_("Open utilities download folder"),
+            on_click=lambda x: webbrowser.open(f"file://{self.download_dir}"),
+            disabled=not self.download_dir.exists()
+        ))
+        self.append(action_bar)
 
         utility_groups: list[dict] = self.dashboard.game_info.get("utilities", [])
         list_box = Gtk.ListBox(css_classes=["dashboard-list"])
