@@ -7,7 +7,7 @@ import requests
 from gi.repository import Adw, Gio, GLib, Gtk
 
 from nomm.core.user_config import update_user_config, LibrarySort, DATA_DIR, load_user_config
-from nomm.core.tools import translate_fuse_path, get_nomm_tags, format_gb_size, get_dir_size_bytes
+from nomm.core.tools import translate_fuse_path, format_gb_size, get_dir_size_bytes
 from nomm.gui.ui_builders import create_code_box, create_icon_button
 from nomm.platforms.switch import list_emulators
 from nomm.gui.application import APP_VERSION
@@ -56,7 +56,7 @@ class SettingsWindow(Adw.Window):
         title_box.append(version_btn)
 
         # Tag check logic:
-        tags = get_nomm_tags(app.headers)
+        tags = self.app.flathub_versions
         if not tags:
             pass
         elif APP_VERSION not in tags:
@@ -64,6 +64,8 @@ class SettingsWindow(Adw.Window):
             version_badge.set_tooltip_text(_("This version is meant for testing/development only and is not publicly available"))
             version_badge.add_css_class("badge-warning")
             version_badge.set_valign(Gtk.Align.CENTER)
+            version_btn.set_sensitive(False)
+            version_btn.set_tooltip_text(_("This version isn't available yet and therefore does not have an accessible changelog"))
             title_box.append(version_badge)
         elif APP_VERSION == tags[0]:
             version_badge = Gtk.Label(label=_("latest"))

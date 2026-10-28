@@ -10,7 +10,8 @@ from urllib.parse import urlparse
 from dulwich import porcelain
 
 from nomm.core.game_scanner import scan_all_games
-from nomm.core.tools import translate_fuse_path, load_nomm_version, get_bundled_data_dir, get_missing_rights, get_flatpak_context
+from nomm.core.tools import translate_fuse_path, load_nomm_version, get_bundled_data_dir, \
+                            get_missing_rights, get_flatpak_context, get_flathub_package_version
 from nomm.core.user_config import (load_user_config, update_user_config,
                                    write_user_config, PRESET_GAME_CONFIG_PATH, DATA_DIR)
 from nomm.platforms.switch import list_emulators, get_emulator_logo
@@ -561,6 +562,8 @@ class Nomm(Adw.Application):
 
     def run_background_workflow(self):
         self.matches, self.game_libraries = scan_all_games()
+
+        self.flathub_versions = get_flathub_package_version(self.headers, APP_NAME)
 
         # Check if there are essential paths that are locked (staging & downloads folders)
         user_config = load_user_config()
