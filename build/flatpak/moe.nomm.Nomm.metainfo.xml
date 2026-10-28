@@ -41,6 +41,7 @@
         <p>Release bites</p>
         <ul>
           <li>Feature: Overhaul UX of mods and downloads tabs when no mods installed</li>
+          <li>Feature: Overhaul mod upgrade flow on downloads tab when downloading an update for a mod</li>
           <li>Feature: Add buttons to open utility staging and download folders on utility tab</li>
           <li>Change: Hide action bars on mods and downloads tabs when no mods installed</li>
           <li>Change: No longer get NOMM latest version from Github releases when opening settings menu.
