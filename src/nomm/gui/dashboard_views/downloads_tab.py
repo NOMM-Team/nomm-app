@@ -11,7 +11,7 @@ from nomm.core.archive_manager import (delete_downloaded_archive, get_all_relati
                                        process_dropped_files, prepare_mod_installation)
 from nomm.core.fomod_manager import apply_fomod_selection
 from nomm.core.mod_manager import (finalise_mod_metadata, is_mod_installed,
-                                   load_staging_metadata, remove_mod_from_metadata)
+                                   load_staging_metadata, remove_mod_from_metadata, get_installed_mod_version)
 from nomm.core.tools import timestamp_converter, list_archives, load_yaml
 from nomm.gui.ui_builders import create_icon_button, create_icon_row, create_text_box
 from nomm.gui.dashboard_views.fomod_dialog import FomodSelectionDialog
@@ -237,27 +237,56 @@ class DownloadsTab(Gtk.Box):
                 download_lbl.add_css_class("heading")
                 download_lbl.add_css_class("dim-label")
                 self.download_lbl_maps[file_name] = download_lbl
+                # Install Button / SplitButton Logic
+                other_version_installed = get_installed_mod_version(display_name, staging_metadata)
 
-                # Install Button
-                install_btn = Gtk.Button(label=_("Reinstall") if installed else _("Install"), valign=Gtk.Align.CENTER)
-                if not installed:
-                    install_btn.add_css_class("suggested-action")
-                install_btn.set_cursor_from_name("pointer")
-                install_btn.connect("clicked", self.on_install_clicked, file_name, display_name)
+                # Use a SplitButton if the mod is already installed (Reinstall) OR an upgrade is available
+                if installed or other_version_installed:
+                    action_btn = Adw.SplitButton(valign=Gtk.Align.CENTER)
+
+                    safe_action_name = f"install-side-by-side-{hash(file_name)}"
+                    menu = Gio.Menu()
+                    menu.append(_("Install side-by-side"), f"win.{safe_action_name}")
+                    action_btn.set_menu_model(menu)
+
+                    side_by_side_action = Gio.SimpleAction.new(safe_action_name, None)
+                    side_by_side_action.connect(
+                        "activate",
+                        lambda action, param, fn=file_name, dn=display_name: self.on_install_clicked(None, fn, dn, True)
+                    )
+                    self.dashboard.app.win.add_action(side_by_side_action)
+
+                    if other_version_installed != version_text and not installed:
+                        action_btn.set_label(_("Upgrade"))
+                        action_btn.set_tooltip_text(_(f"Upgrade mod from version {other_version_installed} to {version_text}"))
+                        action_btn.add_css_class("suggested-action")
+                        action_btn.connect("clicked", self.on_upgrade_clicked, file_name, display_name)
+                    else:
+                        action_btn.set_label(_("Reinstall"))
+                        action_btn.connect("clicked", self.on_install_clicked, file_name, display_name, False)
+                else:
+                    # Standard simple button for completely uninstalled mods
+                    action_btn = Gtk.Button(valign=Gtk.Align.CENTER)
+                    action_btn.set_label(_("Install"))
+                    action_btn.add_css_class("suggested-action")
+                    action_btn.connect("clicked", self.on_install_clicked, file_name, display_name, False)
+
+                action_btn.set_cursor_from_name("pointer")
+
                 if (file_name in self.dashboard.currently_installing) or (file_name in self.currently_downloading):
-                    install_btn.set_sensitive(False)
+                    action_btn.set_sensitive(False)
 
                 # Overlay to display download progress on top of download button
                 overlay = Gtk.Overlay()
                 overlay.set_halign(Gtk.Align.CENTER)
                 overlay.set_valign(Gtk.Align.CENTER)
-                overlay.set_child(install_btn)
+                overlay.set_child(action_btn)
                 overlay.add_overlay(dl_pbar)
                 overlay.add_overlay(download_lbl)
 
                 if file_name in self.currently_downloading:
-                    install_btn.add_css_class('btn-download-before')
-                    install_btn.set_label('')
+                    action_btn.add_css_class('btn-download-before')
+                    action_btn.set_label('')
                     download_lbl.set_visible(True)
                 else:
                     download_lbl.set_visible(False)
@@ -331,11 +360,23 @@ class DownloadsTab(Gtk.Box):
         return datetime.fromtimestamp(os.path.getmtime(os.path.join(self.dashboard.downloads_path, f)))
 
     # Install
-    def on_install_clicked(self, btn, filename, display_name):
-        display_name = display_name.replace(".zip", "").replace(".rar", "").replace(".7z", "")
+    def on_install_clicked(self, btn: Gtk.Button, filename: str, display_name: str, install_as_alternate: bool):
+        base_display_name = display_name.replace(".zip", "").replace(".rar", "").replace(".7z", "")
+        display_name = base_display_name
+        if install_as_alternate:  # if there's already another version of the mod installed
+            for increment in range(1, 100):
+                display_name = f"{base_display_name} (alternate {increment})"
+                mod_staging_dir = self.dashboard.staging_path / display_name
+                if not mod_staging_dir.exists():
+                    break
+            alternate_display_name = display_name
+        else:
+            alternate_display_name = None
+
         mod_staging_dir = os.path.join(self.dashboard.staging_path, display_name)
         archive_full_path = os.path.join(self.dashboard.downloads_path, filename)
-        btn.set_sensitive(False)
+        if btn:
+            btn.set_sensitive(False)
 
         # Stores the currently installing mod in a local variable in case multiple mods are installing at the same time
         self.dashboard.currently_installing.add(filename)
@@ -346,18 +387,23 @@ class DownloadsTab(Gtk.Box):
 
         def on_extraction_done(data):
             if not data:
-                btn.set_sensitive(True)
+                if btn:
+                    btn.set_sensitive(True)
                 return False
             if data['fomod']:
                 dialog = FomodSelectionDialog(self.dashboard.app.win, data['fomod'], mod_staging_dir, self.dashboard.deployment_targets[0]['path'])
                 dialog.connect("response", self.on_fomod_dialog_response, mod_staging_dir, filename)
                 dialog.present()
                 return False
-            self.resolve_deployment_path(filename, data['files'])
-            btn.set_sensitive(True)
+            self.resolve_deployment_path(filename, data['files'], alternate_display_name)
+            if btn:
+                btn.set_sensitive(True)
             return False
 
         threading.Thread(target=worker, daemon=True).start()
+
+    def on_upgrade_clicked(self, btn, filename, display_name):
+        pass
 
     def on_file_drop(self, _targer, value, _x, _y):
         if isinstance(value, Gdk.FileList):
@@ -434,11 +480,11 @@ class DownloadsTab(Gtk.Box):
 
         dialog.destroy()
 
-    def resolve_deployment_path(self, filename: str, extracted_roots: list):
+    def resolve_deployment_path(self, filename: str, extracted_roots: list, alternate_display_name: str | None):
         def on_path_resolved(deployment_target):
             if not deployment_target:
                 return
-            self.finalise_installation(filename, extracted_roots, deployment_target)
+            self.finalise_installation(filename, extracted_roots, deployment_target, alternate_display_name)
 
         if len(self.dashboard.deployment_targets) > 1:
             self.choose_deployment_path(on_path_resolved)
@@ -514,7 +560,7 @@ class DownloadsTab(Gtk.Box):
         dialog.connect("response", on_response)
         dialog.present()
 
-    def finalise_installation(self, filename, extracted_roots, deployment_target):
+    def finalise_installation(self, filename, extracted_roots, deployment_target, alternate_display_name: str | None):
 
         def finalise_metadata():
             try:
@@ -523,7 +569,8 @@ class DownloadsTab(Gtk.Box):
                     extracted_roots,
                     deployment_target,
                     self.dashboard.staging_metadata_path,
-                    self.dashboard.downloads_metadata_path
+                    self.dashboard.downloads_metadata_path,
+                    alternate_display_name
                 )
             except Exception as error:
                 GLib.idle_add(on_metadata_finalised, error)
