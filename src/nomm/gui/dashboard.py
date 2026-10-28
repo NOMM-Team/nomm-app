@@ -236,9 +236,9 @@ class GameDashboard(Gtk.Box):
         row_box.append(label)
         return row_box
 
-    def on_uninstall_item(self, btn, mod_files: list, mod_name: str):
+    def on_uninstall_item(self, btn, mod_name: str):
         staging_metadata = load_staging_metadata(self.staging_metadata_path)
-
+        mod_files = staging_metadata["mods"][mod_name].get("mod_files", [])
         dest_dir = staging_metadata["mods"][mod_name]["deployment_path"]
         staging_mod_dir = os.path.join(self.staging_path, staging_metadata["mods"][mod_name]["folder_name"])
 

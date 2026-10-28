@@ -1,11 +1,11 @@
 ---
-Version: "0.14.4"
+Version: "0.15.0"
 Date: 2026-10-28
 URL: https://github.com/nomm-team/nomm-app/releases/0.14.4
 Description: |-
   Release bites
    * Feature: Overhaul UX of mods and downloads tabs when no mods installed
-   * Feature: Overhaul mod upgrade flow on downloads tab when downloading an update for a mod
+   * Feature: Overhaul mod upgrade / downgrade flow on downloads tab when downloading an update for a mod
    * Feature: Can now install different versions or variants of mods side-by-side
    * Feature: Add buttons to open utility staging and download folders on utility tab
    * Change: Hide action bars on mods and downloads tabs when no mods installed

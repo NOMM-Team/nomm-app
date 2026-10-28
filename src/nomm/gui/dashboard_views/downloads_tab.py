@@ -5,14 +5,15 @@ import webbrowser
 import threading
 from datetime import datetime
 
+
 from gi.repository import Adw, Gdk, Gio, GLib, Gtk, Pango
 
 from nomm.core.archive_manager import (delete_downloaded_archive, get_all_relative_files,
                                        process_dropped_files, prepare_mod_installation)
 from nomm.core.fomod_manager import apply_fomod_selection
-from nomm.core.mod_manager import (finalise_mod_metadata, is_mod_installed,
-                                   load_staging_metadata, remove_mod_from_metadata, get_installed_mod_version)
-from nomm.core.tools import timestamp_converter, list_archives, load_yaml
+from nomm.core.mod_manager import (finalise_mod_metadata, is_mod_installed, load_staging_metadata, completely_uninstall_mod,
+                                   remove_mod_from_metadata, get_installed_mod_version, get_installed_mod_archive_names)
+from nomm.core.tools import timestamp_converter, list_archives, load_yaml, is_an_upgrade
 from nomm.gui.ui_builders import create_icon_button, create_icon_row, create_text_box
 from nomm.gui.dashboard_views.fomod_dialog import FomodSelectionDialog
 
@@ -257,10 +258,15 @@ class DownloadsTab(Gtk.Box):
                     self.dashboard.app.win.add_action(side_by_side_action)
 
                     if other_version_installed != version_text and not installed:
-                        action_btn.set_label(_("Upgrade"))
-                        action_btn.set_tooltip_text(_(f"Upgrade mod from version {other_version_installed} to {version_text}"))
-                        action_btn.add_css_class("suggested-action")
-                        action_btn.connect("clicked", self.on_upgrade_clicked, file_name, display_name)
+                        if is_an_upgrade(other_version_installed, version_text):
+                            action_btn.set_label(_("Upgrade"))
+                            action_btn.set_tooltip_text(_(f"Upgrade mod from version {other_version_installed} to {version_text}"))
+                            action_btn.add_css_class("suggested-action")
+                        else:
+                            action_btn.set_label(_("Downgrade"))
+                            action_btn.set_tooltip_text(_(f"Downgrade mod from version {other_version_installed} to {version_text}"))
+                            action_btn.add_css_class("destructive-action")
+                        action_btn.connect("clicked", self.on_upgrade_clicked, file_name, display_name, staging_metadata)
                     else:
                         action_btn.set_label(_("Reinstall"))
                         action_btn.connect("clicked", self.on_install_clicked, file_name, display_name, False)
@@ -402,8 +408,18 @@ class DownloadsTab(Gtk.Box):
 
         threading.Thread(target=worker, daemon=True).start()
 
-    def on_upgrade_clicked(self, btn, filename, display_name):
-        pass
+    def on_upgrade_clicked(self, btn, filename, display_name, staging_metadata):
+        archive_names = get_installed_mod_archive_names(display_name, staging_metadata)
+        if archive_names:
+            mod_name = archive_names[0]
+            mod_files = staging_metadata["mods"][mod_name].get("mod_files", [])
+            dest_dir = staging_metadata["mods"][mod_name]["deployment_path"]
+            staging_mod_dir = os.path.join(self.dashboard.staging_path, staging_metadata["mods"][mod_name]["folder_name"])
+
+            completely_uninstall_mod(staging_mod_dir, dest_dir, mod_files)
+            remove_mod_from_metadata(self.dashboard.staging_metadata_path, mod_name)
+
+        self.on_install_clicked(btn, filename, display_name, False)
 
     def on_file_drop(self, _targer, value, _x, _y):
         if isinstance(value, Gdk.FileList):

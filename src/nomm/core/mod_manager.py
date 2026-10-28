@@ -123,6 +123,19 @@ def get_installed_mod_version(display_name, staging_metadata) -> str | None:
     return None
 
 
+def get_installed_mod_archive_names(display_name, staging_metadata) -> list:
+    """Returns a list of all staging metadata entries with the same name as display_name"""
+    if not staging_metadata or "mods" not in staging_metadata:
+        return []
+    archive_name_list = []
+
+    staged_mods = staging_metadata["mods"]
+    for archive_name in staged_mods:
+        if staged_mods[archive_name]["display_name"] == display_name:
+            archive_name_list.append(archive_name)
+    return archive_name_list
+
+
 # Checks if mod files from staging and dest folders are the same and remove the symlink if they are
 def unlink_mod_files(staging_dir: str, dest_dir: str, mod_files: list[str]) -> bool:
     dest_path = Path(dest_dir)

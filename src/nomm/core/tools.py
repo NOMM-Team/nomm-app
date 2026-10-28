@@ -8,6 +8,7 @@ import urllib
 import configparser
 import subprocess
 from pathlib import Path
+from packaging.version import parse, InvalidVersion
 from gi.repository import GLib, Gio
 
 
@@ -461,4 +462,17 @@ def launch_flatpak(flatpak_id: str) -> bool:
         return True
     except (OSError, subprocess.SubprocessError) as e:
         print(f"Failed to launch Flatpak '{flatpak_id}': {e}")
+        return False
+
+
+def is_an_upgrade(old_version, new_version):
+    try:
+        old_version_parsed = parse(old_version)
+        new_version_parsed = parse(new_version)
+    except InvalidVersion:
+        print("[!] Could not parse version identifier, defaulting to upgrade")
+        return True
+    if old_version_parsed < new_version_parsed:
+        return True
+    else:
         return False
