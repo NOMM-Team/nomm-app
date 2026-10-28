@@ -5,6 +5,7 @@ URL: https://github.com/nomm-team/nomm-app/releases/0.14.4
 Description: |-
   Release bites
    * Feature: Overhaul UX of mods and downloads tabs when no mods installed
+   * Feature: Overhaul mod upgrade flow on downloads tab when downloading an update for a mod
    * Feature: Add buttons to open utility staging and download folders on utility tab
    * Change: Hide action bars on mods and downloads tabs when no mods installed
    * Change: No longer get NOMM latest version from Github releases when opening settings menu. NOMM latest version is now obatined from Flathub at app start. This should make opening the settings menu more snappier and limit calls to Github API.
