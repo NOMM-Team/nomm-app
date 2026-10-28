@@ -36,12 +36,13 @@
     <color type="primary" scheme_preference="dark">#374955</color>
   </branding>
   <releases>
-    <release type="stable" version="0.14.4" date="2026-10-28T00:00:00Z">
+    <release type="stable" version="0.15.0" date="2026-10-28T00:00:00Z">
       <description>
         <p>Release bites</p>
         <ul>
           <li>Feature: Overhaul UX of mods and downloads tabs when no mods installed</li>
-          <li>Feature: Overhaul mod upgrade flow on downloads tab when downloading an update for a mod</li>
+          <li>Feature: Overhaul mod upgrade / downgrade flow on downloads tab when downloading an update
+          for a mod</li>
           <li>Feature: Can now install different versions or variants of mods side-by-side</li>
           <li>Feature: Add buttons to open utility staging and download folders on utility tab</li>
           <li>Change: Hide action bars on mods and downloads tabs when no mods installed</li>
