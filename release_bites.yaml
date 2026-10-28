@@ -1,7 +1,7 @@
 ---
 Version: "0.15.0"
 Date: 2026-10-28
-URL: https://github.com/nomm-team/nomm-app/releases/0.14.4
+URL: https://github.com/nomm-team/nomm-app/releases/0.15.0
 Description: |-
   Release bites
    * Feature: Overhaul UX of mods and downloads tabs when no mods installed
