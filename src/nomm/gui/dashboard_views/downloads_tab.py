@@ -37,6 +37,7 @@ class DownloadsTab(Gtk.Box):
         self.downloader.connect('download-metadata-ready', self.on_metadata_ready)
         self.download_maps = {}
         self.download_lbl_maps = {}
+        self.download_progress_cache = {}
         self.currently_downloading = set()
 
         # Action Bar
@@ -258,11 +259,16 @@ class DownloadsTab(Gtk.Box):
                     self.dashboard.app.win.add_action(side_by_side_action)
 
                     if other_version_installed != version_text and not installed:
-                        if is_an_upgrade(other_version_installed, version_text):
+                        mod_is_an_upgrade = is_an_upgrade(other_version_installed, version_text)
+                        if mod_is_an_upgrade:
                             action_btn.set_label(_("Upgrade"))
                             action_btn.set_tooltip_text(_(f"Upgrade mod from version {other_version_installed} to {version_text}"))
                             action_btn.add_css_class("suggested-action")
-                        else:
+                        elif mod_is_an_upgrade is None:  # could not determine version
+                            action_btn.set_label(_("Upgrade?"))
+                            action_btn.set_tooltip_text(_(f"Upgrade(?) mod from version {other_version_installed} to {version_text}"))
+                            action_btn.add_css_class("suggested-action")
+                        else:  # new version is older than current version
                             action_btn.set_label(_("Downgrade"))
                             action_btn.set_tooltip_text(_(f"Downgrade mod from version {other_version_installed} to {version_text}"))
                             action_btn.add_css_class("destructive-action")
@@ -615,20 +621,26 @@ class DownloadsTab(Gtk.Box):
     def on_download_progress(self, downloader, data):
         filename = data['filename']
         progress = data['progress']
+        self.download_progress_cache[filename] = progress  # Cache progress
+
         if filename not in self.currently_downloading:
             self.currently_downloading.add(filename)
             self.populate_list()
+
         if filename in self.download_maps:
             self.download_maps[filename].set_fraction(progress)
-            self.download_lbl_maps[filename].set_text(f"{round(progress*100)}%")
+            if filename in self.download_lbl_maps:
+                self.download_lbl_maps[filename].set_text(f"{round(progress * 100)}%")
 
     def on_download_complete(self, downloader, filename):
-        if filename in self.download_maps:
-            self.currently_downloading.discard(filename)
-            self.download_lbl_maps[filename].set_text("Fetching...")
+        self.currently_downloading.discard(filename)
+        self.download_progress_cache.pop(filename, None)
+        # Refresh the UI so the download overlay disappears and the install button appears
+        GLib.idle_add(self.populate_list)
 
     def on_metadata_ready(self, downloader, filename):
+        self.download_progress_cache.pop(filename, None)
         if filename in self.download_maps:
             self.download_maps[filename].set_fraction(0.0)
-            self.download_lbl_maps.pop(filename)
+            self.download_lbl_maps.pop(filename, None)
             self.populate_list()

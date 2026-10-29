@@ -1,3 +1,4 @@
+from xmlrpc.client import Boolean
 import json
 import os
 import yaml
@@ -465,13 +466,13 @@ def launch_flatpak(flatpak_id: str) -> bool:
         return False
 
 
-def is_an_upgrade(old_version, new_version):
+def is_an_upgrade(old_version, new_version) -> Boolean | None:
     try:
         old_version_parsed = parse(old_version)
         new_version_parsed = parse(new_version)
     except InvalidVersion:
         print("[!] Could not parse version identifier, defaulting to upgrade")
-        return True
+        return None
     if old_version_parsed < new_version_parsed:
         return True
     else:
