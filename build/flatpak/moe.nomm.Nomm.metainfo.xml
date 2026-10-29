@@ -36,11 +36,14 @@
     <color type="primary" scheme_preference="dark">#374955</color>
   </branding>
   <releases>
-    <release type="stable" version="0.14.4" date="2026-10-26T00:00:00Z">
+    <release type="stable" version="0.15.0" date="2026-10-28T00:00:00Z">
       <description>
         <p>Release bites</p>
         <ul>
           <li>Feature: Overhaul UX of mods and downloads tabs when no mods installed</li>
+          <li>Feature: Overhaul mod upgrade / downgrade flow on downloads tab when downloading an update
+          for a mod</li>
+          <li>Feature: Can now install different versions or variants of mods side-by-side</li>
           <li>Feature: Add buttons to open utility staging and download folders on utility tab</li>
           <li>Change: Hide action bars on mods and downloads tabs when no mods installed</li>
           <li>Change: No longer get NOMM latest version from Github releases when opening settings menu.
@@ -50,7 +53,7 @@
           dev versions to help with testing, they are on Discord)</li>
         </ul>
       </description>
-      <url>https://github.com/nomm-team/nomm-app/releases/0.14.4</url>
+      <url>https://github.com/nomm-team/nomm-app/releases/0.15.0</url>
     </release>
     <release type="stable" version="0.14.3" date="2026-10-24T00:00:00Z">
       <description>

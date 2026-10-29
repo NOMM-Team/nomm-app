@@ -112,6 +112,30 @@ def is_mod_installed(archive_filename, staging_metadata) -> bool:
     return False
 
 
+def get_installed_mod_version(display_name, staging_metadata) -> str | None:
+    """Gets the version of a mod installed with the same name, if it exists, if not returns None."""
+    if not staging_metadata or "mods" not in staging_metadata:
+        return None
+    staged_mods = staging_metadata["mods"]
+    for archive_name in staged_mods:
+        if staged_mods[archive_name]["display_name"] == display_name:
+            return staged_mods[archive_name].get("version")
+    return None
+
+
+def get_installed_mod_archive_names(display_name, staging_metadata) -> list:
+    """Returns a list of all staging metadata entries with the same name as display_name"""
+    if not staging_metadata or "mods" not in staging_metadata:
+        return []
+    archive_name_list = []
+
+    staged_mods = staging_metadata["mods"]
+    for archive_name in staged_mods:
+        if staged_mods[archive_name]["display_name"] == display_name:
+            archive_name_list.append(archive_name)
+    return archive_name_list
+
+
 # Checks if mod files from staging and dest folders are the same and remove the symlink if they are
 def unlink_mod_files(staging_dir: str, dest_dir: str, mod_files: list[str]) -> bool:
     dest_path = Path(dest_dir)
@@ -363,7 +387,8 @@ def remove_mod_from_metadata(path: str, mod_name: str) -> bool:
 
 
 # Writing the metadata with needed fields
-def finalise_mod_metadata(filename: str, mod_files: list, deployment_target: dict, staging_meta_path: str, downloads_meta_path: str):
+def finalise_mod_metadata(filename: str, mod_files: list, deployment_target: dict,
+                          staging_meta_path: str, downloads_meta_path: str, alternate_display_name: str | None):
     current_download_metadata = {}
 
     mod_name = filename.replace(".zip", "").replace(".rar", "").replace(".7z", "")
@@ -396,6 +421,8 @@ def finalise_mod_metadata(filename: str, mod_files: list, deployment_target: dic
         if "folder_name" not in current_staging_metadata["mods"][mod_name]:
             current_staging_metadata["mods"][mod_name]["folder_name"] = \
                 current_staging_metadata["mods"][mod_name].get("display_name", current_staging_metadata["mods"][mod_name].get("name"))
+        if alternate_display_name:
+            current_staging_metadata["mods"][mod_name]["folder_name"] = alternate_display_name
 
         if mod_name not in current_staging_metadata["index"]:
             current_staging_metadata["index"].append(mod_name)
