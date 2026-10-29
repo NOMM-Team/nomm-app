@@ -36,7 +36,7 @@
     <color type="primary" scheme_preference="dark">#374955</color>
   </branding>
   <releases>
-    <release type="stable" version="0.15.0" date="2026-10-28T00:00:00Z">
+    <release type="stable" version="0.15.0" date="2026-10-29T00:00:00Z">
       <description>
         <p>Release bites</p>
         <ul>
