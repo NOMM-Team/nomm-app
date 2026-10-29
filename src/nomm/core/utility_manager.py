@@ -1,5 +1,6 @@
 from urllib.parse import unquote
 import os
+import re
 import shutil
 import subprocess
 import webbrowser
@@ -152,7 +153,7 @@ def get_downloaded_utility_file_name(utility_config: dict, download_path: str):
         utility_name_lower = utility_config["name"].lower().replace(" ", "")
         for downloaded_file in download_folder:
             if source_type == "github":  # if it's a github DL we can use the github asset regex to match
-                if utility_config["github_asset_regex"].lower() in downloaded_file.lower():
+                if re.match(utility_config["github_asset_regex"], downloaded_file):
                     return downloaded_file
             if utility_name_lower in downloaded_file.lower():
                 return downloaded_file
