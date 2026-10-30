@@ -151,6 +151,10 @@ class DownloadsTab(Gtk.Box):
                 self.scrolled.set_child(box)
                 return
 
+            # Restore UI when mods are present
+            self.action_bar.set_visible(True)
+            self.scrolled.set_child(self.list_box)
+
             valign = self.scrolled.get_valign()
 
             while child := self.list_box.get_first_child():

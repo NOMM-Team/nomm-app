@@ -110,7 +110,6 @@ class ModsTab(Gtk.Box):
         self.mods_list_box.connect("row-activated", self.on_row_clicked)
         self.mods_list_box.set_overflow(Gtk.Overflow.HIDDEN)
         self.list_scroll = Gtk.ScrolledWindow(vexpand=True, hexpand=True, css_classes=["shadow-box"])
-        self.list_scroll.set_child(self.mods_list_box)
         self.main_content.append(self.list_scroll)
 
         # Preview pane with Revealer
@@ -837,6 +836,10 @@ class ModsTab(Gtk.Box):
                 self.action_bar.set_visible(False)
                 self.list_scroll.set_child(box)
                 return
+
+            # Restore UI when mods are present
+            self.action_bar.set_visible(True)
+            self.list_scroll.set_child(self.mods_list_box)
 
             load_index_sizegroup = Gtk.SizeGroup(mode=Gtk.SizeGroupMode.HORIZONTAL)
 
