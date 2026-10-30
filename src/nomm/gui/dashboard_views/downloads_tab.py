@@ -23,9 +23,9 @@ _ = gettext.gettext
 class DownloadsTab(Gtk.Box):
     def __init__(self, dashboard, downloader):
         super().__init__(orientation=Gtk.Orientation.VERTICAL, spacing=10)
-        self.set_margin_start(100)
-        self.set_margin_end(100)
-        self.set_margin_top(40)
+        self.set_margin_start(50)
+        self.set_margin_end(50)
+        self.set_margin_top(20)
 
         self.dashboard = dashboard
 
@@ -150,6 +150,10 @@ class DownloadsTab(Gtk.Box):
                 self.action_bar.set_visible(False)
                 self.scrolled.set_child(box)
                 return
+
+            # Restore UI when mods are present
+            self.action_bar.set_visible(True)
+            self.scrolled.set_child(self.list_box)
 
             valign = self.scrolled.get_valign()
 
