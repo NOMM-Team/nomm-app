@@ -391,32 +391,43 @@ class DownloadsTab(Gtk.Box):
 
         mod_staging_dir = os.path.join(self.dashboard.staging_path, display_name)
         archive_full_path = os.path.join(self.dashboard.downloads_path, filename)
-        if btn:
-            btn.set_sensitive(False)
 
-        # Stores the currently installing mod in a local variable in case multiple mods are installing at the same time
-        self.dashboard.currently_installing.add(filename)
+        def on_path_resolved(deployment_target):
+            if not deployment_target:
+                return
 
-        def worker():
-            data = prepare_mod_installation(self, archive_full_path, mod_staging_dir, filename)
-            GLib.idle_add(on_extraction_done, data)
+            if btn:
+                btn.set_sensitive(False)
 
-        def on_extraction_done(data):
-            if not data:
+            # Stores the currently installing mod in a local variable in case multiple mods are installing at the same time
+            self.dashboard.currently_installing.add(filename)
+
+            def worker():
+                data = prepare_mod_installation(self, archive_full_path, mod_staging_dir, filename, deployment_target)
+                GLib.idle_add(on_extraction_done, data)
+
+            def on_extraction_done(data):
+                if not data:
+                    if btn:
+                        btn.set_sensitive(True)
+                    self.dashboard.currently_installing.discard(filename)
+                    return False
+                if data['fomod']:
+                    dialog = FomodSelectionDialog(self.dashboard.app.win, data['fomod'], mod_staging_dir, deployment_target['path'])
+                    dialog.connect("response", self.on_fomod_dialog_response, mod_staging_dir, filename, deployment_target, alternate_display_name)
+                    dialog.present()
+                    return False
+                self.finalise_installation(filename, data['files'], deployment_target, alternate_display_name)
                 if btn:
                     btn.set_sensitive(True)
                 return False
-            if data['fomod']:
-                dialog = FomodSelectionDialog(self.dashboard.app.win, data['fomod'], mod_staging_dir, self.dashboard.deployment_targets[0]['path'])
-                dialog.connect("response", self.on_fomod_dialog_response, mod_staging_dir, filename)
-                dialog.present()
-                return False
-            self.resolve_deployment_path(filename, data['files'], alternate_display_name)
-            if btn:
-                btn.set_sensitive(True)
-            return False
 
-        threading.Thread(target=worker, daemon=True).start()
+            threading.Thread(target=worker, daemon=True).start()
+
+        if len(self.dashboard.deployment_targets) > 1:
+            self.choose_deployment_path(on_path_resolved)
+        else:
+            on_path_resolved(self.dashboard.deployment_targets[0])
 
     def on_upgrade_clicked(self, btn, filename, display_name, staging_metadata):
         archive_names = get_installed_mod_archive_names(display_name, staging_metadata)
@@ -457,7 +468,7 @@ class DownloadsTab(Gtk.Box):
         self.list_box.remove_css_class("drop-active")
 
     # Consider moving part of this logic into core
-    def on_fomod_dialog_response(self, dialog, response, mod_staging_dir, filename):
+    def on_fomod_dialog_response(self, dialog, response, mod_staging_dir, filename, deployment_target, alternate_display_name):
         # As we have multiple files to copy, we loop on items to retrieve every source and it's associated destination
         if response == Gtk.ResponseType.OK:
 
@@ -496,13 +507,17 @@ class DownloadsTab(Gtk.Box):
             if grouped_final_files:
                 shutil.rmtree(mod_staging_dir, ignore_errors=True)
                 os.rename(temp_install_dir, mod_staging_dir)
-                self.resolve_deployment_path(filename, grouped_final_files)
+                self.finalise_installation(filename, grouped_final_files, deployment_target, alternate_display_name)
             else:
                 shutil.rmtree(mod_staging_dir, ignore_errors=True)
                 shutil.rmtree(temp_install_dir, ignore_errors=True)
+                self.dashboard.currently_installing.discard(filename)
+                self.populate_list()
 
         else:
             shutil.rmtree(mod_staging_dir, ignore_errors=True)
+            self.dashboard.currently_installing.discard(filename)
+            self.populate_list()
 
         dialog.destroy()
 
