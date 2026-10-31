@@ -33,7 +33,7 @@ def delete_downloaded_archive(widget, btn, file_name):
         os.remove(zip_path)
 
 
-def extract_archive(archive_path: str, destination_path: str, deployment_target: dict) -> bool:
+def extract_archive(archive_path: str, destination_path: str, deployment_target={}) -> bool:
     arc_type = get_archive_type(archive_path)
     os.makedirs(destination_path, exist_ok=True)
 
