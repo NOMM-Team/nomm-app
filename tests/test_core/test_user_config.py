@@ -100,7 +100,7 @@ def test_extract_archive(tmpdir):
     filepath = os.path.abspath(dir.join("nomm-app-0.5.0.zip"))
     target_dir = os.path.abspath(dest.join("nomm-app-0.5.0"))
 
-    assert extract_archive(filepath, dest)
+    assert extract_archive(filepath, dest, {})
     assert path.exists(target_dir)
 
 
@@ -112,7 +112,7 @@ def test_get_relative_files(tmpdir):
     downloader.download_mod(url, dir)
     filepath = os.path.abspath(dir.join("nomm-app-0.5.0.zip"))
 
-    extract_archive(filepath, dest)
+    extract_archive(filepath, dest, {})
     file_list = get_all_relative_files(dest)
 
     for file_name in file_list:
