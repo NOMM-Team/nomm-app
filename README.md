@@ -42,12 +42,13 @@ Instead, think of NOMM as more of a general purpose tool for most games that jus
 - Beginner-friendly
 - Fully open
 
-## How can you add support for a game?
+## How can I add support for a game?
 
-One of the main ideas behind this project is that games are defined by easy to create config `.yaml` files.
-This means that anyone can create a simple yaml for their game and submit it to the project with little to no coding knowledge and the tool will automate the rest.
+One of the main ideas behind this project is that games are defined by easy to create configurations.
+Anyone, regardless of coding knowledge can create a simple configuration for their game and submit it to the project and the tool will automate the rest.
+To do so, [simply follow the instructions found here](https://github.com/NOMM-Team/nomm-configurations/blob/main/README.md).
 
-You can find out more info on how to add support for your game [here](https://nomm.moe/docs/adding-your-game).
+If you want to manually write a configuration YAML (without using the in-app tool), [you can of course still do that](https://nomm.moe/docs/adding-your-game).
 
 ## Features
 
@@ -91,26 +92,9 @@ To see the current topics in our backlog check out [our Github project](https://
 
 ## Installing/Running
 
-The easiest way to run the app is with flatpak!
+The easiest way to run the app is by using the Flathub version available [here](https://flathub.org/apps/moe.nomm.Nomm)!
 
-To do so :
-
-1. Go to the [releases](https://github.com/Allexio/nomm/releases) tab.
-2. Expand the `Assets` box of the latest version
-3. Click on the `nomm.flatpak` file to download it
-4. Once downloaded, if you have KDE/GNOME you may simply double click the file. This should boot up `KDE Discover` or `Gnome Software`.
-5. Once there you should have a button to install the app, click it.
-6. Once installed, you will see a `Launch` or `Run` button appear, click it.
-
-And you're done!
-
-For more advanced users (those who prefer the console or may not have a standard distro)
-
-You may install and run the flatpak via command line:
-4. `flatpak install nomm.flatpak`
-5. `flatpak run flatpak run moe.nomm.Nomm`
-
-From now on when you want to launch it you can just look for it in your start menu (by typing "nomm")
+If you want, you can also build the app yourself by following the instructions below.
 
 ## Building
 
