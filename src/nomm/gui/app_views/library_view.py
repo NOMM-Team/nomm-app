@@ -33,12 +33,16 @@ class LibraryView(Gtk.Box):
         if self.matches:
             user_config = load_user_config()
             base_dl_path = user_config.get("download_path")
+            hide_linked_managers = user_config.get("hide_linked_managers", True)
 
             for game in self.matches:
                 game['mod_count'] = self.calculate_mod_count(game['name'], base_dl_path)
 
             for game in self.matches:
-                self.flow.append(self.create_game_card(game))
+                if hide_linked_managers and game.get("manager_link"):
+                    pass
+                else:
+                    self.flow.append(self.create_game_card(game))
 
             scroll.set_child(self.flow)
             overlay.set_child(scroll)

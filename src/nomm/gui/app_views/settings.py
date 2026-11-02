@@ -195,6 +195,13 @@ class SettingsWindow(Adw.Window):
         library_sort_row.connect("notify::selected", self.on_sort_changed)
         general_group.add(library_sort_row)
 
+        # Skip launcher
+        hide_linked_managers_row = Adw.SwitchRow(title=_("Hide Linked Mod Managers"))
+        hide_linked_managers_row.set_subtitle(_("Hides games in library that are handled by third party mod managers"))
+        hide_linked_managers_row.set_active(user_config.get('hide_linked_managers', False))
+        hide_linked_managers_row.connect("notify::active", lambda row, pspec: self.toggle_setting('hide_linked_managers', row.get_active()))
+        general_group.add(hide_linked_managers_row)
+
         # Per-game accent colours
         accent_row = Adw.SwitchRow(title=_("Per-Game Accent Colour"))
         accent_row.set_subtitle(_("Accent colour will change for each game depending on configuration"))
