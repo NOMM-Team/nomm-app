@@ -502,6 +502,11 @@ class ConfigurationBuilderWindow(Adw.Window):
         path_row.add_suffix(path_entry)
         group.add(path_row)
 
+        extract_row = Adw.SwitchRow(title=_("Extract game archives"))
+        extract_row.set_active(True)
+        extract_row.set_tooltip_text(_("Whether mod archives will be extracted, or left as archives"))
+        group.add(extract_row)
+
         if not is_first:  # Only add the delete button if it's NOT the first group
             delete_btn = Gtk.Button(
                 icon_name="mat-delete-symbolic",
@@ -521,6 +526,7 @@ class ConfigurationBuilderWindow(Adw.Window):
             "desc_row": desc_row,
             "base_combo": base_combo,
             "path_entry": path_entry,
+            "extract": extract_row
         }
 
         self.modding_groups_container.append(group)
@@ -863,6 +869,7 @@ class ConfigurationBuilderWindow(Adw.Window):
                 name = w["name_row"].get_text().strip()
                 desc = w["desc_row"].get_text().strip()
                 path_segment = w["path_entry"].get_text().strip()
+                extract = w["extract"].get_active()
 
                 for widget, val in [
                     (w["name_row"], name),
@@ -894,7 +901,7 @@ class ConfigurationBuilderWindow(Adw.Window):
                 full_path = f"{base_prefix}{path_segment}"
 
                 modding_paths.append(
-                    {"name": name, "description": desc, "path": full_path}
+                    {"name": name, "description": desc, "path": full_path, "extract_mod_archives": extract}
                 )
 
             child = child.get_next_sibling()

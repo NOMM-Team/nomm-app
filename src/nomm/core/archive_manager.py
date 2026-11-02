@@ -33,29 +33,32 @@ def delete_downloaded_archive(widget, btn, file_name):
         os.remove(zip_path)
 
 
-def extract_archive(archive_path: str, destination_path: str) -> bool:
+def extract_archive(archive_path: str, destination_path: str, deployment_target={}) -> bool:
     arc_type = get_archive_type(archive_path)
     os.makedirs(destination_path, exist_ok=True)
 
-    try:
-        if arc_type == "zip":
-            with zipfile.ZipFile(archive_path, 'r') as zf:
-                zf.extractall(destination_path)
-        elif arc_type == "rar":
-            with rarfile.RarFile(archive_path, 'r') as rf:
-                rf.extractall(destination_path)
-        elif arc_type == "7z":
-            subprocess.run(
-                ["7z", "x", archive_path, f"-o{destination_path}", "-y"],
-                capture_output=True,
-                text=True,
-                check=True
-            )
-        else:  # if it's not an archive, we can just copy contents over
-            shutil.copy2(archive_path, destination_path)
-    except Exception as e:
-        raise Exception(f"Error while extracting {arc_type} : {e}")
-        return False
+    if deployment_target.get("extract_mod_archives") is False:  # rare case: mod must be kept as archive
+        shutil.copy2(archive_path, destination_path)
+    else:  # standard case: the mod is extracted
+        try:
+            if arc_type == "zip":
+                with zipfile.ZipFile(archive_path, 'r') as zf:
+                    zf.extractall(destination_path)
+            elif arc_type == "rar":
+                with rarfile.RarFile(archive_path, 'r') as rf:
+                    rf.extractall(destination_path)
+            elif arc_type == "7z":
+                subprocess.run(
+                    ["7z", "x", archive_path, f"-o{destination_path}", "-y"],
+                    capture_output=True,
+                    text=True,
+                    check=True
+                )
+            else:  # if it's not an archive, we can just copy contents over
+                shutil.copy2(archive_path, destination_path)
+        except Exception as e:
+            raise Exception(f"Error while extracting {arc_type} : {e}")
+            return False
 
     for root, dirs, files in os.walk(destination_path):
         for file_name in files:
@@ -113,8 +116,8 @@ def process_dropped_files(uri_list: list[str], destination_path: str) -> list[st
     return copied_files
 
 
-def prepare_mod_installation(parent, archive_full_path, mod_staging_dir, filename):
-    if extract_archive(archive_full_path, mod_staging_dir):
+def prepare_mod_installation(parent, archive_full_path, mod_staging_dir, filename, deployment_target: dict):
+    if extract_archive(archive_full_path, mod_staging_dir, deployment_target):
         files = get_all_relative_files(mod_staging_dir)
 
         if not files:
