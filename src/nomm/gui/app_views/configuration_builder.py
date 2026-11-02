@@ -1087,6 +1087,7 @@ class ConfigurationBuilderWindow(Adw.Window):
             "nexus_id": self.nexus_id_row.get_text().strip(),
             "accent_colour": hex_color,
             "wiki_link": self.wiki_link_row.get_text().strip(),
+            "manager_name": self.manager_name_row.get_text().strip(),
             "manager_link": self.manager_link_row.get_text().strip(),
             "mod_paths": modding_paths,
             "utilities": utility_groups
