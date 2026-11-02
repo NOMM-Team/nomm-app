@@ -326,6 +326,40 @@ class ConfigurationBuilderWindow(Adw.Window):
         self.utilities_page = self.stack.add_titled(self.utilities_view, "utilities", _("Utilities"))
         self.utilities_page.set_icon_name("mat-wrench-symbolic")
 
+        def _on_visible_child_changed(stack, pspec):
+            if self.linked_manager_row.get_active() and stack.get_visible_child_name() in ("modding_info", "utilities"):
+                stack.set_visible_child_name("game_info")
+
+        self.stack.connect("notify::visible-child", _on_visible_child_changed)
+
+        def _set_widget_tree_sensitive(widget, sensitive):
+            if isinstance(widget, Gtk.Button):
+                widget.set_sensitive(sensitive)
+            child = widget.get_first_child()
+            while child is not None:
+                _set_widget_tree_sensitive(child, sensitive)
+                child = child.get_next_sibling()
+
+        def _on_linked_manager_toggled(row, pspec):
+            active = row.get_active()
+            self.manager_link_row.set_visible(active)
+            self.modding_info_view.set_sensitive(not active)
+            self.utilities_view.set_sensitive(not active)
+            self.nexus_id_row.set_visible(not active)
+            self.color_row.set_visible(not active)
+            self.wiki_link_row.set_visible(not active)
+
+            switcher_child = switcher.get_first_child()
+            while switcher_child is not None:
+                _set_widget_tree_sensitive(switcher_child, not active)
+                switcher_child = switcher_child.get_next_sibling()
+            _set_widget_tree_sensitive(switcher.get_first_child(), True)
+
+            if active and self.stack.get_visible_child_name() in ("modding_info", "utilities"):
+                self.stack.set_visible_child_name("game_info")
+
+        self.linked_manager_row.connect("notify::active", _on_linked_manager_toggled)
+
         main_box.append(self.stack)
 
         def _on_tab_toggled(btn, stack_name):
@@ -408,8 +442,28 @@ class ConfigurationBuilderWindow(Adw.Window):
                                               "you can add the link to it here."))
         preferences_group.add(self.wiki_link_row)
 
-        page_box.append(preferences_group)
+        is_linked = False
+        self.linked_manager_row = Adw.SwitchRow(title=_("Link to another mod manager"))
+        self.linked_manager_row.set_active(is_linked)
+        self.linked_manager_row.set_tooltip_text(_("Some games require very specific actions that are not supported by NOMM. In those cases, "
+                                                   "NOMM allows linking to external, third party mod managers, assuming they are qualitative.\n"
+                                                   "This NEEDS to be justified in any submission to the configuration repo."))
+        preferences_group.add(self.linked_manager_row)
 
+        self.manager_name_row = Adw.EntryRow(title=_("External Mod Manager Name"))
+        self.manager_name_row.set_tooltip_text(_("The name of the external mod manager application. Include any necessary symbols, spaces & digits."))
+        self.manager_name_row.set_visible(is_linked)
+        self.manager_name_row.set_margin_start(24)
+        preferences_group.add(self.manager_name_row)
+
+        self.manager_link_row = Adw.EntryRow(title=_("External Mod Manager Link"))
+        self.manager_link_row.set_tooltip_text(_("The link to the external mod manager application. Can be a web page url, "
+                                                 "but a Flathub web protocol URL is preferred."))
+        self.manager_link_row.set_visible(is_linked)
+        self.manager_link_row.set_margin_start(24)
+        preferences_group.add(self.manager_link_row)
+
+        page_box.append(preferences_group)
         scrolled = Gtk.ScrolledWindow()
         scrolled.set_child(page_box)
         scrolled.set_vexpand(True)
@@ -1033,6 +1087,7 @@ class ConfigurationBuilderWindow(Adw.Window):
             "nexus_id": self.nexus_id_row.get_text().strip(),
             "accent_colour": hex_color,
             "wiki_link": self.wiki_link_row.get_text().strip(),
+            "manager_link": self.manager_link_row.get_text().strip(),
             "mod_paths": modding_paths,
             "utilities": utility_groups
         }
