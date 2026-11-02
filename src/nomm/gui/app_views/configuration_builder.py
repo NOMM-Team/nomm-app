@@ -343,6 +343,7 @@ class ConfigurationBuilderWindow(Adw.Window):
         def _on_linked_manager_toggled(row, pspec):
             active = row.get_active()
             self.manager_link_row.set_visible(active)
+            self.manager_name_row.set_visible(active)
             self.modding_info_view.set_sensitive(not active)
             self.utilities_view.set_sensitive(not active)
             self.nexus_id_row.set_visible(not active)
@@ -458,7 +459,7 @@ class ConfigurationBuilderWindow(Adw.Window):
 
         self.manager_link_row = Adw.EntryRow(title=_("External Mod Manager Link"))
         self.manager_link_row.set_tooltip_text(_("The link to the external mod manager application. Can be a web page url, "
-                                                 "but a Flathub web protocol URL is preferred."))
+                                                 "but an appstream:// web protocol is preferred."))
         self.manager_link_row.set_visible(is_linked)
         self.manager_link_row.set_margin_start(24)
         preferences_group.add(self.manager_link_row)
