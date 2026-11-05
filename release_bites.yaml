@@ -1,4 +1,12 @@
 ---
+Version: "0.16.0"
+Date: 2026-11-05
+URL: https://github.com/nomm-team/nomm-app/releases/0.16.0
+Description: |-
+  Release bites
+   * Change: Remove Steam User ID matching (this step will no longer occur during onboarding)
+   * Change: Remove Matrix link from settings menu - this leaves Discord or Github if you need support
+---
 Version: "0.15.0"
 Date: 2026-10-31
 URL: https://github.com/nomm-team/nomm-app/releases/0.15.0

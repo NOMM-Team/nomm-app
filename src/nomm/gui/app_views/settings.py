@@ -311,7 +311,6 @@ class SettingsWindow(Adw.Window):
 
         community_box.append(self.create_social_button("github-logo-symbolic", "https://github.com/allexio/nomm"))
         community_box.append(self.create_social_button("discord-logo-symbolic", "https://discord.gg/WFRePSjEQY"))
-        community_box.append(self.create_social_button("matrix-logo-symbolic", "https://matrix.to/#/#nomm:matrix.org"))
         community_box.append(self.create_social_button("youtube-logo-symbolic", "https://www.youtube.com/channel/UCNHRyvBXItOkBZN0rWqZVrA"))
 
         settings_scrollbox.append(community_box)

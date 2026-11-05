@@ -36,6 +36,17 @@
     <color type="primary" scheme_preference="dark">#374955</color>
   </branding>
   <releases>
+    <release type="stable" version="0.16.0" date="2026-11-05T00:00:00Z">
+      <description>
+        <p>Release bites</p>
+        <ul>
+          <li>Change: Remove Steam User ID matching (this step will no longer occur during onboarding)</li>
+          <li>Change: Remove Matrix link from settings menu - this leaves Discord or Github if you need
+          support</li>
+        </ul>
+      </description>
+      <url>https://github.com/nomm-team/nomm-app/releases/0.16.0</url>
+    </release>
     <release type="stable" version="0.15.0" date="2026-10-31T00:00:00Z">
       <description>
         <p>Release bites</p>
@@ -115,16 +126,6 @@
         </ul>
       </description>
       <url>https://github.com/nomm-team/nomm-app/releases/0.14.0</url>
-    </release>
-    <release type="stable" version="0.13.4" date="2026-09-10T00:00:00Z">
-      <description>
-        <p>Release bites</p>
-        <ul>
-          <li>Fix two regressions impacting Nexus one-click downloads</li>
-          <li>Fix refresh metadata not working when no mods were downloaded previously</li>
-        </ul>
-      </description>
-      <url>https://github.com/nomm-team/nomm-app/releases/0.13.4</url>
     </release>
   </releases>
   <content_rating type="oars-1.1">
