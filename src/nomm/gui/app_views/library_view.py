@@ -1,3 +1,4 @@
+from nomm.gui.ui_builders import create_icon_button
 import gettext
 import os
 import gi
@@ -32,12 +33,16 @@ class LibraryView(Gtk.Box):
         if self.matches:
             user_config = load_user_config()
             base_dl_path = user_config.get("download_path")
+            hide_linked_managers = user_config.get("hide_linked_managers", True)
 
             for game in self.matches:
                 game['mod_count'] = self.calculate_mod_count(game['name'], base_dl_path)
 
             for game in self.matches:
-                self.flow.append(self.create_game_card(game))
+                if hide_linked_managers and game.get("manager_link"):
+                    pass
+                else:
+                    self.flow.append(self.create_game_card(game))
 
             scroll.set_child(self.flow)
             overlay.set_child(scroll)
@@ -144,21 +149,25 @@ class LibraryView(Gtk.Box):
 
         img_overlay.add_overlay(platform_badge)
 
-        # Mod total badge
-        mod_total_badge = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=4)
-        mod_total_badge.set_halign(Gtk.Align.START)
-        mod_total_badge.set_valign(Gtk.Align.END)
-        mod_total_badge.set_margin_start(10)
-        mod_total_badge.set_margin_bottom(10)
-        mod_total_badge.add_css_class("platform-badge")
-
-        count = game.get('mod_count', 0)
-
-        mod_total_badge_label = Gtk.Label(label=str(count))
-        mod_total_badge_label.add_css_class("badge-accent")
-        mod_total_badge.append(mod_total_badge_label)
-
-        img_overlay.add_overlay(mod_total_badge)
+        # Bottom left poster indicator
+        bottom_left_indicator = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=4)
+        bottom_left_indicator.set_halign(Gtk.Align.START)
+        bottom_left_indicator.set_valign(Gtk.Align.END)
+        bottom_left_indicator.set_margin_start(10)
+        bottom_left_indicator.set_margin_bottom(10)
+        if game.get("manager_link"):  # Display external manager icon
+            external_manager_icon = create_icon_button(
+                icon_name="mat-open-external-symbolic",
+                tooltip=_(f"This game is handled via an external mod manager: {game.get("manager_name", "")}"),
+            )
+            bottom_left_indicator.append(external_manager_icon)
+        else:  # Display mod total badge
+            bottom_left_indicator.add_css_class("platform-badge")
+            count = game.get('mod_count', 0)
+            bottom_left_indicator_label = Gtk.Label(label=str(count))
+            bottom_left_indicator_label.add_css_class("badge-accent")
+            bottom_left_indicator.append(bottom_left_indicator_label)
+        img_overlay.add_overlay(bottom_left_indicator)
 
         card.append(img_overlay)
         return card

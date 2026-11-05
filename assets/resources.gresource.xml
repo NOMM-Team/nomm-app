@@ -57,6 +57,7 @@
     <file>mat-lock-symbolic.svg</file>
     <file>mat-globe-cancel-symbolic.svg</file>
     <file>mat-hide-symbolic.svg</file>
+    <file>mat-open-external-symbolic.svg</file>
     <file>back-arrow-symbolic.svg</file>
   </gresource>
 </gresources>

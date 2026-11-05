@@ -1,3 +1,4 @@
+import webbrowser
 import gettext
 import os
 import threading
@@ -701,6 +702,11 @@ class Nomm(Adw.Application):
 
     def on_game_clicked(self, game_data):
         config = load_user_config()
+
+        if game_data.get("manager_link"):
+            webbrowser.open(game_data.get("manager_link"))
+            return
+
         if config.get('enable_fullscreen'):
             self.win.fullscreen()
 

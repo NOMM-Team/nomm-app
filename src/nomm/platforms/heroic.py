@@ -46,20 +46,16 @@ def find_epic_game(yaml_data, game_title, installed_epic):
             # TODO: add support for heroic/EPIC user data path
             user_data_path = ""
             mod_paths = parse_mod_paths(yaml_data["mod_paths"], game_path, user_data_path, game_title)
-
-            return {
+            new_data = {
                 "name": game_title,
                 "img": get_art(game_title, app_id, "heroic-epic"),
                 "path": game_path,
                 "app_id": app_id,
                 "platform": "heroic-epic",
-                "mod_paths": mod_paths,
-                "utilities": yaml_data.get("utilities"),
-                "accent_colour": yaml_data.get("accent_colour"),
-                "load_order_path": yaml_data.get("load_order_path"),
-                "wiki_link": yaml_data.get("wiki_link"),
-                "nexus_id": yaml_data.get("nexus_id")
+                "mod_paths": mod_paths
             }
+            merged_data = yaml_data | new_data
+            return merged_data
     return None
 
 
@@ -75,20 +71,16 @@ def find_gog_game(yaml_data, game_title, installed_gog):
             # TODO: add support for heroic/GOG user data path
             user_data_path = ""
             mod_paths = parse_mod_paths(yaml_data["mod_paths"], game_path, user_data_path, game_title)
-
-            return {
+            new_data = {
                 "name": game_title,
                 "img": get_art(game_title, yaml_data["gog_id"], "heroic-gog"),
                 "path": game_path,
                 "app_id": yaml_data["gog_id"],
                 "platform": "heroic-gog",
                 "mod_paths": mod_paths,
-                "utilities": yaml_data.get("utilities"),
-                "accent_colour": yaml_data.get("accent_colour"),
-                "load_order_path": yaml_data.get("load_order_path"),
-                "wiki_link": yaml_data.get("wiki_link"),
-                "nexus_id": yaml_data.get("nexus_id")
             }
+            merged_data = yaml_data | new_data
+            return merged_data
     return None
 
 
