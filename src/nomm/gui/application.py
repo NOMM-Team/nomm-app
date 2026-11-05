@@ -21,7 +21,7 @@ from nomm.gui.dashboard import GameDashboard
 from nomm.gui.ui_builders import create_text_box, create_code_box
 from nomm.platforms.nexus import handle_nexus_link
 from nomm.platforms.gamebanana import handle_gamebanana_link
-from nomm.platforms.steam import get_username_from_steam_id, get_steam_base_dir
+from nomm.platforms.steam import get_steam_base_dir
 from nomm.core.wine_manager import clean_wine_prefixes, get_unused_wine_prefixes
 
 gi.require_version('Gtk', '4.0')
@@ -401,11 +401,11 @@ class Nomm(Adw.Application):
         emulators = list_emulators()
         if len(emulators) == 1:
             self.temp_config["preferred_switch_emulator"] = emulators[0]
-            self.steam_user_id_handler()
+            self.finalize_setup()
         elif len(emulators) > 1:
             self.show_preferred_emulator_screen(emulators)
         else:  # 0 emulators found
-            self.steam_user_id_handler()
+            self.finalize_setup()
 
     def show_preferred_emulator_screen(self, emulators):
         self.remove_stack_child("preferred_emu")
@@ -473,7 +473,7 @@ class Nomm(Adw.Application):
 
         def on_continue_clicked(b):
             self.temp_config["preferred_switch_emulator"] = selected_emulator["name"]
-            self.steam_user_id_handler()
+            self.finalize_setup()
 
         cont_btn.connect("clicked", on_continue_clicked)
         content_box.append(cont_btn)
@@ -482,64 +482,6 @@ class Nomm(Adw.Application):
 
         self.stack.add_named(status_page, "preferred_emu")
         self.stack.set_visible_child_name("preferred_emu")
-
-    def steam_user_id_handler(self):
-        if not self.steam_base:
-            self.finalize_setup()
-        steam_userdata_path = os.path.join(self.steam_base, "userdata")
-        steam_user_ids = [f for f in os.listdir(steam_userdata_path) if os.path.isdir(os.path.join(steam_userdata_path, f))]
-        if "0" in steam_user_ids:
-            steam_user_ids.remove("0")
-        print(f"Steam user IDs detected: {steam_user_ids}")
-        if len(steam_user_ids) > 1:
-            self.show_steam_user_id_selection_screen(steam_user_ids)
-        else:
-            steam_user_id = steam_user_ids[0]
-            self.temp_config["steam_user_id"] = steam_user_id
-            self.finalize_setup()
-
-    def show_steam_user_id_selection_screen(self, steam_user_ids):
-        status_page = Adw.StatusPage(
-            title=_("Select Your Steam user ID"),
-            description=_("Multiple Steam user IDs were detected in your Steam installation.\n"
-                          "Please select the one that you want to configure when using NOMM."),
-            icon_name="steam-logo"
-        )
-
-        # Create a boxed list for the options
-        list_box = Gtk.ListBox()
-        list_box.add_css_class("boxed-list")
-        list_box.set_selection_mode(Gtk.SelectionMode.NONE)
-        list_box.set_valign(Gtk.Align.START)
-
-        options = []
-        for steam_user_id in steam_user_ids:
-            options.append({
-                "id": steam_user_id,
-                "username": get_username_from_steam_id(steam_user_id, self.steam_base)})
-
-        for opt in options:
-            row = Adw.ActionRow(title=opt["id"], subtitle=opt["username"])
-            row.set_activatable(True)
-            # Connect the row to a callback
-            row.connect("activated", self.on_option_selected, opt["id"])
-            list_box.append(row)
-
-        # Wrap the list in a box for padding/alignment
-        container = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=20)
-        container.set_halign(Gtk.Align.CENTER)
-        container.set_margin_top(24)
-        container.append(list_box)
-
-        status_page.set_child(container)
-        self.stack.add_titled(status_page, "option_select", _("Select Option"))
-        self.stack.set_visible_child_name("option_select")
-
-    def on_option_selected(self, row, steam_user_id):
-        print(f"User's Steam user ID set to: {steam_user_id}")
-        self.temp_config["steam_user_id"] = steam_user_id
-        # Continue to next part of setup
-        self.finalize_setup()
 
     def finalize_setup(self):
         write_user_config(self.temp_config)
