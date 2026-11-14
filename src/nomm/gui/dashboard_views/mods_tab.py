@@ -18,6 +18,7 @@ from nomm.platforms.gamebanana import get_mod_info as get_gamebanana_mod_info
 from nomm.core.tools import timestamp_converter, write_yaml
 from nomm.gui.ui_builders import create_icon_button, create_icon_row
 from nomm.gui.text_window import TextWindow
+from nomm.gui.dashboard_views.mod_browser import ModBrowserWindow
 from typing import Optional, Callable
 
 _ = gettext.gettext
@@ -83,8 +84,16 @@ class ModsTab(Gtk.Box):
             tooltip=_("Open wiki page"),
             on_click=lambda x: webbrowser.open(url)
         )
-        wiki_btn.set_hexpand(True)
         self.action_bar.append(wiki_btn)
+
+        browser = ModBrowserWindow(parent_window=self.dashboard.app.win)
+        browser_btn = create_icon_button(
+            icon_name="mat-store-symbolic",
+            tooltip=_("Get more mods from available mod platforms"),
+            on_click=lambda x: browser.present()
+        )
+        browser_btn.set_hexpand(True)
+        self.action_bar.append(browser_btn)
 
         # Add all the buttons
         self.action_bar.append(folder_btn)
