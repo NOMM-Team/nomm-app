@@ -1,5 +1,6 @@
 import cairo
 import time
+import datetime
 from gi.repository import Gtk, Adw, Gio, GObject, Gdk
 
 
@@ -25,13 +26,12 @@ class ModItem(GObject.Object):
 
 class BaseModProvider:
     """Agnostic interface for mod websites (GameBanana, Nexus, Thunderstore)."""
-    def search_mods(self, query: str, category: str, date_range: tuple, include_adult: bool) -> list[ModItem]:
+    def search_mods(self, query: str, category: str, sort_by: str, date_range: tuple, include_adult: bool) -> list[ModItem]:
         raise NotImplementedError
 
     def get_browse_mods(self) -> list[ModItem]:
         raise NotImplementedError
 
-    # TODO: Add method to get first mod date
     def get_first_mod_date(self) -> float:
         raise NotImplementedError
 
@@ -40,8 +40,11 @@ class StoreProvider(BaseModProvider):
     def __init__(self, store_name: str):
         self.store_name = store_name
 
-    def search_mods(self, query: str, category: str, date_range: tuple, include_adult: bool) -> list[ModItem]:
-        print(f"Searching {self.store_name}: query='{query}', category='{category}', date_range='{date_range}', adult={include_adult}")
+    def search_mods(self, query: str, category: str, sort_by: str, date_range: tuple, include_adult: bool) -> list[ModItem]:
+        print(
+            f"Searching {self.store_name}: query='{query}', category='{category}', "
+            f"sort='{sort_by}', date_range='{date_range}', adult={include_adult}"
+        )
         return [
             ModItem(name=f"{self.store_name} Result: {query or 'All'} #{i}", uploader=f"Author {i}")
             for i in range(1, 13)
@@ -53,14 +56,16 @@ class StoreProvider(BaseModProvider):
             for i in range(1, 25)
         ]
 
-    # TODO: Implement the first mod retrieval method for this specific game and platform
     def get_first_mod_date(self) -> float:
-        # Placeholder returning a timestamp representing the first mod upload date (e.g., Jan 1, 2015)
-        return 1420070400
+        return 1420070400  # Jan 1, 2015
 
 
 class DualRangeSlider(Gtk.Box):
     """A custom GTK4 slider widget featuring two points (low and high thumbs)."""
+    __gsignals__ = {
+        "range-changed": (GObject.SignalFlags.RUN_FIRST, None, (float, float))
+    }
+
     def __init__(self, min_val: float, max_val: float):
         super().__init__(orientation=Gtk.Orientation.VERTICAL, spacing=4)
         self.min_val = min_val
@@ -69,11 +74,10 @@ class DualRangeSlider(Gtk.Box):
         self.high_val = max_val
 
         self.drawing_area = Gtk.DrawingArea()
-        self.drawing_area.set_size_request(240, 36)
+        self.drawing_area.set_size_request(220, 36)
         self.drawing_area.set_hexpand(True)
         self.drawing_area.set_draw_func(self.on_draw)
 
-        # Drag gesture controller for interacting with the thumbs
         drag = Gtk.GestureDrag.new()
         drag.connect("drag-begin", self.on_drag_begin)
         drag.connect("drag-update", self.on_drag_update)
@@ -91,8 +95,14 @@ class DualRangeSlider(Gtk.Box):
         self.start_low = min_val
         self.start_high = max_val
 
+    def set_range_values(self, low: float, high: float):
+        """Programmatically sync slider values without firing recursive signals."""
+        self.low_val = max(self.min_val, min(low, self.max_val))
+        self.high_val = max(self.low_val, min(high, self.max_val))
+        self.label.set_text(self._get_range_text())
+        self.drawing_area.queue_draw()
+
     def _get_range_text(self) -> str:
-        import datetime
         try:
             d_low = datetime.datetime.fromtimestamp(self.low_val).strftime('%Y-%m-%d')
             d_high = datetime.datetime.fromtimestamp(self.high_val).strftime('%Y-%m-%d')
@@ -122,13 +132,12 @@ class DualRangeSlider(Gtk.Box):
         cr.line_to(width - padding, y)
         cr.stroke()
 
-        cr.set_source_rgb(0.21, 0.52, 0.89)  # Adwaita accent blue (#3584e4)
+        cr.set_source_rgb(0.21, 0.52, 0.89)
         cr.set_line_width(6)
         cr.move_to(low_x, y)
         cr.line_to(high_x, y)
         cr.stroke()
 
-        # 3. Thumbs (Low and High points)
         radius = 7
         for thumb_x in [low_x, high_x]:
             cr.set_source_rgb(1, 1, 1)
@@ -154,7 +163,6 @@ class DualRangeSlider(Gtk.Box):
         low_x = val_to_x(self.low_val)
         high_x = val_to_x(self.high_val)
 
-        # Decide whether to drag the low or high thumb based on proximity
         if abs(start_x - low_x) < abs(start_x - high_x):
             self.active_thumb = 'low'
         else:
@@ -174,15 +182,14 @@ class DualRangeSlider(Gtk.Box):
 
         if self.active_thumb == 'low':
             new_val = self.start_low + delta_val
-            new_val = max(self.min_val, min(new_val, self.high_val))
-            self.low_val = new_val
+            self.low_val = max(self.min_val, min(new_val, self.high_val))
         elif self.active_thumb == 'high':
             new_val = self.start_high + delta_val
-            new_val = max(self.low_val, min(new_val, self.max_val))
-            self.high_val = new_val
+            self.high_val = max(self.low_val, min(new_val, self.max_val))
 
         self.label.set_text(self._get_range_text())
         self.drawing_area.queue_draw()
+        self.emit("range-changed", self.low_val, self.high_val)
 
     def on_drag_end(self, gesture, offset_x, offset_y):
         self.active_thumb = None
@@ -193,11 +200,132 @@ class StoreView(Gtk.Box):
         super().__init__(orientation=Gtk.Orientation.VERTICAL)
         self.provider = provider
         self.model = Gio.ListStore(item_type=ModItem)
+        self._syncing = False
 
-        for mod in self.provider.get_browse_mods():
-            self.model.append(mod)
+        self.categories_model = Gtk.StringList.new(["All Categories", "Gameplay", "Visuals", "Audio", "Tools"])
+        self.sort_model = Gtk.StringList.new(["Most Downloaded first", "Highest Rated first", "Newest first", "Oldest first"])
+        self.min_date = self.provider.get_first_mod_date()
+        self.max_date = time.time()
+
+        self.header = Adw.HeaderBar()
+        self._build_browse_header_controls()
+        self.append(self.header)
+
         self.stack = Adw.ViewStack()
+        self.stack.set_vexpand(True)
 
+        self._build_search_page()
+        self._build_browse_page()
+
+        self.stack.set_visible_child_name("search")
+        self.append(self.stack)
+
+    def _build_browse_header_controls(self):
+        """Creates the compact search bar, filter button, and dedicated sort button for Browse mode."""
+        self.header_controls_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
+        self.header_controls_box.set_visible(False)
+
+        self.compact_search_entry = Gtk.SearchEntry()
+        self.compact_search_entry.set_placeholder_text("Search mods...")
+        self.compact_search_entry.set_size_request(280, -1)
+        self.compact_search_entry.connect("activate", lambda *_: self.execute_search(from_compact=True))
+        self.header_controls_box.append(self.compact_search_entry)
+
+        self.filter_menu_btn = Gtk.MenuButton()
+        filter_icon = Gtk.Image.new_from_icon_name("mat-search-settings-symbolic")
+        filter_icon.set_pixel_size(24)
+        self.filter_menu_btn.set_child(filter_icon)
+        self.filter_menu_btn.set_tooltip_text("Filter")
+        self.filter_menu_btn.add_css_class("flat")
+
+        filter_popover = Gtk.Popover()
+        pop_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)
+        pop_box.set_margin_top(12)
+        pop_box.set_margin_bottom(12)
+        pop_box.set_margin_start(12)
+        pop_box.set_margin_end(12)
+        pop_box.set_size_request(360, -1)
+
+        pop_group = Adw.PreferencesGroup()
+
+        self.pop_category_row = Adw.ComboRow(title="Category", model=self.categories_model)
+        pop_group.add(self.pop_category_row)
+
+        self.pop_date_slider = DualRangeSlider(self.min_date, self.max_date)
+        pop_date_row = Adw.ActionRow(title="Date Range")
+        pop_date_row.set_subtitle("Publication date")
+        pop_date_row.add_suffix(self.pop_date_slider)
+        pop_group.add(pop_date_row)
+
+        self.pop_adult_row = Adw.SwitchRow(title="Include Adult Content")
+        pop_group.add(self.pop_adult_row)
+
+        pop_box.append(pop_group)
+
+        apply_btn = Gtk.Button(label="Apply Filters")
+        apply_btn.add_css_class("suggested-action")
+        apply_btn.add_css_class("pill")
+        apply_btn.connect("clicked", lambda *_: (filter_popover.popdown(), self.execute_search(from_compact=True)))
+        pop_box.append(apply_btn)
+
+        filter_popover.set_child(pop_box)
+        self.filter_menu_btn.set_popover(filter_popover)
+        self.header_controls_box.append(self.filter_menu_btn)
+
+        self.sort_menu_btn = Gtk.MenuButton()
+        sort_icon = Gtk.Image.new_from_icon_name("mat-sort-symbolic")
+        sort_icon.set_pixel_size(24)
+        self.sort_menu_btn.set_child(sort_icon)
+        self.sort_menu_btn.set_tooltip_text("Sort by")
+        self.sort_menu_btn.add_css_class("flat")
+
+        sort_popover = Gtk.Popover()
+        sort_list_box = Gtk.ListBox()
+        sort_list_box.set_selection_mode(Gtk.SelectionMode.NONE)
+        sort_list_box.add_css_class("boxed-list")
+
+        self.selected_sort_index = 0
+        self._sort_check_icons = []
+
+        for idx in range(self.sort_model.get_n_items()):
+            label_text = self.sort_model.get_string(idx)
+            row_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
+            row_box.set_margin_top(8)
+            row_box.set_margin_bottom(8)
+            row_box.set_margin_start(12)
+            row_box.set_margin_end(12)
+
+            lbl = Gtk.Label(label=label_text, xalign=0, hexpand=True)
+            check = Gtk.Image.new_from_icon_name("object-select-symbolic")
+            check.set_opacity(1.0 if idx == 0 else 0.0)
+            self._sort_check_icons.append(check)
+
+            row_box.append(lbl)
+            row_box.append(check)
+
+            row = Gtk.ListBoxRow()
+            row.set_child(row_box)
+            row.sort_index = idx
+            sort_list_box.append(row)
+
+        def on_sort_row_activated(_, row):
+            self._set_browse_sort_index(row.sort_index)
+            sort_popover.popdown()
+            self.execute_search(from_compact=True)
+
+        sort_list_box.connect("row-activated", on_sort_row_activated)
+        sort_popover.set_child(sort_list_box)
+        self.sort_menu_btn.set_popover(sort_popover)
+        self.header_controls_box.append(self.sort_menu_btn)
+
+        self.header.set_title_widget(self.header_controls_box)
+
+    def _set_browse_sort_index(self, index: int):
+        self.selected_sort_index = index
+        for idx, check_icon in enumerate(self._sort_check_icons):
+            check_icon.set_opacity(1.0 if idx == index else 0.0)
+
+    def _build_search_page(self):
         search_scroll = Gtk.ScrolledWindow(vexpand=True, hexpand=True)
         search_page_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=16)
         search_page_box.set_valign(Gtk.Align.CENTER)
@@ -208,21 +336,31 @@ class StoreView(Gtk.Box):
         search_page_box.set_margin_start(24)
         search_page_box.set_margin_end(24)
 
-        filter_group = Adw.PreferencesGroup(title="Search & Filters", description="Customize your mod search parameters")
+        search_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
 
-        self.search_row = Adw.EntryRow(title="Search Query")
-        self.search_row.connect("apply", lambda *_: self.execute_search())
-        filter_group.add(self.search_row)
+        self.search_entry = Gtk.SearchEntry()
+        self.search_entry.set_placeholder_text("Search mods...")
+        self.search_entry.set_hexpand(True)
+        self.search_entry.connect("activate", lambda *_: self.execute_search(from_compact=False))
+        search_box.append(self.search_entry)
 
-        categories_model = Gtk.StringList.new(["All Categories", "Gameplay", "Visuals", "Audio", "Tools"])
-        self.category_row = Adw.ComboRow(title="Category", model=categories_model)
+        search_btn = Gtk.Button(label="Search Mods")
+        search_btn.add_css_class("pill")
+        search_btn.add_css_class("suggested-action")
+        search_btn.connect("clicked", lambda *_: self.execute_search(from_compact=False))
+        search_box.append(search_btn)
+
+        search_page_box.append(search_box)
+
+        filter_group = Adw.PreferencesGroup()
+
+        self.category_row = Adw.ComboRow(title="Category", model=self.categories_model)
         filter_group.add(self.category_row)
 
-        # Dual-point date range slider (min date set to first mod date, max to current time)
-        min_date = self.provider.get_first_mod_date()
-        max_date = time.time()  # Dynamically uses the current timestamp
+        self.sort_row = Adw.ComboRow(title="Sort by", model=self.sort_model)
+        filter_group.add(self.sort_row)
 
-        self.date_slider = DualRangeSlider(min_date, max_date)
+        self.date_slider = DualRangeSlider(self.min_date, self.max_date)
         date_row = Adw.ActionRow(title="Date Range")
         date_row.set_subtitle("Select publication date range")
         date_row.add_suffix(self.date_slider)
@@ -232,18 +370,12 @@ class StoreView(Gtk.Box):
         filter_group.add(self.adult_row)
 
         search_page_box.append(filter_group)
-
-        search_btn = Gtk.Button(label="Search Mods")
-        search_btn.add_css_class("pill")
-        search_btn.add_css_class("suggested-action")
-        search_btn.set_halign(Gtk.Align.CENTER)
-        search_btn.set_margin_top(12)
-        search_btn.connect("clicked", lambda *_: self.execute_search())
-        search_page_box.append(search_btn)
-
         search_scroll.set_child(search_page_box)
-        self.stack.add_titled_with_icon(search_scroll, "search", "Search", "system-search-symbolic")
 
+        self.stack.add_named(search_scroll, "search")
+
+
+    def _build_browse_page(self):
         browse_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
 
         factory = Gtk.SignalListItemFactory()
@@ -260,30 +392,34 @@ class StoreView(Gtk.Box):
         scrolled.set_child(self.grid_view)
         browse_box.append(scrolled)
 
-        self.stack.add_titled_with_icon(browse_box, "browse", "Browse", "view-grid-symbolic")
+        self.stack.add_named(browse_box, "browse")
 
-        header = Adw.HeaderBar()
-        switcher = Adw.ViewSwitcher(stack=self.stack, policy=Adw.ViewSwitcherPolicy.WIDE)
-        header.set_title_widget(switcher)
+    def execute_search(self, from_compact: bool = False):
+        if not from_compact:
+            # One-time copy from the initial search page to the browse header
+            self.compact_search_entry.set_text(self.search_entry.get_text())
+            self.pop_category_row.set_selected(self.category_row.get_selected())
+            self._set_browse_sort_index(self.sort_row.get_selected())
+            self.pop_adult_row.set_active(self.adult_row.get_active())
+            self.pop_date_slider.set_range_values(self.date_slider.low_val, self.date_slider.high_val)
 
-        self.append(header)
-        self.append(self.stack)
+        query = self.compact_search_entry.get_text().strip()
 
-    def execute_search(self):
-        query = self.search_row.get_text().strip()
-
-        category_item = self.category_row.get_selected_item()
+        category_item = self.pop_category_row.get_selected_item()
         category = category_item.get_string() if category_item else "All Categories"
 
-        date_range = (self.date_slider.low_val, self.date_slider.high_val)
-        include_adult = self.adult_row.get_active()
+        sort_by = self.sort_model.get_string(self.selected_sort_index) or "Most Downloaded first"
 
-        results = self.provider.search_mods(query, category, date_range, include_adult)
+        date_range = (self.pop_date_slider.low_val, self.pop_date_slider.high_val)
+        include_adult = self.pop_adult_row.get_active()
+
+        results = self.provider.search_mods(query, category, sort_by, date_range, include_adult)
 
         self.model.remove_all()
         for mod in results:
             self.model.append(mod)
 
+        self.header_controls_box.set_visible(True)
         self.stack.set_visible_child_name("browse")
 
     def on_factory_setup(self, factory, list_item):
@@ -295,7 +431,7 @@ class StoreView(Gtk.Box):
         card.set_margin_start(8)
         card.set_margin_end(8)
 
-        image = Gtk.Image(icon_name="application-x-addon-symbolic", pixel_size=64)
+        image = Gtk.Image(icon_name="nomm-logo", pixel_size=64)
         image.set_vexpand(True)
         card.append(image)
 
@@ -328,6 +464,7 @@ class ModBrowserWindow(Adw.Window):
         super().__init__()
         self.set_transient_for(parent_window)
         self.set_modal(True)
+        self.set_hide_on_close(True)
         self.set_default_size(950, 650)
         self.set_title("Universal Mod Browser")
 
@@ -335,10 +472,11 @@ class ModBrowserWindow(Adw.Window):
         split_view.set_min_sidebar_width(64)
         split_view.set_max_sidebar_width(80)
 
-        sidebar_page = Adw.NavigationPage(title="Stores")
+        sidebar_page = Adw.NavigationPage(title="Mod Platforms")
         sidebar_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
 
         sidebar_header = Adw.HeaderBar()
+        sidebar_header.set_show_title(False)
         sidebar_box.append(sidebar_header)
 
         store_list_box = Gtk.ListBox()
@@ -360,7 +498,6 @@ class ModBrowserWindow(Adw.Window):
             box.set_margin_end(4)
             box.set_halign(Gtk.Align.CENTER)
 
-            # Map store name to gresource icon name (e.g., "gamebanana-symbolic", "nexus-mods-symbolic", etc.)
             icon_name = f"{store_name.lower().replace(' ', '-')}-logo"
             image = Gtk.Image.new_from_icon_name(icon_name)
             image.set_pixel_size(24)
@@ -368,7 +505,7 @@ class ModBrowserWindow(Adw.Window):
 
             row.set_child(box)
             row.store_name = store_name
-            row.set_tooltip_text(store_name)  # Tooltip shows the store name on hover/accessibility
+            row.set_tooltip_text(store_name)
             store_list_box.append(row)
 
         sidebar_box.append(store_list_box)

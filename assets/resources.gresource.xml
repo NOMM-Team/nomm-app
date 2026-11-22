@@ -58,6 +58,8 @@
     <file>mat-hide-symbolic.svg</file>
     <file>mat-store-symbolic.svg</file>
     <file>mat-open-external-symbolic.svg</file>
+    <file>mat-search-settings-symbolic.svg</file>
+    <file>mat-sort-symbolic.svg</file>
     <file>back-arrow-symbolic.svg</file>
   </gresource>
 </gresources>
