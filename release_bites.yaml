@@ -1,10 +1,12 @@
 ---
-Version: "0.16.0"
-Date: 2026-11-05
-URL: https://github.com/nomm-team/nomm-app/releases/0.16.0
+Version: "0.15.1"
+Date: 2026-11-22
+URL: https://github.com/nomm-team/nomm-app/releases/0.15.1
 Description: |-
   Release bites
-   * Change: Remove Steam User ID matching (this step will no longer occur during onboarding)
+   * Feature: Some games require mod archives to not be extracted, and simply linked into the game folders. This is now an available option in NOMM when configuring mod paths for a game.
+   * Feature: It is now possible to link another third party mod manager to NOMM for games that NOMM cannot currently handle, and will not be able to in the foreseeable future.
+   * Change: Remove Steam User ID matching (this step will no longer occur during first time onboarding)
    * Change: Remove Matrix link from settings menu - this leaves Discord or Github if you need support
 ---
 Version: "0.15.0"
