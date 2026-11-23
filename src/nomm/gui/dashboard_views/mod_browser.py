@@ -3,7 +3,7 @@ import time
 import datetime
 from gi.repository import Gtk, Adw, Gio, GObject, Gdk
 from nomm.gui.ui_builders import create_icon_button
-
+from nomm.core.tools import format_count
 
 class ModItem(GObject.Object):
     __gtype_name__ = 'ModItem'
@@ -69,6 +69,8 @@ class StoreProvider(BaseModProvider):
             ModItem(
                 name=f"{self.store_name} Result: {query or 'All'} #{i}",
                 uploader=f"Author {i}",
+                downloads=i * 14500,
+                endorsements=i * 620,
                 page_url=f"https://example.org/{slug}/mods/{i}",
                 download_url=f"https://example.org/{slug}/mods/{i}/download.zip",
             )
@@ -488,6 +490,38 @@ class StoreView(Gtk.Box):
 
         overlay.set_child(card)
 
+        stats_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=4)
+        stats_box.set_halign(Gtk.Align.START)
+        stats_box.set_valign(Gtk.Align.START)
+        stats_box.set_margin_top(8)
+        stats_box.set_margin_start(8)
+
+        downloads_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=4)
+        downloads_box.set_halign(Gtk.Align.START)
+        downloads_icon = Gtk.Image.new_from_icon_name("downloaded-symbolic")
+        downloads_icon.set_pixel_size(13)
+        downloads_icon.add_css_class("dim-label")
+        downloads_label = Gtk.Label(label="0")
+        downloads_label.add_css_class("dim-label")
+        downloads_label.add_css_class("caption")
+        downloads_box.append(downloads_icon)
+        downloads_box.append(downloads_label)
+
+        endorsements_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=4)
+        endorsements_box.set_halign(Gtk.Align.START)
+        endorsements_icon = Gtk.Image.new_from_icon_name("mat-donate-symbolic")
+        endorsements_icon.set_pixel_size(13)
+        endorsements_icon.add_css_class("dim-label")
+        endorsements_label = Gtk.Label(label="0")
+        endorsements_label.add_css_class("dim-label")
+        endorsements_label.add_css_class("caption")
+        endorsements_box.append(endorsements_icon)
+        endorsements_box.append(endorsements_label)
+
+        stats_box.append(downloads_box)
+        stats_box.append(endorsements_box)
+        overlay.add_overlay(stats_box)
+
         actions_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=4)
         actions_box.set_halign(Gtk.Align.END)
         actions_box.set_valign(Gtk.Align.START)
@@ -495,7 +529,7 @@ class StoreView(Gtk.Box):
         actions_box.set_margin_end(8)
 
         download_btn = create_icon_button(
-            icon_name="downloaded-symbolic",
+            icon_name="refresh-mods-symbolic",
             tooltip="Download mod",
             icon_margin=2,
             css_classes=["circular", "osd"],
@@ -507,6 +541,10 @@ class StoreView(Gtk.Box):
 
         card.title_label = title_label
         card.author_label = author_label
+        card.downloads_box = downloads_box
+        card.downloads_label = downloads_label
+        card.endorsements_box = endorsements_box
+        card.endorsements_label = endorsements_label
         card.download_btn = download_btn
 
         list_item.set_child(overlay)
@@ -519,6 +557,10 @@ class StoreView(Gtk.Box):
         card.current_mod = mod_item
         card.title_label.set_text(mod_item.props.name)
         card.author_label.set_text(mod_item.props.author)
+        card.downloads_label.set_text(format_count(mod_item.props.downloads))
+        card.downloads_box.set_tooltip_text(f"{mod_item.props.downloads:,} downloads")
+        card.endorsements_label.set_text(format_count(mod_item.props.endorsements))
+        card.endorsements_box.set_tooltip_text(f"{mod_item.props.endorsements:,} endorsements")
         card.download_btn.set_sensitive(bool(mod_item.props.download_url))
 
     def _on_open_page_clicked(self, mod_item: ModItem | None):

@@ -391,6 +391,25 @@ def format_gb_size(size_bytes: int) -> str:
     return f"{mb_size:.1f} MB"
 
 
+def format_count(value: int) -> str:
+    """Formats a non-negative integer with K/M suffixes, keeping the numeric part <= 3 chars."""
+    if value < 1000:
+        return str(value)
+
+    for threshold, suffix in ((1_000_000, "M"), (1_000, "K")):
+        if value >= threshold:
+            scaled = value / threshold
+            if scaled < 10:
+                formatted = f"{scaled:.1f}"
+                if len(formatted) > 3:
+                    formatted = f"{int(scaled)}"
+            else:
+                formatted = f"{int(scaled)}"
+            return f"{formatted}{suffix}"
+
+    return str(value)
+
+
 def get_flatpak_context():
     info_path = "/.flatpak-info"
     if not os.path.exists(info_path):
