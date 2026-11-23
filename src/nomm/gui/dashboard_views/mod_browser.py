@@ -4,6 +4,7 @@ import datetime
 from gi.repository import Gtk, Adw, Gio, GObject, Gdk
 from nomm.gui.ui_builders import create_icon_button
 from nomm.core.tools import format_count
+from nomm.platforms.nexus import search_nexus_mods
 
 class ModItem(GObject.Object):
     __gtype_name__ = 'ModItem'
@@ -41,7 +42,9 @@ class ModItem(GObject.Object):
 
 class BaseModProvider:
     """Agnostic interface for mod websites (GameBanana, Nexus, Thunderstore)."""
-    def search_mods(self, query: str, category: str, sort_by: str, date_range: tuple, include_adult: bool) -> list[ModItem]:
+    def search_mods(self, query: str, category: str, sort_by: str, date_range: tuple,
+                    include_adult: bool, count: int = 20, offset: int = 0,
+    ) -> list[ModItem]:
         raise NotImplementedError
 
     def get_browse_mods(self) -> list[ModItem]:
@@ -50,10 +53,59 @@ class BaseModProvider:
     def get_first_mod_date(self) -> float:
         raise NotImplementedError
 
+class NexusModProvider(BaseModProvider):
+    def __init__(self, game_info: dict | None = None, headers: dict | None = None):
+        self.game_info = game_info or {}
+        self.headers = dict(headers) if headers else {}
+
+    def search_mods(self, query: str, category: str, sort_by: str, date_range: tuple,
+                    include_adult: bool, count: int = 20, offset: int = 0) -> list[ModItem]:
+        game_domain = self.game_info.get("nexus_id", "")
+        if not game_domain:
+            return []
+
+        raw_results = search_nexus_mods(
+            headers=self.headers,
+            game_domain=game_domain,
+            query=query,
+            category=category,
+            sort_by=sort_by,
+            date_range=date_range,
+            include_adult=include_adult,
+            count=count,
+            offset=offset,
+        )
+
+        return [
+            ModItem(
+                name=item["name"],
+                uploader=item["author"],
+                thumbnail_url=item["thumbnail_url"],
+                downloads=item["downloads"],
+                endorsements=item["endorsements"],
+                short_description=item["short_description"],
+                page_url=item["page_url"],
+                download_url=item["download_url"],
+            )
+            for item in raw_results
+        ]
+
+    def get_browse_mods(self) -> list[ModItem]:
+        return self.search_mods(
+            query="",
+            category="All Categories",
+            sort_by="Most Downloaded first",
+            date_range=(self.get_first_mod_date(), time.time()),
+            include_adult=False,
+        )
+
+    def get_first_mod_date(self) -> float:
+        return 1420070400  # Jan 1, 2015
 
 class StoreProvider(BaseModProvider):
-    def __init__(self, store_name: str, game_info: dict | None = None):
+    def __init__(self, store_name: str, game_info: dict | None = None, headers: dict | None = None):
         self.store_name = store_name
+        self.headers = dict(headers) if headers else {}
         self.game_info = game_info or {}
 
     def _slug(self) -> str:
@@ -236,6 +288,12 @@ class StoreView(Gtk.Box):
         self.game_info = game_info or {}
         self.model = Gio.ListStore(item_type=ModItem)
         self._syncing = False
+
+        self._page_size = 20
+        self._next_offset = 0
+        self._loading_more = False
+        self._has_more = True
+        self._current_search_params: tuple | None = None
 
         self.categories_model = Gtk.StringList.new(["All Categories", "Gameplay", "Visuals", "Audio", "Tools"])
         self.sort_model = Gtk.StringList.new(["Most Downloaded first", "Highest Rated first", "Newest first", "Oldest first"])
@@ -424,6 +482,10 @@ class StoreView(Gtk.Box):
         scrolled = Gtk.ScrolledWindow()
         scrolled.set_vexpand(True)
         scrolled.set_child(self.grid_view)
+
+        vadj = scrolled.get_vadjustment()
+        vadj.connect("value-changed", self._on_vadj_value_changed)
+
         browse_box.append(scrolled)
 
         self.stack.add_named(browse_box, "browse")
@@ -447,14 +509,68 @@ class StoreView(Gtk.Box):
         date_range = (self.pop_date_slider.low_val, self.pop_date_slider.high_val)
         include_adult = self.pop_adult_row.get_active()
 
-        results = self.provider.search_mods(query, category, sort_by, date_range, include_adult)
+        self._current_search_params = (query, category, sort_by, date_range, include_adult)
+        self._next_offset = 0
+        self._has_more = True
+
+        results = self.provider.search_mods(
+            query,
+            category,
+            sort_by,
+            date_range,
+            include_adult,
+            count=self._page_size,
+            offset=0,
+        )
 
         self.model.remove_all()
         for mod in results:
             self.model.append(mod)
 
+        self._next_offset = len(results)
+        self._has_more = len(results) >= self._page_size
+
         self.header_controls_box.set_visible(True)
         self.stack.set_visible_child_name("browse")
+
+    def _on_vadj_value_changed(self, adj: Gtk.Adjustment):
+        if self.stack.get_visible_child_name() != "browse":
+            return
+        if self._loading_more or not self._has_more or not self._current_search_params:
+            return
+
+        upper = adj.get_upper()
+        page_size = adj.get_page_size()
+        if upper <= page_size:
+            return
+
+        if adj.get_value() + page_size >= upper - 120:
+            self.load_more_mods()
+
+    def load_more_mods(self):
+        if self._loading_more or not self._has_more or not self._current_search_params:
+            return
+
+        self._loading_more = True
+        try:
+            query, category, sort_by, date_range, include_adult = self._current_search_params
+            more_results = self.provider.search_mods(
+                query,
+                category,
+                sort_by,
+                date_range,
+                include_adult,
+                count=self._page_size,
+                offset=self._next_offset,
+            )
+            for mod in more_results:
+                self.model.append(mod)
+
+            self._next_offset += len(more_results)
+            if len(more_results) < self._page_size:
+                self._has_more = False
+        finally:
+            self._loading_more = False
 
     def on_factory_setup(self, factory, list_item):
         overlay = Gtk.Overlay()
@@ -469,6 +585,7 @@ class StoreView(Gtk.Box):
         card.set_hexpand(True)
         card.set_vexpand(True)
         card.current_mod = None
+        card.overlay = overlay
 
         image = Gtk.Image(icon_name="nomm-logo", pixel_size=64)
         image.set_vexpand(True)
@@ -539,6 +656,11 @@ class StoreView(Gtk.Box):
 
         overlay.add_overlay(actions_box)
 
+        click_gesture = Gtk.GestureClick.new()
+        click_gesture.set_button(Gdk.BUTTON_PRIMARY)
+        click_gesture.connect("released", lambda *_, c=card: self._on_open_page_clicked(c.current_mod))
+        overlay.add_controller(click_gesture)
+
         card.title_label = title_label
         card.author_label = author_label
         card.downloads_box = downloads_box
@@ -562,6 +684,7 @@ class StoreView(Gtk.Box):
         card.endorsements_label.set_text(format_count(mod_item.props.endorsements))
         card.endorsements_box.set_tooltip_text(f"{mod_item.props.endorsements:,} endorsements")
         card.download_btn.set_sensitive(bool(mod_item.props.download_url))
+        overlay.set_tooltip_text(mod_item.props.short_description or None)
 
     def _on_open_page_clicked(self, mod_item: ModItem | None):
         if not mod_item or not mod_item.props.page_url:
@@ -577,9 +700,15 @@ class StoreView(Gtk.Box):
 
 
 class ModBrowserWindow(Adw.Window):
-    def __init__(self, parent_window: Gtk.Window, game_info: dict | None = None):
+    def __init__(
+        self,
+        parent_window: Gtk.Window,
+        game_info: dict | None = None,
+        headers: dict | None = None,
+    ):
         super().__init__()
         self.game_info = game_info or {}
+        self.headers = dict(headers) if headers else {}
         self.set_transient_for(parent_window)
         self.set_modal(True)
         self.set_hide_on_close(True)
@@ -589,7 +718,7 @@ class ModBrowserWindow(Adw.Window):
         title = f"Universal Mod Browser — {game_name}" if game_name else "Universal Mod Browser"
         self.set_title(title)
 
-        self.stores = self._build_supported_stores(self.game_info)
+        self.stores = self._build_supported_stores(self.game_info, self.headers)
 
         self.content_stack = Adw.ViewStack()
         self.store_views = {}
@@ -662,14 +791,17 @@ class ModBrowserWindow(Adw.Window):
         store_list_box.select_row(store_list_box.get_row_at_index(0))
 
     @staticmethod
-    def _build_supported_stores(game_info: dict) -> dict[str, BaseModProvider]:
+    def _build_supported_stores(
+        game_info: dict,
+        headers: dict | None = None,
+    ) -> dict[str, BaseModProvider]:
         stores: dict[str, BaseModProvider] = {}
         if game_info.get("gamebanana_id"):
-            stores["GameBanana"] = StoreProvider("GameBanana", game_info)
+            stores["GameBanana"] = StoreProvider("GameBanana", game_info, headers=headers)
         if game_info.get("nexus_id"):
-            stores["Nexus"] = StoreProvider("Nexus Mods", game_info)
+            stores["Nexus"] = NexusModProvider(game_info, headers=headers)
         if game_info.get("thunderstore_id") or game_info.get("thunderstore_slug"):
-            stores["Thunderstore"] = StoreProvider("Thunderstore", game_info)
+            stores["Thunderstore"] = StoreProvider("Thunderstore", game_info, headers=headers)
         return stores
 
     def on_store_selected(self, box, row):

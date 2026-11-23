@@ -422,3 +422,138 @@ def check_if_mod_is_utility(game_config, mod_id):
                 if get_mod_id_from_url(utility["source_url"]) == mod_id:
                     return True
     return False
+
+
+def search_nexus_mods(
+    headers: dict,
+    game_domain: str,
+    query: str = "",
+    category: str = "All Categories",
+    sort_by: str = "Most Downloaded first",
+    date_range: tuple[float, float] | None = None,
+    include_adult: bool = False,
+    count: int = 20,
+    offset: int = 0,
+) -> list[dict]:
+    """
+    Searches Nexus Mods via the v2 GraphQL API using ModsFilter,
+    BaseFilterValue, and BaseSortValue.
+    """
+    graphql_url = "https://api.nexusmods.com/v2/graphql"
+
+    sort_field_map = {
+        "Most Downloaded first": "downloads",
+        "Highest Rated first": "endorsements",
+        "Newest first": "createdAt",
+        "Oldest first": "createdAt",
+    }
+    sort_field = sort_field_map.get(sort_by, "downloads")
+    sort_direction = "ASC" if sort_by == "Oldest first" else "DESC"
+
+    clauses: list[dict] = [
+        {"gameDomainName": {"value": game_domain, "op": "EQUALS"}},
+    ]
+
+    cleaned_query = query.strip()
+    if cleaned_query:
+        clauses.append({"nameStemmed": {"value": cleaned_query, "op": "MATCHES"}})
+
+    if category and category != "All Categories":
+        clauses.append({"categoryName": {"value": category, "op": "EQUALS"}})
+
+    graphql_filter = {
+        "op": "AND",
+        "filter": clauses,
+    }
+    graphql_sort = [{sort_field: {"direction": sort_direction}}]
+
+    graphql_query = """
+    query SearchMods(
+        $filter: ModsFilter
+        $sort: [ModsSort!]
+        $count: Int
+        $offset: Int
+    ) {
+        mods(
+            filter: $filter
+            sort: $sort
+            count: $count
+            offset: $offset
+        ) {
+            nodes {
+                modId
+                name
+                summary
+                author
+                downloads
+                endorsements
+                pictureUrl
+                adult
+                createdAt
+                updatedAt
+            }
+        }
+    }
+    """
+
+    variables = {
+        "filter": graphql_filter,
+        "sort": graphql_sort,
+        "count": count,
+        "offset": offset,
+    }
+
+    nexus_headers = headers.copy()
+    nexus_headers["Content-Type"] = "application/json"
+
+    try:
+        response = requests.post(
+            graphql_url,
+            json={"query": graphql_query, "variables": variables},
+            headers=nexus_headers,
+            timeout=15,
+            allow_redirects=True,
+        )
+        response.raise_for_status()
+
+        data = response.json()
+        if "errors" in data:
+            print(f"GraphQL Errors: {data['errors']}")
+            return []
+
+        nodes = (data.get("data") or {}).get("mods", {}).get("nodes") or []
+
+        results = []
+        for node in nodes:
+            if not include_adult and node.get("adult"):
+                continue
+
+            created_at = node.get("createdAt")
+            if date_range and len(date_range) == 2 and isinstance(created_at, (int, float)):
+                low_ts, high_ts = date_range
+                if not (low_ts <= created_at <= high_ts):
+                    continue
+
+            mod_id = node.get("modId")
+            results.append({
+                "mod_id": mod_id,
+                "name": node.get("name") or "",
+                "author": node.get("author") or node.get("uploadedBy") or "",
+                "short_description": node.get("summary") or "",
+                "thumbnail_url": node.get("pictureUrl") or "",
+                "downloads": int(node.get("downloads") or 0),
+                "endorsements": int(node.get("endorsements") or 0),
+                "page_url": f"https://www.nexusmods.com/{game_domain}/mods/{mod_id}" if mod_id else "",
+                "download_url": "",
+                "created_at": created_at,
+                "updated_at": node.get("updatedAt"),
+            })
+
+        return results
+
+    except requests.exceptions.RequestException as e:
+        print(f"Nexus search request failed: {e}")
+        return []
+    except Exception as e:
+        print(f"Error parsing Nexus search response: {e}")
+        return []

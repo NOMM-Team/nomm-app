@@ -89,6 +89,7 @@ class ModsTab(Gtk.Box):
         browser = ModBrowserWindow(
             parent_window=self.dashboard.app.win,
             game_info=dashboard.game_info,
+            headers=dashboard.headers
         )
         browser_btn = create_icon_button(
             icon_name="mat-store-symbolic",
