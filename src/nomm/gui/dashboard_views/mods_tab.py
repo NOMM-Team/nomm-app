@@ -86,11 +86,14 @@ class ModsTab(Gtk.Box):
         )
         self.action_bar.append(wiki_btn)
 
-        browser = ModBrowserWindow(parent_window=self.dashboard.app.win)
+        browser = ModBrowserWindow(
+            parent_window=self.dashboard.app.win,
+            game_info=dashboard.game_info,
+        )
         browser_btn = create_icon_button(
             icon_name="mat-store-symbolic",
             tooltip=_("Get more mods from available mod platforms"),
-            on_click=lambda x: browser.present()
+            on_click=lambda x: browser.present(),
         )
         browser_btn.set_hexpand(True)
         self.action_bar.append(browser_btn)

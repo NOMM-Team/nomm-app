@@ -2,6 +2,7 @@ import cairo
 import time
 import datetime
 from gi.repository import Gtk, Adw, Gio, GObject, Gdk
+from nomm.gui.ui_builders import create_icon_button
 
 
 class ModItem(GObject.Object):
@@ -11,10 +12,22 @@ class ModItem(GObject.Object):
     author = GObject.Property(type=str, default="")
     thumbnail_url = GObject.Property(type=str, default="")
     short_description = GObject.Property(type=str, default="")
+    page_url = GObject.Property(type=str, default="")
+    download_url = GObject.Property(type=str, default="")
     downloads = GObject.Property(type=int, default=0)
     endorsements = GObject.Property(type=int, default=0)
 
-    def __init__(self, name="", uploader="", thumbnail_url="", downloads=0, endorsements=0, short_description=""):
+    def __init__(
+        self,
+        name="",
+        uploader="",
+        thumbnail_url="",
+        downloads=0,
+        endorsements=0,
+        short_description="",
+        page_url="",
+        download_url="",
+    ):
         super().__init__()
         self.props.name = name
         self.props.author = uploader
@@ -22,6 +35,8 @@ class ModItem(GObject.Object):
         self.props.downloads = downloads
         self.props.endorsements = endorsements
         self.props.short_description = short_description
+        self.props.page_url = page_url
+        self.props.download_url = download_url
 
 
 class BaseModProvider:
@@ -37,22 +52,39 @@ class BaseModProvider:
 
 
 class StoreProvider(BaseModProvider):
-    def __init__(self, store_name: str):
+    def __init__(self, store_name: str, game_info: dict | None = None):
         self.store_name = store_name
+        self.game_info = game_info or {}
+
+    def _slug(self) -> str:
+        return self.store_name.lower().replace(" ", "-")
 
     def search_mods(self, query: str, category: str, sort_by: str, date_range: tuple, include_adult: bool) -> list[ModItem]:
         print(
             f"Searching {self.store_name}: query='{query}', category='{category}', "
             f"sort='{sort_by}', date_range='{date_range}', adult={include_adult}"
         )
+        slug = self._slug()
         return [
-            ModItem(name=f"{self.store_name} Result: {query or 'All'} #{i}", uploader=f"Author {i}")
+            ModItem(
+                name=f"{self.store_name} Result: {query or 'All'} #{i}",
+                uploader=f"Author {i}",
+                page_url=f"https://example.org/{slug}/mods/{i}",
+                download_url=f"https://example.org/{slug}/mods/{i}/download.zip",
+            )
             for i in range(1, 13)
         ]
 
     def get_browse_mods(self) -> list[ModItem]:
+        slug = self._slug()
         return [
-            ModItem(f"{self.store_name} Trending Mod #{i}", f"Author {i}", "")
+            ModItem(
+                name=f"{self.store_name} Trending Mod #{i}",
+                uploader=f"Author {i}",
+                thumbnail_url="",
+                page_url=f"https://example.org/{slug}/mods/{i}",
+                download_url=f"https://example.org/{slug}/mods/{i}/download.zip",
+            )
             for i in range(1, 25)
         ]
 
@@ -196,9 +228,10 @@ class DualRangeSlider(Gtk.Box):
 
 
 class StoreView(Gtk.Box):
-    def __init__(self, provider: BaseModProvider):
+    def __init__(self, provider: BaseModProvider, game_info: dict | None = None):
         super().__init__(orientation=Gtk.Orientation.VERTICAL)
         self.provider = provider
+        self.game_info = game_info or {}
         self.model = Gio.ListStore(item_type=ModItem)
         self._syncing = False
 
@@ -374,7 +407,6 @@ class StoreView(Gtk.Box):
 
         self.stack.add_named(search_scroll, "search")
 
-
     def _build_browse_page(self):
         browse_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
 
@@ -423,13 +455,18 @@ class StoreView(Gtk.Box):
         self.stack.set_visible_child_name("browse")
 
     def on_factory_setup(self, factory, list_item):
+        overlay = Gtk.Overlay()
+        overlay.set_size_request(180, 220)
+        overlay.set_margin_top(8)
+        overlay.set_margin_bottom(8)
+        overlay.set_margin_start(8)
+        overlay.set_margin_end(8)
+
         card = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
         card.add_css_class("card")
-        card.set_size_request(160, 200)
-        card.set_margin_top(8)
-        card.set_margin_bottom(8)
-        card.set_margin_start(8)
-        card.set_margin_end(8)
+        card.set_hexpand(True)
+        card.set_vexpand(True)
+        card.current_mod = None
 
         image = Gtk.Image(icon_name="nomm-logo", pixel_size=64)
         image.set_vexpand(True)
@@ -437,36 +474,102 @@ class StoreView(Gtk.Box):
 
         title_label = Gtk.Label(ellipsize=3)
         title_label.add_css_class("heading")
+        title_label.set_margin_start(8)
+        title_label.set_margin_end(8)
         card.append(title_label)
 
-        author_label = Gtk.Label()
+        author_label = Gtk.Label(ellipsize=3)
         author_label.add_css_class("dim-label")
+        author_label.set_margin_top(2)
+        author_label.set_margin_bottom(10)
+        author_label.set_margin_start(8)
+        author_label.set_margin_end(8)
         card.append(author_label)
 
-        list_item.set_child(card)
+        overlay.set_child(card)
+
+        actions_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=4)
+        actions_box.set_halign(Gtk.Align.END)
+        actions_box.set_valign(Gtk.Align.START)
+        actions_box.set_margin_top(8)
+        actions_box.set_margin_end(8)
+
+        download_btn = create_icon_button(
+            icon_name="downloaded-symbolic",
+            tooltip="Download mod",
+            icon_margin=2,
+            css_classes=["circular", "osd"],
+            on_click=lambda _, c=card: self._on_download_clicked(c.current_mod),
+        )
+        actions_box.append(download_btn)
+
+        overlay.add_overlay(actions_box)
+
+        card.title_label = title_label
+        card.author_label = author_label
+        card.download_btn = download_btn
+
+        list_item.set_child(overlay)
 
     def on_factory_bind(self, factory, list_item):
-        card = list_item.get_child()
+        overlay = list_item.get_child()
+        card = overlay.get_child()
         mod_item = list_item.get_item()
 
-        children = []
-        child = card.get_first_child()
-        while child:
-            children.append(child)
-            child = child.get_next_sibling()
+        card.current_mod = mod_item
+        card.title_label.set_text(mod_item.props.name)
+        card.author_label.set_text(mod_item.props.author)
+        card.download_btn.set_sensitive(bool(mod_item.props.download_url))
 
-        children[1].set_text(mod_item.props.name)
-        children[2].set_text(mod_item.props.author)
+    def _on_open_page_clicked(self, mod_item: ModItem | None):
+        if not mod_item or not mod_item.props.page_url:
+            return
+        parent = self.get_root()
+        launcher = Gtk.UriLauncher.new(mod_item.props.page_url)
+        launcher.launch(parent if isinstance(parent, Gtk.Window) else None, None, None)
+
+    def _on_download_clicked(self, mod_item: ModItem | None):
+        if not mod_item or not mod_item.props.download_url:
+            return
+        print(f"Downloading '{mod_item.props.name}' from {mod_item.props.download_url}")
 
 
 class ModBrowserWindow(Adw.Window):
-    def __init__(self, parent_window: Gtk.Window):
+    def __init__(self, parent_window: Gtk.Window, game_info: dict | None = None):
         super().__init__()
+        self.game_info = game_info or {}
         self.set_transient_for(parent_window)
         self.set_modal(True)
         self.set_hide_on_close(True)
         self.set_default_size(950, 650)
-        self.set_title("Universal Mod Browser")
+
+        game_name = self.game_info.get("name") or self.game_info.get("title")
+        title = f"Universal Mod Browser — {game_name}" if game_name else "Universal Mod Browser"
+        self.set_title(title)
+
+        self.stores = self._build_supported_stores(self.game_info)
+
+        self.content_stack = Adw.ViewStack()
+        self.store_views = {}
+        for store_name, provider in self.stores.items():
+            view = StoreView(provider, self.game_info)
+            self.content_stack.add_named(view, store_name)
+            self.store_views[store_name] = view
+
+        if not self.stores:
+            empty_box = Adw.StatusPage(
+                icon_name="dialog-warning-symbolic",
+                title="No Mod Platforms Supported",
+                description="This game does not have a Nexus Mods or GameBanana ID configured.",
+            )
+            self.set_content(empty_box)
+            return
+
+        if len(self.stores) == 1:
+            only_store = next(iter(self.stores))
+            self.content_stack.set_visible_child_name(only_store)
+            self.set_content(self.content_stack)
+            return
 
         split_view = Adw.NavigationSplitView()
         split_view.set_min_sidebar_width(64)
@@ -481,12 +584,6 @@ class ModBrowserWindow(Adw.Window):
 
         store_list_box = Gtk.ListBox()
         store_list_box.add_css_class("navigation-sidebar")
-
-        self.stores = {
-            "GameBanana": StoreProvider("GameBanana"),
-            "Nexus": StoreProvider("Nexus Mods"),
-            "Thunderstore": StoreProvider("Thunderstore"),
-        }
 
         for store_name in self.stores.keys():
             row = Gtk.ListBoxRow()
@@ -512,14 +609,6 @@ class ModBrowserWindow(Adw.Window):
         sidebar_page.set_child(sidebar_box)
         split_view.set_sidebar(sidebar_page)
 
-        self.content_stack = Adw.ViewStack()
-
-        self.store_views = {}
-        for store_name, provider in self.stores.items():
-            view = StoreView(provider)
-            self.content_stack.add_named(view, store_name)
-            self.store_views[store_name] = view
-
         content_page = Adw.NavigationPage(title="Mod Browser")
         content_page.set_child(self.content_stack)
         split_view.set_content(content_page)
@@ -529,6 +618,17 @@ class ModBrowserWindow(Adw.Window):
         self.set_content(split_view)
 
         store_list_box.select_row(store_list_box.get_row_at_index(0))
+
+    @staticmethod
+    def _build_supported_stores(game_info: dict) -> dict[str, BaseModProvider]:
+        stores: dict[str, BaseModProvider] = {}
+        if game_info.get("gamebanana_id"):
+            stores["GameBanana"] = StoreProvider("GameBanana", game_info)
+        if game_info.get("nexus_id"):
+            stores["Nexus"] = StoreProvider("Nexus Mods", game_info)
+        if game_info.get("thunderstore_id") or game_info.get("thunderstore_slug"):
+            stores["Thunderstore"] = StoreProvider("Thunderstore", game_info)
+        return stores
 
     def on_store_selected(self, box, row):
         if not row:
