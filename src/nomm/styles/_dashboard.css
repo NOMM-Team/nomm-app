@@ -46,3 +46,19 @@
 .preview-pane-title-parent:hover .preview-pane-button-overlay.has-alias-action {
     opacity: 1;
 }
+
+.mod-text-scrim {
+    background: linear-gradient(
+        to top,
+        rgba(12, 14, 18, 0.88) 0%,
+        rgba(12, 14, 18, 0.72) 65%,
+        rgba(12, 14, 18, 0.0) 100%
+    );
+    padding: 14px 8px 4px 8px;
+}
+
+.mod-text-scrim button {
+    min-height: 0;
+    padding-top: 2px;
+    padding-bottom: 2px;
+}

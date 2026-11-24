@@ -10,9 +10,13 @@ _ = gettext.gettext
 
 if ".local" in GLib.get_user_data_dir():  # local installation i.e. running python
     DATA_DIR = os.path.join(GLib.get_user_data_dir(), "nomm")
-    Path(DATA_DIR).mkdir(parents=True, exist_ok=True)
+    CACHE_DIR = os.path.join(GLib.get_user_cache_dir(), "nomm")
 else:  # a flatpak, no need to add "nomm" parent folder
     DATA_DIR = os.path.join(GLib.get_user_data_dir())
+    CACHE_DIR = os.path.join(GLib.get_user_cache_dir())
+
+Path(DATA_DIR).mkdir(parents=True, exist_ok=True)
+Path(CACHE_DIR).mkdir(parents=True, exist_ok=True)
 
 USER_CONFIG_PATH = os.path.join(DATA_DIR, "user_config.yaml")
 PRESET_GAME_CONFIG_PATH = os.path.join(DATA_DIR, "preset_game_configs")

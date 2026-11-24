@@ -2,10 +2,17 @@ import gettext
 import cairo
 import time
 import datetime
-from gi.repository import Gtk, Adw, Gio, GObject, Gdk
+import threading
+import os
+import hashlib
+import urllib.request
+from gi.repository import Gtk, Adw, Gio, GObject, Gdk, GLib
+from collections import OrderedDict
+from concurrent.futures import ThreadPoolExecutor
+
 from nomm.gui.ui_builders import create_icon_button
 from nomm.core.tools import format_count
-from nomm.core.user_config import load_user_config, update_user_config
+from nomm.core.user_config import load_user_config, update_user_config, CACHE_DIR
 from nomm.core.mod_manager import load_downloaded_mod_ids
 from nomm.platforms.nexus import search_nexus_mods, get_nexus_first_mod_date
 
@@ -328,13 +335,140 @@ class DualRangeSlider(Gtk.Box):
         self.active_thumb = None
 
 
+class ThumbnailLoader:
+    """Fetches images off the main thread with a RAM Gdk.Texture cache and disk cache."""
+
+    def __init__(
+        self,
+        max_memory_items: int = 256,
+        max_workers: int = 6,
+        cache_dir: str | os.PathLike | None = None,
+    ):
+        self._max_memory_items = max_memory_items
+        self._cache: OrderedDict[str, Gdk.Texture] = OrderedDict()
+        self._in_flight: set[str] = set()
+        self._lock = threading.Lock()
+        self._executor = ThreadPoolExecutor(max_workers=max_workers, thread_name_prefix="thumb-loader")
+
+        base_cache = os.fspath(cache_dir) if cache_dir is not None else os.fspath(CACHE_DIR)
+        self._cache_dir = os.path.join(base_cache, "browser_thumbnails")
+        os.makedirs(self._cache_dir, exist_ok=True)
+
+    def _disk_path_for_url(self, url: str) -> str:
+        digest = hashlib.sha256(url.encode("utf-8")).hexdigest()
+        return os.path.join(self._cache_dir, digest)
+
+    def _read_disk_bytes(self, disk_path: str) -> bytes | None:
+        if not os.path.isfile(disk_path):
+            return None
+        try:
+            with open(disk_path, "rb") as f:
+                data = f.read()
+            return data if data else None
+        except Exception:
+            return None
+
+    def _write_disk_bytes(self, disk_path: str, data: bytes):
+        tmp_path = f"{disk_path}.{threading.get_ident()}.tmp"
+        try:
+            with open(tmp_path, "wb") as f:
+                f.write(data)
+            os.replace(tmp_path, disk_path)
+        except Exception:
+            try:
+                if os.path.exists(tmp_path):
+                    os.remove(tmp_path)
+            except Exception:
+                pass
+
+    def _decode_texture(self, data: bytes) -> Gdk.Texture | None:
+        if not data:
+            return None
+        try:
+            glib_bytes = GLib.Bytes.new(data)
+            return Gdk.Texture.new_from_bytes(glib_bytes)
+        except Exception:
+            return None
+
+    def get_cached(self, url: str) -> Gdk.Texture | None:
+        if not url:
+            return None
+        with self._lock:
+            tex = self._cache.get(url)
+            if tex is not None:
+                self._cache.move_to_end(url)
+            return tex
+
+    def _put_cache(self, url: str, texture: Gdk.Texture):
+        with self._lock:
+            self._cache[url] = texture
+            self._cache.move_to_end(url)
+            while len(self._cache) > self._max_memory_items:
+                self._cache.popitem(last=False)
+
+    def load(self, url: str, on_loaded):
+        """Calls `on_loaded(url, texture_or_none)` on the GTK main thread."""
+        if not url:
+            GLib.idle_add(on_loaded, url, None)
+            return
+
+        cached = self.get_cached(url)
+        if cached is not None:
+            GLib.idle_add(on_loaded, url, cached)
+            return
+
+        with self._lock:
+            if url in self._in_flight:
+                return
+            self._in_flight.add(url)
+
+        self._executor.submit(self._worker, url, on_loaded)
+
+    def _worker(self, url: str, on_loaded):
+        texture = None
+        disk_path = self._disk_path_for_url(url)
+        try:
+            disk_data = self._read_disk_bytes(disk_path)
+            if disk_data is not None:
+                texture = self._decode_texture(disk_data)
+                if texture is None:
+                    try:
+                        os.remove(disk_path)
+                    except Exception:
+                        pass
+
+            if texture is None:
+                req = urllib.request.Request(
+                    url,
+                    headers={"User-Agent": "nomm-mod-browser/1.0"},
+                )
+                with urllib.request.urlopen(req, timeout=10) as resp:
+                    net_data = resp.read()
+                if net_data:
+                    texture = self._decode_texture(net_data)
+                    if texture is not None:
+                        self._write_disk_bytes(disk_path, net_data)
+
+            if texture is not None:
+                self._put_cache(url, texture)
+        except Exception:
+            texture = None
+        finally:
+            with self._lock:
+                self._in_flight.discard(url)
+            GLib.idle_add(on_loaded, url, texture)
+
+    def shutdown(self):
+        self._executor.shutdown(wait=False)
+
+
 class StoreView(Gtk.Box):
     def __init__(self, provider: BaseModProvider, game_info: dict | None = None, downloaded_mod_ids: set[str] | None = None):
         super().__init__(orientation=Gtk.Orientation.VERTICAL)
         self.provider = provider
         self.game_info = game_info or {}
         self.model = Gio.ListStore(item_type=ModItem)
-        self._downloaded_mod_ids = downloaded_mod_ids
+        self._downloaded_mod_ids = downloaded_mod_ids or set()
         self._raw_results: list[ModItem] = []
         self._current_author = ""
         self._syncing = False
@@ -343,6 +477,7 @@ class StoreView(Gtk.Box):
         self._loading_more = False
         self._has_more = True
         self._current_search_params: tuple | None = None
+        self._thumb_loader = ThumbnailLoader()
 
         user_cfg = load_user_config() or {}
         self._include_adult_default = bool(user_cfg.get("show_adult_mods_in_browse", False))
@@ -673,28 +808,46 @@ class StoreView(Gtk.Box):
         overlay.set_margin_start(8)
         overlay.set_margin_end(8)
 
-        card = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
+        card = Gtk.Overlay()
         card.add_css_class("card")
+        card.set_overflow(Gtk.Overflow.HIDDEN)
         card.set_hexpand(True)
         card.set_vexpand(True)
         card.current_mod = None
         card.overlay = overlay
+        card._thumb_request_id = 0
 
-        image = Gtk.Image(icon_name="nomm-logo", pixel_size=64)
-        image.set_vexpand(True)
-        card.append(image)
+        bg_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        bg_box.set_hexpand(True)
+        bg_box.set_vexpand(True)
+
+        picture = Gtk.Picture()
+        picture.set_content_fit(Gtk.ContentFit.COVER)
+        picture.set_can_shrink(True)
+        picture.set_hexpand(True)
+        picture.set_vexpand(True)
+        bg_box.append(picture)
+
+        fallback_icon = Gtk.Image(icon_name="nomm-logo", pixel_size=64)
+        fallback_icon.set_vexpand(True)
+        fallback_icon.set_valign(Gtk.Align.CENTER)
+        bg_box.append(fallback_icon)
+
+        card.set_child(bg_box)
+
+        text_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
+        text_box.set_valign(Gtk.Align.END)
+        text_box.set_hexpand(True)
+        text_box.add_css_class("mod-text-scrim")
 
         title_label = Gtk.Label(ellipsize=3)
         title_label.add_css_class("heading")
-        title_label.set_margin_start(8)
-        title_label.set_margin_end(8)
-        card.append(title_label)
+        title_label.set_halign(Gtk.Align.CENTER)
+        text_box.append(title_label)
 
         author_btn = Gtk.Button()
         author_btn.add_css_class("flat")
-        author_btn.set_margin_start(8)
-        author_btn.set_margin_end(8)
-        author_btn.set_margin_bottom(10)
+        author_btn.set_halign(Gtk.Align.CENTER)
 
         author_label = Gtk.Label(ellipsize=3)
         author_label.add_css_class("dim-label")
@@ -705,7 +858,9 @@ class StoreView(Gtk.Box):
                 self.search_by_author(c.current_mod.props.author)
 
         author_btn.connect("clicked", on_author_clicked)
-        card.append(author_btn)
+        text_box.append(author_btn)
+
+        card.add_overlay(text_box)
 
         overlay.set_child(card)
 
@@ -741,6 +896,7 @@ class StoreView(Gtk.Box):
         stats_box.append(endorsements_box)
         overlay.add_overlay(stats_box)
 
+        # Top-right actions overlay (unchanged)
         actions_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=4)
         actions_box.set_halign(Gtk.Align.END)
         actions_box.set_valign(Gtk.Align.START)
@@ -763,6 +919,8 @@ class StoreView(Gtk.Box):
         click_gesture.connect("released", lambda *_, c=card: self._on_open_page_clicked(c.current_mod))
         overlay.add_controller(click_gesture)
 
+        card.picture = picture
+        card.fallback_icon = fallback_icon
         card.title_label = title_label
         card.author_label = author_label
         card.downloads_box = downloads_box
@@ -785,6 +943,25 @@ class StoreView(Gtk.Box):
         card.downloads_box.set_tooltip_text(f"{mod_item.props.downloads:,} downloads")
         card.endorsements_label.set_text(format_count(mod_item.props.endorsements))
         card.endorsements_box.set_tooltip_text(f"{mod_item.props.endorsements:,} endorsements")
+
+        thumb_url = (mod_item.props.thumbnail_url or "").strip()
+        card._thumb_request_id = getattr(card, "_thumb_request_id", 0) + 1
+        req_id = card._thumb_request_id
+
+        cached_tex = self._thumb_loader.get_cached(thumb_url) if thumb_url else None
+        if cached_tex is not None:
+            card.picture.set_paintable(cached_tex)
+            card.fallback_icon.set_visible(False)
+        else:
+            card.picture.set_paintable(None)
+            card.fallback_icon.set_visible(True)
+            if thumb_url:
+                self._thumb_loader.load(
+                    thumb_url,
+                    lambda url, tex, c=card, m=mod_item, u=thumb_url, rid=req_id: self._apply_thumbnail(
+                        c, m, u, rid, tex
+                    ),
+                )
 
         btn_image = card.download_btn.get_child()
         if str(mod_item.props.mod_id).strip() in self._downloaded_mod_ids:
@@ -910,6 +1087,24 @@ class StoreView(Gtk.Box):
         self.model.remove_all()
         for mod in visible_mods:
             self.model.append(mod)
+
+    def _apply_thumbnail(self, card, mod_item: ModItem, expected_url: str, req_id: int, texture: Gdk.Texture | None):
+        if card.current_mod is not mod_item:
+            return False
+        if getattr(card, "_thumb_request_id", None) != req_id:
+            return False
+        if (mod_item.props.thumbnail_url or "") != expected_url:
+            return False
+
+        if texture is not None:
+            card.picture.set_paintable(texture)
+            card.picture.set_visible(True)
+            card.fallback_icon.set_visible(False)
+        else:
+            card.picture.set_paintable(None)
+            card.picture.set_visible(False)
+            card.fallback_icon.set_visible(True)
+        return False
 
 
 class ModBrowserWindow(Adw.Window):

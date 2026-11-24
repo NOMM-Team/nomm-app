@@ -485,7 +485,7 @@ def search_nexus_mods(
         clauses.append({
             "adultContent": [
                 {
-                    "value": "false",
+                    "value": False,
                     "op": "EQUALS",
                 }
             ]
