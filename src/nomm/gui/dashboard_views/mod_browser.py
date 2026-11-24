@@ -208,15 +208,23 @@ class DualRangeSlider(Gtk.Box):
 
     def _get_range_text(self) -> str:
         try:
-            d_low = datetime.datetime.fromtimestamp(self.low_val).strftime('%Y-%m-%d')
-            if abs(self.high_val - self.max_val) < 1.0:
-                d_high = "now"
+            if abs(self.low_val - self.min_val) < 1.0:
+                d_low = _("Game release")
             else:
-                d_high = datetime.datetime.fromtimestamp(self.high_val).strftime('%Y-%m-%d')
+                dt_low = datetime.datetime.fromtimestamp(self.low_val)
+                d_low = f"{dt_low.day} {dt_low.strftime('%b').lower()} {dt_low.strftime('%Y')}"
+
+            if abs(self.high_val - self.max_val) < 1.0:
+                d_high = _("now")
+            else:
+                dt_high = datetime.datetime.fromtimestamp(self.high_val)
+                d_high = f"{dt_high.day} {dt_high.strftime('%b').lower()} {dt_high.strftime('%Y')}"
+
             return _("{start} to {end}").format(start=d_low, end=d_high)
         except Exception:
-            high_str = "now" if abs(self.high_val - self.max_val) < 1.0 else str(int(self.high_val))
-            return f"{int(self.low_val)} - {high_str}"
+            low_str = _("Game release") if abs(self.low_val - self.min_val) < 1.0 else str(int(self.low_val))
+            high_str = _("now") if abs(self.high_val - self.max_val) < 1.0 else str(int(self.high_val))
+            return f"{low_str} - {high_str}"
 
     def on_draw(self, area, cr, width, height):
         padding = 16
@@ -516,7 +524,7 @@ class StoreView(Gtk.Box):
 
         self.selection_model = Gtk.NoSelection(model=self.model)
         self.grid_view = Gtk.GridView(model=self.selection_model, factory=factory)
-        self.grid_view.set_max_columns(4)
+        self.grid_view.set_max_columns(6)
         self.grid_view.set_min_columns(2)
 
         scrolled = Gtk.ScrolledWindow()
@@ -620,7 +628,7 @@ class StoreView(Gtk.Box):
 
     def on_factory_setup(self, factory, list_item):
         overlay = Gtk.Overlay()
-        overlay.set_size_request(180, 220)
+        overlay.set_size_request(220, 180)
         overlay.set_margin_top(8)
         overlay.set_margin_bottom(8)
         overlay.set_margin_start(8)
