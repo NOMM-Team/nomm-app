@@ -259,7 +259,11 @@ def load_cached_assets(game_name: str, platform: str) -> dict[str, str]:
 
 def get_flathub_package_version(headers: dict, package: str) -> list:
     url = f"https://flathub.org/api/v2/appstream/{package}"
-    response = requests.get(url, headers=headers)
+    try:
+        response = requests.get(url, headers=headers)
+    except requests.exceptions.ConnectionError as e:
+        print(f"[!] Could not connect to flathub servers: {e}")
+        return None
 
     if response.status_code == 200:
         release_versions = []

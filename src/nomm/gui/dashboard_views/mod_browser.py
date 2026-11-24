@@ -1,11 +1,15 @@
-from dulwich.client import AuthCallbackPoolManager
+import gettext
 import cairo
 import time
 import datetime
 from gi.repository import Gtk, Adw, Gio, GObject, Gdk
 from nomm.gui.ui_builders import create_icon_button
 from nomm.core.tools import format_count
+from nomm.core.user_config import load_user_config, update_user_config
 from nomm.platforms.nexus import search_nexus_mods, get_nexus_first_mod_date
+
+_ = gettext.gettext
+
 
 class ModItem(GObject.Object):
     __gtype_name__ = 'ModItem'
@@ -43,9 +47,8 @@ class ModItem(GObject.Object):
 
 class BaseModProvider:
     """Agnostic interface for mod websites (GameBanana, Nexus, Thunderstore)."""
-    def search_mods(self, query: str, category: str, sort_by: str, date_range: tuple,
-                    include_adult: bool, author: str = "", count: int = 20, offset: int = 0
-    ) -> list[ModItem]:
+    def search_mods(self, query: str, category: str, sort_by: str, date_range: tuple, include_adult: bool,
+                    author: str = "", count: int = 20, offset: int = 0) -> list[ModItem]:
         raise NotImplementedError
 
     def get_browse_mods(self) -> list[ModItem]:
@@ -53,6 +56,7 @@ class BaseModProvider:
 
     def get_first_mod_date(self) -> float:
         raise NotImplementedError
+
 
 class NexusModProvider(BaseModProvider):
     def __init__(self, game_info: dict | None = None, headers: dict | None = None):
@@ -202,10 +206,14 @@ class DualRangeSlider(Gtk.Box):
     def _get_range_text(self) -> str:
         try:
             d_low = datetime.datetime.fromtimestamp(self.low_val).strftime('%Y-%m-%d')
-            d_high = datetime.datetime.fromtimestamp(self.high_val).strftime('%Y-%m-%d')
-            return f"{d_low} to {d_high}"
+            if abs(self.high_val - self.max_val) < 1.0:
+                d_high = "now"
+            else:
+                d_high = datetime.datetime.fromtimestamp(self.high_val).strftime('%Y-%m-%d')
+            return _(f"{d_low} to {d_high}")
         except Exception:
-            return f"{int(self.low_val)} - {int(self.high_val)}"
+            high_str = "now" if abs(self.high_val - self.max_val) < 1.0 else str(int(self.high_val))
+            return f"{int(self.low_val)} - {high_str}"
 
     def on_draw(self, area, cr, width, height):
         padding = 16
@@ -299,12 +307,14 @@ class StoreView(Gtk.Box):
         self.game_info = game_info or {}
         self.model = Gio.ListStore(item_type=ModItem)
         self._syncing = False
-
         self._page_size = 20
         self._next_offset = 0
         self._loading_more = False
         self._has_more = True
         self._current_search_params: tuple | None = None
+
+        user_cfg = load_user_config() or {}
+        self._include_adult_default = bool(user_cfg.get("show_adult_mods_in_browse", False))
 
         self.categories_model = Gtk.StringList.new(["All Categories", "Gameplay", "Visuals", "Audio", "Tools"])
         self.sort_model = Gtk.StringList.new(["Most Downloaded first", "Highest Rated first", "Newest first", "Oldest first"])
@@ -362,6 +372,8 @@ class StoreView(Gtk.Box):
         pop_group.add(pop_date_row)
 
         self.pop_adult_row = Adw.SwitchRow(title="Include Adult Content")
+        self.pop_adult_row.set_active(self._include_adult_default)
+        self.pop_adult_row.connect("notify::active", self._on_adult_row_toggled)
         pop_group.add(self.pop_adult_row)
 
         pop_box.append(pop_group)
@@ -471,6 +483,8 @@ class StoreView(Gtk.Box):
         filter_group.add(date_row)
 
         self.adult_row = Adw.SwitchRow(title="Include Adult Content", subtitle="Show mods flagged as NSFW")
+        self.adult_row.set_active(self._include_adult_default)
+        self.adult_row.connect("notify::active", self._on_adult_row_toggled)
         filter_group.add(self.adult_row)
 
         search_page_box.append(filter_group)
@@ -763,6 +777,23 @@ class StoreView(Gtk.Box):
 
         self.header_controls_box.set_visible(True)
         self.stack.set_visible_child_name("browse")
+
+    def _on_adult_row_toggled(self, row: Adw.SwitchRow, _pspec):
+        if self._syncing:
+            return
+
+        new_val = bool(row.get_active())
+        sibling = self.pop_adult_row if row is self.adult_row else self.adult_row
+
+        self._syncing = True
+        try:
+            if sibling.get_active() != new_val:
+                sibling.set_active(new_val)
+        finally:
+            self._syncing = False
+
+        update_user_config("show_adult_mods_in_browse", new_val)
+
 
 class ModBrowserWindow(Adw.Window):
     def __init__(

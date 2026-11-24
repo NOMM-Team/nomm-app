@@ -18,6 +18,7 @@ from nomm.core.user_config import get_game_config, load_user_config
 
 NEXUS_GRAPHQL_URL = "https://api.nexusmods.com/v2/graphql"
 
+
 def endorse_nexus_mod(headers: dict, game_domain: str, mod_id: str, unendorse: bool):
     """
     Sends an endorsement (or unendorse action) to the Nexus Mods API.
@@ -440,7 +441,6 @@ def search_nexus_mods(
     Search Nexus Mods via the v2 GraphQL API using ModsFilter,
     BaseFilterValue, and BaseSortValue.
     """
-    graphql_url = "https://api.nexusmods.com/v2/graphql"
 
     sort_field_map = {
         "Most Downloaded first": "downloads",
@@ -677,7 +677,6 @@ def get_nexus_first_mod_date(headers: dict, game_domain: str) -> float:
         print(f"Nexus first mod date request failed: {e}")
         return fallback
 
-    
     data = response.json()
     if "errors" in data:
         print(f"GraphQL Errors (first mod date): {data['errors']}")
