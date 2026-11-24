@@ -425,6 +425,10 @@ def check_if_mod_is_utility(game_config, mod_id):
     return False
 
 
+def _to_nexus_iso(ts: float) -> str:
+    return str(int(ts))
+
+
 def search_nexus_mods(
     headers: dict,
     game_domain: str,
@@ -432,10 +436,11 @@ def search_nexus_mods(
     category: str = "All Categories",
     sort_by: str = "Most Downloaded first",
     date_range: tuple[float, float] | None = None,
+    updated_range: tuple[float, float] | None = None,
     include_adult: bool = False,
     author: str = "",
     count: int = 20,
-    offset: int = 0
+    offset: int = 0,
 ) -> list[dict]:
     """
     Search Nexus Mods via the v2 GraphQL API using ModsFilter,
@@ -454,9 +459,9 @@ def search_nexus_mods(
     clauses: list[dict] = [
         {"gameDomainName": {"value": game_domain, "op": "EQUALS"}},
     ]
+
     cleaned_author = author.strip()
     if cleaned_author:
-        # When searching by author, disregard text query, category, and date filters
         clauses.append({"uploader": {"value": cleaned_author, "op": "EQUALS"}})
 
     cleaned_query = query.strip()
@@ -465,6 +470,26 @@ def search_nexus_mods(
 
     if category and category != "All Categories":
         clauses.append({"categoryName": {"value": category, "op": "EQUALS"}})
+
+    if date_range and len(date_range) == 2:
+        low_ts, high_ts = date_range
+        clauses.append({"createdAt": {"value": _to_nexus_iso(low_ts), "op": "GTE"}})
+        clauses.append({"createdAt": {"value": _to_nexus_iso(high_ts), "op": "LTE"}})
+
+    if updated_range and len(updated_range) == 2:
+        upd_low_ts, upd_high_ts = updated_range
+        clauses.append({"updatedAt": {"value": _to_nexus_iso(upd_low_ts), "op": "GTE"}})
+        clauses.append({"updatedAt": {"value": _to_nexus_iso(upd_high_ts), "op": "LTE"}})
+
+    if not include_adult:
+        clauses.append({
+            "adultContent": [
+                {
+                    "value": "false",
+                    "op": "EQUALS",
+                }
+            ]
+        })
 
     graphql_filter = {
         "op": "AND",
@@ -498,7 +523,6 @@ def search_nexus_mods(
                 adult
                 createdAt
                 updatedAt
-
             }
         }
     }
@@ -533,27 +557,19 @@ def search_nexus_mods(
 
         results = []
         for node in nodes:
-            if not include_adult and node.get("adult"):
-                continue
-
-            created_at = node.get("createdAt")
-            if date_range and len(date_range) == 2 and isinstance(created_at, (int, float)):
-                low_ts, high_ts = date_range
-                if not (low_ts <= created_at <= high_ts):
-                    continue
-
             mod_id = node.get("modId")
+            uploader_name = (node.get("uploader") or {}).get("name") or ""
             results.append({
                 "mod_id": mod_id,
                 "name": node.get("name") or "",
-                "author": node.get("uploader").get("name"),
+                "author": uploader_name,
                 "short_description": node.get("summary") or "",
                 "thumbnail_url": node.get("pictureUrl") or "",
                 "downloads": int(node.get("downloads") or 0),
                 "endorsements": int(node.get("endorsements") or 0),
                 "page_url": f"https://www.nexusmods.com/{game_domain}/mods/{mod_id}" if mod_id else "",
                 "download_url": "",
-                "created_at": created_at,
+                "created_at": node.get("createdAt"),
                 "updated_at": node.get("updatedAt"),
             })
 

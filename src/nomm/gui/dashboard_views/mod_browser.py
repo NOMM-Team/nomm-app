@@ -47,7 +47,7 @@ class ModItem(GObject.Object):
 
 class BaseModProvider:
     """Agnostic interface for mod websites (GameBanana, Nexus, Thunderstore)."""
-    def search_mods(self, query: str, category: str, sort_by: str, date_range: tuple, include_adult: bool,
+    def search_mods(self, query: str, category: str, sort_by: str, date_range: tuple, updated_range: tuple, include_adult: bool,
                     author: str = "", count: int = 20, offset: int = 0) -> list[ModItem]:
         raise NotImplementedError
 
@@ -74,7 +74,7 @@ class NexusModProvider(BaseModProvider):
             game_domain=game_domain
         )
 
-    def search_mods(self, query: str, category: str, sort_by: str, date_range: tuple, include_adult: bool,
+    def search_mods(self, query: str, category: str, sort_by: str, date_range: tuple, updated_range: tuple, include_adult: bool,
                     author: str = "", count: int = 20, offset: int = 0) -> list[ModItem]:
         game_domain = self.game_info.get("nexus_id", "")
         if not game_domain:
@@ -87,10 +87,11 @@ class NexusModProvider(BaseModProvider):
             category=category,
             sort_by=sort_by,
             date_range=date_range,
+            updated_range=updated_range,
             include_adult=include_adult,
             author=author,
             count=count,
-            offset=offset,
+            offset=offset
         )
 
         return [
@@ -108,11 +109,13 @@ class NexusModProvider(BaseModProvider):
         ]
 
     def get_browse_mods(self) -> list[ModItem]:
+        first_mod_date = self.get_first_mod_date()
         return self.search_mods(
             query="",
             category="All Categories",
             sort_by="Most Downloaded first",
-            date_range=(self.get_first_mod_date(), time.time()),
+            date_range=(first_mod_date, time.time()),
+            updated_range=(first_mod_date, time.time()),
             include_adult=False,
         )
 
@@ -210,7 +213,7 @@ class DualRangeSlider(Gtk.Box):
                 d_high = "now"
             else:
                 d_high = datetime.datetime.fromtimestamp(self.high_val).strftime('%Y-%m-%d')
-            return _(f"{d_low} to {d_high}")
+            return _("{start} to {end}").format(start=d_low, end=d_high)
         except Exception:
             high_str = "now" if abs(self.high_val - self.max_val) < 1.0 else str(int(self.high_val))
             return f"{int(self.low_val)} - {high_str}"
@@ -365,11 +368,17 @@ class StoreView(Gtk.Box):
         self.pop_category_row = Adw.ComboRow(title="Category", model=self.categories_model)
         pop_group.add(self.pop_category_row)
 
-        self.pop_date_slider = DualRangeSlider(self.min_date, self.max_date)
-        pop_date_row = Adw.ActionRow(title="Date Range")
-        pop_date_row.set_subtitle("Publication date")
-        pop_date_row.add_suffix(self.pop_date_slider)
-        pop_group.add(pop_date_row)
+        self.pop_uploaded_slider = DualRangeSlider(self.min_date, self.max_date)
+        pop_uploaded_row = Adw.ActionRow(title="Uploaded")
+        pop_uploaded_row.set_subtitle(_("Publication date"))
+        pop_uploaded_row.add_suffix(self.pop_uploaded_slider)
+        pop_group.add(pop_uploaded_row)
+
+        self.pop_updated_slider = DualRangeSlider(self.min_date, self.max_date)
+        pop_updated_row = Adw.ActionRow(title="Updated")
+        pop_updated_row.set_subtitle(_("Last updated date"))
+        pop_updated_row.add_suffix(self.pop_updated_slider)
+        pop_group.add(pop_updated_row)
 
         self.pop_adult_row = Adw.SwitchRow(title="Include Adult Content")
         self.pop_adult_row.set_active(self._include_adult_default)
@@ -476,11 +485,17 @@ class StoreView(Gtk.Box):
         self.sort_row = Adw.ComboRow(title="Sort by", model=self.sort_model)
         filter_group.add(self.sort_row)
 
-        self.date_slider = DualRangeSlider(self.min_date, self.max_date)
-        date_row = Adw.ActionRow(title="Date Range")
-        date_row.set_subtitle("Select publication date range")
-        date_row.add_suffix(self.date_slider)
-        filter_group.add(date_row)
+        self.uploaded_date_slider = DualRangeSlider(self.min_date, self.max_date)
+        uploaded_row = Adw.ActionRow(title=_("Uploaded"))
+        uploaded_row.set_subtitle("Publication date")
+        uploaded_row.add_suffix(self.uploaded_date_slider)
+        filter_group.add(uploaded_row)
+
+        self.updated_date_slider = DualRangeSlider(self.min_date, self.max_date)
+        updated_row = Adw.ActionRow(title=_("Updated"))
+        updated_row.set_subtitle("Last updated date")
+        updated_row.add_suffix(self.updated_date_slider)
+        filter_group.add(updated_row)
 
         self.adult_row = Adw.SwitchRow(title="Include Adult Content", subtitle="Show mods flagged as NSFW")
         self.adult_row.set_active(self._include_adult_default)
@@ -522,7 +537,8 @@ class StoreView(Gtk.Box):
             self.pop_category_row.set_selected(self.category_row.get_selected())
             self._set_browse_sort_index(self.sort_row.get_selected())
             self.pop_adult_row.set_active(self.adult_row.get_active())
-            self.pop_date_slider.set_range_values(self.date_slider.low_val, self.date_slider.high_val)
+            self.pop_uploaded_slider.set_range_values(self.pop_uploaded_slider.low_val, self.pop_uploaded_slider.high_val)
+            self.pop_updated_slider.set_range_values(self.pop_updated_slider.low_val, self.pop_updated_slider.high_val)
 
         query = self.compact_search_entry.get_text().strip()
 
@@ -531,10 +547,12 @@ class StoreView(Gtk.Box):
 
         sort_by = self.sort_model.get_string(self.selected_sort_index) or "Most Downloaded first"
 
-        date_range = (self.pop_date_slider.low_val, self.pop_date_slider.high_val)
+        date_range = (self.pop_uploaded_slider.low_val, self.pop_uploaded_slider.high_val)
+        updated_range = (self.pop_updated_slider.low_val, self.pop_updated_slider.high_val)
         include_adult = self.pop_adult_row.get_active()
 
-        self._current_search_params = (query, category, sort_by, date_range, include_adult)
+        self._current_author = ""
+        self._current_search_params = (query, category, sort_by, date_range, updated_range, include_adult)
         self._next_offset = 0
         self._has_more = True
 
@@ -543,6 +561,7 @@ class StoreView(Gtk.Box):
             category,
             sort_by,
             date_range,
+            updated_range,
             include_adult,
             count=self._page_size,
             offset=0,
@@ -578,12 +597,13 @@ class StoreView(Gtk.Box):
 
         self._loading_more = True
         try:
-            query, category, sort_by, date_range, include_adult = self._current_search_params
+            query, category, sort_by, date_range, updated_range, include_adult = self._current_search_params
             more_results = self.provider.search_mods(
                 query,
                 category,
                 sort_by,
                 date_range,
+                updated_range,
                 include_adult,
                 author=self._current_author,
                 count=self._page_size,
@@ -743,17 +763,18 @@ class StoreView(Gtk.Box):
         category = "All Categories"
         sort_by = self.sort_model.get_string(self.selected_sort_index) or "Most Downloaded first"
         date_range = (self.min_date, self.max_date)
+        updated_range = (self.min_date, self.max_date)
 
         # Sync UI filter controls to reflect cleared non-adult filters
         self.compact_search_entry.set_text("")
         self.search_entry.set_text("")
         self.pop_category_row.set_selected(0)
         self.category_row.set_selected(0)
-        self.pop_date_slider.set_range_values(self.min_date, self.max_date)
-        self.date_slider.set_range_values(self.min_date, self.max_date)
+        self.pop_uploaded_slider.set_range_values(self.uploaded_date_slider.low_val, self.uploaded_date_slider.high_val)
+        self.pop_updated_slider.set_range_values(self.updated_date_slider.low_val, self.updated_date_slider.high_val)
 
         self._current_author = cleaned_author
-        self._current_search_params = (query, category, sort_by, date_range, include_adult)
+        self._current_search_params = (query, category, sort_by, date_range, updated_range, include_adult)
         self._next_offset = 0
         self._has_more = True
 
