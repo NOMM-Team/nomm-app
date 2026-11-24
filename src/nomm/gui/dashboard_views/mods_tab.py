@@ -89,6 +89,7 @@ class ModsTab(Gtk.Box):
         browser = ModBrowserWindow(
             parent_window=self.dashboard.app.win,
             game_info=dashboard.game_info,
+            downloads_metadata_path=dashboard.downloads_metadata_path,
             headers=dashboard.headers
         )
         browser_btn = create_icon_button(
