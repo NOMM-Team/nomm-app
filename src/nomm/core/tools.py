@@ -8,9 +8,14 @@ import html
 import urllib
 import configparser
 import subprocess
+import datetime
+import time
+import gettext
 from pathlib import Path
 from packaging.version import parse, InvalidVersion
 from gi.repository import GLib, Gio
+
+_ = gettext.gettext
 
 
 def load_yaml(path: str) -> dict:
@@ -500,3 +505,58 @@ def is_an_upgrade(old_version, new_version) -> Boolean | None:
         return True
     else:
         return False
+
+
+def format_relative_date(unix_seconds: int | float | None) -> tuple[str, str]:
+    """Returns `(short_label, full_date_tooltip)` for a Unix timestamp in seconds."""
+    if not unix_seconds or unix_seconds <= 0:
+        return "—", ""
+
+    ts = float(unix_seconds)
+    dt = datetime.datetime.fromtimestamp(ts)
+    full_date = dt.strftime("%Y-%m-%d %H:%M")
+
+    delta_seconds = max(0, int(time.time() - ts))
+
+    if delta_seconds < 60:
+        return _("just now"), full_date
+    if delta_seconds < 3600:
+        mins = delta_seconds // 60
+        return _("{n} minute ago").format(n=mins) if mins == 1 else _("{n} minutes ago").format(n=mins), full_date
+    if delta_seconds < 86400:
+        hours = delta_seconds // 3600
+        return _("{n} hour ago").format(n=hours) if hours == 1 else _("{n} hours ago").format(n=hours), full_date
+
+    days = delta_seconds // 86400
+    if days < 7:
+        return _("{n} day ago").format(n=days) if days == 1 else _("{n} days ago").format(n=days), full_date
+    if days < 30:
+        weeks = max(1, days // 7)
+        return _("{n} week ago").format(n=weeks) if weeks == 1 else _("{n} weeks ago").format(n=weeks), full_date
+    if days < 365:
+        months = max(1, days // 30)
+        return _("{n} month ago").format(n=months) if months == 1 else _("{n} months ago").format(n=months), full_date
+
+    years = max(1, days // 365)
+    return _("{n} year ago").format(n=years) if years == 1 else _("{n} years ago").format(n=years), full_date
+
+
+def parse_iso_timestamp(value) -> float:
+    if not value:
+        return 0.0
+    if isinstance(value, (int, float)):
+        return float(value)
+    if isinstance(value, datetime.datetime):
+        return value.timestamp()
+    if isinstance(value, str):
+        s = value.strip()
+        if not s:
+            return 0.0
+        try:
+            return float(s)
+        except ValueError:
+            pass
+        if s.endswith("Z"):
+            s = s[:-1] + "+00:00"
+        return datetime.datetime.fromisoformat(s).timestamp()
+    return 0.0

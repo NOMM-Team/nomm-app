@@ -11,7 +11,7 @@ from collections import OrderedDict
 from concurrent.futures import ThreadPoolExecutor
 
 from nomm.gui.ui_builders import create_icon_button
-from nomm.core.tools import format_count
+from nomm.core.tools import format_count, format_relative_date, parse_iso_timestamp
 from nomm.core.user_config import load_user_config, update_user_config, CACHE_DIR
 from nomm.core.mod_manager import load_downloaded_mod_ids
 from nomm.platforms.nexus import search_nexus_mods, get_nexus_first_mod_date
@@ -31,6 +31,8 @@ class ModItem(GObject.Object):
     downloads = GObject.Property(type=int, default=0)
     endorsements = GObject.Property(type=int, default=0)
     mod_id = GObject.Property(type=str, default="")
+    created_at = GObject.Property(type=float, default=0.0)
+    updated_at = GObject.Property(type=float, default=0.0)
 
     def __init__(
         self,
@@ -42,7 +44,9 @@ class ModItem(GObject.Object):
         short_description="",
         page_url="",
         download_url="",
-        mod_id=""
+        mod_id="",
+        created_at=0.0,
+        updated_at=0.0
     ):
         super().__init__()
         self.props.name = name
@@ -54,6 +58,8 @@ class ModItem(GObject.Object):
         self.props.page_url = page_url
         self.props.download_url = download_url
         self.props.mod_id = str(mod_id or "")
+        self.props.created_at = parse_iso_timestamp(created_at)
+        self.props.updated_at = parse_iso_timestamp(updated_at)
 
 
 class BaseModProvider:
@@ -115,7 +121,9 @@ class NexusModProvider(BaseModProvider):
                 short_description=item["short_description"],
                 page_url=item["page_url"],
                 download_url=item["download_url"],
-                mod_id=str(item["mod_id"])
+                mod_id=str(item["mod_id"]),
+                created_at=item.get("created_at") or item.get("created_timestamp") or 0.0,
+                updated_at=item.get("updated_at") or item.get("updated_timestamp") or 0.0
             )
             for item in raw_results
         ]
@@ -865,18 +873,33 @@ class StoreView(Gtk.Box):
         overlay.set_child(card)
 
         stats_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=4)
+        stats_box.add_css_class("mod-stats-scrim")
         stats_box.set_halign(Gtk.Align.START)
         stats_box.set_valign(Gtk.Align.START)
-        stats_box.set_margin_top(8)
-        stats_box.set_margin_start(8)
+
+        published_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=4)
+        published_box.set_halign(Gtk.Align.START)
+        published_icon = Gtk.Image.new_from_icon_name("mat-publish-symbolic")
+        published_icon.set_pixel_size(13)
+        published_label = Gtk.Label(label="—")
+        published_label.add_css_class("caption")
+        published_box.append(published_icon)
+        published_box.append(published_label)
+
+        updated_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=4)
+        updated_box.set_halign(Gtk.Align.START)
+        updated_icon = Gtk.Image.new_from_icon_name("mat-update-symbolic")
+        updated_icon.set_pixel_size(13)
+        updated_label = Gtk.Label(label="—")
+        updated_label.add_css_class("caption")
+        updated_box.append(updated_icon)
+        updated_box.append(updated_label)
 
         downloads_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=4)
         downloads_box.set_halign(Gtk.Align.START)
         downloads_icon = Gtk.Image.new_from_icon_name("downloaded-symbolic")
         downloads_icon.set_pixel_size(13)
-        downloads_icon.add_css_class("dim-label")
         downloads_label = Gtk.Label(label="0")
-        downloads_label.add_css_class("dim-label")
         downloads_label.add_css_class("caption")
         downloads_box.append(downloads_icon)
         downloads_box.append(downloads_label)
@@ -885,13 +908,13 @@ class StoreView(Gtk.Box):
         endorsements_box.set_halign(Gtk.Align.START)
         endorsements_icon = Gtk.Image.new_from_icon_name("mat-donate-symbolic")
         endorsements_icon.set_pixel_size(13)
-        endorsements_icon.add_css_class("dim-label")
         endorsements_label = Gtk.Label(label="0")
-        endorsements_label.add_css_class("dim-label")
         endorsements_label.add_css_class("caption")
         endorsements_box.append(endorsements_icon)
         endorsements_box.append(endorsements_label)
 
+        stats_box.append(published_box)
+        stats_box.append(updated_box)
         stats_box.append(downloads_box)
         stats_box.append(endorsements_box)
         overlay.add_overlay(stats_box)
@@ -928,6 +951,10 @@ class StoreView(Gtk.Box):
         card.endorsements_box = endorsements_box
         card.endorsements_label = endorsements_label
         card.download_btn = download_btn
+        card.published_box = published_box
+        card.published_label = published_label
+        card.updated_box = updated_box
+        card.updated_label = updated_label
 
         list_item.set_child(overlay)
 
@@ -975,6 +1002,14 @@ class StoreView(Gtk.Box):
             card.download_btn.set_tooltip_text(_("Download mod"))
             card.download_btn.set_sensitive(bool(mod_item.props.download_url))
         overlay.set_tooltip_text(mod_item.props.short_description or None)
+
+        pub_short, pub_full = format_relative_date(mod_item.props.created_at)
+        card.published_label.set_text(pub_short)
+        card.published_box.set_tooltip_text(_("Published: {date}").format(date=pub_full) if pub_full else None)
+
+        upd_short, upd_full = format_relative_date(mod_item.props.updated_at)
+        card.updated_label.set_text(upd_short)
+        card.updated_box.set_tooltip_text(_("Updated: {date}").format(date=upd_full) if upd_full else None)
 
     def _on_open_page_clicked(self, mod_item: ModItem | None):
         if not mod_item or not mod_item.props.page_url:
