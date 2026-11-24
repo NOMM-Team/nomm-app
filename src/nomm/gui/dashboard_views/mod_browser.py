@@ -1,3 +1,4 @@
+from dulwich.client import AuthCallbackPoolManager
 import cairo
 import time
 import datetime
@@ -43,7 +44,7 @@ class ModItem(GObject.Object):
 class BaseModProvider:
     """Agnostic interface for mod websites (GameBanana, Nexus, Thunderstore)."""
     def search_mods(self, query: str, category: str, sort_by: str, date_range: tuple,
-                    include_adult: bool, count: int = 20, offset: int = 0,
+                    include_adult: bool, author: str = "", count: int = 20, offset: int = 0
     ) -> list[ModItem]:
         raise NotImplementedError
 
@@ -58,8 +59,8 @@ class NexusModProvider(BaseModProvider):
         self.game_info = game_info or {}
         self.headers = dict(headers) if headers else {}
 
-    def search_mods(self, query: str, category: str, sort_by: str, date_range: tuple,
-                    include_adult: bool, count: int = 20, offset: int = 0) -> list[ModItem]:
+    def search_mods(self, query: str, category: str, sort_by: str, date_range: tuple, include_adult: bool,
+                    author: str = "", count: int = 20, offset: int = 0) -> list[ModItem]:
         game_domain = self.game_info.get("nexus_id", "")
         if not game_domain:
             return []
@@ -72,6 +73,7 @@ class NexusModProvider(BaseModProvider):
             sort_by=sort_by,
             date_range=date_range,
             include_adult=include_adult,
+            author=author,
             count=count,
             offset=offset,
         )
@@ -560,8 +562,9 @@ class StoreView(Gtk.Box):
                 sort_by,
                 date_range,
                 include_adult,
+                author=self._current_author,
                 count=self._page_size,
-                offset=self._next_offset,
+                offset=self._next_offset
             )
             for mod in more_results:
                 self.model.append(mod)
@@ -597,13 +600,22 @@ class StoreView(Gtk.Box):
         title_label.set_margin_end(8)
         card.append(title_label)
 
+        author_btn = Gtk.Button()
+        author_btn.add_css_class("flat")
+        author_btn.set_margin_start(8)
+        author_btn.set_margin_end(8)
+        author_btn.set_margin_bottom(10)
+
         author_label = Gtk.Label(ellipsize=3)
         author_label.add_css_class("dim-label")
-        author_label.set_margin_top(2)
-        author_label.set_margin_bottom(10)
-        author_label.set_margin_start(8)
-        author_label.set_margin_end(8)
-        card.append(author_label)
+        author_btn.set_child(author_label)
+
+        def on_author_clicked(_btn, c=card):
+            if c.current_mod and c.current_mod.props.author:
+                self.search_by_author(c.current_mod.props.author)
+
+        author_btn.connect("clicked", on_author_clicked)
+        card.append(author_btn)
 
         overlay.set_child(card)
 
@@ -698,6 +710,50 @@ class StoreView(Gtk.Box):
             return
         print(f"Downloading '{mod_item.props.name}' from {mod_item.props.download_url}")
 
+    def search_by_author(self, author: str):
+        cleaned_author = (author or "").strip()
+        if not cleaned_author:
+            return
+
+        include_adult = self.pop_adult_row.get_active()
+        query = ""
+        category = "All Categories"
+        sort_by = self.sort_model.get_string(self.selected_sort_index) or "Most Downloaded first"
+        date_range = (self.min_date, self.max_date)
+
+        # Sync UI filter controls to reflect cleared non-adult filters
+        self.compact_search_entry.set_text("")
+        self.search_entry.set_text("")
+        self.pop_category_row.set_selected(0)
+        self.category_row.set_selected(0)
+        self.pop_date_slider.set_range_values(self.min_date, self.max_date)
+        self.date_slider.set_range_values(self.min_date, self.max_date)
+
+        self._current_author = cleaned_author
+        self._current_search_params = (query, category, sort_by, date_range, include_adult)
+        self._next_offset = 0
+        self._has_more = True
+
+        results = self.provider.search_mods(
+            query,
+            category,
+            sort_by,
+            date_range,
+            include_adult,
+            count=self._page_size,
+            offset=0,
+            author=cleaned_author,
+        )
+
+        self.model.remove_all()
+        for mod in results:
+            self.model.append(mod)
+
+        self._next_offset = len(results)
+        self._has_more = len(results) >= self._page_size
+
+        self.header_controls_box.set_visible(True)
+        self.stack.set_visible_child_name("browse")
 
 class ModBrowserWindow(Adw.Window):
     def __init__(

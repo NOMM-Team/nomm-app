@@ -432,8 +432,9 @@ def search_nexus_mods(
     sort_by: str = "Most Downloaded first",
     date_range: tuple[float, float] | None = None,
     include_adult: bool = False,
+    author: str = "",
     count: int = 20,
-    offset: int = 0,
+    offset: int = 0
 ) -> list[dict]:
     """
     Searches Nexus Mods via the v2 GraphQL API using ModsFilter,
@@ -453,6 +454,10 @@ def search_nexus_mods(
     clauses: list[dict] = [
         {"gameDomainName": {"value": game_domain, "op": "EQUALS"}},
     ]
+    cleaned_author = author.strip()
+    if cleaned_author:
+        # When searching by author, disregard text query, category, and date filters
+        clauses.append({"uploader": {"value": cleaned_author, "op": "EQUALS"}})
 
     cleaned_query = query.strip()
     if cleaned_query:
@@ -483,14 +488,17 @@ def search_nexus_mods(
             nodes {
                 modId
                 name
+                uploader {
+                    name
+                }
                 summary
-                author
                 downloads
                 endorsements
                 pictureUrl
                 adult
                 createdAt
                 updatedAt
+
             }
         }
     }
@@ -538,7 +546,7 @@ def search_nexus_mods(
             results.append({
                 "mod_id": mod_id,
                 "name": node.get("name") or "",
-                "author": node.get("author") or node.get("uploadedBy") or "",
+                "author": node.get("uploader").get("name"),
                 "short_description": node.get("summary") or "",
                 "thumbnail_url": node.get("pictureUrl") or "",
                 "downloads": int(node.get("downloads") or 0),
