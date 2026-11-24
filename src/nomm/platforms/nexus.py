@@ -5,6 +5,7 @@ from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from urllib.parse import urlsplit, urlunsplit
 from urllib.error import HTTPError
+import datetime
 
 import requests
 from gi.repository import GLib
@@ -628,3 +629,71 @@ def get_nexus_categories(headers: dict, game_id: int | str | None = None, includ
     except Exception as e:
         print(f"Error parsing Nexus categories response: {e}")
         return []
+
+
+def get_nexus_first_mod_date(headers: dict, game_domain: str) -> float:
+    """
+    Fetches the creation timestamp (as a Unix epoch float) of the oldest
+    mod for `game_domain` via the Nexus v2 GraphQL API.
+    """
+    fallback = 1420070400.0
+    if not game_domain:
+        return fallback
+
+    graphql_query = """
+    query GetFirstModDate($filter: ModsFilter, $sort: [ModsSort!], $count: Int) {
+        mods(filter: $filter, sort: $sort, count: $count) {
+            nodes {
+                createdAt
+            }
+        }
+    }
+    """
+
+    variables = {
+        "filter": {
+            "op": "AND",
+            "filter": [
+                {"gameDomainName": {"value": game_domain, "op": "EQUALS"}},
+            ],
+        },
+        "sort": [{"createdAt": {"direction": "ASC"}}],
+        "count": 1,
+    }
+
+    nexus_headers = headers.copy()
+    nexus_headers["Content-Type"] = "application/json"
+
+    try:
+        response = requests.post(
+            NEXUS_GRAPHQL_URL,
+            json={"query": graphql_query, "variables": variables},
+            headers=nexus_headers,
+            timeout=15,
+            allow_redirects=True,
+        )
+        response.raise_for_status()
+    except requests.exceptions.RequestException as e:
+        print(f"Nexus first mod date request failed: {e}")
+        return fallback
+
+    
+    data = response.json()
+    if "errors" in data:
+        print(f"GraphQL Errors (first mod date): {data['errors']}")
+        return fallback
+
+    nodes = (data.get("data") or {}).get("mods", {}).get("nodes") or []
+    if not nodes:
+        return fallback
+
+    parsed = nodes[0].get("createdAt").strip()
+    try:
+        dt = datetime.datetime.fromisoformat(parsed.replace("Z", "+00:00"))
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=datetime.timezone.utc)
+        return dt.timestamp() if dt.timestamp() is not None else fallback
+
+    except Exception as e:
+        print(f"Error parsing Nexus first mod date response: {e}")
+        return fallback

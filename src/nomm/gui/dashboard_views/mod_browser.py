@@ -5,7 +5,7 @@ import datetime
 from gi.repository import Gtk, Adw, Gio, GObject, Gdk
 from nomm.gui.ui_builders import create_icon_button
 from nomm.core.tools import format_count
-from nomm.platforms.nexus import search_nexus_mods
+from nomm.platforms.nexus import search_nexus_mods, get_nexus_first_mod_date
 
 class ModItem(GObject.Object):
     __gtype_name__ = 'ModItem'
@@ -59,6 +59,17 @@ class NexusModProvider(BaseModProvider):
         self.game_info = game_info or {}
         self.headers = dict(headers) if headers else {}
 
+    def get_first_mod_date(self) -> float:
+        game_domain = str(
+            self.game_info.get("nexus_domain")
+            or self.game_info.get("nexus_id")
+            or ""
+        )
+        return get_nexus_first_mod_date(
+            headers=self.headers,
+            game_domain=game_domain
+        )
+
     def search_mods(self, query: str, category: str, sort_by: str, date_range: tuple, include_adult: bool,
                     author: str = "", count: int = 20, offset: int = 0) -> list[ModItem]:
         game_domain = self.game_info.get("nexus_id", "")
@@ -101,8 +112,6 @@ class NexusModProvider(BaseModProvider):
             include_adult=False,
         )
 
-    def get_first_mod_date(self) -> float:
-        return 1420070400  # Jan 1, 2015
 
 class StoreProvider(BaseModProvider):
     def __init__(self, store_name: str, game_info: dict | None = None, headers: dict | None = None):
