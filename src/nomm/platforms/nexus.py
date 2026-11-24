@@ -15,6 +15,7 @@ from nomm.gui.notifications import download_popup, send_download_notification
 from nomm.core.tools import load_yaml, write_yaml, download_image, process_bbcode
 from nomm.core.user_config import get_game_config, load_user_config
 
+NEXUS_GRAPHQL_URL = "https://api.nexusmods.com/v2/graphql"
 
 def endorse_nexus_mod(headers: dict, game_domain: str, mod_id: str, unendorse: bool):
     """
@@ -279,8 +280,6 @@ def _download_nexus_collection(nxm_link: str, headers: dict, final_download_dir:
 
 # Get files from collexion and returns a dict if it manages to get the list
 def _get_files_from_collection(game_domain: str, collection_id: str, revision_id: str, headers: dict):
-    # API Endpoint
-    graphql_url = "https://api.nexusmods.com/v2/graphql"
 
     current_dir = Path(__file__).parent.parent.resolve()
     query_path = os.path.join(current_dir, 'queries', 'get_collections.graphql')
@@ -299,7 +298,7 @@ def _get_files_from_collection(game_domain: str, collection_id: str, revision_id
 
     try:
         response = requests.post(
-            graphql_url,
+            NEXUS_GRAPHQL_URL,
             json={'query': query, 'variables': variables},
             headers=headers,
             timeout=15,
@@ -437,7 +436,7 @@ def search_nexus_mods(
     offset: int = 0
 ) -> list[dict]:
     """
-    Searches Nexus Mods via the v2 GraphQL API using ModsFilter,
+    Search Nexus Mods via the v2 GraphQL API using ModsFilter,
     BaseFilterValue, and BaseSortValue.
     """
     graphql_url = "https://api.nexusmods.com/v2/graphql"
@@ -516,7 +515,7 @@ def search_nexus_mods(
 
     try:
         response = requests.post(
-            graphql_url,
+            NEXUS_GRAPHQL_URL,
             json={"query": graphql_query, "variables": variables},
             headers=nexus_headers,
             timeout=15,
@@ -564,4 +563,68 @@ def search_nexus_mods(
         return []
     except Exception as e:
         print(f"Error parsing Nexus search response: {e}")
+        return []
+
+
+def get_nexus_categories(headers: dict, game_id: int | str | None = None, include_global: bool = False) -> list[str]:
+    """
+    Fetches category names for a Nexus game via the v2 GraphQL API.
+    """
+
+    graphql_query = """
+    query GetGameCategories($gameId: Int, $global: Boolean) {
+        categories(gameId: $gameId, global: $global) {
+            id
+            name
+        }
+    }
+    """
+
+    parsed_game_id: int | None = None
+    if game_id is not None and str(game_id).strip().isdigit():
+        parsed_game_id = int(str(game_id).strip())
+
+    if parsed_game_id is None and not include_global:
+        return []
+
+    variables = {
+        "gameId": parsed_game_id,
+        "global": include_global,
+    }
+
+    nexus_headers = headers.copy()
+    nexus_headers["Content-Type"] = "application/json"
+
+    try:
+        response = requests.post(
+            NEXUS_GRAPHQL_URL,
+            json={"query": graphql_query, "variables": variables},
+            headers=nexus_headers,
+            timeout=15,
+            allow_redirects=True,
+        )
+        response.raise_for_status()
+
+        data = response.json()
+        if "errors" in data:
+            print(f"GraphQL Errors: {data['errors']}")
+            return []
+
+        categories = (data.get("data") or {}).get("categories") or []
+
+        names: list[str] = []
+        seen: set[str] = set()
+        for cat in categories:
+            name = (cat.get("name") or "").strip()
+            if name and name not in seen:
+                seen.add(name)
+                names.append(name)
+
+        return sorted(names, key=str.lower)
+
+    except requests.exceptions.RequestException as e:
+        print(f"Nexus categories request failed: {e}")
+        return []
+    except Exception as e:
+        print(f"Error parsing Nexus categories response: {e}")
         return []
