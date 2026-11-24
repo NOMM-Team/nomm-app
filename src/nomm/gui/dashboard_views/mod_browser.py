@@ -337,6 +337,41 @@ class StoreView(Gtk.Box):
         self.stack.set_visible_child_name("search")
         self.append(self.stack)
 
+    def _create_filter_controls(self) -> dict:
+        """Builds a fresh filter group and its associated filter rows/sliders."""
+        group = Adw.PreferencesGroup()
+
+        category_row = Adw.ComboRow(title="Category", model=self.categories_model)
+        group.add(category_row)
+
+        uploaded_slider = DualRangeSlider(self.min_date, self.max_date)
+        uploaded_row = Adw.ActionRow(title=_("Uploaded"))
+        uploaded_row.set_subtitle(_("Publication date"))
+        uploaded_row.add_suffix(uploaded_slider)
+        group.add(uploaded_row)
+
+        updated_slider = DualRangeSlider(self.min_date, self.max_date)
+        updated_row = Adw.ActionRow(title=_("Updated"))
+        updated_row.set_subtitle(_("Last updated date"))
+        updated_row.add_suffix(updated_slider)
+        group.add(updated_row)
+
+        adult_row = Adw.SwitchRow(
+            title="Include Adult Content",
+            subtitle=_("Show mods flagged as NSFW"),
+        )
+        adult_row.set_active(self._include_adult_default)
+        adult_row.connect("notify::active", self._on_adult_row_toggled)
+        group.add(adult_row)
+
+        return {
+            "group": group,
+            "category_row": category_row,
+            "uploaded_slider": uploaded_slider,
+            "updated_slider": updated_slider,
+            "adult_row": adult_row,
+        }
+
     def _build_browse_header_controls(self):
         """Creates the compact search bar, filter button, and dedicated sort button for Browse mode."""
         self.header_controls_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
@@ -363,35 +398,13 @@ class StoreView(Gtk.Box):
         pop_box.set_margin_end(12)
         pop_box.set_size_request(360, -1)
 
-        pop_group = Adw.PreferencesGroup()
+        self.pop_filters = self._create_filter_controls()
+        self.pop_category_row = self.pop_filters["category_row"]
+        self.pop_uploaded_slider = self.pop_filters["uploaded_slider"]
+        self.pop_updated_slider = self.pop_filters["updated_slider"]
+        self.pop_adult_row = self.pop_filters["adult_row"]
 
-        self.pop_category_row = Adw.ComboRow(title="Category", model=self.categories_model)
-        pop_group.add(self.pop_category_row)
-
-        self.pop_uploaded_slider = DualRangeSlider(self.min_date, self.max_date)
-        pop_uploaded_row = Adw.ActionRow(title="Uploaded")
-        pop_uploaded_row.set_subtitle(_("Publication date"))
-        pop_uploaded_row.add_suffix(self.pop_uploaded_slider)
-        pop_group.add(pop_uploaded_row)
-
-        self.pop_updated_slider = DualRangeSlider(self.min_date, self.max_date)
-        pop_updated_row = Adw.ActionRow(title="Updated")
-        pop_updated_row.set_subtitle(_("Last updated date"))
-        pop_updated_row.add_suffix(self.pop_updated_slider)
-        pop_group.add(pop_updated_row)
-
-        self.pop_adult_row = Adw.SwitchRow(title="Include Adult Content")
-        self.pop_adult_row.set_active(self._include_adult_default)
-        self.pop_adult_row.connect("notify::active", self._on_adult_row_toggled)
-        pop_group.add(self.pop_adult_row)
-
-        pop_box.append(pop_group)
-
-        apply_btn = Gtk.Button(label="Apply Filters")
-        apply_btn.add_css_class("suggested-action")
-        apply_btn.add_css_class("pill")
-        apply_btn.connect("clicked", lambda *_: (filter_popover.popdown(), self.execute_search(from_compact=True)))
-        pop_box.append(apply_btn)
+        pop_box.append(self.pop_filters["group"])
 
         filter_popover.set_child(pop_box)
         self.filter_menu_btn.set_popover(filter_popover)
@@ -477,32 +490,19 @@ class StoreView(Gtk.Box):
 
         search_page_box.append(search_box)
 
-        filter_group = Adw.PreferencesGroup()
-
-        self.category_row = Adw.ComboRow(title="Category", model=self.categories_model)
-        filter_group.add(self.category_row)
+        self.search_filters = self._create_filter_controls()
+        self.category_row = self.search_filters["category_row"]
+        self.uploaded_date_slider = self.search_filters["uploaded_slider"]
+        self.updated_date_slider = self.search_filters["updated_slider"]
+        self.adult_row = self.search_filters["adult_row"]
 
         self.sort_row = Adw.ComboRow(title="Sort by", model=self.sort_model)
-        filter_group.add(self.sort_row)
+        sort_group = Adw.PreferencesGroup()
+        sort_group.add(self.sort_row)
 
-        self.uploaded_date_slider = DualRangeSlider(self.min_date, self.max_date)
-        uploaded_row = Adw.ActionRow(title=_("Uploaded"))
-        uploaded_row.set_subtitle("Publication date")
-        uploaded_row.add_suffix(self.uploaded_date_slider)
-        filter_group.add(uploaded_row)
+        search_page_box.append(self.search_filters["group"])
+        search_page_box.append(sort_group)
 
-        self.updated_date_slider = DualRangeSlider(self.min_date, self.max_date)
-        updated_row = Adw.ActionRow(title=_("Updated"))
-        updated_row.set_subtitle("Last updated date")
-        updated_row.add_suffix(self.updated_date_slider)
-        filter_group.add(updated_row)
-
-        self.adult_row = Adw.SwitchRow(title="Include Adult Content", subtitle="Show mods flagged as NSFW")
-        self.adult_row.set_active(self._include_adult_default)
-        self.adult_row.connect("notify::active", self._on_adult_row_toggled)
-        filter_group.add(self.adult_row)
-
-        search_page_box.append(filter_group)
         search_scroll.set_child(search_page_box)
 
         self.stack.add_named(search_scroll, "search")
