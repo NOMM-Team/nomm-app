@@ -89,6 +89,7 @@ def find_matches() -> list:
                     "img": art,
                     "path": os.path.join(game_path, game_id),
                     "app_id": game_id,
+                    "gamebanana_id": game.get("gamebanana_id"),
                     "platform": PLATFORM,
                     "mod_paths": mod_paths,
                     "utilities": None,

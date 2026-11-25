@@ -15,7 +15,7 @@ from nomm.core.tools import format_count, format_relative_date, parse_iso_timest
 from nomm.core.user_config import load_user_config, update_user_config, CACHE_DIR
 from nomm.core.mod_manager import load_downloaded_mod_ids
 from nomm.platforms.nexus import search_nexus_mods, get_nexus_first_mod_date
-
+from nomm.platforms.gamebanana import (search_gamebanana_mods, get_gamebanana_first_mod_date, _build_gamebanana_protocol_url)
 _ = gettext.gettext
 
 
@@ -124,6 +124,83 @@ class NexusModProvider(BaseModProvider):
                 mod_id=str(item["mod_id"]),
                 created_at=item.get("created_at") or item.get("created_timestamp") or 0.0,
                 updated_at=item.get("updated_at") or item.get("updated_timestamp") or 0.0
+            )
+            for item in raw_results
+        ]
+
+    def get_browse_mods(self) -> list[ModItem]:
+        first_mod_date = self.get_first_mod_date()
+        return self.search_mods(
+            query="",
+            category="All Categories",
+            sort_by="Most Downloaded first",
+            date_range=(first_mod_date, time.time()),
+            updated_range=(first_mod_date, time.time()),
+            include_adult=False,
+        )
+
+
+class GameBananaModProvider(BaseModProvider):
+    def __init__(self, game_info: dict | None = None, headers: dict | None = None):
+        self.game_info = game_info or {}
+        self.headers = dict(headers) if headers else {}
+
+    def get_first_mod_date(self) -> float:
+        game_id = self.game_info.get("gamebanana_id") or ""
+        return get_gamebanana_first_mod_date(headers=self.headers, game_id=game_id)
+
+    def get_protocol_download_url(self, mod_item: ModItem) -> str:
+        if not mod_item:
+            return ""
+        return _build_gamebanana_protocol_url(
+            mod_item.props.mod_id,
+            download_url=mod_item.props.download_url,
+            headers=self.headers,
+        )
+
+    def search_mods(
+        self,
+        query: str,
+        category: str,
+        sort_by: str,
+        date_range: tuple,
+        updated_range: tuple,
+        include_adult: bool,
+        author: str = "",
+        count: int = 20,
+        offset: int = 0,
+    ) -> list[ModItem]:
+        game_id = self.game_info.get("gamebanana_id", "")
+        if not game_id:
+            return []
+
+        raw_results = search_gamebanana_mods(
+            headers=self.headers,
+            game_id=game_id,
+            query=query,
+            category=category,
+            sort_by=sort_by,
+            date_range=date_range,
+            updated_range=updated_range,
+            include_adult=include_adult,
+            author=author,
+            count=count,
+            offset=offset,
+        )
+
+        return [
+            ModItem(
+                name=item["name"],
+                uploader=item["author"],
+                thumbnail_url=item["thumbnail_url"],
+                downloads=item["downloads"],
+                endorsements=item["endorsements"],
+                short_description=item["short_description"],
+                page_url=item["page_url"],
+                download_url=item["download_url"],
+                mod_id=str(item["mod_id"]),
+                created_at=item.get("created_at", 0.0),
+                updated_at=item.get("updated_at", 0.0),
             )
             for item in raw_results
         ]
@@ -1019,9 +1096,18 @@ class StoreView(Gtk.Box):
         launcher.launch(parent if isinstance(parent, Gtk.Window) else None, None, None)
 
     def _on_download_clicked(self, mod_item: ModItem | None):
-        if not mod_item or not mod_item.props.download_url:
+        if not mod_item:
             return
-        print(f"Downloading '{mod_item.props.name}' from {mod_item.props.download_url}")
+
+        def _resolve_and_launch():
+            if hasattr(self.provider, "get_protocol_download_url"):
+                target_url = self.provider.get_protocol_download_url(mod_item)
+            else:
+                target_url = (mod_item.props.download_url or "").strip()
+
+            GLib.idle_add(self._launch_protocol_url, mod_item, target_url)
+
+        threading.Thread(target=_resolve_and_launch, daemon=True).start()
 
     def search_by_author(self, author: str):
         cleaned_author = (author or "").strip()
@@ -1141,6 +1227,16 @@ class StoreView(Gtk.Box):
             card.fallback_icon.set_visible(True)
         return False
 
+    def _launch_protocol_url(self, mod_item: ModItem, target_url: str):
+        if not target_url:
+            print(f"No download URL available for '{mod_item.props.name}'")
+            return False
+
+        parent = self.get_root()
+        launcher = Gtk.UriLauncher.new(target_url)
+        launcher.launch(parent if isinstance(parent, Gtk.Window) else None, None, None)
+        return False
+
 
 class ModBrowserWindow(Adw.Window):
     def __init__(
@@ -1243,7 +1339,7 @@ class ModBrowserWindow(Adw.Window):
     ) -> dict[str, BaseModProvider]:
         stores: dict[str, BaseModProvider] = {}
         if game_info.get("gamebanana_id"):
-            stores["GameBanana"] = StoreProvider("GameBanana", game_info, headers=headers)
+            stores["GameBanana"] = GameBananaModProvider(game_info, headers=headers)
         if game_info.get("nexus_id"):
             stores["Nexus"] = NexusModProvider(game_info, headers=headers)
         if game_info.get("thunderstore_id") or game_info.get("thunderstore_slug"):

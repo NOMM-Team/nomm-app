@@ -84,7 +84,7 @@ def parse_mod_paths(deployment_dicts: list | str, game_path: str, user_data_path
     return deployment_dicts
 
 
-def get_game_config(nexus_id=None):
+def get_game_config(nexus_id=None, gamebanana_id=None):
     for config_path in [CUSTOM_GAME_CONFIG_PATH, PRESET_GAME_CONFIG_PATH]:
         if os.path.exists(config_path):
             for filename in os.listdir(config_path):
@@ -92,5 +92,7 @@ def get_game_config(nexus_id=None):
                     game_config = load_yaml(os.path.join(config_path, filename))
                     # If we ever need to add more platforms we can do it here easily
                     if nexus_id and game_config.get("nexus_id") == nexus_id:
+                        return game_config
+                    if gamebanana_id and game_config.get("gamebanana_id") == gamebanana_id:
                         return game_config
     return None
