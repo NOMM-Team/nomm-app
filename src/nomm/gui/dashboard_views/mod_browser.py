@@ -860,30 +860,45 @@ class StoreView(Gtk.Box):
             return
 
         self._loading_more = True
-        try:
-            query, category, sort_by, date_range, updated_range, include_adult = self._current_search_params
-            more_results = self.provider.search_mods(
-                query,
-                category,
-                sort_by,
-                date_range,
-                updated_range,
-                include_adult,
-                author=self._current_author,
-                count=self._page_size,
-                offset=self._next_offset
-            )
+        query, category, sort_by, date_range, updated_range, include_adult = self._current_search_params
+        author = self._current_author
+        count = self._page_size
+        offset = self._next_offset
 
+        def _worker():
+            try:
+                more_results = self.provider.search_mods(
+                    query,
+                    category,
+                    sort_by,
+                    date_range,
+                    updated_range,
+                    include_adult,
+                    author=author,
+                    count=count,
+                    offset=offset,
+                )
+            except Exception as e:
+                print(f"Failed to load more mods: {e}")
+                more_results = []
+
+            GLib.idle_add(self._on_more_mods_loaded, more_results)
+
+        threading.Thread(target=_worker, daemon=True).start()
+
+    def _on_more_mods_loaded(self, more_results: list[ModItem]):
+        try:
             self._raw_results.extend(more_results)
-            for mod in self._filter_mods(more_results):
-                self.model.append(mod)
+            visible = self._filter_mods(more_results)
+            if visible:
+                self.model.splice(self.model.get_n_items(), 0, visible)
 
             self._next_offset += len(more_results)
             if len(more_results) < self._page_size:
                 self._has_more = False
-
         finally:
             self._loading_more = False
+        return False
 
     def on_factory_setup(self, factory, list_item):
         overlay = Gtk.Overlay()
