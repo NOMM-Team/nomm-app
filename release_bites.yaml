@@ -1,4 +1,11 @@
 ---
+Version: "0.15.2"
+Date: 2026-11-26
+URL: https://github.com/nomm-team/nomm-app/releases/0.15.2
+Description: |-
+  Release bites
+   * Hotfix: Missing icon was causing all icon loading to fail.
+---
 Version: "0.15.1"
 Date: 2026-11-22
 URL: https://github.com/nomm-team/nomm-app/releases/0.15.1
