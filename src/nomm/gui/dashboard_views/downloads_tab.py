@@ -1,3 +1,4 @@
+
 import gettext
 import os
 import shutil
@@ -16,6 +17,7 @@ from nomm.core.mod_manager import (finalise_mod_metadata, is_mod_installed, load
 from nomm.core.tools import timestamp_converter, list_archives, load_yaml, is_an_upgrade
 from nomm.gui.ui_builders import create_icon_button, create_icon_row, create_text_box
 from nomm.gui.dashboard_views.fomod_dialog import FomodSelectionDialog
+from nomm.gui.dashboard_views.mod_browser import ModBrowserWindow
 
 _ = gettext.gettext
 
@@ -118,6 +120,22 @@ class DownloadsTab(Gtk.Box):
             )
             vbox.append(status_page)
 
+            if "gamebanana_id" in game_info or "nexus_id" in game_info:
+                browser = ModBrowserWindow(
+                    parent_window=self.dashboard.app.win,
+                    game_info=self.dashboard.game_info,
+                    downloads_metadata_path=self.dashboard.downloads_metadata_path,
+                    headers=self.dashboard.headers
+                )
+                label = _("Browse for mods on available mod platforms via NOMM's built-in browser")
+                vbox.append(create_icon_row(
+                    icon_name="mat-search-settings-symbolic",
+                    tooltip="Open NOMM Mod Browser",
+                    label=label,
+                    on_click=lambda x: browser.present(),
+                    css_classes=["suggested-action"])
+                )
+
             label = _(f"Copy your existing mod archives to your NOMM downloads folder for {game_info["name"]}")
             vbox.append(create_icon_row(
                 icon_name="mat-folder-symbolic",
@@ -127,19 +145,6 @@ class DownloadsTab(Gtk.Box):
             ))
             vbox.append(create_text_box(_("Don't forget that you can drag and drop mod archives into the "
                                           "download tab directly to add them to NOMM."), "info"))
-            if game_info.get("nexus_id"):  # Remember to add support for other stores here as well when we add them
-                label = Gtk.Label(label=_("You can also download new mods from the following source(s):"))
-                vbox.append(label)
-                hbox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12, halign=Gtk.Align.CENTER)
-                if game_info.get("nexus_id"):
-                    hbox.append(create_icon_button(
-                        icon_name="nexus-logo",
-                        tooltip=f"Open Nexus page for {game_info["name"]}",
-                        icon_size=96,
-                        on_click=lambda x: webbrowser.open(f"https://www.nexusmods.com/games/{game_info["nexus_id"]}")
-                    ))
-                # Add other stores here as well
-                vbox.append(hbox)
 
             return vbox
 

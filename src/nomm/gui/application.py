@@ -20,7 +20,7 @@ from nomm.gui.app_views.library_view import LibraryView
 from nomm.gui.dashboard import GameDashboard
 from nomm.gui.ui_builders import create_text_box, create_code_box
 from nomm.platforms.nexus import handle_nexus_link
-from nomm.platforms.gamebanana import handle_gamebanana_link
+from nomm.platforms.gamebanana import handle_gamebanana_link, handle_gamebanana_mod_link
 from nomm.platforms.steam import get_steam_base_dir
 from nomm.core.wine_manager import clean_wine_prefixes, get_unused_wine_prefixes
 
@@ -161,12 +161,16 @@ class Nomm(Adw.Application):
         )
         GLib.idle_add(callback)
 
-    def handle_nomm_link(self, url: str, downloader, headers: dict) -> bool:
+    def handle_nomm_link(self, url: str, downloader, headers: dict, game_info: dict | None = None) -> bool:
         """Looks at nomm protocol scheme urls and redirects to the right bit of code"""
-        target = urlparse(url).netloc
+        parsed = urlparse(url)
+        target = parsed.netloc
         print(f"Detected link to {target}")
         if target == "gb":
-            return handle_gamebanana_link(url, downloader, self.headers)
+            path_parts = [p for p in (parsed.path or "").split("/") if p]
+            if len(path_parts) >= 3 and path_parts[0] == "switch":
+                return handle_gamebanana_link(url, downloader, self.headers)
+            return handle_gamebanana_mod_link(url, downloader, self.headers)
         else:
             print(f"NOMM does not handle mod platform {target}")
             return False

@@ -411,6 +411,7 @@ class UtilitiesTab(Gtk.Box):
         dl_folder_btn = Gtk.Button(label=_("Open NOMM downloads directory"))
         dl_folder_btn.set_tooltip_text(_("This is where you need to place the downloaded file for NOMM to recognise it"))
         dl_folder_btn.connect("clicked", lambda *_: webbrowser.open(self.download_dir.as_uri()))
+        self.download_dir.mkdir(parents=True, exist_ok=True)
         content_box.append(nexus_btn)
         content_box.append(dl_folder_btn)
 

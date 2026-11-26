@@ -5,6 +5,7 @@ from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from urllib.parse import urlsplit, urlunsplit
 from urllib.error import HTTPError
+import datetime
 
 import requests
 from gi.repository import GLib
@@ -14,6 +15,8 @@ from nomm.core.downloader import Downloader
 from nomm.gui.notifications import download_popup, send_download_notification
 from nomm.core.tools import load_yaml, write_yaml, download_image, process_bbcode
 from nomm.core.user_config import get_game_config, load_user_config
+
+NEXUS_GRAPHQL_URL = "https://api.nexusmods.com/v2/graphql"
 
 
 def endorse_nexus_mod(headers: dict, game_domain: str, mod_id: str, unendorse: bool):
@@ -279,11 +282,9 @@ def _download_nexus_collection(nxm_link: str, headers: dict, final_download_dir:
 
 # Get files from collexion and returns a dict if it manages to get the list
 def _get_files_from_collection(game_domain: str, collection_id: str, revision_id: str, headers: dict):
-    # API Endpoint
-    graphql_url = "https://api.nexusmods.com/v2/graphql"
 
     current_dir = Path(__file__).parent.parent.resolve()
-    query_path = os.path.join(current_dir, 'queries', 'get_collections.graphql')
+    query_path = os.path.join(current_dir, 'queries', 'get_collection.graphql')
 
     with open(query_path, 'r') as f:
         query = f.read()
@@ -299,7 +300,7 @@ def _get_files_from_collection(game_domain: str, collection_id: str, revision_id
 
     try:
         response = requests.post(
-            graphql_url,
+            NEXUS_GRAPHQL_URL,
             json={'query': query, 'variables': variables},
             headers=headers,
             timeout=15,
@@ -422,3 +423,292 @@ def check_if_mod_is_utility(game_config, mod_id):
                 if get_mod_id_from_url(utility["source_url"]) == mod_id:
                     return True
     return False
+
+
+def _to_nexus_iso(ts: float) -> str:
+    return str(int(ts))
+
+
+def search_nexus_mods(
+    headers: dict,
+    game_domain: str,
+    query: str = "",
+    category: str = "All Categories",
+    sort_by: str = "Most Downloaded first",
+    date_range: tuple[float, float] | None = None,
+    updated_range: tuple[float, float] | None = None,
+    include_adult: bool = False,
+    author: str = "",
+    count: int = 20,
+    offset: int = 0,
+) -> list[dict]:
+    """
+    Search Nexus Mods via the v2 GraphQL API using ModsFilter,
+    BaseFilterValue, and BaseSortValue.
+    """
+
+    sort_field_map = {
+        "Most Downloaded first": "downloads",
+        "Highest Rated first": "endorsements",
+        "Newest first": "createdAt",
+        "Oldest first": "createdAt",
+    }
+    sort_field = sort_field_map.get(sort_by, "downloads")
+    sort_direction = "ASC" if sort_by == "Oldest first" else "DESC"
+
+    clauses: list[dict] = [
+        {"gameDomainName": {"value": game_domain, "op": "EQUALS"}},
+    ]
+
+    cleaned_author = author.strip()
+    if cleaned_author:
+        clauses.append({"uploader": {"value": cleaned_author, "op": "EQUALS"}})
+
+    cleaned_query = query.strip()
+    if cleaned_query:
+        clauses.append({"nameStemmed": {"value": cleaned_query, "op": "MATCHES"}})
+
+    if category and category != "All Categories":
+        clauses.append({"categoryName": {"value": category, "op": "EQUALS"}})
+
+    if date_range and len(date_range) == 2:
+        low_ts, high_ts = date_range
+        clauses.append({"createdAt": {"value": _to_nexus_iso(low_ts), "op": "GTE"}})
+        clauses.append({"createdAt": {"value": _to_nexus_iso(high_ts), "op": "LTE"}})
+
+    if updated_range and len(updated_range) == 2:
+        upd_low_ts, upd_high_ts = updated_range
+        clauses.append({"updatedAt": {"value": _to_nexus_iso(upd_low_ts), "op": "GTE"}})
+        clauses.append({"updatedAt": {"value": _to_nexus_iso(upd_high_ts), "op": "LTE"}})
+
+    if not include_adult:
+        clauses.append({
+            "adultContent": [
+                {
+                    "value": False,
+                    "op": "EQUALS",
+                }
+            ]
+        })
+
+    graphql_filter = {
+        "op": "AND",
+        "filter": clauses,
+    }
+    graphql_sort = [{sort_field: {"direction": sort_direction}}]
+
+    graphql_query = """
+    query SearchMods(
+        $filter: ModsFilter
+        $sort: [ModsSort!]
+        $count: Int
+        $offset: Int
+    ) {
+        mods(
+            filter: $filter
+            sort: $sort
+            count: $count
+            offset: $offset
+        ) {
+            nodes {
+                modId
+                name
+                uploader {
+                    name
+                }
+                summary
+                downloads
+                endorsements
+                pictureUrl
+                adult
+                createdAt
+                updatedAt
+            }
+        }
+    }
+    """
+
+    variables = {
+        "filter": graphql_filter,
+        "sort": graphql_sort,
+        "count": count,
+        "offset": offset,
+    }
+
+    nexus_headers = headers.copy()
+    nexus_headers["Content-Type"] = "application/json"
+
+    try:
+        response = requests.post(
+            NEXUS_GRAPHQL_URL,
+            json={"query": graphql_query, "variables": variables},
+            headers=nexus_headers,
+            timeout=15,
+            allow_redirects=True,
+        )
+        response.raise_for_status()
+
+        data = response.json()
+        if "errors" in data:
+            print(f"GraphQL Errors: {data['errors']}")
+            return []
+
+        nodes = (data.get("data") or {}).get("mods", {}).get("nodes") or []
+
+        results = []
+        for node in nodes:
+            mod_id = node.get("modId")
+            uploader_name = (node.get("uploader") or {}).get("name") or ""
+            results.append({
+                "mod_id": mod_id,
+                "name": node.get("name") or "",
+                "author": uploader_name,
+                "short_description": node.get("summary") or "",
+                "thumbnail_url": node.get("pictureUrl") or "",
+                "downloads": int(node.get("downloads") or 0),
+                "endorsements": int(node.get("endorsements") or 0),
+                "page_url": f"https://www.nexusmods.com/{game_domain}/mods/{mod_id}" if mod_id else "",
+                "download_url": "",
+                "created_at": node.get("createdAt"),
+                "updated_at": node.get("updatedAt"),
+            })
+
+        return results
+
+    except requests.exceptions.RequestException as e:
+        print(f"Nexus search request failed: {e}")
+        return []
+    except Exception as e:
+        print(f"Error parsing Nexus search response: {e}")
+        return []
+
+
+def get_nexus_categories(headers: dict, game_id: int | str | None = None, include_global: bool = False) -> list[str]:
+    """
+    Fetches category names for a Nexus game via the v2 GraphQL API.
+    """
+
+    graphql_query = """
+    query GetGameCategories($gameId: Int, $global: Boolean) {
+        categories(gameId: $gameId, global: $global) {
+            id
+            name
+        }
+    }
+    """
+
+    parsed_game_id: int | None = None
+    if game_id is not None and str(game_id).strip().isdigit():
+        parsed_game_id = int(str(game_id).strip())
+
+    if parsed_game_id is None and not include_global:
+        return []
+
+    variables = {
+        "gameId": parsed_game_id,
+        "global": include_global,
+    }
+
+    nexus_headers = headers.copy()
+    nexus_headers["Content-Type"] = "application/json"
+
+    try:
+        response = requests.post(
+            NEXUS_GRAPHQL_URL,
+            json={"query": graphql_query, "variables": variables},
+            headers=nexus_headers,
+            timeout=15,
+            allow_redirects=True,
+        )
+        response.raise_for_status()
+
+        data = response.json()
+        if "errors" in data:
+            print(f"GraphQL Errors: {data['errors']}")
+            return []
+
+        categories = (data.get("data") or {}).get("categories") or []
+
+        names: list[str] = []
+        seen: set[str] = set()
+        for cat in categories:
+            name = (cat.get("name") or "").strip()
+            if name and name not in seen:
+                seen.add(name)
+                names.append(name)
+
+        return sorted(names, key=str.lower)
+
+    except requests.exceptions.RequestException as e:
+        print(f"Nexus categories request failed: {e}")
+        return []
+    except Exception as e:
+        print(f"Error parsing Nexus categories response: {e}")
+        return []
+
+
+def get_nexus_first_mod_date(headers: dict, game_domain: str) -> float:
+    """
+    Fetches the creation timestamp (as a Unix epoch float) of the oldest
+    mod for `game_domain` via the Nexus v2 GraphQL API.
+    """
+    fallback = 1420070400.0
+    if not game_domain:
+        return fallback
+
+    graphql_query = """
+    query GetFirstModDate($filter: ModsFilter, $sort: [ModsSort!], $count: Int) {
+        mods(filter: $filter, sort: $sort, count: $count) {
+            nodes {
+                createdAt
+            }
+        }
+    }
+    """
+
+    variables = {
+        "filter": {
+            "op": "AND",
+            "filter": [
+                {"gameDomainName": {"value": game_domain, "op": "EQUALS"}},
+            ],
+        },
+        "sort": [{"createdAt": {"direction": "ASC"}}],
+        "count": 1,
+    }
+
+    nexus_headers = headers.copy()
+    nexus_headers["Content-Type"] = "application/json"
+
+    try:
+        response = requests.post(
+            NEXUS_GRAPHQL_URL,
+            json={"query": graphql_query, "variables": variables},
+            headers=nexus_headers,
+            timeout=15,
+            allow_redirects=True,
+        )
+        response.raise_for_status()
+    except requests.exceptions.RequestException as e:
+        print(f"Nexus first mod date request failed: {e}")
+        return fallback
+
+    data = response.json()
+    if "errors" in data:
+        print(f"GraphQL Errors (first mod date): {data['errors']}")
+        return fallback
+
+    nodes = (data.get("data") or {}).get("mods", {}).get("nodes") or []
+    if not nodes:
+        return fallback
+
+    parsed = nodes[0].get("createdAt").strip()
+    try:
+        dt = datetime.datetime.fromisoformat(parsed.replace("Z", "+00:00"))
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=datetime.timezone.utc)
+        return dt.timestamp() if dt.timestamp() is not None else fallback
+
+    except Exception as e:
+        print(f"Error parsing Nexus first mod date response: {e}")
+        return fallback

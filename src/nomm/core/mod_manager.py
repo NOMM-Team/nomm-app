@@ -448,3 +448,27 @@ def change_mod_index(staging_meta_path: str, mod_name: str, index: int) -> dict:
         write_yaml(current_staging_metadata, staging_meta_path)
 
     return current_staging_metadata
+
+
+def load_downloaded_mod_ids(yaml_path: str | os.PathLike | None) -> set[str]:
+    if not yaml_path:
+        return set()
+    path = os.fspath(yaml_path)
+    if not os.path.isfile(path):
+        return set()
+
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            data = yaml.safe_load(f)
+    except Exception as e:
+        print(f"Failed to read download metadata YAML '{path}': {e}")
+        return set()
+
+    if not isinstance(data, dict):
+        return set()
+
+    downloaded_ids: set[str] = set()
+    for _entry_key, entry in data["mods"].items():
+        if entry.get("mod_id"):
+            downloaded_ids.add(str(entry["mod_id"]).strip())
+    return downloaded_ids
