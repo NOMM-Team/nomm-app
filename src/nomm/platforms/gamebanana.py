@@ -505,6 +505,9 @@ def search_gamebanana_mods(
         if not isinstance(rec, dict):
             continue
 
+        if not include_adult and bool(rec.get("_bHasContentRatings")):
+            continue
+
         mod_id = rec.get("_idRow") or rec.get("_idRecord") or ""
         name = str(rec.get("_sName") or "").strip()
         mod_author = _gb_extract_author(rec)
