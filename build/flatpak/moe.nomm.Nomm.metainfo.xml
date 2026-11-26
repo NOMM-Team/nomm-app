@@ -36,6 +36,15 @@
     <color type="primary" scheme_preference="dark">#374955</color>
   </branding>
   <releases>
+    <release type="stable" version="0.15.2" date="2026-11-26T00:00:00Z">
+      <description>
+        <p>Release bites</p>
+        <ul>
+          <li>Hotfix: Missing icon was causing all icon loading to fail.</li>
+        </ul>
+      </description>
+      <url>https://github.com/nomm-team/nomm-app/releases/0.15.2</url>
+    </release>
     <release type="stable" version="0.15.1" date="2026-11-22T00:00:00Z">
       <description>
         <p>Release bites</p>
@@ -110,27 +119,6 @@
         </ul>
       </description>
       <url>https://github.com/nomm-team/nomm-app/releases/0.14.1</url>
-    </release>
-    <release type="stable" version="0.14.0" date="2026-09-30T00:00:00Z">
-      <description>
-        <p>Release bites</p>
-        <ul>
-          <li>Major overhaul of utility management</li>
-          <li>New: Nexus, Github and Flathub can be added as sources to download utilities</li>
-          <li>New: Set utilities as being incompatible with other utilities</li>
-          <li>New: Launch Linux utilities</li>
-          <li>New: Launch Windows utilities (with Wine, downloaded at runtime)</li>
-          <li>New: Wine and Wine prefix management from within NOMM</li>
-          <li>New: Support for Wine verbs and installation via Winetricks</li>
-          <li>New: Launch Flatpak utilities</li>
-          <li>Change: Much more intuitive utility blacklist/whitelist support </li>
-          <li>Change: Overhaul utility tab UI with new icons, buttons, interactions</li>
-          <li>Change: Completely overhauled the configuration builder to reflect these changes</li>
-          <li>Change: Adding launch options is now super easy and won't require relaunching Steam</li>
-          <li>Change: Better detection of removed Steam libraries (better permissions request flow)</li>
-        </ul>
-      </description>
-      <url>https://github.com/nomm-team/nomm-app/releases/0.14.0</url>
     </release>
   </releases>
   <content_rating type="oars-1.1">
