@@ -84,7 +84,6 @@ class ModsTab(Gtk.Box):
             tooltip=_("Open wiki page"),
             on_click=lambda x: webbrowser.open(url)
         )
-        self.action_bar.append(wiki_btn)
 
         browser = ModBrowserWindow(
             parent_window=self.dashboard.app.win,
@@ -98,9 +97,10 @@ class ModsTab(Gtk.Box):
             on_click=lambda x: browser.present(),
         )
         browser_btn.set_hexpand(True)
-        self.action_bar.append(browser_btn)
 
         # Add all the buttons
+        self.action_bar.append(browser_btn)
+        self.action_bar.append(wiki_btn)
         self.action_bar.append(folder_btn)
         self.action_bar.append(update_btn)
 
