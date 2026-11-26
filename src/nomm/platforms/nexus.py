@@ -284,7 +284,7 @@ def _download_nexus_collection(nxm_link: str, headers: dict, final_download_dir:
 def _get_files_from_collection(game_domain: str, collection_id: str, revision_id: str, headers: dict):
 
     current_dir = Path(__file__).parent.parent.resolve()
-    query_path = os.path.join(current_dir, 'queries', 'get_collections.graphql')
+    query_path = os.path.join(current_dir, 'queries', 'get_collection.graphql')
 
     with open(query_path, 'r') as f:
         query = f.read()
