@@ -531,8 +531,8 @@ def search_gamebanana_mods(
         if updated_max is not None and updated_ts > 0 and updated_ts > updated_max:
             continue
 
-        downloads = int(rec.get("_nDownloadCount") or 0)
-        endorsements = int(rec.get("_nLikeCount") or 0)
+        views = int(rec.get("_nViewCount", 0))
+        endorsements = int(rec.get("_nLikeCount", 0))
         short_desc = str(rec.get("_sDescription") or "").strip()
         page_url = str(
             rec.get("_sProfileUrl")
@@ -544,14 +544,14 @@ def search_gamebanana_mods(
             "name": name,
             "author": mod_author,
             "thumbnail_url": _gb_extract_thumbnail(rec),
-            "downloads": downloads,
+            "views": views,
             "endorsements": endorsements,
             "short_description": short_desc,
             "page_url": page_url,
             "download_url": download_url,
             "mod_id": str(mod_id),
             "created_at": created_ts,
-            "updated_at": updated_ts,
+            "updated_at": updated_ts
         })
 
     return results

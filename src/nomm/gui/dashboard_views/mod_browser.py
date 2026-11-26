@@ -28,7 +28,7 @@ class ModItem(GObject.Object):
     short_description = GObject.Property(type=str, default="")
     page_url = GObject.Property(type=str, default="")
     download_url = GObject.Property(type=str, default="")
-    downloads = GObject.Property(type=int, default=0)
+    downloads_or_views = GObject.Property(type=int, default=0)
     endorsements = GObject.Property(type=int, default=0)
     mod_id = GObject.Property(type=str, default="")
     created_at = GObject.Property(type=float, default=0.0)
@@ -39,7 +39,7 @@ class ModItem(GObject.Object):
         name="",
         uploader="",
         thumbnail_url="",
-        downloads=0,
+        downloads_or_views=0,
         endorsements=0,
         short_description="",
         page_url="",
@@ -52,7 +52,7 @@ class ModItem(GObject.Object):
         self.props.name = name
         self.props.author = uploader
         self.props.thumbnail_url = thumbnail_url
-        self.props.downloads = downloads
+        self.props.downloads_or_views = downloads_or_views
         self.props.endorsements = endorsements
         self.props.short_description = short_description
         self.props.page_url = page_url
@@ -116,7 +116,7 @@ class NexusModProvider(BaseModProvider):
                 name=item["name"],
                 uploader=item["author"],
                 thumbnail_url=item["thumbnail_url"],
-                downloads=item["downloads"],
+                downloads_or_views=item["downloads"],
                 endorsements=item["endorsements"],
                 short_description=item["short_description"],
                 page_url=item["page_url"],
@@ -193,7 +193,7 @@ class GameBananaModProvider(BaseModProvider):
                 name=item["name"],
                 uploader=item["author"],
                 thumbnail_url=item["thumbnail_url"],
-                downloads=item["downloads"],
+                downloads_or_views=item["views"],
                 endorsements=item["endorsements"],
                 short_description=item["short_description"],
                 page_url=item["page_url"],
@@ -248,7 +248,7 @@ class StoreProvider(BaseModProvider):
             ModItem(
                 name=f"{self.store_name} Result: {query or 'All'} #{i}",
                 uploader=f"Author {i}",
-                downloads=i * 14500,
+                downloads_or_views=i * 14500,
                 endorsements=i * 620,
                 page_url=f"https://example.org/{slug}/mods/{i}",
                 download_url=f"https://example.org/{slug}/mods/{i}/download.zip",
@@ -1039,6 +1039,7 @@ class StoreView(Gtk.Box):
         card.title_label = title_label
         card.author_label = author_label
         card.downloads_box = downloads_box
+        card.downloads_icon = downloads_icon
         card.downloads_label = downloads_label
         card.endorsements_box = endorsements_box
         card.endorsements_label = endorsements_label
@@ -1058,8 +1059,15 @@ class StoreView(Gtk.Box):
         card.current_mod = mod_item
         card.title_label.set_text(mod_item.props.name)
         card.author_label.set_text(mod_item.props.author)
-        card.downloads_label.set_text(format_count(mod_item.props.downloads))
-        card.downloads_box.set_tooltip_text(f"{mod_item.props.downloads:,} downloads")
+        is_gb = isinstance(self.provider, GameBananaModProvider)
+        count_val = mod_item.props.downloads_or_views
+
+        card.downloads_icon.set_from_icon_name(
+            "mat-visibility-symbolic" if is_gb else "downloaded-symbolic"
+        )
+        card.downloads_label.set_text(format_count(count_val))
+        stat_unit = _("views") if is_gb else _("downloads")
+        card.downloads_box.set_tooltip_text(f"{count_val:,} {stat_unit}")
         card.endorsements_label.set_text(format_count(mod_item.props.endorsements))
         card.endorsements_box.set_tooltip_text(f"{mod_item.props.endorsements:,} endorsements")
 

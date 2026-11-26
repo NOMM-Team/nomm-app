@@ -62,6 +62,7 @@
     <file>mat-sort-symbolic.svg</file>
     <file>mat-publish-symbolic.svg</file>
     <file>mat-update-symbolic.svg</file>
+    <file>mat-visibility-symbolic.svg</file>
     <file>back-arrow-symbolic.svg</file>
   </gresource>
 </gresources>
